@@ -2,6 +2,7 @@ import * as z from 'zod';
 import { Env } from '@/libs/Env';
 import type { campaignSchema, contactSchema, emailDraftSchema } from '@/models/Schema';
 import { requireEnv } from '@/utils/Helpers';
+import type { EnrichmentContent } from '@/validations/EnrichmentValidation';
 
 const INSTANTLY_API_URL = 'https://api.instantly.ai/api/v2';
 
@@ -125,14 +126,51 @@ export const buildCampaignPayload = (options: {
 });
 
 /**
- * Builds one lead, carrying its personalised copy as custom variables.
+ * Flattens the research into string custom variables, so Instantly knows who the
+ * lead is when it answers their replies. Empty answers are dropped, and when the
+ * research may describe a namesake only the company-level fields are kept.
+ * @param enrichment The research output, when it parsed cleanly.
+ * @returns The `research_*` custom variables.
+ */
+export const buildResearchVariables = (enrichment: EnrichmentContent | null) => {
+  if (!enrichment) {
+    return {};
+  }
+
+  const isReliable = enrichment.person_found && enrichment.identity_match_confidence !== 'low';
+
+  const variables = {
+    research_confidence: enrichment.identity_match_confidence,
+    research_identity_reasoning: enrichment.identity_match_reasoning,
+    research_company_description: enrichment.company_description,
+    research_industry: enrichment.company_industry,
+    ...(isReliable && {
+      research_role: enrichment.current_role,
+      research_company: enrichment.current_company,
+      research_location: enrichment.location,
+      research_linkedin_url: enrichment.linkedin_url,
+      research_recent_activity: enrichment.recent_activity,
+      research_hooks: enrichment.personalization_hooks,
+    }),
+  };
+
+  return Object.fromEntries(Object.entries(variables).filter(([, value]) => value));
+};
+
+/**
+ * Builds one lead, carrying its personalised copy and research as custom variables.
  * @param options The call options.
  * @param options.contact The contact to send to.
  * @param options.drafts The approved drafts for that contact.
+ * @param options.enrichment The research output, when it parsed cleanly.
  * @returns The lead entry for `POST /leads/add`.
  */
-export const buildLeadPayload = (options: { contact: Contact; drafts: EmailDraft[] }) => {
-  const customVariables: Record<string, string> = {};
+export const buildLeadPayload = (options: {
+  contact: Contact;
+  drafts: EmailDraft[];
+  enrichment: EnrichmentContent | null;
+}) => {
+  const customVariables: Record<string, string> = buildResearchVariables(options.enrichment);
 
   for (const draft of options.drafts) {
     customVariables[`email_subject_${draft.stepIndex}`] = draft.subject;

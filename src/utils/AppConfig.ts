@@ -6,7 +6,7 @@ const localePrefix: LocalePrefixMode = 'as-needed';
 // FIXME: Customize this configuration for your product
 /** Centralized application configuration */
 export const AppConfig = {
-  name: 'Cold Email Engine',
+  name: 'Girhouse Scraper',
   i18n: {
     locales: ['en', 'it'],
     defaultLocale: 'en',

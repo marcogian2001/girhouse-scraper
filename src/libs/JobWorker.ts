@@ -275,22 +275,28 @@ const runPushJob = async (job: Job) => {
     throw new Error('No approved contacts to push');
   }
 
+  const contactIds = contacts.map((contact) => contact.id);
+
   const drafts = await db
     .select()
     .from(emailDraftSchema)
-    .where(
-      inArray(
-        emailDraftSchema.contactId,
-        contacts.map((contact) => contact.id),
-      ),
-    );
+    .where(inArray(emailDraftSchema.contactId, contactIds));
 
-  const leads = contacts.map((contact) =>
-    buildLeadPayload({
+  const enrichments = await db
+    .select()
+    .from(enrichmentSchema)
+    .where(inArray(enrichmentSchema.contactId, contactIds));
+
+  const leads = contacts.map((contact) => {
+    const enrichment = enrichments.find((item) => item.contactId === contact.id);
+    const parsedEnrichment = EnrichmentContentValidation.safeParse(enrichment?.content);
+
+    return buildLeadPayload({
       contact,
       drafts: drafts.filter((draft) => draft.contactId === contact.id),
-    }),
-  );
+      enrichment: parsedEnrichment.success ? parsedEnrichment.data : null,
+    });
+  });
 
   // Reuse the campaign from an earlier attempt so a retry does not duplicate it
   const instantlyCampaignId =

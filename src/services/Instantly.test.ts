@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import type { campaignSchema, contactSchema, emailDraftSchema } from '@/models/Schema';
-import { buildCampaignPayload, buildLeadPayload, chunkLeads, toHtmlBody } from './Instantly';
+import type { EnrichmentContent } from '@/validations/EnrichmentValidation';
+import {
+  buildCampaignPayload,
+  buildLeadPayload,
+  buildResearchVariables,
+  chunkLeads,
+  toHtmlBody,
+} from './Instantly';
 
 const campaign = (
   overrides: Partial<typeof campaignSchema.$inferSelect> = {},
@@ -37,6 +44,22 @@ const contact = (): typeof contactSchema.$inferSelect => ({
   errorMessage: null,
   updatedAt: new Date(),
   createdAt: new Date(),
+});
+
+const enrichment = (overrides: Partial<EnrichmentContent> = {}): EnrichmentContent => ({
+  person_found: true,
+  identity_match_confidence: 'high',
+  identity_match_reasoning: 'Same employer and city as the list',
+  full_name: 'Ada Lovelace',
+  current_role: 'CTO',
+  current_company: 'Analytical',
+  company_description: 'Builds engines that compute',
+  company_industry: 'Computing',
+  location: 'London, UK',
+  linkedin_url: 'https://linkedin.com/in/ada',
+  recent_activity: 'Raised a seed round',
+  personalization_hooks: 'Spoke at Engine Conf',
+  ...overrides,
 });
 
 const draft = (stepIndex: number, subject: string, body: string) =>
@@ -98,6 +121,7 @@ describe('Instantly', () => {
       const lead = buildLeadPayload({
         contact: contact(),
         drafts: [draft(1, 'first', 'hello'), draft(2, 'second', 'again')],
+        enrichment: null,
       });
 
       expect(lead.custom_variables).toStrictEqual({
@@ -109,10 +133,74 @@ describe('Instantly', () => {
     });
 
     it('sends undefined rather than null for missing contact fields', () => {
-      const lead = buildLeadPayload({ contact: contact(), drafts: [] });
+      const lead = buildLeadPayload({ contact: contact(), drafts: [], enrichment: null });
 
       expect(lead.phone).toBeUndefined();
       expect(lead.first_name).toBe('Ada');
+    });
+
+    it('carries the research next to the drafts', () => {
+      const lead = buildLeadPayload({
+        contact: contact(),
+        drafts: [draft(1, 'first', 'hello')],
+        enrichment: enrichment(),
+      });
+
+      expect(lead.custom_variables).toMatchObject({
+        email_subject_1: 'first',
+        research_role: 'CTO',
+      });
+    });
+  });
+
+  describe('Research variables', () => {
+    it('maps every researched field to a research variable', () => {
+      expect(buildResearchVariables(enrichment())).toStrictEqual({
+        research_confidence: 'high',
+        research_identity_reasoning: 'Same employer and city as the list',
+        research_role: 'CTO',
+        research_company: 'Analytical',
+        research_company_description: 'Builds engines that compute',
+        research_industry: 'Computing',
+        research_location: 'London, UK',
+        research_linkedin_url: 'https://linkedin.com/in/ada',
+        research_recent_activity: 'Raised a seed round',
+        research_hooks: 'Spoke at Engine Conf',
+      });
+    });
+
+    it('omits fields the research left empty', () => {
+      const variables = buildResearchVariables(
+        enrichment({ recent_activity: '', personalization_hooks: '' }),
+      );
+
+      expect(variables).not.toHaveProperty('research_recent_activity');
+      expect(variables).not.toHaveProperty('research_hooks');
+      expect(variables).toHaveProperty('research_role', 'CTO');
+    });
+
+    it('keeps only company-level fields when the identity match is low', () => {
+      const variables = buildResearchVariables(
+        enrichment({ identity_match_confidence: 'low', identity_match_reasoning: 'Common name' }),
+      );
+
+      expect(variables).toStrictEqual({
+        research_confidence: 'low',
+        research_identity_reasoning: 'Common name',
+        research_company_description: 'Builds engines that compute',
+        research_industry: 'Computing',
+      });
+    });
+
+    it('keeps only company-level fields when no person was found', () => {
+      const variables = buildResearchVariables(enrichment({ person_found: false }));
+
+      expect(variables).not.toHaveProperty('research_role');
+      expect(variables).not.toHaveProperty('research_hooks');
+    });
+
+    it('returns nothing without research', () => {
+      expect(buildResearchVariables(null)).toStrictEqual({});
     });
   });
 
