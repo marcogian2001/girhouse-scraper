@@ -2,6 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import type { UseFormReturn } from 'react-hook-form';
+import { useWatch } from 'react-hook-form';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   Field,
@@ -38,9 +39,13 @@ export const CampaignSettingsForm = (props: {
 }) => {
   const t = useTranslations('CampaignSettingsForm');
 
-  const emailCount = props.form.watch('emailCount');
-  const delaysDays = props.form.watch('delaysDays');
-  const knowledgeAssetIds = props.form.watch('knowledgeAssetIds') ?? [];
+  // `useWatch` rather than `form.watch`: the React compiler caches `watch` results
+  // on the stable `form` reference, so the UI would never reflect later changes
+  const emailCount = useWatch({ control: props.form.control, name: 'emailCount' });
+  const delaysDays = useWatch({ control: props.form.control, name: 'delaysDays' });
+  const selectedProcessor = useWatch({ control: props.form.control, name: 'processor' });
+  const knowledgeAssetIds =
+    useWatch({ control: props.form.control, name: 'knowledgeAssetIds' }) ?? [];
 
   return (
     <FieldGroup>
@@ -83,7 +88,7 @@ export const CampaignSettingsForm = (props: {
           <FieldLabel htmlFor="processor">{t('label_processor')}</FieldLabel>
 
           <Select
-            value={props.form.watch('processor')}
+            value={selectedProcessor}
             onValueChange={(value) => {
               const processor = PROCESSORS.find((option) => option === value);
 
