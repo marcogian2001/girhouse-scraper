@@ -238,6 +238,11 @@
     "field_hooks": "Spunti",
     "sources": "Fonti"
   },
+  "CampaignNameEditor": {
+    "hint_rename": "Doppio clic per rinominare",
+    "label_name": "Nome della campagna",
+    "error_rename": "Non è stato possibile rinominare questa campagna."
+  },
   "EmailDraftEditor": {
     "step_title": "Email {step}",
     "sends_after": "Inviata {days} giorni dopo la precedente",

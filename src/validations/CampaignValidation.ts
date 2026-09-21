@@ -33,6 +33,8 @@ const campaignSettingsShape = z.object({
   extraPrompt: z.string().trim().max(10_000).optional(),
 });
 
+export const CampaignNameValidation = campaignSettingsShape.pick({ name: true });
+
 export const CampaignSettingsValidation = campaignSettingsShape.refine(hasOneDelayPerEmail, {
   error: 'One delay is required per email',
   path: ['delaysDays'],

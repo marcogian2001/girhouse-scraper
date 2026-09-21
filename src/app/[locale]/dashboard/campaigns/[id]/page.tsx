@@ -3,6 +3,7 @@ import { ArrowLeft } from 'lucide-react';
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import * as z from 'zod';
+import { CampaignNameEditor } from '@/components/CampaignNameEditor';
 import { CampaignProgress } from '@/components/CampaignProgress';
 import type { ContactReview } from '@/components/ContactReviewList';
 import { ContactReviewList } from '@/components/ContactReviewList';
@@ -122,7 +123,7 @@ export default async function CampaignDetailPage(props: {
         </Link>
 
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-2xl font-semibold tracking-tight">{campaign.name}</h1>
+          <CampaignNameEditor campaignId={campaign.id} name={campaign.name} />
           <StatusBadge kind="campaign" status={campaign.status} />
         </div>
 

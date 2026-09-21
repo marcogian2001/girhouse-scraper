@@ -9,6 +9,7 @@ test.describe('Cold email API', () => {
     const anonymousRequests = [
       { name: 'list campaigns', method: 'GET', path: '/api/campaigns' },
       { name: 'create campaign', method: 'POST', path: '/api/campaigns' },
+      { name: 'rename a campaign', method: 'PATCH', path: `/api/campaigns/${CAMPAIGN_ID}` },
       { name: 'read campaign status', method: 'GET', path: `/api/campaigns/${CAMPAIGN_ID}/status` },
       { name: 'approve drafts', method: 'POST', path: `/api/campaigns/${CAMPAIGN_ID}/approve` },
       { name: 'push to Instantly', method: 'POST', path: `/api/campaigns/${CAMPAIGN_ID}/push` },

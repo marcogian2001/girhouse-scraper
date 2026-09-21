@@ -238,6 +238,11 @@
     "field_hooks": "Hooks",
     "sources": "Sources"
   },
+  "CampaignNameEditor": {
+    "hint_rename": "Double-click to rename",
+    "label_name": "Campaign name",
+    "error_rename": "This campaign could not be renamed."
+  },
   "EmailDraftEditor": {
     "step_title": "Email {step}",
     "sends_after": "Sent {days} days after the previous one",
