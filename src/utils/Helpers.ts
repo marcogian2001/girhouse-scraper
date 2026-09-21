@@ -14,6 +14,21 @@ export const getBaseUrl = () => {
 };
 
 /**
+ * Reads an optional environment variable that a feature cannot run without.
+ * @param name The variable name, surfaced in the error message.
+ * @param value The value read from `Env`.
+ * @returns The value, narrowed to a non-empty string.
+ * @throws {Error} When the variable is not configured.
+ */
+export const requireEnv = (name: string, value: string | undefined) => {
+  if (!value) {
+    throw new Error(`Missing environment variable: ${name}`);
+  }
+
+  return value;
+};
+
+/**
  * Builds a locale-aware path by prefixing non-default locales.
  * @param url The base application-relative path starting with a slash.
  * @param locale The active locale identifier.

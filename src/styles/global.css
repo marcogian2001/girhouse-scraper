@@ -1,3 +1,297 @@
-@layer theme, base, clerk, components, utilities; /* Ensure Clerk is compatible with Tailwind CSS v4 */
+@layer theme, base, components, utilities;
 
 @import 'tailwindcss';
+
+@import 'tw-animate-css';
+
+@import 'shadcn/tailwind.css';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  /* Fed by the Geist variables set on <html> in the locale layout. The system
+     stack after them covers the moment before the webfont is ready. */
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  --font-heading: var(--font-sans);
+
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --color-sidebar-border: var(--sidebar-border);
+
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+
+  --color-sidebar-accent: var(--sidebar-accent);
+
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+
+  --color-sidebar-primary: var(--sidebar-primary);
+
+  --color-sidebar-foreground: var(--sidebar-foreground);
+
+  --color-sidebar: var(--sidebar);
+
+  --color-chart-5: var(--chart-5);
+
+  --color-chart-4: var(--chart-4);
+
+  --color-chart-3: var(--chart-3);
+
+  --color-chart-2: var(--chart-2);
+
+  --color-chart-1: var(--chart-1);
+
+  --color-ring: var(--ring);
+
+  --color-input: var(--input);
+
+  --color-border: var(--border);
+
+  --color-brand-panel-foreground: var(--brand-panel-foreground);
+
+  --color-brand-panel: var(--brand-panel);
+
+  /* Status tones. Used as `bg-success/10 text-success`, mirroring the
+     `bg-destructive/10 text-destructive` idiom the shadcn components ship with. */
+  --color-info: var(--info);
+
+  --color-warning: var(--warning);
+
+  --color-success: var(--success);
+
+  --color-destructive: var(--destructive);
+
+  --color-accent-foreground: var(--accent-foreground);
+
+  --color-accent: var(--accent);
+
+  --color-muted-foreground: var(--muted-foreground);
+
+  --color-muted: var(--muted);
+
+  --color-secondary-foreground: var(--secondary-foreground);
+
+  --color-secondary: var(--secondary);
+
+  --color-primary-foreground: var(--primary-foreground);
+
+  --color-primary: var(--primary);
+
+  --color-popover-foreground: var(--popover-foreground);
+
+  --color-popover: var(--popover);
+
+  --color-card-foreground: var(--card-foreground);
+
+  --color-card: var(--card);
+
+  --color-foreground: var(--foreground);
+
+  --color-background: var(--background);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+
+  --radius-md: calc(var(--radius) * 0.8);
+
+  --radius-lg: var(--radius);
+
+  --radius-xl: calc(var(--radius) * 1.4);
+
+  --radius-2xl: calc(var(--radius) * 1.8);
+
+  --radius-3xl: calc(var(--radius) * 2.2);
+
+  --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* Ink-tinted shadows instead of neutral black, so elevation stays in the
+     same cool family as the surfaces it sits on. */
+  --shadow-xs: 0 1px 2px 0 oklch(0.205 0.034 263 / 0.05);
+
+  --shadow-sm:
+    0 1px 3px 0 oklch(0.205 0.034 263 / 0.06), 0 1px 2px -1px oklch(0.205 0.034 263 / 0.05);
+
+  --shadow-md:
+    0 4px 12px -2px oklch(0.205 0.034 263 / 0.08), 0 2px 4px -2px oklch(0.205 0.034 263 / 0.05);
+
+  --shadow-lg:
+    0 12px 32px -8px oklch(0.205 0.034 263 / 0.12), 0 4px 8px -4px oklch(0.205 0.034 263 / 0.06);
+}
+
+:root {
+  /* Page ground is off-white and faintly blue; cards sit on it as pure white. */
+  --background: oklch(0.979 0.005 259);
+
+  --foreground: oklch(0.205 0.034 263);
+
+  --card: oklch(1 0 0);
+
+  --card-foreground: oklch(0.205 0.034 263);
+
+  --popover: oklch(1 0 0);
+
+  --popover-foreground: oklch(0.205 0.034 263);
+
+  --primary: oklch(0.545 0.235 259);
+
+  --primary-foreground: oklch(0.995 0.005 259);
+
+  --secondary: oklch(0.958 0.011 259);
+
+  --secondary-foreground: oklch(0.3 0.032 263);
+
+  --muted: oklch(0.966 0.008 259);
+
+  --muted-foreground: oklch(0.503 0.034 266);
+
+  /* Blue tint driving every hover and active surface, sidebar included */
+  --accent: oklch(0.953 0.021 262);
+
+  --accent-foreground: oklch(0.45 0.19 259);
+
+  --destructive: oklch(0.577 0.215 27.3);
+
+  --success: oklch(0.53 0.145 152);
+
+  --warning: oklch(0.54 0.14 60);
+
+  --info: oklch(0.53 0.13 235);
+
+  --border: oklch(0.928 0.011 257);
+
+  /* One step darker than the border so fields still read as fields */
+  --input: oklch(0.912 0.013 257);
+
+  --ring: oklch(0.62 0.165 259);
+
+  --chart-1: oklch(0.545 0.235 259);
+
+  --chart-2: oklch(0.68 0.145 227);
+
+  --chart-3: oklch(0.755 0.125 209);
+
+  --chart-4: oklch(0.6 0.185 283);
+
+  --chart-5: oklch(0.83 0.075 205);
+
+  --radius: 0.75rem;
+
+  /* The sign-in brand panel is decorative and deliberately theme-independent:
+     it is never redefined under `.dark`, so it does not invert into a glaring
+     light slab next to the dark form. White on it clears AA. */
+  --brand-panel: oklch(0.44 0.185 259);
+
+  --brand-panel-foreground: oklch(0.99 0.005 259);
+
+  /* A white nav panel against the off-white canvas, not a darker rail */
+  --sidebar: oklch(1 0 0);
+
+  --sidebar-foreground: oklch(0.34 0.028 263);
+
+  --sidebar-primary: oklch(0.545 0.235 259);
+
+  --sidebar-primary-foreground: oklch(0.995 0.005 259);
+
+  --sidebar-accent: oklch(0.953 0.021 262);
+
+  --sidebar-accent-foreground: oklch(0.42 0.195 259);
+
+  --sidebar-border: oklch(0.928 0.011 257);
+
+  --sidebar-ring: oklch(0.62 0.165 259);
+}
+
+/* Kept in step with the light palette for coherence. The app never sets this
+   class: it ships light-only. */
+.dark {
+  --background: oklch(0.17 0.02 263);
+
+  --foreground: oklch(0.975 0.006 259);
+
+  --card: oklch(0.215 0.022 263);
+
+  --card-foreground: oklch(0.975 0.006 259);
+
+  --popover: oklch(0.215 0.022 263);
+
+  --popover-foreground: oklch(0.975 0.006 259);
+
+  --primary: oklch(0.68 0.185 255);
+
+  --primary-foreground: oklch(0.16 0.03 263);
+
+  --secondary: oklch(0.28 0.024 263);
+
+  --secondary-foreground: oklch(0.965 0.006 259);
+
+  --muted: oklch(0.28 0.024 263);
+
+  --muted-foreground: oklch(0.71 0.03 262);
+
+  --accent: oklch(0.31 0.05 259);
+
+  --accent-foreground: oklch(0.88 0.07 255);
+
+  --destructive: oklch(0.7 0.19 22);
+
+  --success: oklch(0.72 0.16 155);
+
+  --warning: oklch(0.78 0.15 68);
+
+  --info: oklch(0.72 0.13 225);
+
+  --border: oklch(1 0 0 / 10%);
+
+  --input: oklch(1 0 0 / 15%);
+
+  --ring: oklch(0.58 0.16 259);
+
+  --chart-1: oklch(0.68 0.185 255);
+
+  --chart-2: oklch(0.72 0.14 222);
+
+  --chart-3: oklch(0.79 0.12 205);
+
+  --chart-4: oklch(0.66 0.18 283);
+
+  --chart-5: oklch(0.86 0.07 200);
+
+  --sidebar: oklch(0.19 0.021 263);
+
+  --sidebar-foreground: oklch(0.85 0.012 259);
+
+  --sidebar-primary: oklch(0.68 0.185 255);
+
+  --sidebar-primary-foreground: oklch(0.16 0.03 263);
+
+  --sidebar-accent: oklch(0.29 0.045 259);
+
+  --sidebar-accent-foreground: oklch(0.9 0.06 255);
+
+  --sidebar-border: oklch(1 0 0 / 10%);
+
+  --sidebar-ring: oklch(0.58 0.16 259);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+  /* Tailwind v4 dropped the preflight rule that put a pointer on controls.
+     Restored here once, so every button, tab, accordion header and toggle
+     label gets it without a utility class of its own. Disabled controls and
+     anything carrying its own cursor utility are left alone. */
+  button:not(:disabled),
+  [role='button']:not([aria-disabled='true']),
+  label:has(button[role='checkbox'], input[type='checkbox'], input[type='radio']),
+  summary {
+    cursor: pointer;
+  }
+}

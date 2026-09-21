@@ -1,78 +1,285 @@
 {
-  "RootLayout": {
-    "home_link": "Home",
-    "about_link": "About",
-    "counter_link": "Counter",
-    "portfolio_link": "Portfolio",
-    "sign_in_link": "Sign in",
+  "LocaleSwitcher": {
+    "change_language": "Change language",
+    "label_en": "English",
+    "label_it": "Italian"
+  },
+  "ThemeToggle": {
+    "label": "Change theme",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
+  "AuthLayout": {
+    "brand_title": "Cold email that reads like it was written by hand",
+    "brand_subtitle": "Upload a contact list and get a researched, personal sequence for every person on it.",
+    "feature_research": "Parallel researches every contact on the web",
+    "feature_write": "Claude writes the sequence from that research",
+    "feature_send": "You approve, Instantly sends"
+  },
+  "SignInPage": {
+    "meta_title": "Sign in",
+    "meta_description": "Sign in to your account."
+  },
+  "SignUpPage": {
+    "meta_title": "Sign up",
+    "meta_description": "Create an account."
+  },
+  "SignInForm": {
+    "title": "Sign in",
+    "subtitle": "Enter your details to reach your campaigns.",
+    "label_email": "Email",
+    "label_password": "Password",
+    "button_sign_in": "Sign in",
+    "button_signing_in": "Signing in…",
+    "error_email": "Enter a valid email address",
+    "error_password": "Enter your password",
+    "error_credentials": "That email and password do not match an account",
+    "no_account": "No account yet?",
     "sign_up_link": "Sign up"
   },
-  "BaseTemplate": {
-    "description": "Starter code for your Nextjs Boilerplate with Tailwind CSS",
-    "footer_text": "© {year} {name}. Made with <author></author>.",
-    "main_navigation_label": "Main navigation"
-  },
-  "Index": {
-    "meta_title": "Next.js Boilerplate Presentation",
-    "meta_description": "Next js Boilerplate is the perfect starter code for your project. Build your React application with the Next.js framework.",
-    "sponsors_title": "Sponsors",
-    "zap_emoji_label": "Zap"
-  },
-  "Counter": {
-    "meta_title": "Counter",
-    "meta_description": "An example of DB operation",
-    "security_powered_by": "Security, bot detection and rate limiting powered by"
-  },
-  "CounterForm": {
-    "presentation": "The counter is stored in the database and incremented by the value you provide.",
-    "label_increment": "Increment by",
-    "button_increment": "Increment",
-    "error_increment_range": "Value must be between 1 and 3"
-  },
-  "CurrentCount": {
-    "count": "Count: {count}"
-  },
-  "About": {
-    "meta_title": "About",
-    "meta_description": "About page description",
-    "about_paragraph": "Welcome to our About page! We are a team of passionate individuals dedicated to creating amazing software.",
-    "translation_powered_by": "Translation powered by"
-  },
-  "Portfolio": {
-    "meta_title": "Portfolio",
-    "meta_description": "Welcome to my portfolio page!",
-    "presentation": "Welcome to my portfolio page! Here you will find a carefully curated collection of my work and accomplishments. Through this portfolio, I'm to showcase my expertise, creativity, and the value I can bring to your projects.",
-    "portfolio_name": "Portfolio {name}",
-    "error_reporting_powered_by": "Error reporting powered by"
-  },
-  "PortfolioSlug": {
-    "meta_title": "Portfolio {slug}",
-    "meta_description": "Portfolio {slug} description",
-    "header": "Portfolio {slug}",
-    "content": "Created a set of promotional materials and branding elements for a corporate event. Crafted a visually unified theme, encompassing a logo, posters, banners, and digital assets. Integrated the client's brand identity while infusing it with a contemporary and innovative approach.",
-    "code_review_powered_by": "Code review powered by"
-  },
-  "SignIn": {
-    "meta_title": "Sign in",
-    "meta_description": "Seamlessly sign in to your account with our user-friendly login process."
-  },
-  "SignUp": {
-    "meta_title": "Sign up",
-    "meta_description": "Effortlessly create an account through our intuitive sign-up process."
-  },
-  "Dashboard": {
-    "hello_message": "Hello {email}!",
-    "alternative_message": "Need advanced features? Multi-tenancy & Teams, Roles & Permissions, Shadcn UI, End-to-End Typesafety with oRPC, Stripe Payment, Light / Dark mode. Try <url></url>.",
-    "max_message": "Or, need a Self-hosted auth stack (Better Auth)? Try <url></url>."
+  "SignUpForm": {
+    "title": "Create an account",
+    "subtitle": "Start turning contact lists into personal sequences.",
+    "label_name": "Name",
+    "label_email": "Email",
+    "label_password": "Password",
+    "hint_password": "At least 8 characters",
+    "button_sign_up": "Create account",
+    "button_signing_up": "Creating…",
+    "error_name": "Enter your name",
+    "error_email": "Enter a valid email address",
+    "error_password": "Use at least 8 characters",
+    "error_sign_up": "This account could not be created. The email may already be registered",
+    "have_account": "Already have an account?",
+    "sign_in_link": "Sign in"
   },
   "DashboardLayout": {
     "meta_title": "Dashboard",
-    "meta_description": "Manage your account from the dashboard.",
-    "dashboard_link": "Dashboard",
-    "user_profile_link": "Manage your account",
+    "meta_description": "Manage your cold email campaigns."
+  },
+  "AppSidebar": {
+    "group_workspace": "Workspace",
+    "nav_home": "Home",
+    "nav_campaigns": "Campaigns",
+    "nav_knowledge": "Knowledge base",
+    "new_campaign": "New campaign",
     "sign_out": "Sign out"
   },
-  "LocaleSwitcher": {
-    "change_language": "Change language"
+  "DashboardHomePage": {
+    "title": "Welcome back, {name}",
+    "title_generic": "Welcome back",
+    "subtitle": "Upload a contact list and Claude researches, writes and schedules the sequence for every person on it.",
+    "button_new": "New campaign",
+    "link_knowledge": "Manage knowledge base",
+    "stat_campaigns": "Campaigns",
+    "stat_contacts": "Contacts",
+    "stat_emails": "Emails written",
+    "stat_live": "Live in Instantly",
+    "recent_title": "Recent campaigns",
+    "recent_all": "View all",
+    "recent_meta": "{contacts, plural, one {# contact} other {# contacts}} · {date}",
+    "knowledge_title": "Knowledge base",
+    "knowledge_description": "Saved prompts and documents Claude reads before writing.",
+    "knowledge_button": "Open knowledge base"
+  },
+  "NoCampaigns": {
+    "title": "No campaigns yet",
+    "description": "Upload a CSV of contacts and the first researched sequence is a few steps away.",
+    "button": "Create your first campaign"
+  },
+  "CampaignStatus": {
+    "status_draft": "Draft",
+    "status_enriching": "Researching",
+    "status_writing": "Writing",
+    "status_review": "Ready for review",
+    "status_pushing": "Sending to Instantly",
+    "status_pushed": "In Instantly",
+    "status_failed": "Failed"
+  },
+  "ContactStatus": {
+    "status_pending": "Queued",
+    "status_enriching": "Researching",
+    "status_enriched": "Researched",
+    "status_writing": "Writing",
+    "status_ready": "Ready",
+    "status_approved": "Approved",
+    "status_failed": "Failed"
+  },
+  "CampaignsPage": {
+    "title": "Campaigns",
+    "subtitle": "Every contact list you have turned into a sequence.",
+    "button_new": "New campaign",
+    "column_name": "Name",
+    "column_status": "Status",
+    "column_contacts": "Contacts",
+    "column_emails": "Emails",
+    "column_created": "Created",
+    "row_meta": "{contacts, plural, one {# contact} other {# contacts}} · {date}"
+  },
+  "NewCampaignPage": {
+    "title": "New campaign",
+    "description": "Upload a contact list, map the columns, then choose how the sequence should run."
+  },
+  "CampaignDetailPage": {
+    "back_link": "All campaigns",
+    "meta_line": "{contacts, plural, one {# contact} other {# contacts}} · {emails, plural, one {# email} other {# emails}} · created {date}",
+    "tab_review": "Review",
+    "tab_send": "Send",
+    "push_title": "Send to Instantly",
+    "pushed_notice": "This campaign is live in Instantly as {campaignId}."
+  },
+  "KnowledgePage": {
+    "title": "Knowledge base",
+    "description": "Prompts and documents Claude reads before writing. Pick them per campaign."
+  },
+  "NewCampaignWizard": {
+    "step_upload_label": "Contact list",
+    "step_upload_hint": "A CSV export from your CRM or a spreadsheet. The first row must contain the column names.",
+    "step_mapping_label": "Column mapping",
+    "step_mapping_hint": "Tell us which column holds which field. Email is the only one we cannot do without.",
+    "step_sequence_label": "Sequence",
+    "step_sequence_hint": "How many emails to write, how far apart they go out, and what Claude should know.",
+    "step_review_label": "Review",
+    "step_review_hint": "One last look before the research starts.",
+    "step_counter": "Step {current} of {total} · {label}",
+    "error_no_contacts": "No usable contact. Map a column to the email field and check that the addresses are valid.",
+    "error_too_many_contacts": "This list holds {count} contacts. A campaign takes at most {max}.",
+    "error_contacts": "Some contacts are not valid. Go back and check the column mapping.",
+    "error_invalid": "Some settings are not valid. Go back and check the sequence step.",
+    "error_create": "The campaign could not be created.",
+    "preview_caption": "{valid, plural, one {# contact} other {# contacts}} ready, {skipped, plural, one {# row} other {# rows}} skipped for a missing or invalid email.",
+    "preview_more": "{count, plural, one {# more contact is} other {# more contacts are}} not shown.",
+    "column_email": "Email",
+    "column_name": "Name",
+    "column_company": "Company",
+    "review_name": "Campaign name",
+    "review_contacts": "Contacts",
+    "review_contacts_value": "{count, plural, one {# contact} other {# contacts}} from {file}",
+    "review_emails": "Emails in sequence",
+    "review_processor": "Research depth",
+    "review_schedule": "Schedule",
+    "review_delay": "{days}d",
+    "review_knowledge": "Knowledge base",
+    "review_brief": "Campaign brief",
+    "button_back": "Back",
+    "button_next": "Continue",
+    "button_create": "Start research",
+    "button_creating": "Starting…"
+  },
+  "CsvUploader": {
+    "dropzone_title": "Drop your CSV here",
+    "hint": "The first row must contain the column names.",
+    "button_choose": "Choose a file",
+    "label_selected": "Using {file}",
+    "error_type": "Pick a CSV file.",
+    "error_empty": "This file has no readable rows.",
+    "error_parse": "This file could not be read as CSV."
+  },
+  "ColumnMapper": {
+    "field_email": "Email",
+    "field_firstName": "First name",
+    "field_lastName": "Last name",
+    "field_phone": "Phone",
+    "field_company": "Company",
+    "field_website": "Website",
+    "field_linkedinUrl": "LinkedIn",
+    "placeholder_unmapped": "Not mapped",
+    "hint_extra_columns": "Unmapped columns are kept and passed to the research step.",
+    "badge_detected": "Auto-detected"
+  },
+  "CampaignSettingsForm": {
+    "label_name": "Campaign name",
+    "error_name": "Enter a name",
+    "label_email_count": "Number of emails",
+    "label_processor": "Research depth",
+    "processor_lite": "Lite — fastest, cheapest",
+    "processor_base": "Base — light research",
+    "processor_core": "Core — recommended",
+    "processor_pro": "Pro — deepest, slowest",
+    "label_delays": "Days between emails",
+    "hint_delays": "Instantly waits this long before sending the next email in the sequence.",
+    "label_delay_step": "Email {from} to {to}",
+    "label_knowledge": "Knowledge base",
+    "label_prompt": "Campaign brief",
+    "hint_prompt": "Who you are, what you offer, and the action you want. Claude follows this for every contact."
+  },
+  "CampaignProgress": {
+    "progress_count": "{done} of {total} contacts done"
+  },
+  "ContactReviewList": {
+    "empty": "No contacts in this campaign.",
+    "section_research": "Research",
+    "section_emails": "Emails",
+    "no_drafts": "Not written yet.",
+    "draft_count": "{written}/{total} emails"
+  },
+  "EnrichmentCard": {
+    "not_researched": "Research has not run for this contact yet.",
+    "confidence_high": "High confidence it is the right person",
+    "confidence_medium": "Medium confidence it is the right person",
+    "confidence_low": "Low confidence it is the right person",
+    "confidence_unknown": "Confidence not reported",
+    "person_not_found": "Nothing credible was found online.",
+    "field_role": "Role",
+    "field_company": "Company",
+    "field_what_they_do": "What they do",
+    "field_industry": "Industry",
+    "field_location": "Location",
+    "field_recent_activity": "Recent activity",
+    "field_hooks": "Hooks",
+    "sources": "Sources"
+  },
+  "EmailDraftEditor": {
+    "step_title": "Email {step}",
+    "sends_after": "Sent {days} days after the previous one",
+    "label_subject": "Subject",
+    "label_body": "Body",
+    "button_save": "Save",
+    "button_saving": "Saving…",
+    "saved": "Saved",
+    "error_save": "This draft could not be saved."
+  },
+  "EmailDraftTabs": {
+    "tab_step": "Email {step}"
+  },
+  "InstantlyPushForm": {
+    "summary": "{ready} contacts ready, {approved} already approved.",
+    "button_approve": "Approve and choose mailboxes",
+    "button_working": "Working…",
+    "button_push": "Send to Instantly",
+    "label_mailboxes": "Send from",
+    "no_mailboxes": "No mailbox is connected in Instantly.",
+    "timezone": "The schedule runs in {timezone}.",
+    "error_approve": "The drafts could not be approved.",
+    "error_accounts": "Instantly mailboxes could not be loaded.",
+    "error_push": "The campaign could not be sent to Instantly.",
+    "button_select_all": "Select all",
+    "button_clear": "Clear"
+  },
+  "KnowledgeManager": {
+    "prompt_description": "Positioning, tone, offer, anything Claude should know for every campaign.",
+    "label_name": "Name",
+    "label_content": "Content",
+    "button_save_prompt": "Save prompt",
+    "document_description": "PDF, plain text, Markdown or CSV. PDFs are read by Claude directly.",
+    "list_title": "Saved items",
+    "list_empty": "Nothing saved yet",
+    "kind_prompt": "Prompt",
+    "kind_document": "Document",
+    "button_delete": "Delete",
+    "error_save": "This prompt could not be saved.",
+    "error_upload": "This file could not be uploaded.",
+    "add_title": "Add to the knowledge base",
+    "tab_prompt": "Prompt",
+    "tab_document": "Document",
+    "list_empty_description": "Anything you save here can be attached to a campaign.",
+    "document_hint": "PDF, plain text, Markdown or CSV"
+  },
+  "NotFoundPage": {
+    "code": "Error 404",
+    "title": "This page does not exist",
+    "description": "The link may be out of date, or the campaign may have been deleted.",
+    "button": "Back to the dashboard"
   }
 }

@@ -1,12 +1,19 @@
+import { GeistMono } from 'geist/font/mono';
+import { GeistSans } from 'geist/font/sans';
 import type { Metadata, Viewport } from 'next';
 import { hasLocale, NextIntlClientProvider } from 'next-intl';
 import { setRequestLocale } from 'next-intl/server';
+import { ThemeProvider } from 'next-themes';
 import { notFound } from 'next/navigation';
-import { DemoBadge } from '@/components/DemoBadge';
 import { routing } from '@/libs/I18nRouting';
+import { AppConfig } from '@/utils/AppConfig';
 import '@/styles/global.css';
 
 export const metadata: Metadata = {
+  title: {
+    default: AppConfig.name,
+    template: `%s · ${AppConfig.name}`,
+  },
   icons: [
     {
       rel: 'apple-touch-icon',
@@ -53,12 +60,19 @@ export default async function RootLayout(props: {
   setRequestLocale(locale);
 
   return (
-    <html lang={locale}>
+    // The font variables feed `--font-sans` and `--font-mono` in `global.css`.
+    // `suppressHydrationWarning` covers the theme class next-themes writes
+    // before React hydrates.
+    <html
+      lang={locale}
+      className={`${GeistSans.variable} ${GeistMono.variable}`}
+      suppressHydrationWarning
+    >
       <body>
         <NextIntlClientProvider>
-          {props.children}
-
-          <DemoBadge />
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+            {props.children}
+          </ThemeProvider>
         </NextIntlClientProvider>
       </body>
     </html>

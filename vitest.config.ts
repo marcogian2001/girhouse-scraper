@@ -7,6 +7,9 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     tsconfigPaths: true,
+    // `radix-ui` and `vitest-browser-react` are pre-bundled separately, which
+    // otherwise gives the browser run two React copies and null-hook errors
+    dedupe: ['react', 'react-dom'],
   },
   test: {
     coverage: {

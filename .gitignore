@@ -13,6 +13,7 @@
 # testing
 /coverage
 /vitest-test-results
+/.vitest-attachments
 
 # next.js
 /.next/
@@ -33,6 +34,7 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # local env files
+.env
 .env*.local
 
 # Sentry Config File

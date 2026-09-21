@@ -1,21 +1,14 @@
 import { detectBot } from '@arcjet/next';
-import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
+import { getSessionCookie } from 'better-auth/cookies';
 import createMiddleware from 'next-intl/middleware';
-import type { NextFetchEvent, NextRequest } from 'next/server';
+import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import arcjet from '@/libs/Arcjet';
 import { routing } from './libs/I18nRouting';
 
 const handleI18nRouting = createMiddleware(routing);
 
-const isProtectedRoute = createRouteMatcher(['/dashboard(.*)', '/:locale/dashboard(.*)']);
-
-const isAuthPage = createRouteMatcher([
-  '/sign-in(.*)',
-  '/:locale/sign-in(.*)',
-  '/sign-up(.*)',
-  '/:locale/sign-up(.*)',
-]);
+const PROTECTED_PATH = /^\/(?:[a-z]{2}\/)?dashboard(?:\/|$)/u;
 
 // Improve security with Arcjet
 const aj = arcjet.withRule(
@@ -31,7 +24,7 @@ const aj = arcjet.withRule(
   }),
 );
 
-export default async function proxy(request: NextRequest, event: NextFetchEvent) {
+export default async function proxy(request: NextRequest) {
   // Verify the request with Arcjet
   // Use `process.env` instead of Env to reduce bundle size in middleware
   if (process.env.ARCJET_KEY) {
@@ -42,23 +35,13 @@ export default async function proxy(request: NextRequest, event: NextFetchEvent)
     }
   }
 
-  // Clerk keyless mode doesn't work with i18n, this is why we need to run the middleware conditionally
-  if (isAuthPage(request) || isProtectedRoute(request)) {
-    // Match Clerk's documented middleware composition pattern, `return await` is not necessary.
-    // oxlint-disable-next-line typescript/return-await
-    return clerkMiddleware(async (auth, req) => {
-      if (isProtectedRoute(req)) {
-        const locale = req.nextUrl.pathname.match(/(\/.*)\/dashboard/u)?.at(1) ?? '';
+  // A cookie check, not a session validation: it keeps anonymous visitors off
+  // the dashboard without a database round trip on every request. The pages and
+  // API routes behind it verify the session for real, through `auth.api`.
+  if (PROTECTED_PATH.test(request.nextUrl.pathname) && !getSessionCookie(request)) {
+    const locale = request.nextUrl.pathname.match(/(\/.*)\/dashboard/u)?.at(1) ?? '';
 
-        const signInUrl = new URL(`${locale}/sign-in`, req.url);
-
-        await auth.protect({
-          unauthenticatedUrl: signInUrl.toString(),
-        });
-      }
-
-      return handleI18nRouting(req);
-    })(request, event);
+    return NextResponse.redirect(new URL(`${locale}/sign-in`, request.url));
   }
 
   return handleI18nRouting(request);
@@ -66,7 +49,8 @@ export default async function proxy(request: NextRequest, event: NextFetchEvent)
 
 export const config = {
   // Match all pathnames except for
-  // - … if they start with `/_next`, `/_vercel` or `monitoring`
+  // - … if they start with `/_next`, `/_vercel`, `monitoring` or `api`
   // - … the ones containing a dot (e.g. `favicon.ico`)
+  // Better Auth needs no middleware: route handlers read the session directly
   matcher: '/((?!_next|_vercel|monitoring|api|.*\\..*).*)',
 };

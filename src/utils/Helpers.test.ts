@@ -13,9 +13,9 @@ describe('Helpers', () => {
 
     it('prefixes path with locale when locale is not default', () => {
       const url = '/random-url';
-      const locale = 'fr';
+      const locale = 'it';
 
-      expect(getI18nPath(url, locale)).toBe(`/fr${url}`);
+      expect(getI18nPath(url, locale)).toBe(`/it${url}`);
     });
   });
 });

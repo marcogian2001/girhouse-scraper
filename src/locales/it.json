@@ -1,0 +1,285 @@
+{
+  "LocaleSwitcher": {
+    "change_language": "Cambia lingua",
+    "label_en": "Inglese",
+    "label_it": "Italiano"
+  },
+  "ThemeToggle": {
+    "label": "Cambia tema",
+    "light": "Chiaro",
+    "dark": "Scuro",
+    "system": "Sistema"
+  },
+  "AuthLayout": {
+    "brand_title": "Cold email che sembrano scritte a mano",
+    "brand_subtitle": "Carica una lista di contatti e ottieni una sequenza personale e documentata per ognuno.",
+    "feature_research": "Parallel cerca informazioni su ogni contatto",
+    "feature_write": "Claude scrive la sequenza partendo da quella ricerca",
+    "feature_send": "Tu approvi, Instantly invia"
+  },
+  "SignInPage": {
+    "meta_title": "Accedi",
+    "meta_description": "Accedi al tuo account."
+  },
+  "SignUpPage": {
+    "meta_title": "Registrati",
+    "meta_description": "Crea un account."
+  },
+  "SignInForm": {
+    "title": "Accedi",
+    "subtitle": "Inserisci i tuoi dati per raggiungere le campagne.",
+    "label_email": "Email",
+    "label_password": "Password",
+    "button_sign_in": "Accedi",
+    "button_signing_in": "Accesso in corso…",
+    "error_email": "Inserisci un indirizzo email valido",
+    "error_password": "Inserisci la password",
+    "error_credentials": "Email e password non corrispondono a nessun account",
+    "no_account": "Non hai un account?",
+    "sign_up_link": "Registrati"
+  },
+  "SignUpForm": {
+    "title": "Crea un account",
+    "subtitle": "Inizia a trasformare le liste di contatti in sequenze personali.",
+    "label_name": "Nome",
+    "label_email": "Email",
+    "label_password": "Password",
+    "hint_password": "Almeno 8 caratteri",
+    "button_sign_up": "Crea account",
+    "button_signing_up": "Creazione…",
+    "error_name": "Inserisci il tuo nome",
+    "error_email": "Inserisci un indirizzo email valido",
+    "error_password": "Usa almeno 8 caratteri",
+    "error_sign_up": "Non è stato possibile creare l'account. L'email potrebbe essere già registrata",
+    "have_account": "Hai già un account?",
+    "sign_in_link": "Accedi"
+  },
+  "DashboardLayout": {
+    "meta_title": "Dashboard",
+    "meta_description": "Gestisci le tue campagne cold email."
+  },
+  "AppSidebar": {
+    "group_workspace": "Area di lavoro",
+    "nav_home": "Home",
+    "nav_campaigns": "Campagne",
+    "nav_knowledge": "Base di conoscenza",
+    "new_campaign": "Nuova campagna",
+    "sign_out": "Esci"
+  },
+  "DashboardHomePage": {
+    "title": "Bentornato, {name}",
+    "title_generic": "Bentornato",
+    "subtitle": "Carica una lista di contatti e Claude cerca, scrive e programma la sequenza per ogni persona.",
+    "button_new": "Nuova campagna",
+    "link_knowledge": "Gestisci la base di conoscenza",
+    "stat_campaigns": "Campagne",
+    "stat_contacts": "Contatti",
+    "stat_emails": "Email scritte",
+    "stat_live": "Attive in Instantly",
+    "recent_title": "Campagne recenti",
+    "recent_all": "Vedi tutte",
+    "recent_meta": "{contacts, plural, one {# contatto} other {# contatti}} · {date}",
+    "knowledge_title": "Base di conoscenza",
+    "knowledge_description": "Prompt e documenti salvati che Claude legge prima di scrivere.",
+    "knowledge_button": "Apri la base di conoscenza"
+  },
+  "NoCampaigns": {
+    "title": "Nessuna campagna",
+    "description": "Carica un CSV di contatti e la prima sequenza documentata è a pochi passi.",
+    "button": "Crea la prima campagna"
+  },
+  "CampaignStatus": {
+    "status_draft": "Bozza",
+    "status_enriching": "Ricerca in corso",
+    "status_writing": "Scrittura in corso",
+    "status_review": "Pronta per la revisione",
+    "status_pushing": "Invio a Instantly",
+    "status_pushed": "Su Instantly",
+    "status_failed": "Fallita"
+  },
+  "ContactStatus": {
+    "status_pending": "In coda",
+    "status_enriching": "Ricerca in corso",
+    "status_enriched": "Ricerca completata",
+    "status_writing": "Scrittura in corso",
+    "status_ready": "Pronto",
+    "status_approved": "Approvato",
+    "status_failed": "Fallito"
+  },
+  "CampaignsPage": {
+    "title": "Campagne",
+    "subtitle": "Tutte le liste di contatti trasformate in sequenze.",
+    "button_new": "Nuova campagna",
+    "column_name": "Nome",
+    "column_status": "Stato",
+    "column_contacts": "Contatti",
+    "column_emails": "Email",
+    "column_created": "Creata il",
+    "row_meta": "{contacts, plural, one {# contatto} other {# contatti}} · {date}"
+  },
+  "NewCampaignPage": {
+    "title": "Nuova campagna",
+    "description": "Carica una lista di contatti, mappa le colonne e scegli come deve funzionare la sequenza."
+  },
+  "CampaignDetailPage": {
+    "back_link": "Tutte le campagne",
+    "meta_line": "{contacts, plural, one {# contatto} other {# contatti}} · {emails, plural, one {# email} other {# email}} · creata il {date}",
+    "tab_review": "Revisione",
+    "tab_send": "Invio",
+    "push_title": "Invia a Instantly",
+    "pushed_notice": "Questa campagna è attiva su Instantly come {campaignId}."
+  },
+  "KnowledgePage": {
+    "title": "Knowledge base",
+    "description": "Prompt e documenti che Claude legge prima di scrivere. Li scegli campagna per campagna."
+  },
+  "NewCampaignWizard": {
+    "step_upload_label": "Lista contatti",
+    "step_upload_hint": "Un CSV esportato dal CRM o da un foglio di calcolo. La prima riga deve contenere i nomi delle colonne.",
+    "step_mapping_label": "Mappatura colonne",
+    "step_mapping_hint": "Indica quale colonna contiene quale campo. L’email è l’unico indispensabile.",
+    "step_sequence_label": "Sequenza",
+    "step_sequence_hint": "Quante email scrivere, quanto distanziarle e cosa deve sapere Claude.",
+    "step_review_label": "Riepilogo",
+    "step_review_hint": "Un ultimo controllo prima di avviare la ricerca.",
+    "step_counter": "Passo {current} di {total} · {label}",
+    "error_no_contacts": "Nessun contatto utilizzabile. Mappa una colonna sul campo email e controlla che gli indirizzi siano validi.",
+    "error_too_many_contacts": "Questa lista contiene {count} contatti. Una campagna ne accetta al massimo {max}.",
+    "error_contacts": "Alcuni contatti non sono validi. Torna alla mappatura delle colonne.",
+    "error_invalid": "Alcune impostazioni non sono valide. Torna al passo della sequenza.",
+    "error_create": "La campagna non è stata creata.",
+    "preview_caption": "{valid, plural, one {# contatto pronto} other {# contatti pronti}}, {skipped, plural, one {# riga scartata} other {# righe scartate}} per email mancante o non valida.",
+    "preview_more": "{count, plural, one {Altro # contatto non è mostrato} other {Altri # contatti non sono mostrati}}.",
+    "column_email": "Email",
+    "column_name": "Nome",
+    "column_company": "Azienda",
+    "review_name": "Nome campagna",
+    "review_contacts": "Contatti",
+    "review_contacts_value": "{count, plural, one {# contatto} other {# contatti}} da {file}",
+    "review_emails": "Email nella sequenza",
+    "review_processor": "Profondità della ricerca",
+    "review_schedule": "Programmazione",
+    "review_delay": "{days}g",
+    "review_knowledge": "Base di conoscenza",
+    "review_brief": "Brief della campagna",
+    "button_back": "Indietro",
+    "button_next": "Continua",
+    "button_create": "Avvia la ricerca",
+    "button_creating": "Avvio…"
+  },
+  "CsvUploader": {
+    "dropzone_title": "Trascina qui il tuo CSV",
+    "hint": "La prima riga deve contenere i nomi delle colonne.",
+    "button_choose": "Scegli un file",
+    "label_selected": "In uso: {file}",
+    "error_type": "Scegli un file CSV.",
+    "error_empty": "Questo file non ha righe leggibili.",
+    "error_parse": "Questo file non è leggibile come CSV."
+  },
+  "ColumnMapper": {
+    "field_email": "Email",
+    "field_firstName": "Nome",
+    "field_lastName": "Cognome",
+    "field_phone": "Telefono",
+    "field_company": "Azienda",
+    "field_website": "Sito web",
+    "field_linkedinUrl": "LinkedIn",
+    "placeholder_unmapped": "Non mappata",
+    "hint_extra_columns": "Le colonne non mappate vengono conservate e passate alla ricerca.",
+    "badge_detected": "Rilevato"
+  },
+  "CampaignSettingsForm": {
+    "label_name": "Nome campagna",
+    "error_name": "Inserisci un nome",
+    "label_email_count": "Numero di email",
+    "label_processor": "Profondità della ricerca",
+    "processor_lite": "Lite — più veloce ed economica",
+    "processor_base": "Base — ricerca leggera",
+    "processor_core": "Core — consigliata",
+    "processor_pro": "Pro — più approfondita e lenta",
+    "label_delays": "Giorni tra un'email e l'altra",
+    "hint_delays": "Instantly aspetta questo intervallo prima di inviare l'email successiva della sequenza.",
+    "label_delay_step": "Email {from} → {to}",
+    "label_knowledge": "Knowledge base",
+    "label_prompt": "Brief della campagna",
+    "hint_prompt": "Chi sei, cosa offri e quale azione vuoi ottenere. Claude lo segue per ogni contatto."
+  },
+  "CampaignProgress": {
+    "progress_count": "{done} contatti su {total} completati"
+  },
+  "ContactReviewList": {
+    "empty": "Nessun contatto in questa campagna.",
+    "section_research": "Ricerca",
+    "section_emails": "Email",
+    "no_drafts": "Non ancora scritte.",
+    "draft_count": "{written}/{total} email"
+  },
+  "EnrichmentCard": {
+    "not_researched": "La ricerca non è ancora partita per questo contatto.",
+    "confidence_high": "Alta probabilità che sia la persona giusta",
+    "confidence_medium": "Media probabilità che sia la persona giusta",
+    "confidence_low": "Bassa probabilità che sia la persona giusta",
+    "confidence_unknown": "Livello di confidenza non riportato",
+    "person_not_found": "Non è stato trovato nulla di attendibile online.",
+    "field_role": "Ruolo",
+    "field_company": "Azienda",
+    "field_what_they_do": "Cosa fanno",
+    "field_industry": "Settore",
+    "field_location": "Sede",
+    "field_recent_activity": "Attività recente",
+    "field_hooks": "Spunti",
+    "sources": "Fonti"
+  },
+  "EmailDraftEditor": {
+    "step_title": "Email {step}",
+    "sends_after": "Inviata {days} giorni dopo la precedente",
+    "label_subject": "Oggetto",
+    "label_body": "Corpo",
+    "button_save": "Salva",
+    "button_saving": "Salvataggio…",
+    "saved": "Salvata",
+    "error_save": "Non è stato possibile salvare questa bozza."
+  },
+  "EmailDraftTabs": {
+    "tab_step": "Email {step}"
+  },
+  "InstantlyPushForm": {
+    "summary": "{ready} contatti pronti, {approved} già approvati.",
+    "button_approve": "Approva e scegli le caselle",
+    "button_working": "In corso…",
+    "button_push": "Invia a Instantly",
+    "label_mailboxes": "Invia da",
+    "no_mailboxes": "Nessuna casella collegata su Instantly.",
+    "timezone": "La programmazione usa il fuso {timezone}.",
+    "error_approve": "Non è stato possibile approvare le bozze.",
+    "error_accounts": "Non è stato possibile caricare le caselle di Instantly.",
+    "error_push": "Non è stato possibile inviare la campagna a Instantly.",
+    "button_select_all": "Seleziona tutte",
+    "button_clear": "Deseleziona"
+  },
+  "KnowledgeManager": {
+    "prompt_description": "Posizionamento, tono, offerta: tutto ciò che Claude deve sapere per ogni campagna.",
+    "label_name": "Nome",
+    "label_content": "Contenuto",
+    "button_save_prompt": "Salva prompt",
+    "document_description": "PDF, testo, Markdown o CSV. I PDF vengono letti direttamente da Claude.",
+    "list_title": "Elementi salvati",
+    "list_empty": "Nessun elemento salvato",
+    "kind_prompt": "Prompt",
+    "kind_document": "Documento",
+    "button_delete": "Elimina",
+    "error_save": "Non è stato possibile salvare questo prompt.",
+    "error_upload": "Non è stato possibile caricare questo file.",
+    "add_title": "Aggiungi alla base di conoscenza",
+    "tab_prompt": "Prompt",
+    "tab_document": "Documento",
+    "list_empty_description": "Tutto quello che salvi qui può essere allegato a una campagna.",
+    "document_hint": "PDF, testo semplice, Markdown o CSV"
+  },
+  "NotFoundPage": {
+    "code": "Errore 404",
+    "title": "Questa pagina non esiste",
+    "description": "Il link potrebbe non essere più valido, oppure la campagna è stata eliminata.",
+    "button": "Torna alla dashboard"
+  }
+}

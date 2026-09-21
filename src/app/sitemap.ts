@@ -2,16 +2,13 @@ import type { MetadataRoute } from 'next';
 import { routing } from '@/libs/I18nRouting';
 import { getBaseUrl, getI18nPath } from '@/utils/Helpers';
 
+/** Everything else sits behind authentication and is disallowed in robots.txt. */
+const publicRoutes = ['/sign-in', '/sign-up'];
+
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = getBaseUrl();
 
-  const routes = ['', '/about', '/counter', '/portfolio'];
-
-  // Generate portfolio detail pages
-  const portfolioRoutes = Array.from({ length: 6 }, (_, i) => `/portfolio/${i}`);
-  const allRoutes = [...routes, ...portfolioRoutes];
-
-  return allRoutes.map((route) => ({
+  return publicRoutes.map((route) => ({
     url: `${baseUrl}${route}`,
     lastModified: new Date(),
     alternates: {
