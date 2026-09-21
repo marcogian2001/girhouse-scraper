@@ -9,6 +9,17 @@ const PARALLEL_API_URL = 'https://api.parallel.ai/v1';
 
 export type ParallelProcessor = (typeof parallelProcessorEnum.enumValues)[number];
 
+/**
+ * List price of one completed task run, in millionths of a US dollar.
+ * Parallel bills per run, not per token, and failed runs are free.
+ */
+export const PROCESSOR_RUN_COST_MICROS: Record<ParallelProcessor, number> = {
+  lite: 5000,
+  base: 10_000,
+  core: 25_000,
+  pro: 100_000,
+};
+
 /** The contact fields a task run is built from. */
 export type EnrichmentTarget = Pick<
   typeof contactSchema.$inferSelect,

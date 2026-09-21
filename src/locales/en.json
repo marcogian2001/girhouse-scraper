@@ -66,6 +66,13 @@
     "new_campaign": "New campaign",
     "sign_out": "Sign out"
   },
+  "UsageSummary": {
+    "title": "{month} spend",
+    "anthropic_line": "Anthropic · {tokens} tokens",
+    "parallel_line": "Parallel · {runs, plural, one {# search} other {# searches}}",
+    "parallel_cost": "~{cost}",
+    "tooltip": "{month} spend: {total}"
+  },
   "DashboardHomePage": {
     "title": "Welcome back, {name}",
     "title_generic": "Welcome back",
@@ -127,7 +134,8 @@
     "tab_review": "Review",
     "tab_send": "Send",
     "push_title": "Send to Instantly",
-    "pushed_notice": "This campaign is live in Instantly as {campaignId}."
+    "pushed_notice": "This campaign is live in Instantly as {campaignId}.",
+    "spend_line": "Estimated spend {total}: Anthropic {tokens} tokens, {anthropicCost} · Parallel {runs, plural, one {# search} other {# searches}}, ~{parallelCost}"
   },
   "KnowledgePage": {
     "title": "Knowledge base",
@@ -275,6 +283,38 @@
     "tab_document": "Document",
     "list_empty_description": "Anything you save here can be attached to a campaign.",
     "document_hint": "PDF, plain text, Markdown or CSV"
+  },
+  "UsagePage": {
+    "title": "Usage",
+    "subtitle": "Estimated spend on Anthropic and Parallel, priced at list rates when each call was made.",
+    "label_from": "From",
+    "label_to": "To",
+    "button_filter": "Filter",
+    "preset_this_month": "This month",
+    "preset_last_month": "Last month",
+    "total_line": "Total from {from} to {to}: {total}",
+    "stat_anthropic_cost": "Anthropic spend",
+    "stat_anthropic_tokens": "Anthropic tokens",
+    "stat_tokens_breakdown": "{input} input · {output} output · {cacheWrite} cache writes · {cacheRead} cache reads",
+    "stat_parallel_cost": "Parallel spend",
+    "stat_parallel_note": "Estimate: free plan credits are not deducted",
+    "stat_parallel_runs": "Parallel searches",
+    "campaigns_title": "By campaign",
+    "daily_title": "By day",
+    "column_campaign": "Campaign",
+    "column_day": "Day",
+    "deleted_campaign": "Deleted campaign",
+    "empty_title": "No spend in this period",
+    "empty_description": "Spend shows up here as soon as a campaign researches contacts or writes emails."
+  },
+  "UsageTable": {
+    "column_anthropic_tokens": "Anthropic tokens",
+    "column_anthropic_cost": "Anthropic cost",
+    "column_parallel_runs": "Parallel searches",
+    "column_parallel_cost": "Parallel cost",
+    "column_total": "Total",
+    "row_total": "Total",
+    "row_meta": "Anthropic {tokens} tokens, {anthropicCost} · Parallel {runs, plural, one {# search} other {# searches}}, {parallelCost}"
   },
   "NotFoundPage": {
     "code": "Error 404",

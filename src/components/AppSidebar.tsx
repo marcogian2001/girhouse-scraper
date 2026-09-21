@@ -40,7 +40,11 @@ const getInitials = (name: string) =>
     .map((part) => part.charAt(0).toUpperCase())
     .join('');
 
-export const AppSidebar = (props: { user: { name: string; email: string } }) => {
+export const AppSidebar = (props: {
+  user: { name: string; email: string };
+  // Server-rendered by the layout and passed through, see `UsageSummary`
+  usageSummary: React.ReactNode;
+}) => {
   const t = useTranslations('AppSidebar');
   const pathname = usePathname();
 
@@ -72,6 +76,8 @@ export const AppSidebar = (props: { user: { name: string; email: string } }) => 
       </SidebarContent>
 
       <SidebarFooter>
+        {props.usageSummary}
+
         <SidebarMenu>
           <SidebarMenuItem>
             <DropdownMenu>

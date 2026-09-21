@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { EnrichmentTarget } from './Parallel';
-import { buildTaskInput } from './Parallel';
+import { buildTaskInput, PROCESSOR_RUN_COST_MICROS } from './Parallel';
 
 const target = (overrides: Partial<EnrichmentTarget> = {}): EnrichmentTarget => ({
   email: 'ada@analytical.com',
@@ -36,6 +36,18 @@ describe('Parallel', () => {
 
     it('asks for a low confidence when the name is the only link', () => {
       expect(buildTaskInput(target())).toContain('identity_match_confidence');
+    });
+  });
+
+  describe('Run cost', () => {
+    it('prices each processor at its list rate per run', () => {
+      // $5, $10, $25 and $100 per thousand runs
+      expect(PROCESSOR_RUN_COST_MICROS).toStrictEqual({
+        lite: 5000,
+        base: 10_000,
+        core: 25_000,
+        pro: 100_000,
+      });
     });
   });
 });

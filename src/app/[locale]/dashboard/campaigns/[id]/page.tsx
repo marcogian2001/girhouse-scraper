@@ -1,6 +1,6 @@
 import { and, asc, eq, inArray } from 'drizzle-orm';
 import { ArrowLeft } from 'lucide-react';
-import { getTranslations, setRequestLocale } from 'next-intl/server';
+import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import * as z from 'zod';
 import { CampaignProgress } from '@/components/CampaignProgress';
@@ -15,7 +15,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getApiUserId } from '@/libs/ApiAuth';
 import { db } from '@/libs/DB';
 import { Link } from '@/libs/I18nNavigation';
+import { getUsageTotals } from '@/libs/Usage';
 import { campaignSchema, contactSchema, emailDraftSchema, enrichmentSchema } from '@/models/Schema';
+import { COMPACT_FORMAT, microsToUsd, USD_FORMAT } from '@/utils/UsageFormat';
 import {
   EnrichmentBasisValidation,
   EnrichmentContentValidation,
@@ -39,6 +41,10 @@ export default async function CampaignDetailPage(props: {
   if (!campaign) {
     notFound();
   }
+
+  const format = await getFormatter({ locale });
+  const usage = await getUsageTotals({ userId: campaign.userId, campaignId: campaign.id });
+  const usd = (micros: number) => format.number(microsToUsd(micros), USD_FORMAT);
 
   const contacts = await db
     .select()
@@ -125,6 +131,16 @@ export default async function CampaignDetailPage(props: {
             contacts: contacts.length,
             emails: campaign.emailCount,
             date: campaign.createdAt.toLocaleDateString(locale),
+          })}
+        </p>
+
+        <p className="text-sm text-muted-foreground">
+          {t('spend_line', {
+            total: usd(usage.anthropicCostMicros + usage.parallelCostMicros),
+            tokens: format.number(usage.anthropicTokens, COMPACT_FORMAT),
+            anthropicCost: usd(usage.anthropicCostMicros),
+            runs: usage.parallelRuns,
+            parallelCost: usd(usage.parallelCostMicros),
           })}
         </p>
       </div>

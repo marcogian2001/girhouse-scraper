@@ -29,6 +29,7 @@ import {
   rescheduleJob,
 } from './JobQueue';
 import { logger } from './Logger';
+import { recordAnthropicUsage, recordParallelUsage } from './Usage';
 
 /** How long Parallel may hold a poll open. Short, so the worker stays snappy. */
 const PARALLEL_POLL_TIMEOUT_SECONDS = 5;
@@ -172,6 +173,14 @@ const runEnrichJob = async (job: Job) => {
     throw new Error(outcome.error);
   }
 
+  // Parallel bills every completed run, whether or not its output parses
+  await recordParallelUsage({
+    userId: campaign.userId,
+    campaignId: campaign.id,
+    runId: existing.parallelRunId,
+    processor: existing.processor,
+  });
+
   const parsed = EnrichmentContentValidation.safeParse(outcome.content);
 
   await db
@@ -221,12 +230,26 @@ const runWriteJob = async (job: Job) => {
           .where(inArray(knowledgeAssetSchema.id, campaign.knowledgeAssetIds))
       : [];
 
-  const emails = await writeEmailSequence({
+  const sequence = await writeEmailSequence({
     campaign,
     contact,
     enrichment: parsedEnrichment.success ? parsedEnrichment.data : null,
     knowledgeAssets,
   });
+
+  // Recorded before the output is checked: an unparsable response is billed too
+  await recordAnthropicUsage({
+    userId: campaign.userId,
+    campaignId: campaign.id,
+    messageId: sequence.messageId,
+    usage: sequence.usage,
+  });
+
+  const { emails } = sequence;
+
+  if (!emails) {
+    throw new Error(`Claude returned no parsable sequence for contact ${contact.id}`);
+  }
 
   // Upserted so a retry after a partial write refreshes the drafts in place
   await Promise.all(

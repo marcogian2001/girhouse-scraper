@@ -7,6 +7,8 @@ const localePrefix: LocalePrefixMode = 'as-needed';
 /** Centralized application configuration */
 export const AppConfig = {
   name: 'Girhouse Scraper',
+  // Where calendar months and days start for spend reports, whatever the server runs in
+  timeZone: 'Europe/Rome',
   i18n: {
     locales: ['en', 'it'],
     defaultLocale: 'en',

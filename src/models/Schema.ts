@@ -119,6 +119,8 @@ export const knowledgeKindEnum = pgEnum('knowledge_kind', ['prompt', 'document']
 
 export const parallelProcessorEnum = pgEnum('parallel_processor', ['lite', 'base', 'core', 'pro']);
 
+export const usageProviderEnum = pgEnum('usage_provider', ['anthropic', 'parallel']);
+
 /** Reusable prompts and documents Claude reads when writing a campaign. */
 export const knowledgeAssetSchema = pgTable(
   'knowledge_asset',
@@ -253,5 +255,35 @@ export const jobSchema = pgTable(
   (table) => [
     index('job_status_run_after_idx').on(table.status, table.runAfter),
     index('job_campaign_id_idx').on(table.campaignId),
+  ],
+);
+
+/** One billed call to an external AI API, priced at list rates when it was made. */
+export const apiUsageSchema = pgTable(
+  'api_usage',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => userSchema.id, { onDelete: 'cascade' }),
+    // Set null rather than cascade, so deleting a campaign keeps its past spend
+    campaignId: uuid('campaign_id').references(() => campaignSchema.id, { onDelete: 'set null' }),
+    provider: usageProviderEnum('provider').notNull(),
+    // Anthropic message id or Parallel run id, so a retried job never counts twice
+    externalId: text('external_id').notNull(),
+    // Claude model id or Parallel processor
+    model: text('model').notNull(),
+    inputTokens: integer('input_tokens').notNull().default(0),
+    outputTokens: integer('output_tokens').notNull().default(0),
+    cacheWriteTokens: integer('cache_write_tokens').notNull().default(0),
+    cacheReadTokens: integer('cache_read_tokens').notNull().default(0),
+    // Millionths of a US dollar, so sums stay exact
+    costMicros: integer('cost_micros').notNull(),
+    ...timestamps,
+  },
+  (table) => [
+    unique('api_usage_provider_external_id_unique').on(table.provider, table.externalId),
+    index('api_usage_user_id_created_at_idx').on(table.userId, table.createdAt),
+    index('api_usage_campaign_id_idx').on(table.campaignId),
   ],
 );

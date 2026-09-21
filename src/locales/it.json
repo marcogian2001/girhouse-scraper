@@ -66,6 +66,13 @@
     "new_campaign": "Nuova campagna",
     "sign_out": "Esci"
   },
+  "UsageSummary": {
+    "title": "Spesa di {month}",
+    "anthropic_line": "Anthropic · {tokens} token",
+    "parallel_line": "Parallel · {runs, plural, one {# ricerca} other {# ricerche}}",
+    "parallel_cost": "~{cost}",
+    "tooltip": "Spesa di {month}: {total}"
+  },
   "DashboardHomePage": {
     "title": "Bentornato, {name}",
     "title_generic": "Bentornato",
@@ -127,7 +134,8 @@
     "tab_review": "Revisione",
     "tab_send": "Invio",
     "push_title": "Invia a Instantly",
-    "pushed_notice": "Questa campagna è attiva su Instantly come {campaignId}."
+    "pushed_notice": "Questa campagna è attiva su Instantly come {campaignId}.",
+    "spend_line": "Spesa stimata {total}: Anthropic {tokens} token, {anthropicCost} · Parallel {runs, plural, one {# ricerca} other {# ricerche}}, ~{parallelCost}"
   },
   "KnowledgePage": {
     "title": "Knowledge base",
@@ -275,6 +283,38 @@
     "tab_document": "Documento",
     "list_empty_description": "Tutto quello che salvi qui può essere allegato a una campagna.",
     "document_hint": "PDF, testo semplice, Markdown o CSV"
+  },
+  "UsagePage": {
+    "title": "Consumi",
+    "subtitle": "Spesa stimata su Anthropic e Parallel, a prezzo di listino al momento di ogni chiamata.",
+    "label_from": "Dal",
+    "label_to": "Al",
+    "button_filter": "Filtra",
+    "preset_this_month": "Questo mese",
+    "preset_last_month": "Mese scorso",
+    "total_line": "Totale dal {from} al {to}: {total}",
+    "stat_anthropic_cost": "Spesa Anthropic",
+    "stat_anthropic_tokens": "Token Anthropic",
+    "stat_tokens_breakdown": "{input} input · {output} output · {cacheWrite} scritti in cache · {cacheRead} letti dalla cache",
+    "stat_parallel_cost": "Spesa Parallel",
+    "stat_parallel_note": "Stima: i crediti del piano gratuito non sono scalati",
+    "stat_parallel_runs": "Ricerche Parallel",
+    "campaigns_title": "Per campagna",
+    "daily_title": "Per giorno",
+    "column_campaign": "Campagna",
+    "column_day": "Giorno",
+    "deleted_campaign": "Campagna eliminata",
+    "empty_title": "Nessuna spesa in questo periodo",
+    "empty_description": "La spesa compare qui appena una campagna fa ricerche sui contatti o scrive le email."
+  },
+  "UsageTable": {
+    "column_anthropic_tokens": "Token Anthropic",
+    "column_anthropic_cost": "Costo Anthropic",
+    "column_parallel_runs": "Ricerche Parallel",
+    "column_parallel_cost": "Costo Parallel",
+    "column_total": "Totale",
+    "row_total": "Totale",
+    "row_meta": "Anthropic {tokens} token, {anthropicCost} · Parallel {runs, plural, one {# ricerca} other {# ricerche}}, {parallelCost}"
   },
   "NotFoundPage": {
     "code": "Errore 404",

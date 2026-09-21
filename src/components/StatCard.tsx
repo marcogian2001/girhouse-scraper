@@ -4,11 +4,17 @@ import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/componen
  * Shows one headline number with its label and icon.
  * @param props Component props.
  * @param props.label What the number counts.
- * @param props.value The count itself.
+ * @param props.value The number itself, raw or already formatted.
  * @param props.icon The glyph shown in the tinted tile.
+ * @param props.description Optional detail shown under the number.
  * @returns A compact statistic card.
  */
-export const StatCard = (props: { label: string; value: number; icon: React.ReactNode }) => (
+export const StatCard = (props: {
+  label: string;
+  value: string | number;
+  icon: React.ReactNode;
+  description?: string;
+}) => (
   <Card size="sm">
     <CardHeader>
       <CardTitle className="text-sm font-normal text-muted-foreground">{props.label}</CardTitle>
@@ -22,6 +28,9 @@ export const StatCard = (props: { label: string; value: number; icon: React.Reac
 
     <CardContent>
       <p className="text-3xl font-semibold tabular-nums">{props.value}</p>
+      {props.description && (
+        <p className="mt-1 text-xs text-muted-foreground">{props.description}</p>
+      )}
     </CardContent>
   </Card>
 );

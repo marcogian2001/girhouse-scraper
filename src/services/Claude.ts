@@ -9,6 +9,17 @@ import type { EnrichmentContent } from '@/validations/EnrichmentValidation';
 
 export const COPYWRITING_MODEL = 'claude-opus-5';
 
+/**
+ * List prices in US dollars per million tokens. Keyed by the model type, so
+ * switching `COPYWRITING_MODEL` without pricing it fails the type check.
+ */
+const COPYWRITING_PRICING: Record<
+  typeof COPYWRITING_MODEL,
+  { input: number; output: number; cacheWrite5m: number; cacheWrite1h: number; cacheRead: number }
+> = {
+  'claude-opus-5': { input: 5, output: 25, cacheWrite5m: 6.25, cacheWrite1h: 10, cacheRead: 0.5 },
+};
+
 const MAX_TOKENS = 16_000;
 
 let client: Anthropic | undefined;
@@ -157,14 +168,37 @@ export const buildContactPrompt = (options: {
 };
 
 /**
+ * Prices one copywriting call at list rates.
+ * Dollars per million tokens times tokens is exactly millionths of a dollar.
+ * @param usage The token counts Claude reported for the call.
+ * @returns The cost in millionths of a US dollar.
+ */
+export const estimateCostMicros = (usage: Anthropic.Usage) => {
+  const price = COPYWRITING_PRICING[COPYWRITING_MODEL];
+  const oneHourWrites = usage.cache_creation?.ephemeral_1h_input_tokens ?? 0;
+  // Without the breakdown every write is billed at the default five-minute rate
+  const fiveMinuteWrites =
+    usage.cache_creation?.ephemeral_5m_input_tokens ?? usage.cache_creation_input_tokens ?? 0;
+
+  return Math.round(
+    usage.input_tokens * price.input +
+      usage.output_tokens * price.output +
+      fiveMinuteWrites * price.cacheWrite5m +
+      oneHourWrites * price.cacheWrite1h +
+      (usage.cache_read_input_tokens ?? 0) * price.cacheRead,
+  );
+};
+
+/**
  * Writes the full email sequence for one contact.
  * @param options The call options.
  * @param options.campaign The campaign settings.
  * @param options.contact The contact being written to.
  * @param options.enrichment The research output, when it parsed cleanly.
  * @param options.knowledgeAssets The assets selected for the campaign.
- * @returns The generated emails, one per step.
- * @throws {Error} When the API key is missing or Claude returns an unparsable response.
+ * @returns The generated emails, one per step, or null when Claude returned an
+ *   unparsable response, plus the message id and token usage the call is billed on.
+ * @throws {Error} When the API key is missing.
  */
 export const writeEmailSequence = async (options: {
   campaign: Campaign;
@@ -212,13 +246,15 @@ export const writeEmailSequence = async (options: {
     `Wrote sequence for contact ${options.contact.id} (cache read: ${response.usage.cache_read_input_tokens ?? 0} tokens)`,
   );
 
-  if (!response.parsed_output) {
-    throw new Error(`Claude returned no parsable sequence for contact ${options.contact.id}`);
-  }
-
-  return response.parsed_output.emails
-    .slice(0, options.campaign.emailCount)
-    .map((email, index) => ({ ...email, step: index + 1 }));
+  return {
+    messageId: response.id,
+    usage: response.usage,
+    // Left to the caller to reject, so the billed tokens are recorded first
+    emails:
+      response.parsed_output?.emails
+        .slice(0, options.campaign.emailCount)
+        .map((email, index) => ({ ...email, step: index + 1 })) ?? null,
+  };
 };
 
 /**

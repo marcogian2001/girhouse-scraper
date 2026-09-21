@@ -22,6 +22,13 @@
       "when": 1788982600213,
       "tag": "0002_gray_spot",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1789991718330,
+      "tag": "0003_happy_magik",
+      "breakpoints": true
     }
   ]
 }
