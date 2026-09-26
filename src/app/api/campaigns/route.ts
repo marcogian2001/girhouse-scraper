@@ -1,7 +1,7 @@
 import { and, desc, eq, inArray } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 import * as z from 'zod';
-import { getApiUserId, unauthorized } from '@/libs/ApiAuth';
+import { getApiContext, unauthorized } from '@/libs/ApiAuth';
 import { db } from '@/libs/DB';
 import { enqueue } from '@/libs/JobQueue';
 import { logger } from '@/libs/Logger';
@@ -9,25 +9,25 @@ import { campaignSchema, contactSchema, knowledgeAssetSchema } from '@/models/Sc
 import { CampaignValidation } from '@/validations/CampaignValidation';
 
 export const GET = async () => {
-  const userId = await getApiUserId();
+  const context = await getApiContext();
 
-  if (!userId) {
+  if (!context) {
     return unauthorized();
   }
 
   const campaigns = await db
     .select()
     .from(campaignSchema)
-    .where(eq(campaignSchema.userId, userId))
+    .where(eq(campaignSchema.organizationId, context.organizationId))
     .orderBy(desc(campaignSchema.createdAt));
 
   return NextResponse.json({ campaigns });
 };
 
 export const POST = async (request: Request) => {
-  const userId = await getApiUserId();
+  const context = await getApiContext();
 
-  if (!userId) {
+  if (!context) {
     return unauthorized();
   }
 
@@ -39,7 +39,7 @@ export const POST = async (request: Request) => {
 
   const { contacts, ...settings } = parse.data;
 
-  // Only assets the user owns may be attached
+  // Only assets of the same organization may be attached
   const ownedAssetIds =
     settings.knowledgeAssetIds.length > 0
       ? await db
@@ -47,7 +47,7 @@ export const POST = async (request: Request) => {
           .from(knowledgeAssetSchema)
           .where(
             and(
-              eq(knowledgeAssetSchema.userId, userId),
+              eq(knowledgeAssetSchema.organizationId, context.organizationId),
               inArray(knowledgeAssetSchema.id, settings.knowledgeAssetIds),
             ),
           )
@@ -62,7 +62,8 @@ export const POST = async (request: Request) => {
     const [campaign] = await tx
       .insert(campaignSchema)
       .values({
-        userId,
+        userId: context.userId,
+        organizationId: context.organizationId,
         name: settings.name,
         status: 'enriching',
         processor: settings.processor,

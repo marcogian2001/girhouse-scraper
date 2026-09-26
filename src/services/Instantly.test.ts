@@ -14,6 +14,7 @@ const campaign = (
 ): typeof campaignSchema.$inferSelect => ({
   id: 'campaign-1',
   userId: 'user-1',
+  organizationId: 'organization-1',
   name: 'Q4 outreach',
   status: 'review',
   processor: 'core',

@@ -28,6 +28,7 @@ import {
   releaseStaleJobs,
   rescheduleJob,
 } from './JobQueue';
+import { leadJobHandlers, markLeadJobAbandoned } from './LeadJobs';
 import { logger } from './Logger';
 import { recordAnthropicUsage, recordParallelUsage } from './Usage';
 
@@ -43,11 +44,15 @@ const pushPayloadSchema = z.object({
 
 /**
  * Loads the campaign a job belongs to.
- * @param campaignId The campaign to load.
+ * @param campaignId The campaign to load, when the job carries one.
  * @returns The campaign row.
- * @throws {Error} When the campaign no longer exists.
+ * @throws {Error} When the job has no campaign or the campaign no longer exists.
  */
-const requireCampaign = async (campaignId: string) => {
+const requireCampaign = async (campaignId: string | null) => {
+  if (!campaignId) {
+    throw new Error('Job is missing its campaign');
+  }
+
   const campaign = await db.query.campaignSchema.findFirst({
     where: eq(campaignSchema.id, campaignId),
   });
@@ -176,6 +181,7 @@ const runEnrichJob = async (job: Job) => {
   // Parallel bills every completed run, whether or not its output parses
   await recordParallelUsage({
     userId: campaign.userId,
+    organizationId: campaign.organizationId,
     campaignId: campaign.id,
     runId: existing.parallelRunId,
     processor: existing.processor,
@@ -240,6 +246,7 @@ const runWriteJob = async (job: Job) => {
   // Recorded before the output is checked: an unparsable response is billed too
   await recordAnthropicUsage({
     userId: campaign.userId,
+    organizationId: campaign.organizationId,
     campaignId: campaign.id,
     messageId: sequence.messageId,
     usage: sequence.usage,
@@ -361,6 +368,12 @@ const runPushJob = async (job: Job) => {
  * @param message The error to surface.
  */
 const markAbandoned = async (job: Job, message: string) => {
+  if (!job.campaignId) {
+    await markLeadJobAbandoned(job, message);
+
+    return;
+  }
+
   if (job.contactId) {
     await db
       .update(contactSchema)
@@ -383,6 +396,7 @@ const handlers = {
   enrich: runEnrichJob,
   write: runWriteJob,
   push: runPushJob,
+  ...leadJobHandlers,
 };
 
 /**

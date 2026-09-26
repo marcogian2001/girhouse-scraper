@@ -1,7 +1,7 @@
 import { desc, eq } from 'drizzle-orm';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { KnowledgeManager } from '@/components/KnowledgeManager';
-import { getApiUserId } from '@/libs/ApiAuth';
+import { getApiContext } from '@/libs/ApiAuth';
 import { db } from '@/libs/DB';
 import { knowledgeAssetSchema } from '@/models/Schema';
 
@@ -10,9 +10,9 @@ export default async function KnowledgePage(props: { params: Promise<{ locale: s
   setRequestLocale(locale);
 
   const t = await getTranslations({ locale, namespace: 'KnowledgePage' });
-  const userId = await getApiUserId();
+  const context = await getApiContext();
 
-  const assets = userId
+  const assets = context
     ? await db
         .select({
           id: knowledgeAssetSchema.id,
@@ -20,7 +20,7 @@ export default async function KnowledgePage(props: { params: Promise<{ locale: s
           kind: knowledgeAssetSchema.kind,
         })
         .from(knowledgeAssetSchema)
-        .where(eq(knowledgeAssetSchema.userId, userId))
+        .where(eq(knowledgeAssetSchema.organizationId, context.organizationId))
         .orderBy(desc(knowledgeAssetSchema.createdAt))
     : [];
 

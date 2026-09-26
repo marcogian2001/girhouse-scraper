@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
-import { getApiUserId, unauthorized } from '@/libs/ApiAuth';
+import { getApiContext, unauthorized } from '@/libs/ApiAuth';
 import { listAccounts } from '@/services/Instantly';
 
 export const GET = async () => {
-  const userId = await getApiUserId();
+  const context = await getApiContext();
 
-  if (!userId) {
+  if (!context) {
     return unauthorized();
   }
 

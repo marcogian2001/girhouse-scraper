@@ -44,8 +44,9 @@ export const UsageTable = (props: { title: string; rows: UsageRow[]; total: Usag
       <TableCell className="text-right tabular-nums">{usd(totals.anthropicCostMicros)}</TableCell>
       <TableCell className="text-right tabular-nums">{totals.parallelRuns}</TableCell>
       <TableCell className="text-right tabular-nums">{usd(totals.parallelCostMicros)}</TableCell>
+      <TableCell className="text-right tabular-nums">{usd(totals.leadsCostMicros)}</TableCell>
       <TableCell className="text-right font-medium tabular-nums">
-        {usd(totals.anthropicCostMicros + totals.parallelCostMicros)}
+        {usd(totals.totalCostMicros)}
       </TableCell>
     </>
   );
@@ -61,6 +62,7 @@ export const UsageTable = (props: { title: string; rows: UsageRow[]; total: Usag
               <TableHead className="text-right">{t('column_anthropic_cost')}</TableHead>
               <TableHead className="text-right">{t('column_parallel_runs')}</TableHead>
               <TableHead className="text-right">{t('column_parallel_cost')}</TableHead>
+              <TableHead className="text-right">{t('column_leads_cost')}</TableHead>
               <TableHead className="text-right">{t('column_total')}</TableHead>
             </TableRow>
           </TableHeader>
@@ -95,12 +97,13 @@ export const UsageTable = (props: { title: string; rows: UsageRow[]; total: Usag
                     anthropicCost: usd(row.totals.anthropicCostMicros),
                     runs: row.totals.parallelRuns,
                     parallelCost: usd(row.totals.parallelCostMicros),
+                    leadsCost: usd(row.totals.leadsCostMicros),
                   })}
                 </ItemDescription>
               </ItemContent>
 
               <ItemActions className="font-medium tabular-nums">
-                {usd(row.totals.anthropicCostMicros + row.totals.parallelCostMicros)}
+                {usd(row.totals.totalCostMicros)}
               </ItemActions>
             </Item>
           ))}

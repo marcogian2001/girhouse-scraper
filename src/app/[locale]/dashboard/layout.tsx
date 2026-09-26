@@ -8,6 +8,7 @@ import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/s
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { UsageSummary } from '@/components/UsageSummary';
 import { auth } from '@/libs/Auth';
+import { getUserOrganizations, resolveOrganizationId } from '@/libs/Organization';
 import { EMPTY_USAGE_TOTALS, getUsageTotals } from '@/libs/Usage';
 import { currentMonthRange } from '@/utils/DateRange';
 
@@ -39,10 +40,17 @@ export default async function DashboardLayout(props: DashboardLayoutProps) {
   const [cookieStore, requestHeaders] = await Promise.all([cookies(), headers()]);
   const session = await auth.api.getSession({ headers: requestHeaders });
 
+  const [organizationId, organizations] = session
+    ? await Promise.all([
+        resolveOrganizationId(session.user.id, session.session.activeOrganizationId),
+        getUserOrganizations(session.user.id),
+      ])
+    : [null, []];
+
   // Re-read on every `router.refresh()`, so it keeps up while a campaign runs
   const period = currentMonthRange();
-  const usageTotals = session
-    ? await getUsageTotals({ userId: session.user.id, range: period })
+  const usageTotals = organizationId
+    ? await getUsageTotals({ organizationId, range: period })
     : EMPTY_USAGE_TOTALS;
 
   // Reading the cookie on the server keeps the collapsed state from flashing open
@@ -54,6 +62,8 @@ export default async function DashboardLayout(props: DashboardLayoutProps) {
       <SidebarProvider defaultOpen={defaultOpen}>
         <AppSidebar
           user={{ name: session?.user.name ?? '', email: session?.user.email ?? '' }}
+          organizations={organizations}
+          activeOrganizationId={organizationId}
           usageSummary={<UsageSummary period={period} totals={usageTotals} />}
         />
 

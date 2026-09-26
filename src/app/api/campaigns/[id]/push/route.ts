@@ -1,23 +1,26 @@
 import { and, count, eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 import * as z from 'zod';
-import { getApiUserId, notFound, unauthorized } from '@/libs/ApiAuth';
+import { getApiContext, notFound, unauthorized } from '@/libs/ApiAuth';
 import { db } from '@/libs/DB';
 import { enqueue } from '@/libs/JobQueue';
 import { campaignSchema, contactSchema } from '@/models/Schema';
 import { InstantlyPushValidation } from '@/validations/InstantlyPushValidation';
 
 export const POST = async (request: Request, props: { params: Promise<{ id: string }> }) => {
-  const userId = await getApiUserId();
+  const context = await getApiContext();
 
-  if (!userId) {
+  if (!context) {
     return unauthorized();
   }
 
   const { id } = await props.params;
 
   const campaign = await db.query.campaignSchema.findFirst({
-    where: and(eq(campaignSchema.id, id), eq(campaignSchema.userId, userId)),
+    where: and(
+      eq(campaignSchema.id, id),
+      eq(campaignSchema.organizationId, context.organizationId),
+    ),
   });
 
   if (!campaign) {

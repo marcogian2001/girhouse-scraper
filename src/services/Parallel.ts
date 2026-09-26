@@ -1,6 +1,6 @@
 import * as z from 'zod';
 import { Env } from '@/libs/Env';
-import type { contactSchema, parallelProcessorEnum } from '@/models/Schema';
+import type { contactSchema, leadSchema, parallelProcessorEnum } from '@/models/Schema';
 import { requireEnv } from '@/utils/Helpers';
 import type { EnrichmentBasis } from '@/validations/EnrichmentValidation';
 import { EnrichmentBasisValidation } from '@/validations/EnrichmentValidation';
@@ -24,6 +24,12 @@ export const PROCESSOR_RUN_COST_MICROS: Record<ParallelProcessor, number> = {
 export type EnrichmentTarget = Pick<
   typeof contactSchema.$inferSelect,
   'email' | 'firstName' | 'lastName' | 'phone' | 'company' | 'website' | 'linkedinUrl' | 'extra'
+>;
+
+/** The business fields a decision maker run is built from. */
+export type DecisionMakerTarget = Pick<
+  typeof leadSchema.$inferSelect,
+  'company' | 'website' | 'hasWebsite' | 'phone' | 'address' | 'city' | 'category'
 >;
 
 /**
@@ -83,6 +89,57 @@ const ENRICHMENT_JSON_SCHEMA = {
     'linkedin_url',
     'recent_activity',
     'personalization_hooks',
+  ],
+} as const;
+
+/** The decision maker and public contact Parallel is asked to find for a business. */
+const DECISION_MAKER_JSON_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    decision_maker_found: {
+      type: 'boolean',
+      description: 'Whether the person who decides on purchases for this business was identified.',
+    },
+    first_name: { type: 'string', description: 'First name of the decision maker, or "".' },
+    last_name: { type: 'string', description: 'Last name of the decision maker, or "".' },
+    role: {
+      type: 'string',
+      description: 'Role of the decision maker, such as owner, CEO or managing partner, or "".',
+    },
+    linkedin_url: {
+      type: 'string',
+      description: 'LinkedIn profile URL of the decision maker, or "" if not confirmed.',
+    },
+    public_email: {
+      type: 'string',
+      description:
+        'An email address the business or its owner publishes for contact, exactly as published, or "" if none was found.',
+    },
+    public_email_source: {
+      type: 'string',
+      description: 'URL of the page where public_email was found, or "".',
+    },
+    confidence: {
+      type: 'string',
+      enum: ['low', 'medium', 'high'],
+      description: 'How certain you are that the decision maker belongs to this exact business.',
+    },
+    reasoning: {
+      type: 'string',
+      description: 'One or two sentences on which sources tie the findings to this business.',
+    },
+  },
+  required: [
+    'decision_maker_found',
+    'first_name',
+    'last_name',
+    'role',
+    'linkedin_url',
+    'public_email',
+    'public_email_source',
+    'confidence',
+    'reasoning',
   ],
 } as const;
 
@@ -147,15 +204,51 @@ export const buildTaskInput = (contact: EnrichmentTarget) => {
 };
 
 /**
- * Starts a Parallel task run for one contact.
+ * Turns a business found on Google Maps into the research brief sent to Parallel.
+ * A business without a website of its own is researched from its name, address
+ * and phone, since those are all Google Maps knows about it.
+ * @param lead The business to research.
+ * @returns The plain-language task input.
+ */
+export const buildDecisionMakerInput = (lead: DecisionMakerTarget) => {
+  const known = [
+    ['Business name', lead.company],
+    ['Category', lead.category],
+    ['Address', lead.address],
+    ['City', lead.city],
+    ['Phone', lead.phone],
+    [lead.hasWebsite ? 'Website' : 'Page listed as website', lead.website],
+  ].filter((entry): entry is [string, string] => Boolean(entry[1]));
+
+  const knownLines = known.map(([label, value]) => `- ${label}: ${value}`).join('\n');
+
+  return [
+    'Identify who decides on purchases for this Italian business, and how to email them.',
+    '',
+    'Known details from Google Maps:',
+    knownLines,
+    '',
+    'Rules:',
+    '- The decision maker is the owner, CEO, managing partner or equivalent. For a sole trader it is the owner.',
+    `- ${lead.hasWebsite ? 'Start from the website, then' : 'The business has no website of its own, so'} check the Facebook and Instagram pages, PagineGialle, industry directories, LinkedIn and the Italian business register.`,
+    '- public_email is any address the business or its owner publishes for contact, including a Gmail or similar personal address. Never guess or construct an address.',
+    '- Only report a person you can tie to this exact business, using the address, phone or name. Namesakes are common.',
+    '- Leave a field as an empty string rather than guessing. An empty field is more useful than a wrong one.',
+  ].join('\n');
+};
+
+/**
+ * Starts a Parallel task run.
  * @param options The call options.
- * @param options.contact The contact to research.
+ * @param options.input The plain-language task input.
+ * @param options.jsonSchema The shape of the output Parallel must return.
  * @param options.processor The Parallel processor tier to run.
  * @returns The identifier of the created run.
  * @throws {Error} When the API key is missing or Parallel rejects the request.
  */
-export const createTaskRun = async (options: {
-  contact: EnrichmentTarget;
+const startRun = async (options: {
+  input: string;
+  jsonSchema: object;
   processor: ParallelProcessor;
 }) => {
   const apiKey = requireEnv('PARALLEL_API_KEY', Env.PARALLEL_API_KEY);
@@ -168,11 +261,11 @@ export const createTaskRun = async (options: {
     },
     body: JSON.stringify({
       processor: options.processor,
-      input: buildTaskInput(options.contact),
+      input: options.input,
       task_spec: {
         output_schema: {
           type: 'json',
-          json_schema: ENRICHMENT_JSON_SCHEMA,
+          json_schema: options.jsonSchema,
         },
       },
     }),
@@ -186,6 +279,42 @@ export const createTaskRun = async (options: {
 
   return createRunResponseSchema.parse(await response.json());
 };
+
+/**
+ * Starts a Parallel task run for one contact.
+ * @param options The call options.
+ * @param options.contact The contact to research.
+ * @param options.processor The Parallel processor tier to run.
+ * @returns The identifier of the created run.
+ * @throws {Error} When the API key is missing or Parallel rejects the request.
+ */
+export const createTaskRun = async (options: {
+  contact: EnrichmentTarget;
+  processor: ParallelProcessor;
+}) =>
+  await startRun({
+    input: buildTaskInput(options.contact),
+    jsonSchema: ENRICHMENT_JSON_SCHEMA,
+    processor: options.processor,
+  });
+
+/**
+ * Starts a Parallel task run that finds the decision maker of one business.
+ * @param options The call options.
+ * @param options.lead The business to research.
+ * @param options.processor The Parallel processor tier to run.
+ * @returns The identifier of the created run.
+ * @throws {Error} When the API key is missing or Parallel rejects the request.
+ */
+export const createDecisionMakerRun = async (options: {
+  lead: DecisionMakerTarget;
+  processor: ParallelProcessor;
+}) =>
+  await startRun({
+    input: buildDecisionMakerInput(options.lead),
+    jsonSchema: DECISION_MAKER_JSON_SCHEMA,
+    processor: options.processor,
+  });
 
 /**
  * Polls a Parallel task run for its result.

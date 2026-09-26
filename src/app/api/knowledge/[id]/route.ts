@@ -1,22 +1,25 @@
 import { and, eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
-import { getApiUserId, notFound, unauthorized } from '@/libs/ApiAuth';
+import { getApiContext, notFound, unauthorized } from '@/libs/ApiAuth';
 import { db } from '@/libs/DB';
 import { logger } from '@/libs/Logger';
 import { knowledgeAssetSchema } from '@/models/Schema';
 import { deleteKnowledgeFile } from '@/services/Claude';
 
 export const DELETE = async (_request: Request, props: { params: Promise<{ id: string }> }) => {
-  const userId = await getApiUserId();
+  const context = await getApiContext();
 
-  if (!userId) {
+  if (!context) {
     return unauthorized();
   }
 
   const { id } = await props.params;
 
   const asset = await db.query.knowledgeAssetSchema.findFirst({
-    where: and(eq(knowledgeAssetSchema.id, id), eq(knowledgeAssetSchema.userId, userId)),
+    where: and(
+      eq(knowledgeAssetSchema.id, id),
+      eq(knowledgeAssetSchema.organizationId, context.organizationId),
+    ),
   });
 
   if (!asset) {

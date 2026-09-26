@@ -13,7 +13,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { getApiUserId } from '@/libs/ApiAuth';
+import { getApiContext } from '@/libs/ApiAuth';
 import { db } from '@/libs/DB';
 import { Link } from '@/libs/I18nNavigation';
 import { getUsageTotals } from '@/libs/Usage';
@@ -31,11 +31,14 @@ export default async function CampaignDetailPage(props: {
   setRequestLocale(locale);
 
   const t = await getTranslations({ locale, namespace: 'CampaignDetailPage' });
-  const userId = await getApiUserId();
+  const context = await getApiContext();
 
-  const campaign = userId
+  const campaign = context
     ? await db.query.campaignSchema.findFirst({
-        where: and(eq(campaignSchema.id, id), eq(campaignSchema.userId, userId)),
+        where: and(
+          eq(campaignSchema.id, id),
+          eq(campaignSchema.organizationId, context.organizationId),
+        ),
       })
     : undefined;
 
@@ -44,7 +47,10 @@ export default async function CampaignDetailPage(props: {
   }
 
   const format = await getFormatter({ locale });
-  const usage = await getUsageTotals({ userId: campaign.userId, campaignId: campaign.id });
+  const usage = await getUsageTotals({
+    organizationId: campaign.organizationId,
+    campaignId: campaign.id,
+  });
   const usd = (micros: number) => format.number(microsToUsd(micros), USD_FORMAT);
 
   const contacts = await db
@@ -137,7 +143,7 @@ export default async function CampaignDetailPage(props: {
 
         <p className="text-sm text-muted-foreground">
           {t('spend_line', {
-            total: usd(usage.anthropicCostMicros + usage.parallelCostMicros),
+            total: usd(usage.totalCostMicros),
             tokens: format.number(usage.anthropicTokens, COMPACT_FORMAT),
             anthropicCost: usd(usage.anthropicCostMicros),
             runs: usage.parallelRuns,

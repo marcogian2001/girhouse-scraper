@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { EnrichmentTarget } from './Parallel';
-import { buildTaskInput, PROCESSOR_RUN_COST_MICROS } from './Parallel';
+import type { DecisionMakerTarget, EnrichmentTarget } from './Parallel';
+import { buildDecisionMakerInput, buildTaskInput, PROCESSOR_RUN_COST_MICROS } from './Parallel';
 
 const target = (overrides: Partial<EnrichmentTarget> = {}): EnrichmentTarget => ({
   email: 'ada@analytical.com',
@@ -11,6 +11,17 @@ const target = (overrides: Partial<EnrichmentTarget> = {}): EnrichmentTarget => 
   website: null,
   linkedinUrl: null,
   extra: {},
+  ...overrides,
+});
+
+const business = (overrides: Partial<DecisionMakerTarget> = {}): DecisionMakerTarget => ({
+  company: 'Studio Rossi',
+  website: null,
+  hasWebsite: false,
+  phone: '035 123456',
+  address: 'Via Roma 1, Bergamo',
+  city: 'Bergamo',
+  category: 'Commercialista',
   ...overrides,
 });
 
@@ -36,6 +47,30 @@ describe('Parallel', () => {
 
     it('asks for a low confidence when the name is the only link', () => {
       expect(buildTaskInput(target())).toContain('identity_match_confidence');
+    });
+  });
+
+  describe('Decision maker input', () => {
+    it('starts from the website when the business has one', () => {
+      const input = buildDecisionMakerInput(
+        business({ website: 'https://studiorossi.it', hasWebsite: true }),
+      );
+
+      expect(input).toContain('- Website: https://studiorossi.it');
+      expect(input).toContain('Start from the website');
+    });
+
+    it('relies on social pages when the business has no website', () => {
+      const input = buildDecisionMakerInput(
+        business({ website: 'https://facebook.com/studiorossi' }),
+      );
+
+      expect(input).toContain('- Page listed as website: https://facebook.com/studiorossi');
+      expect(input).toContain('has no website of its own');
+    });
+
+    it('forbids constructing an email address', () => {
+      expect(buildDecisionMakerInput(business())).toContain('Never guess or construct an address');
     });
   });
 

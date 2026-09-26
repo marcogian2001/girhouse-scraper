@@ -25,12 +25,28 @@ import {
 
 const TOTAL_STEPS = 4;
 
-export const NewCampaignWizard = (props: { knowledgeAssets: { id: string; name: string }[] }) => {
+/**
+ * Works out where the wizard opens: on the upload step, or on the mapping step
+ * when contacts were handed over from a lead search.
+ * @param csv The contacts handed over, if any.
+ * @returns The first step, contacts, mapping and campaign name.
+ */
+const startFrom = (csv: ParsedCsv | null) =>
+  csv
+    ? { step: 2, csv, mapping: autoDetectMapping(csv.headers), name: csv.fileName }
+    : { step: 1, csv: null, mapping: {}, name: '' };
+
+export const NewCampaignWizard = (props: {
+  knowledgeAssets: { id: string; name: string }[];
+  // Contacts handed over from a lead search, which skip the upload step
+  initialCsv: ParsedCsv | null;
+}) => {
   const t = useTranslations('NewCampaignWizard');
   const router = useRouter();
-  const [step, setStep] = useState(1);
-  const [csv, setCsv] = useState<ParsedCsv | null>(null);
-  const [mapping, setMapping] = useState<ColumnMapping>({});
+  const start = startFrom(props.initialCsv);
+  const [step, setStep] = useState(start.step);
+  const [csv, setCsv] = useState<ParsedCsv | null>(start.csv);
+  const [mapping, setMapping] = useState<ColumnMapping>(start.mapping);
   const [settings, setSettings] = useState<CampaignSettings | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -40,7 +56,7 @@ export const NewCampaignWizard = (props: { knowledgeAssets: { id: string; name: 
   const form = useForm({
     resolver: zodResolver(CampaignSettingsValidation),
     defaultValues: {
-      name: '',
+      name: start.name,
       processor: 'core' as const,
       emailCount: 3,
       delaysDays: [3, 4, 0],

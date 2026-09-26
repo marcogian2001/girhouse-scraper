@@ -1,10 +1,13 @@
 import type Anthropic from '@anthropic-ai/sdk';
-import { and, desc, eq, gte, lte, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, inArray, lte, sql } from 'drizzle-orm';
 import type { AnyPgColumn } from 'drizzle-orm/pg-core';
-import { apiUsageSchema, campaignSchema } from '@/models/Schema';
+import { apiUsageSchema, campaignSchema, leadSearchSchema } from '@/models/Schema';
+import { PLACE_COST_MICROS } from '@/services/Apify';
 import { COPYWRITING_MODEL, estimateCostMicros } from '@/services/Claude';
+import { VERIFICATION_COST_MICROS } from '@/services/MillionVerifier';
 import type { ParallelProcessor } from '@/services/Parallel';
 import { PROCESSOR_RUN_COST_MICROS } from '@/services/Parallel';
+import { EMAIL_COST_MICROS } from '@/services/Prospeo';
 import { AppConfig } from '@/utils/AppConfig';
 import type { DateRange } from '@/utils/DateRange';
 import { db } from './DB';
@@ -29,6 +32,8 @@ const sumFor = (provider: UsageProvider, column: AnyPgColumn) =>
     Number,
   );
 
+const LEAD_PROVIDERS: UsageProvider[] = ['apify', 'prospeo', 'millionverifier'];
+
 /** The aggregates every spend report shows, whatever it is grouped by. */
 const usageTotals = {
   anthropicInputTokens: sumFor('anthropic', apiUsageSchema.inputTokens),
@@ -43,6 +48,12 @@ const usageTotals = {
   parallelRuns:
     sql<number>`count(*) filter (where ${apiUsageSchema.provider} = 'parallel')`.mapWith(Number),
   parallelCostMicros: sumFor('parallel', apiUsageSchema.costMicros),
+  // Scraping, email lookup and verification, which only lead searches spend on
+  leadsCostMicros:
+    sql<number>`coalesce(sum(${apiUsageSchema.costMicros}) filter (where ${inArray(apiUsageSchema.provider, LEAD_PROVIDERS)}), 0)`.mapWith(
+      Number,
+    ),
+  totalCostMicros: sql<number>`coalesce(sum(${apiUsageSchema.costMicros}), 0)`.mapWith(Number),
 };
 
 export type UsageTotals = { [Key in keyof typeof usageTotals]: number };
@@ -57,10 +68,17 @@ export const EMPTY_USAGE_TOTALS: UsageTotals = {
   anthropicCostMicros: 0,
   parallelRuns: 0,
   parallelCostMicros: 0,
+  leadsCostMicros: 0,
+  totalCostMicros: 0,
 };
 
-/** Which calls a report covers. Every report is scoped to one user. */
-type UsageFilter = { userId: string; range?: DateRange; campaignId?: string };
+/** Which calls a report covers. Every report is scoped to one organization. */
+type UsageFilter = {
+  organizationId: string;
+  range?: DateRange;
+  campaignId?: string;
+  leadSearchId?: string;
+};
 
 /**
  * Builds the WHERE clause for a report.
@@ -69,22 +87,33 @@ type UsageFilter = { userId: string; range?: DateRange; campaignId?: string };
  */
 const matching = (filter: UsageFilter) =>
   and(
-    eq(apiUsageSchema.userId, filter.userId),
+    eq(apiUsageSchema.organizationId, filter.organizationId),
     filter.range ? gte(localDay, filter.range.from) : undefined,
     filter.range ? lte(localDay, filter.range.to) : undefined,
     filter.campaignId ? eq(apiUsageSchema.campaignId, filter.campaignId) : undefined,
+    filter.leadSearchId ? eq(apiUsageSchema.leadSearchId, filter.leadSearchId) : undefined,
   );
+
+/** Who a billed call was made for: a campaign, or a lead search. */
+type UsageOwner = {
+  userId: string;
+  organizationId: string;
+  campaignId?: string;
+  leadSearchId?: string;
+};
 
 /**
  * Records one copywriting call. Safe to repeat: a message is only counted once.
  * @param options The call options.
  * @param options.userId The owner of the campaign the call was made for.
+ * @param options.organizationId The organization the campaign belongs to.
  * @param options.campaignId The campaign the call was made for.
  * @param options.messageId The Anthropic message id.
  * @param options.usage The token counts Claude reported.
  */
 export const recordAnthropicUsage = async (options: {
   userId: string;
+  organizationId: string;
   campaignId: string;
   messageId: string;
   usage: Anthropic.Usage;
@@ -93,6 +122,7 @@ export const recordAnthropicUsage = async (options: {
     .insert(apiUsageSchema)
     .values({
       userId: options.userId,
+      organizationId: options.organizationId,
       campaignId: options.campaignId,
       provider: 'anthropic',
       externalId: options.messageId,
@@ -109,26 +139,103 @@ export const recordAnthropicUsage = async (options: {
 /**
  * Records one completed research run. Safe to repeat: a run is only counted once.
  * @param options The call options.
- * @param options.userId The owner of the campaign the run was made for.
- * @param options.campaignId The campaign the run was made for.
+ * @param options.userId The owner of the campaign or lead search the run was made for.
+ * @param options.organizationId The organization the run belongs to.
+ * @param options.campaignId The campaign the run was made for, if any.
+ * @param options.leadSearchId The lead search the run was made for, if any.
  * @param options.runId The Parallel run id.
  * @param options.processor The processor tier the run used.
  */
-export const recordParallelUsage = async (options: {
-  userId: string;
-  campaignId: string;
-  runId: string;
-  processor: ParallelProcessor;
-}) => {
+export const recordParallelUsage = async (
+  options: UsageOwner & { runId: string; processor: ParallelProcessor },
+) => {
   await db
     .insert(apiUsageSchema)
     .values({
       userId: options.userId,
+      organizationId: options.organizationId,
       campaignId: options.campaignId,
+      leadSearchId: options.leadSearchId,
       provider: 'parallel',
       externalId: options.runId,
       model: options.processor,
       costMicros: PROCESSOR_RUN_COST_MICROS[options.processor],
+    })
+    .onConflictDoNothing();
+};
+
+/**
+ * Records one Google Maps scrape. Safe to repeat: a run is only counted once.
+ * @param options The call options.
+ * @param options.userId The owner of the lead search.
+ * @param options.organizationId The organization the lead search belongs to.
+ * @param options.leadSearchId The lead search the scrape was made for.
+ * @param options.runId The Apify run id.
+ * @param options.places How many places the scrape returned.
+ */
+export const recordApifyUsage = async (
+  options: UsageOwner & { leadSearchId: string; runId: string; places: number },
+) => {
+  await db
+    .insert(apiUsageSchema)
+    .values({
+      userId: options.userId,
+      organizationId: options.organizationId,
+      leadSearchId: options.leadSearchId,
+      provider: 'apify',
+      externalId: options.runId,
+      model: 'google_maps',
+      costMicros: options.places * PLACE_COST_MICROS,
+    })
+    .onConflictDoNothing();
+};
+
+/**
+ * Records one billed email lookup. Safe to repeat: a lead is only counted once.
+ * @param options The call options.
+ * @param options.userId The owner of the lead search.
+ * @param options.organizationId The organization the lead search belongs to.
+ * @param options.leadSearchId The lead search the lookup was made for.
+ * @param options.leadId The lead whose email was found.
+ */
+export const recordProspeoUsage = async (
+  options: UsageOwner & { leadSearchId: string; leadId: string },
+) => {
+  await db
+    .insert(apiUsageSchema)
+    .values({
+      userId: options.userId,
+      organizationId: options.organizationId,
+      leadSearchId: options.leadSearchId,
+      provider: 'prospeo',
+      externalId: options.leadId,
+      model: 'enrich_person',
+      costMicros: EMAIL_COST_MICROS,
+    })
+    .onConflictDoNothing();
+};
+
+/**
+ * Records one email verification. Safe to repeat: a lead is only counted once.
+ * @param options The call options.
+ * @param options.userId The owner of the lead search.
+ * @param options.organizationId The organization the lead search belongs to.
+ * @param options.leadSearchId The lead search the verification was made for.
+ * @param options.leadId The lead whose email was verified.
+ */
+export const recordMillionVerifierUsage = async (
+  options: UsageOwner & { leadSearchId: string; leadId: string },
+) => {
+  await db
+    .insert(apiUsageSchema)
+    .values({
+      userId: options.userId,
+      organizationId: options.organizationId,
+      leadSearchId: options.leadSearchId,
+      provider: 'millionverifier',
+      externalId: options.leadId,
+      model: 'verify',
+      costMicros: VERIFICATION_COST_MICROS,
     })
     .onConflictDoNothing();
 };
@@ -158,16 +265,28 @@ export const getDailyUsage = async (filter: UsageFilter) =>
     .orderBy(desc(localDay));
 
 /**
- * Breaks the spend in scope down by campaign, most expensive first.
- * Spend from deleted campaigns is grouped under a null id and name.
+ * Breaks the spend in scope down by campaign and lead search, most expensive first.
+ * Spend from deleted campaigns and searches is grouped under null ids and names.
  * @param filter The report scope.
- * @returns One row per campaign that had any spend.
+ * @returns One row per campaign or lead search that had any spend.
  */
 export const getCampaignUsage = async (filter: UsageFilter) =>
   await db
-    .select({ campaignId: apiUsageSchema.campaignId, name: campaignSchema.name, ...usageTotals })
+    .select({
+      campaignId: apiUsageSchema.campaignId,
+      name: campaignSchema.name,
+      leadSearchId: apiUsageSchema.leadSearchId,
+      leadSearchName: leadSearchSchema.name,
+      ...usageTotals,
+    })
     .from(apiUsageSchema)
     .leftJoin(campaignSchema, eq(apiUsageSchema.campaignId, campaignSchema.id))
+    .leftJoin(leadSearchSchema, eq(apiUsageSchema.leadSearchId, leadSearchSchema.id))
     .where(matching(filter))
-    .groupBy(apiUsageSchema.campaignId, campaignSchema.name)
+    .groupBy(
+      apiUsageSchema.campaignId,
+      campaignSchema.name,
+      apiUsageSchema.leadSearchId,
+      leadSearchSchema.name,
+    )
     .orderBy(desc(sql`sum(${apiUsageSchema.costMicros})`));

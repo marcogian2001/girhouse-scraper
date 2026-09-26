@@ -1,7 +1,7 @@
 import { desc, eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 import * as z from 'zod';
-import { getApiUserId, unauthorized } from '@/libs/ApiAuth';
+import { getApiContext, unauthorized } from '@/libs/ApiAuth';
 import { db } from '@/libs/DB';
 import { knowledgeAssetSchema } from '@/models/Schema';
 import { uploadKnowledgeFile } from '@/services/Claude';
@@ -15,9 +15,9 @@ const isDocumentMimeType = (mimeType: string): mimeType is (typeof DOCUMENT_MIME
   DOCUMENT_MIME_TYPES.some((allowed) => allowed === mimeType);
 
 export const GET = async () => {
-  const userId = await getApiUserId();
+  const context = await getApiContext();
 
-  if (!userId) {
+  if (!context) {
     return unauthorized();
   }
 
@@ -31,16 +31,16 @@ export const GET = async () => {
       createdAt: knowledgeAssetSchema.createdAt,
     })
     .from(knowledgeAssetSchema)
-    .where(eq(knowledgeAssetSchema.userId, userId))
+    .where(eq(knowledgeAssetSchema.organizationId, context.organizationId))
     .orderBy(desc(knowledgeAssetSchema.createdAt));
 
   return NextResponse.json({ assets });
 };
 
 export const POST = async (request: Request) => {
-  const userId = await getApiUserId();
+  const context = await getApiContext();
 
-  if (!userId) {
+  if (!context) {
     return unauthorized();
   }
 
@@ -57,7 +57,8 @@ export const POST = async (request: Request) => {
     const [asset] = await db
       .insert(knowledgeAssetSchema)
       .values({
-        userId,
+        userId: context.userId,
+        organizationId: context.organizationId,
         name: parse.data.name,
         kind: 'prompt',
         content: parse.data.content,
@@ -88,7 +89,8 @@ export const POST = async (request: Request) => {
   const [asset] = await db
     .insert(knowledgeAssetSchema)
     .values({
-      userId,
+      userId: context.userId,
+      organizationId: context.organizationId,
       name: file.name,
       kind: 'document',
       mimeType: file.type,

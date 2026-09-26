@@ -22,7 +22,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { getApiUserId } from '@/libs/ApiAuth';
+import { getApiContext } from '@/libs/ApiAuth';
 import { db } from '@/libs/DB';
 import { Link } from '@/libs/I18nNavigation';
 import { campaignSchema, contactSchema } from '@/models/Schema';
@@ -32,9 +32,9 @@ export default async function CampaignsPage(props: { params: Promise<{ locale: s
   setRequestLocale(locale);
 
   const t = await getTranslations({ locale, namespace: 'CampaignsPage' });
-  const userId = await getApiUserId();
+  const context = await getApiContext();
 
-  const campaigns = userId
+  const campaigns = context
     ? await db
         .select({
           id: campaignSchema.id,
@@ -47,7 +47,7 @@ export default async function CampaignsPage(props: { params: Promise<{ locale: s
         })
         .from(campaignSchema)
         .leftJoin(contactSchema, eq(contactSchema.campaignId, campaignSchema.id))
-        .where(eq(campaignSchema.userId, userId))
+        .where(eq(campaignSchema.organizationId, context.organizationId))
         .groupBy(campaignSchema.id)
         .orderBy(desc(campaignSchema.createdAt))
     : [];

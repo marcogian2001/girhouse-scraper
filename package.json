@@ -16,7 +16,7 @@
     "lint:fix": "ultracite fix --type-aware --type-check",
     "check:types": "tsc --noEmit --pretty",
     "check:deps": "knip",
-    "check:i18n": "i18n-check -l src/locales -s en -u src -f next-intl -i \"CampaignStatus.status_*\" \"ContactStatus.status_*\" \"CampaignSettingsForm.processor_*\" \"ColumnMapper.field_*\" \"EnrichmentCard.confidence_*\" \"EnrichmentCard.field_*\" \"KnowledgeManager.kind_*\"",
+    "check:i18n": "i18n-check -l src/locales -s en -u src -f next-intl -i \"CampaignStatus.status_*\" \"ContactStatus.status_*\" \"CampaignSettingsForm.processor_*\" \"ColumnMapper.field_*\" \"EnrichmentCard.confidence_*\" \"EnrichmentCard.field_*\" \"KnowledgeManager.kind_*\" \"LeadSearchStatus.status_*\" \"LeadStatus.status_*\" \"LeadSearchForm.website_*\" \"LeadTable.source_*\" \"LeadTable.filter_*\"",
     "commit": "commit",
     "test": "vitest run",
     "test:e2e": "playwright test",

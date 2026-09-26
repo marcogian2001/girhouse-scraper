@@ -61,17 +61,24 @@
   "AppSidebar": {
     "group_workspace": "Workspace",
     "nav_home": "Home",
+    "nav_leads": "Lead search",
     "nav_campaigns": "Campaigns",
     "nav_knowledge": "Knowledge base",
     "new_campaign": "New campaign",
     "sign_out": "Sign out"
+  },
+  "OrganizationSwitcher": {
+    "label": "Organizations",
+    "new_organization": "New organization",
+    "switching": "Switching to {name}…"
   },
   "UsageSummary": {
     "title": "{month} spend",
     "anthropic_line": "Anthropic · {tokens} tokens",
     "parallel_line": "Parallel · {runs, plural, one {# search} other {# searches}}",
     "parallel_cost": "~{cost}",
-    "tooltip": "{month} spend: {total}"
+    "tooltip": "{month} spend: {total}",
+    "leads_line": "Lead search"
   },
   "DashboardHomePage": {
     "title": "Welcome back, {name}",
@@ -113,6 +120,92 @@
     "status_approved": "Approved",
     "status_failed": "Failed"
   },
+  "LeadSearchStatus": {
+    "status_searching": "Searching Google Maps",
+    "status_qualifying": "Finding contacts",
+    "status_done": "Done",
+    "status_failed": "Failed"
+  },
+  "LeadStatus": {
+    "status_found": "Found",
+    "status_researching": "Researching",
+    "status_finding_email": "Finding email",
+    "status_ready": "Ready",
+    "status_filtered_out": "Filtered out",
+    "status_no_email": "No email",
+    "status_failed": "Failed"
+  },
+  "LeadSearchesPage": {
+    "title": "Lead search",
+    "subtitle": "Businesses found on Google Maps, with their decision maker and a verified email.",
+    "button_new": "New search",
+    "empty_title": "No searches yet",
+    "empty_description": "Search Google Maps by category and area, and every business comes back with who to email.",
+    "button_first": "Start the first search",
+    "column_name": "Name",
+    "column_location": "Area",
+    "column_status": "Status",
+    "column_leads": "Businesses",
+    "column_ready": "Ready",
+    "column_created": "Created",
+    "row_meta": "{ready, plural, one {# lead ready} other {# leads ready}} · {location}"
+  },
+  "NewLeadSearchPage": {
+    "title": "New lead search",
+    "description": "Pick what to look for and where. Each business is researched for its decision maker and a verified email."
+  },
+  "LeadSearchForm": {
+    "label_name": "Search name",
+    "error_name": "Enter a name.",
+    "label_terms": "What to search for",
+    "placeholder_terms": "accountant\nreal estate agency",
+    "hint_terms": "One Google Maps search per line.",
+    "error_terms": "Enter between 1 and 10 searches.",
+    "label_location": "Where",
+    "placeholder_location": "Bergamo, Italy",
+    "error_location": "Enter an area.",
+    "label_max_results": "Maximum businesses",
+    "error_max_results": "Enter a number between 1 and {max}.",
+    "label_website": "Website",
+    "website_any": "All businesses",
+    "website_without": "Only without a website",
+    "website_with": "Only with a website",
+    "hint_website": "Applied before any research is paid for.",
+    "label_processor": "Research depth",
+    "estimate": "Estimated cost at most {cost}, if every business is researched and has its email looked up.",
+    "button_create": "Start the search",
+    "error_create": "The search was not started."
+  },
+  "LeadSearchProgress": {
+    "searching": "Searching Google Maps…",
+    "progress_count": "{done} of {total} businesses done · {ready} ready"
+  },
+  "LeadTable": {
+    "badge_no_website": "No website",
+    "source_prospeo": "Work email",
+    "source_public": "Published email",
+    "note_catch_all": "{source}, domain accepts all mail",
+    "count": "{shown} of {total} businesses",
+    "filter_label": "Filter by website",
+    "filter_all": "All businesses",
+    "filter_without": "Without a website",
+    "filter_with": "With a website",
+    "column_company": "Business",
+    "column_website": "Website",
+    "column_person": "Decision maker",
+    "column_email": "Email",
+    "column_status": "Status"
+  },
+  "LeadSearchPage": {
+    "back_link": "All searches",
+    "meta_line": "{terms} · {location} · {filter} · created on {date}",
+    "spend_line": "Estimated spend {total}",
+    "button_campaign": "Create a campaign with {count, plural, one {# lead} other {# leads}}"
+  },
+  "DeleteLeadSearchButton": {
+    "confirm": "Delete this search and its leads?",
+    "button": "Delete search"
+  },
   "CampaignsPage": {
     "title": "Campaigns",
     "subtitle": "Every contact list you have turned into a sequence.",
@@ -127,6 +220,16 @@
   "NewCampaignPage": {
     "title": "New campaign",
     "description": "Upload a contact list, map the columns, then choose how the sequence should run."
+  },
+  "NewOrganizationPage": {
+    "title": "New organization",
+    "description": "Each organization keeps its own campaigns, knowledge base and spend."
+  },
+  "NewOrganizationForm": {
+    "label_name": "Name",
+    "error_name": "Enter a name of up to 80 characters.",
+    "button_create": "Create organization",
+    "error_create": "The organization could not be created."
   },
   "CampaignDetailPage": {
     "back_link": "All campaigns",
@@ -291,7 +394,7 @@
   },
   "UsagePage": {
     "title": "Usage",
-    "subtitle": "Estimated spend on Anthropic and Parallel, priced at list rates when each call was made.",
+    "subtitle": "Estimated spend on Anthropic, Parallel and lead search, priced at list rates when each call was made.",
     "label_from": "From",
     "label_to": "To",
     "button_filter": "Filter",
@@ -310,7 +413,10 @@
     "column_day": "Day",
     "deleted_campaign": "Deleted campaign",
     "empty_title": "No spend in this period",
-    "empty_description": "Spend shows up here as soon as a campaign researches contacts or writes emails."
+    "empty_description": "Spend shows up here as soon as a campaign researches contacts or writes emails.",
+    "stat_leads_cost": "Lead search spend",
+    "stat_leads_note": "Google Maps, email lookup and verification",
+    "lead_search_label": "Lead search: {name}"
   },
   "UsageTable": {
     "column_anthropic_tokens": "Anthropic tokens",
@@ -319,7 +425,8 @@
     "column_parallel_cost": "Parallel cost",
     "column_total": "Total",
     "row_total": "Total",
-    "row_meta": "Anthropic {tokens} tokens, {anthropicCost} · Parallel {runs, plural, one {# search} other {# searches}}, {parallelCost}"
+    "row_meta": "Anthropic {tokens} tokens, {anthropicCost} · Parallel {runs, plural, one {# search} other {# searches}}, {parallelCost} · Lead search {leadsCost}",
+    "column_leads_cost": "Lead search cost"
   },
   "NotFoundPage": {
     "code": "Error 404",

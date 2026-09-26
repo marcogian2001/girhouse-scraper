@@ -1,4 +1,4 @@
-import { Coins, Hash, Receipt, Search, Sparkles } from 'lucide-react';
+import { Coins, Hash, MapPin, Receipt, Search, Sparkles } from 'lucide-react';
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 import { StatCard } from '@/components/StatCard';
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,7 @@ import {
 import { Field, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { UsageTable } from '@/components/UsageTable';
-import { getApiUserId } from '@/libs/ApiAuth';
+import { getApiContext } from '@/libs/ApiAuth';
 import { Link } from '@/libs/I18nNavigation';
 import { EMPTY_USAGE_TOTALS, getCampaignUsage, getDailyUsage, getUsageTotals } from '@/libs/Usage';
 import { currentMonthRange, parseDateRange, previousMonthRange } from '@/utils/DateRange';
@@ -28,17 +28,17 @@ export default async function UsagePage(props: {
 
   const t = await getTranslations({ locale, namespace: 'UsagePage' });
   const format = await getFormatter({ locale });
-  const userId = await getApiUserId();
+  const context = await getApiContext();
 
   const range = parseDateRange(await props.searchParams);
   const thisMonth = currentMonthRange();
   const lastMonth = previousMonthRange();
 
-  const [totals, daily, campaigns] = userId
+  const [totals, daily, campaigns] = context
     ? await Promise.all([
-        getUsageTotals({ userId, range }),
-        getDailyUsage({ userId, range }),
-        getCampaignUsage({ userId, range }),
+        getUsageTotals({ organizationId: context.organizationId, range }),
+        getDailyUsage({ organizationId: context.organizationId, range }),
+        getCampaignUsage({ organizationId: context.organizationId, range }),
       ])
     : [EMPTY_USAGE_TOTALS, [], []];
 
@@ -47,6 +47,32 @@ export default async function UsagePage(props: {
   // Days are bare dates, parsed as UTC midnight, so they are read back in UTC
   const day = (value: string) =>
     format.dateTime(new Date(value), { dateStyle: 'medium', timeZone: 'UTC' });
+
+  const usageLabel = (row: (typeof campaigns)[number]) => {
+    if (row.campaignId && row.name) {
+      return (
+        <Link
+          href={`/dashboard/campaigns/${row.campaignId}/`}
+          className="font-medium hover:text-primary"
+        >
+          {row.name}
+        </Link>
+      );
+    }
+
+    if (row.leadSearchId && row.leadSearchName) {
+      return (
+        <Link
+          href={`/dashboard/leads/${row.leadSearchId}/`}
+          className="font-medium hover:text-primary"
+        >
+          {t('lead_search_label', { name: row.leadSearchName })}
+        </Link>
+      );
+    }
+
+    return <span className="text-muted-foreground">{t('deleted_campaign')}</span>;
+  };
 
   const stats = [
     {
@@ -75,6 +101,12 @@ export default async function UsagePage(props: {
       label: t('stat_parallel_runs'),
       value: totals.parallelRuns,
       icon: <Search className="size-4" />,
+    },
+    {
+      label: t('stat_leads_cost'),
+      value: usd(totals.leadsCostMicros),
+      icon: <MapPin className="size-4" />,
+      description: t('stat_leads_note'),
     },
   ];
 
@@ -123,11 +155,11 @@ export default async function UsagePage(props: {
         {t('total_line', {
           from: day(range.from),
           to: day(range.to),
-          total: usd(totals.anthropicCostMicros + totals.parallelCostMicros),
+          total: usd(totals.totalCostMicros),
         })}
       </p>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         {stats.map((stat) => (
           <StatCard
             key={stat.label}
@@ -161,18 +193,8 @@ export default async function UsagePage(props: {
               title={t('column_campaign')}
               total={totals}
               rows={campaigns.map((campaign) => ({
-                key: campaign.campaignId ?? 'deleted',
-                label:
-                  campaign.campaignId && campaign.name ? (
-                    <Link
-                      href={`/dashboard/campaigns/${campaign.campaignId}/`}
-                      className="font-medium hover:text-primary"
-                    >
-                      {campaign.name}
-                    </Link>
-                  ) : (
-                    <span className="text-muted-foreground">{t('deleted_campaign')}</span>
-                  ),
+                key: campaign.campaignId ?? campaign.leadSearchId ?? 'deleted',
+                label: usageLabel(campaign),
                 totals: campaign,
               }))}
             />

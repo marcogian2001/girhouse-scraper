@@ -61,17 +61,24 @@
   "AppSidebar": {
     "group_workspace": "Area di lavoro",
     "nav_home": "Home",
+    "nav_leads": "Ricerca lead",
     "nav_campaigns": "Campagne",
     "nav_knowledge": "Base di conoscenza",
     "new_campaign": "Nuova campagna",
     "sign_out": "Esci"
+  },
+  "OrganizationSwitcher": {
+    "label": "Organizzazioni",
+    "new_organization": "Nuova organizzazione",
+    "switching": "Passaggio a {name}…"
   },
   "UsageSummary": {
     "title": "Spesa di {month}",
     "anthropic_line": "Anthropic · {tokens} token",
     "parallel_line": "Parallel · {runs, plural, one {# ricerca} other {# ricerche}}",
     "parallel_cost": "~{cost}",
-    "tooltip": "Spesa di {month}: {total}"
+    "tooltip": "Spesa di {month}: {total}",
+    "leads_line": "Ricerca lead"
   },
   "DashboardHomePage": {
     "title": "Bentornato, {name}",
@@ -113,6 +120,92 @@
     "status_approved": "Approvato",
     "status_failed": "Fallito"
   },
+  "LeadSearchStatus": {
+    "status_searching": "Ricerca su Google Maps",
+    "status_qualifying": "Ricerca contatti",
+    "status_done": "Completata",
+    "status_failed": "Fallita"
+  },
+  "LeadStatus": {
+    "status_found": "Trovato",
+    "status_researching": "Ricerca in corso",
+    "status_finding_email": "Ricerca email",
+    "status_ready": "Pronto",
+    "status_filtered_out": "Escluso dal filtro",
+    "status_no_email": "Nessuna email",
+    "status_failed": "Fallito"
+  },
+  "LeadSearchesPage": {
+    "title": "Ricerca lead",
+    "subtitle": "Attività trovate su Google Maps, con il decisore e un’email verificata.",
+    "button_new": "Nuova ricerca",
+    "empty_title": "Nessuna ricerca",
+    "empty_description": "Cerca su Google Maps per categoria e zona: per ogni attività trovi a chi scrivere.",
+    "button_first": "Avvia la prima ricerca",
+    "column_name": "Nome",
+    "column_location": "Zona",
+    "column_status": "Stato",
+    "column_leads": "Attività",
+    "column_ready": "Pronti",
+    "column_created": "Creata il",
+    "row_meta": "{ready, plural, one {# lead pronto} other {# lead pronti}} · {location}"
+  },
+  "NewLeadSearchPage": {
+    "title": "Nuova ricerca lead",
+    "description": "Scegli cosa cercare e dove. Per ogni attività vengono cercati il decisore e un’email verificata."
+  },
+  "LeadSearchForm": {
+    "label_name": "Nome della ricerca",
+    "error_name": "Inserisci un nome.",
+    "label_terms": "Cosa cercare",
+    "placeholder_terms": "commercialista\nagenzia immobiliare",
+    "hint_terms": "Una ricerca su Google Maps per riga.",
+    "error_terms": "Inserisci da 1 a 10 ricerche.",
+    "label_location": "Dove",
+    "placeholder_location": "Bergamo, Italia",
+    "error_location": "Inserisci una zona.",
+    "label_max_results": "Numero massimo di attività",
+    "error_max_results": "Inserisci un numero tra 1 e {max}.",
+    "label_website": "Sito web",
+    "website_any": "Tutte le attività",
+    "website_without": "Solo senza sito",
+    "website_with": "Solo con sito",
+    "hint_website": "Applicato prima di pagare qualsiasi ricerca.",
+    "label_processor": "Profondità della ricerca",
+    "estimate": "Costo stimato al massimo {cost}, se ogni attività viene analizzata e ne viene cercata l’email.",
+    "button_create": "Avvia la ricerca",
+    "error_create": "La ricerca non è stata avviata."
+  },
+  "LeadSearchProgress": {
+    "searching": "Ricerca su Google Maps…",
+    "progress_count": "{done} attività su {total} completate · {ready} pronte"
+  },
+  "LeadTable": {
+    "badge_no_website": "Senza sito",
+    "source_prospeo": "Email aziendale",
+    "source_public": "Email pubblica",
+    "note_catch_all": "{source}, il dominio accetta tutta la posta",
+    "count": "{shown} attività su {total}",
+    "filter_label": "Filtra per sito web",
+    "filter_all": "Tutte le attività",
+    "filter_without": "Senza sito",
+    "filter_with": "Con sito",
+    "column_company": "Attività",
+    "column_website": "Sito",
+    "column_person": "Decisore",
+    "column_email": "Email",
+    "column_status": "Stato"
+  },
+  "LeadSearchPage": {
+    "back_link": "Tutte le ricerche",
+    "meta_line": "{terms} · {location} · {filter} · creata il {date}",
+    "spend_line": "Spesa stimata {total}",
+    "button_campaign": "Crea una campagna con {count, plural, one {# lead} other {# lead}}"
+  },
+  "DeleteLeadSearchButton": {
+    "confirm": "Eliminare questa ricerca e i suoi lead?",
+    "button": "Elimina ricerca"
+  },
   "CampaignsPage": {
     "title": "Campagne",
     "subtitle": "Tutte le liste di contatti trasformate in sequenze.",
@@ -127,6 +220,16 @@
   "NewCampaignPage": {
     "title": "Nuova campagna",
     "description": "Carica una lista di contatti, mappa le colonne e scegli come deve funzionare la sequenza."
+  },
+  "NewOrganizationPage": {
+    "title": "Nuova organizzazione",
+    "description": "Ogni organizzazione ha le sue campagne, la sua base di conoscenza e la sua spesa."
+  },
+  "NewOrganizationForm": {
+    "label_name": "Nome",
+    "error_name": "Inserisci un nome di massimo 80 caratteri.",
+    "button_create": "Crea organizzazione",
+    "error_create": "Impossibile creare l'organizzazione."
   },
   "CampaignDetailPage": {
     "back_link": "Tutte le campagne",
@@ -291,7 +394,7 @@
   },
   "UsagePage": {
     "title": "Consumi",
-    "subtitle": "Spesa stimata su Anthropic e Parallel, a prezzo di listino al momento di ogni chiamata.",
+    "subtitle": "Spesa stimata su Anthropic, Parallel e ricerca lead, a prezzo di listino al momento di ogni chiamata.",
     "label_from": "Dal",
     "label_to": "Al",
     "button_filter": "Filtra",
@@ -310,7 +413,10 @@
     "column_day": "Giorno",
     "deleted_campaign": "Campagna eliminata",
     "empty_title": "Nessuna spesa in questo periodo",
-    "empty_description": "La spesa compare qui appena una campagna fa ricerche sui contatti o scrive le email."
+    "empty_description": "La spesa compare qui appena una campagna fa ricerche sui contatti o scrive le email.",
+    "stat_leads_cost": "Spesa ricerca lead",
+    "stat_leads_note": "Google Maps, ricerca e verifica email",
+    "lead_search_label": "Ricerca lead: {name}"
   },
   "UsageTable": {
     "column_anthropic_tokens": "Token Anthropic",
@@ -319,7 +425,8 @@
     "column_parallel_cost": "Costo Parallel",
     "column_total": "Totale",
     "row_total": "Totale",
-    "row_meta": "Anthropic {tokens} token, {anthropicCost} · Parallel {runs, plural, one {# ricerca} other {# ricerche}}, {parallelCost}"
+    "row_meta": "Anthropic {tokens} token, {anthropicCost} · Parallel {runs, plural, one {# ricerca} other {# ricerche}}, {parallelCost} · Ricerca lead {leadsCost}",
+    "column_leads_cost": "Costo ricerca lead"
   },
   "NotFoundPage": {
     "code": "Errore 404",

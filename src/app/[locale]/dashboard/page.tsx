@@ -19,6 +19,7 @@ import {
 import { auth } from '@/libs/Auth';
 import { db } from '@/libs/DB';
 import { Link } from '@/libs/I18nNavigation';
+import { resolveOrganizationId } from '@/libs/Organization';
 import {
   campaignSchema,
   contactSchema,
@@ -34,33 +35,35 @@ export default async function DashboardHomePage(props: { params: Promise<{ local
 
   const t = await getTranslations({ locale, namespace: 'DashboardHomePage' });
   const session = await auth.api.getSession({ headers: await headers() });
-  const userId = session?.user.id;
+  const organizationId = session
+    ? await resolveOrganizationId(session.user.id, session.session.activeOrganizationId)
+    : null;
 
-  const [campaignStats, contactStats, draftStats, knowledgeStats, recent] = userId
+  const [campaignStats, contactStats, draftStats, knowledgeStats, recent] = organizationId
     ? await Promise.all([
         // `count(column)` skips NULLs, so `live` is exactly what reached Instantly
         db
           .select({ total: count(), live: count(campaignSchema.instantlyCampaignId) })
           .from(campaignSchema)
-          .where(eq(campaignSchema.userId, userId)),
+          .where(eq(campaignSchema.organizationId, organizationId)),
 
         db
           .select({ total: count() })
           .from(contactSchema)
           .innerJoin(campaignSchema, eq(contactSchema.campaignId, campaignSchema.id))
-          .where(eq(campaignSchema.userId, userId)),
+          .where(eq(campaignSchema.organizationId, organizationId)),
 
         db
           .select({ total: count() })
           .from(emailDraftSchema)
           .innerJoin(contactSchema, eq(emailDraftSchema.contactId, contactSchema.id))
           .innerJoin(campaignSchema, eq(contactSchema.campaignId, campaignSchema.id))
-          .where(eq(campaignSchema.userId, userId)),
+          .where(eq(campaignSchema.organizationId, organizationId)),
 
         db
           .select({ total: count() })
           .from(knowledgeAssetSchema)
-          .where(eq(knowledgeAssetSchema.userId, userId)),
+          .where(eq(knowledgeAssetSchema.organizationId, organizationId)),
 
         // Grouping by the primary key lets the other columns ride along
         db
@@ -73,7 +76,7 @@ export default async function DashboardHomePage(props: { params: Promise<{ local
           })
           .from(campaignSchema)
           .leftJoin(contactSchema, eq(contactSchema.campaignId, campaignSchema.id))
-          .where(eq(campaignSchema.userId, userId))
+          .where(eq(campaignSchema.organizationId, organizationId))
           .groupBy(campaignSchema.id)
           .orderBy(desc(campaignSchema.createdAt))
           .limit(RECENT_CAMPAIGN_LIMIT),

@@ -1,27 +1,29 @@
 import { and, eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 import * as z from 'zod';
-import { getApiUserId, notFound, unauthorized } from '@/libs/ApiAuth';
+import { getApiContext, notFound, unauthorized } from '@/libs/ApiAuth';
 import { db } from '@/libs/DB';
 import { campaignSchema, contactSchema, emailDraftSchema } from '@/models/Schema';
 import { EmailDraftValidation } from '@/validations/EmailDraftValidation';
 
 export const PATCH = async (request: Request, props: { params: Promise<{ id: string }> }) => {
-  const userId = await getApiUserId();
+  const context = await getApiContext();
 
-  if (!userId) {
+  if (!context) {
     return unauthorized();
   }
 
   const { id } = await props.params;
 
-  // Ownership lives two joins up, on the campaign
+  // The owning organization lives two joins up, on the campaign
   const [owned] = await db
     .select({ id: emailDraftSchema.id })
     .from(emailDraftSchema)
     .innerJoin(contactSchema, eq(contactSchema.id, emailDraftSchema.contactId))
     .innerJoin(campaignSchema, eq(campaignSchema.id, contactSchema.campaignId))
-    .where(and(eq(emailDraftSchema.id, id), eq(campaignSchema.userId, userId)))
+    .where(
+      and(eq(emailDraftSchema.id, id), eq(campaignSchema.organizationId, context.organizationId)),
+    )
     .limit(1);
 
   if (!owned) {

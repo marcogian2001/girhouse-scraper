@@ -1,6 +1,6 @@
 'use client';
 
-import { BookOpen, LayoutDashboard, Send } from 'lucide-react';
+import { BookOpen, LayoutDashboard, Search, Send } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import {
   SidebarGroup,
@@ -25,6 +25,7 @@ export const SidebarNav = (props: { pathname: string }) => {
   // Icons are component values and the labels need `t`, so the list is built here
   const items = [
     { href: '/dashboard/', label: t('nav_home'), icon: LayoutDashboard, exact: true },
+    { href: '/dashboard/leads/', label: t('nav_leads'), icon: Search, exact: false },
     { href: '/dashboard/campaigns/', label: t('nav_campaigns'), icon: Send, exact: false },
     { href: '/dashboard/knowledge/', label: t('nav_knowledge'), icon: BookOpen, exact: false },
   ];

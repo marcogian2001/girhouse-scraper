@@ -41,3 +41,21 @@ export const getI18nPath = (url: string, locale: string) => {
 
   return `/${locale}${url}`;
 };
+
+/**
+ * Builds a unique URL slug for an organization from its display name.
+ * The random suffix keeps two organizations with the same name apart.
+ * @param name The organization name.
+ * @returns A lowercase, hyphenated slug ending in a short random suffix.
+ */
+export const createOrganizationSlug = (name: string) => {
+  const base = name
+    .normalize('NFKD')
+    .replaceAll(/[\u0300-\u036F]/gu, '')
+    .toLowerCase()
+    .replaceAll(/[^a-z0-9]+/gu, '-')
+    .replaceAll(/^-+|-+$/gu, '');
+  const suffix = crypto.randomUUID().slice(0, 8);
+
+  return base ? `${base}-${suffix}` : suffix;
+};

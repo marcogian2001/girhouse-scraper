@@ -3,6 +3,7 @@
 import { ChevronsUpDown, Plus } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { BrandMark } from '@/components/BrandMark';
+import { OrganizationSwitcher } from '@/components/OrganizationSwitcher';
 import { SidebarNav } from '@/components/SidebarNav';
 import { SignOutButton } from '@/components/SignOutButton';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -42,6 +43,8 @@ const getInitials = (name: string) =>
 
 export const AppSidebar = (props: {
   user: { name: string; email: string };
+  organizations: { id: string; name: string }[];
+  activeOrganizationId: string | null;
   // Server-rendered by the layout and passed through, see `UsageSummary`
   usageSummary: React.ReactNode;
 }) => {
@@ -62,6 +65,11 @@ export const AppSidebar = (props: {
             {AppConfig.name}
           </span>
         </Link>
+
+        <OrganizationSwitcher
+          organizations={props.organizations}
+          activeOrganizationId={props.activeOrganizationId}
+        />
 
         <Button asChild className="mt-1 group-data-[collapsible=icon]:px-0">
           <Link href="/dashboard/campaigns/new/">

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getApiUserId, unauthorized } from '@/libs/ApiAuth';
+import { getApiContext, unauthorized } from '@/libs/ApiAuth';
 import { Env } from '@/libs/Env';
 import { processJobs } from '@/libs/JobWorker';
 
@@ -15,7 +15,7 @@ export const POST = async (request: Request) => {
   const secret = request.headers.get('x-jobs-secret');
   const isScheduler = Boolean(Env.JOBS_SECRET) && secret === Env.JOBS_SECRET;
 
-  if (!isScheduler && !(await getApiUserId())) {
+  if (!isScheduler && !(await getApiContext())) {
     return unauthorized();
   }
 
