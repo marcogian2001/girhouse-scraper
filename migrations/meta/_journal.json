@@ -71,6 +71,13 @@
       "when": 1790609685235,
       "tag": "0009_email_poll",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1790614776292,
+      "tag": "0010_email_poll_description",
+      "breakpoints": true
     }
   ]
 }

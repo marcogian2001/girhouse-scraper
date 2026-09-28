@@ -541,20 +541,24 @@
     "instructions": "Read each version and score it from 1 to 10. Your scores are saved as you go, and you can change them at any time."
   },
   "EmailPollBallot": {
-    "progress": "{voted} of {total} scored",
+    "progress": "{voted} of {total} versions scored",
     "progress_done": "All scored, thank you!",
-    "group_title": "Recipient {number}: {label}",
-    "group_description": "{count, plural, one {# version} other {# versions}} written for the same recipient.",
+    "leads_count": "{count, plural, one {# lead} other {# leads}} to review",
+    "lead_title": "Lead {number} of {count}: {label}",
+    "page": "{page} / {pages}",
+    "button_previous": "Previous",
+    "button_next": "Next",
     "error_vote": "Could not save your score"
   },
   "EmailPollVariantCard": {
-    "title": "Version {letter}",
-    "step_label": "Email {step}"
+    "title": "Version {letter} of {count}",
+    "step_label": "Email {step}",
+    "subject_label": "Subject:"
   },
   "EmailPollScoreScale": {
     "label": "Score",
-    "hint_low": "1 · Poor",
-    "hint_high": "10 · Excellent"
+    "hint_low": "1 · I'd never reply",
+    "hint_high": "10 · I'd reply right away"
   },
   "NotFoundPage": {
     "code": "Error 404",

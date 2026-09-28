@@ -1,9 +1,12 @@
 'use client';
 
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { EmailPollVariantCard } from '@/components/EmailPollVariantCard';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import type { BallotGroup } from '@/utils/EmailPoll';
 
@@ -17,17 +20,29 @@ export const EmailPollBallot = (props: { pollId: string; groups: BallotGroup[] }
         ),
       ),
   );
+  const [pageIndex, setPageIndex] = useState(0);
   const [hasError, setHasError] = useState(false);
+
+  // One page per sequence, recipient by recipient
+  const pages = props.groups.flatMap((group, groupIndex) =>
+    group.variants.map((variant) => ({ group, groupIndex, variant })),
+  );
+  const current = pages[pageIndex];
 
   const total = scores.size;
   const voted = [...scores.values()].filter((score) => score !== null).length;
+
+  const goTo = (index: number) => {
+    setPageIndex(index);
+    window.scrollTo({ top: 0 });
+  };
 
   const handleVote = async (itemId: string, score: number) => {
     const previous = scores.get(itemId) ?? null;
 
     // Shown at once, and rolled back if the server turns it down
     setHasError(false);
-    setScores((current) => new Map(current).set(itemId, score));
+    setScores((currentScores) => new Map(currentScores).set(itemId, score));
 
     const response = await fetch(`/api/email-polls/${props.pollId}/votes`, {
       method: 'PUT',
@@ -36,17 +51,26 @@ export const EmailPollBallot = (props: { pollId: string; groups: BallotGroup[] }
     });
 
     if (!response.ok) {
-      setScores((current) => new Map(current).set(itemId, previous));
+      setScores((currentScores) => new Map(currentScores).set(itemId, previous));
       setHasError(true);
     }
   };
 
+  if (!current) {
+    return null;
+  }
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <div className="sticky top-0 z-10 -mx-4 space-y-2 bg-background/90 px-4 py-3 backdrop-blur-sm md:mx-0 md:px-0">
-        <p className="text-sm font-medium">
-          {voted === total ? t('progress_done') : t('progress', { voted, total })}
-        </p>
+        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 text-sm">
+          <p className="font-medium">
+            {voted === total ? t('progress_done') : t('progress', { voted, total })}
+          </p>
+          <p className="text-muted-foreground">
+            {t('leads_count', { count: props.groups.length })}
+          </p>
+        </div>
         <Progress value={total > 0 ? (voted / total) * 100 : 0} />
       </div>
 
@@ -56,29 +80,67 @@ export const EmailPollBallot = (props: { pollId: string; groups: BallotGroup[] }
         </Alert>
       )}
 
-      {props.groups.map((group, index) => (
-        <section key={group.id} className="space-y-4">
-          <div className="space-y-1">
-            <h2 className="text-lg font-semibold tracking-tight">
-              {t('group_title', { number: index + 1, label: group.label })}
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              {t('group_description', { count: group.variants.length })}
-            </p>
-          </div>
+      <Card size="sm">
+        <CardHeader>
+          <CardTitle>
+            {t('lead_title', {
+              number: current.groupIndex + 1,
+              count: props.groups.length,
+              label: current.group.label,
+            })}
+          </CardTitle>
+        </CardHeader>
 
-          {group.variants.map((variant) => (
-            <EmailPollVariantCard
-              key={variant.id}
-              variant={variant}
-              score={scores.get(variant.id) ?? null}
-              onVote={async (score) => {
-                await handleVote(variant.id, score);
-              }}
-            />
-          ))}
-        </section>
-      ))}
+        {current.group.description && (
+          <CardContent>
+            <p className="text-sm whitespace-pre-line text-muted-foreground">
+              {current.group.description}
+            </p>
+          </CardContent>
+        )}
+      </Card>
+
+      <EmailPollVariantCard
+        // Remounted per page, so nothing from the previous sequence lingers
+        key={current.variant.id}
+        variant={current.variant}
+        variantCount={current.group.variants.length}
+        score={scores.get(current.variant.id) ?? null}
+        onVote={async (score) => {
+          await handleVote(current.variant.id, score);
+        }}
+      />
+
+      <div className="flex items-center justify-between gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          className="h-9"
+          disabled={pageIndex === 0}
+          onClick={() => {
+            goTo(pageIndex - 1);
+          }}
+        >
+          <ChevronLeft />
+          {t('button_previous')}
+        </Button>
+
+        <span className="text-sm text-muted-foreground tabular-nums">
+          {t('page', { page: pageIndex + 1, pages: pages.length })}
+        </span>
+
+        <Button
+          type="button"
+          className="h-9"
+          disabled={pageIndex === pages.length - 1}
+          onClick={() => {
+            goTo(pageIndex + 1);
+          }}
+        >
+          {t('button_next')}
+          <ChevronRight />
+        </Button>
+      </div>
     </div>
   );
 };

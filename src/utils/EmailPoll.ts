@@ -1,12 +1,14 @@
 import { createHash } from 'node:crypto';
 import type { EmailPollEmail } from '@/models/Schema';
 import { findCopywritingModel } from '@/utils/CopywritingModels';
+import type { EnrichmentContent } from '@/validations/EnrichmentValidation';
 
 /** What the poll stores about one sequence, as read back for display. */
 type PollItem = {
   id: string;
   groupKey: string;
   groupLabel: string;
+  groupDescription: string | null;
   model: string;
   costMicros: number;
   emails: EmailPollEmail[];
@@ -26,6 +28,7 @@ export type BallotVariant = {
 export type BallotGroup = {
   id: string;
   label: string;
+  description: string | null;
   variants: BallotVariant[];
 };
 
@@ -42,6 +45,63 @@ export const seededShuffle = <T extends { id: string }>(items: readonly T[], see
   );
 
   return items.toSorted((a, b) => (rank.get(a.id) ?? '').localeCompare(rank.get(b.id) ?? ''));
+};
+
+/** Longest company blurb a voter reads before the emails. */
+const MAX_ABOUT_LENGTH = 280;
+
+/** Research answers that mean nothing was found. */
+const EMPTY_ANSWER = /^(?:n\/?a|none|unknown|not found)$/iu;
+
+/**
+ * Picks the first value that carries information.
+ * @param values Candidate values, most specific first.
+ * @returns The first non-blank value, or null.
+ */
+const firstFilled = (...values: (string | null | undefined)[]) =>
+  values
+    .map((value) => value?.trim() ?? '')
+    .find((value) => value !== '' && !EMPTY_ANSWER.test(value)) ?? null;
+
+/**
+ * Sums up who a sequence was written for, so voters can judge how well it fits.
+ * @param options The description options.
+ * @param options.contact The contact from the campaign CSV.
+ * @param options.research The Parallel research on the contact, if any.
+ * @returns A line of facts and a short company blurb, or null when nothing is known.
+ */
+export const describeRecipient = (options: {
+  contact: {
+    firstName: string | null;
+    lastName: string | null;
+    company: string | null;
+    extra: Record<string, string>;
+  };
+  research: EnrichmentContent | null;
+}) => {
+  const facts = [
+    firstFilled(
+      options.research?.full_name,
+      [options.contact.firstName, options.contact.lastName].filter(Boolean).join(' '),
+    ),
+    firstFilled(options.research?.current_role),
+    firstFilled(options.research?.current_company, options.contact.company),
+    firstFilled(options.research?.company_industry),
+    firstFilled(options.research?.location, options.contact.extra.City),
+  ].filter((fact) => fact !== null);
+
+  const about = firstFilled(
+    options.research?.company_description,
+    options.contact.extra['Business description'],
+  );
+  const clipped =
+    about && about.length > MAX_ABOUT_LENGTH
+      ? `${about.slice(0, MAX_ABOUT_LENGTH).trimEnd()}…`
+      : about;
+
+  const lines = [facts.join(' · '), clipped].filter((line) => line !== null && line !== '');
+
+  return lines.length > 0 ? lines.join('\n') : null;
 };
 
 /**
@@ -78,6 +138,7 @@ export const buildBallot = (options: {
       // The first item id, so the recipient's email never reaches the browser
       id: items[0]?.id ?? key,
       label: items[0]?.groupLabel ?? key,
+      description: items[0]?.groupDescription ?? null,
       variants: shuffled.map((item, index) => ({
         id: item.id,
         letter: String.fromCodePoint(65 + index),

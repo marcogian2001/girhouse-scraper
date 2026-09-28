@@ -9,6 +9,7 @@ import { microsToUsd, USD_FORMAT } from '@/utils/UsageFormat';
 
 export const EmailPollVariantCard = (props: {
   variant: BallotVariant;
+  variantCount: number;
   score: number | null;
   onVote: (score: number) => void;
 }) => {
@@ -19,7 +20,9 @@ export const EmailPollVariantCard = (props: {
     <Card>
       <CardHeader>
         <div className="flex flex-wrap items-center gap-2">
-          <CardTitle>{t('title', { letter: props.variant.letter })}</CardTitle>
+          <CardTitle>
+            {t('title', { letter: props.variant.letter, count: props.variantCount })}
+          </CardTitle>
 
           {props.variant.model && <Badge variant="secondary">{props.variant.model}</Badge>}
 
@@ -35,13 +38,16 @@ export const EmailPollVariantCard = (props: {
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-5">
+      <CardContent className="divide-y">
         {props.variant.emails.map((email) => (
-          <div key={email.stepIndex} className="space-y-1.5">
+          <div key={email.stepIndex} className="space-y-3 py-5 first:pt-0 last:pb-0">
             <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
               {t('step_label', { step: email.stepIndex })}
             </p>
-            <p className="font-medium">{email.subject}</p>
+            <p className="rounded-md bg-muted/50 px-3 py-2">
+              <span className="text-muted-foreground">{t('subject_label')}</span>{' '}
+              <span className="font-medium">{email.subject}</span>
+            </p>
             <p className="text-sm whitespace-pre-wrap">{email.body}</p>
           </div>
         ))}

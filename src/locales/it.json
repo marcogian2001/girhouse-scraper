@@ -541,20 +541,24 @@
     "instructions": "Leggi ogni versione e dalle un voto da 1 a 10. I voti vengono salvati subito e puoi cambiarli in qualsiasi momento."
   },
   "EmailPollBallot": {
-    "progress": "{voted} di {total} votate",
+    "progress": "{voted} di {total} versioni votate",
     "progress_done": "Tutte votate, grazie!",
-    "group_title": "Destinatario {number}: {label}",
-    "group_description": "{count, plural, one {# versione scritta} other {# versioni scritte}} per lo stesso destinatario.",
+    "leads_count": "{count, plural, one {# lead} other {# lead}} da valutare",
+    "lead_title": "Lead {number} di {count}: {label}",
+    "page": "{page} / {pages}",
+    "button_previous": "Indietro",
+    "button_next": "Avanti",
     "error_vote": "Impossibile salvare il voto"
   },
   "EmailPollVariantCard": {
-    "title": "Versione {letter}",
-    "step_label": "Email {step}"
+    "title": "Versione {letter} di {count}",
+    "step_label": "Email {step}",
+    "subject_label": "Oggetto:"
   },
   "EmailPollScoreScale": {
     "label": "Voto",
-    "hint_low": "1 · Scarsa",
-    "hint_high": "10 · Eccellente"
+    "hint_low": "1 · Non risponderei mai",
+    "hint_high": "10 · Risponderei subito"
   },
   "NotFoundPage": {
     "code": "Errore 404",

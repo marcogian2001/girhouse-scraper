@@ -1,0 +1,1 @@
+ALTER TABLE "email_poll_item" ADD COLUMN "group_description" text;

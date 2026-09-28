@@ -588,6 +588,8 @@ export const emailPollItemSchema = pgTable(
     // The contact's email, lower-cased, so the same recipient is compared across campaigns
     groupKey: text('group_key').notNull(),
     groupLabel: text('group_label').notNull(),
+    // Who the recipient is, from the research, so voters can judge the fit
+    groupDescription: text('group_description'),
     // Copywriting model id when the poll was created
     model: text('model').notNull(),
     // The campaign's copywriting spend split evenly across the contacts it wrote

@@ -6,8 +6,10 @@ import {
   emailPollItemSchema,
   emailPollSchema,
   emailPollVoteSchema,
+  enrichmentSchema,
 } from '@/models/Schema';
-import { buildBallot, scoreStats, summarizeByModel } from '@/utils/EmailPoll';
+import { buildBallot, describeRecipient, scoreStats, summarizeByModel } from '@/utils/EmailPoll';
+import { EnrichmentContentValidation } from '@/validations/EnrichmentValidation';
 import { db } from './DB';
 import { getUsageTotals } from './Usage';
 
@@ -59,33 +61,45 @@ const loadCampaignItems = async (options: {
     return [];
   }
 
-  const [drafts, usage] = await Promise.all([
+  const contactIds = contacts.map((contact) => contact.id);
+
+  const [drafts, enrichments, usage] = await Promise.all([
     db
       .select()
       .from(emailDraftSchema)
-      .where(
-        inArray(
-          emailDraftSchema.contactId,
-          contacts.map((contact) => contact.id),
-        ),
-      )
+      .where(inArray(emailDraftSchema.contactId, contactIds))
       .orderBy(asc(emailDraftSchema.stepIndex)),
+    db
+      .select({ contactId: enrichmentSchema.contactId, content: enrichmentSchema.content })
+      .from(enrichmentSchema)
+      .where(inArray(enrichmentSchema.contactId, contactIds)),
     getUsageTotals({ organizationId: options.organizationId, campaignId: options.campaign.id }),
   ]);
 
   // Spend is recorded per campaign, so each sequence gets an even share of it
   const costMicros = Math.round(usage.copywritingCostMicros / written.length);
 
-  return contacts.map((contact) => ({
-    campaignId: options.campaign.id,
-    groupKey: contact.email.toLowerCase(),
-    groupLabel: contactLabel(contact),
-    model: options.campaign.copywritingModel,
-    costMicros,
-    emails: drafts
-      .filter((draft) => draft.contactId === contact.id)
-      .map((draft) => ({ stepIndex: draft.stepIndex, subject: draft.subject, body: draft.body })),
-  }));
+  return contacts.map((contact) => {
+    // Content is stored as raw JSON, so it is re-validated before it is described
+    const research = EnrichmentContentValidation.safeParse(
+      enrichments.find((enrichment) => enrichment.contactId === contact.id)?.content,
+    );
+
+    return {
+      campaignId: options.campaign.id,
+      groupKey: contact.email.toLowerCase(),
+      groupLabel: contactLabel(contact),
+      groupDescription: describeRecipient({
+        contact,
+        research: research.success ? research.data : null,
+      }),
+      model: options.campaign.copywritingModel,
+      costMicros,
+      emails: drafts
+        .filter((draft) => draft.contactId === contact.id)
+        .map((draft) => ({ stepIndex: draft.stepIndex, subject: draft.subject, body: draft.body })),
+    };
+  });
 };
 
 /**

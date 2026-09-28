@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { buildBallot, scoreStats, seededShuffle, summarizeByModel } from './EmailPoll';
+import {
+  buildBallot,
+  describeRecipient,
+  scoreStats,
+  seededShuffle,
+  summarizeByModel,
+} from './EmailPoll';
 
 const emails = [{ stepIndex: 1, subject: 'Hello', body: 'Body' }];
 
@@ -13,7 +19,7 @@ const items = [
     costMicros: 3000,
   },
   { id: 'c', groupKey: 'y@example.com', groupLabel: 'Beta', model: 'gpt-6-sol', costMicros: 1100 },
-].map((item) => ({ ...item, emails }));
+].map((item) => ({ ...item, groupDescription: null, emails }));
 
 describe('Email poll', () => {
   describe('Seeded shuffle', () => {
@@ -82,6 +88,50 @@ describe('Email poll', () => {
       });
 
       expect(ballot[1]?.variants[0]?.score).toBe(8);
+    });
+  });
+
+  describe('Recipient description', () => {
+    const contact = { firstName: 'Anna', lastName: 'Rossi', company: 'Acme', extra: {} };
+
+    it('prefers the research over the CSV', () => {
+      const description = describeRecipient({
+        contact,
+        research: {
+          person_found: true,
+          identity_match_confidence: 'high',
+          identity_match_reasoning: '',
+          full_name: 'Anna Maria Rossi',
+          current_role: 'CEO',
+          current_company: 'Acme Srl',
+          company_description: 'Makes anvils.',
+          company_industry: 'Manufacturing',
+          location: 'Unknown',
+          linkedin_url: '',
+          recent_activity: '',
+          personalization_hooks: '',
+        },
+      });
+
+      expect(description).toBe('Anna Maria Rossi · CEO · Acme Srl · Manufacturing\nMakes anvils.');
+    });
+
+    it('falls back to the CSV without research', () => {
+      const description = describeRecipient({
+        contact: { ...contact, extra: { City: 'Bergamo', 'Business description': 'Bakery' } },
+        research: null,
+      });
+
+      expect(description).toBe('Anna Rossi · Acme · Bergamo\nBakery');
+    });
+
+    it('returns null when nothing is known', () => {
+      const description = describeRecipient({
+        contact: { firstName: null, lastName: null, company: null, extra: {} },
+        research: null,
+      });
+
+      expect(description).toBeNull();
     });
   });
 
