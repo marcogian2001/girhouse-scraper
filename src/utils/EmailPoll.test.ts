@@ -116,6 +116,34 @@ describe('Email poll', () => {
       expect(description).toBe('Anna Maria Rossi · CEO · Acme Srl · Manufacturing\nMakes anvils.');
     });
 
+    it('keeps only the gist of long research answers', () => {
+      const description = describeRecipient({
+        contact,
+        research: {
+          person_found: true,
+          identity_match_confidence: 'medium',
+          identity_match_reasoning: '',
+          full_name: 'Giovanna Pelloso',
+          current_role:
+            'Clinical pedagogist (Pedagogista clinico), self-employed; her profile also lists a support-teacher role.',
+          current_company: 'Self-employed; her profile also lists IC Noale as a current employer.',
+          company_description: `${'She works independently in clinical pedagogy. '.repeat(3)}${'x'.repeat(100)}`,
+          company_industry: 'Education, training and educational consulting',
+          location: 'Piombino Dese, Italy',
+          linkedin_url: '',
+          recent_activity: '',
+          personalization_hooks: '',
+        },
+      });
+
+      const [facts, about] = description?.split('\n') ?? [];
+
+      expect(facts).toBe(
+        'Giovanna Pelloso · Clinical pedagogist · Self-employed · Education, training and educational consulting · Piombino Dese, Italy',
+      );
+      expect(about).toBe('She works independently in clinical pedagogy. '.repeat(3).trimEnd());
+    });
+
     it('falls back to the CSV without research', () => {
       const description = describeRecipient({
         contact: { ...contact, extra: { City: 'Bergamo', 'Business description': 'Bakery' } },

@@ -1,4 +1,4 @@
-import { and, asc, countDistinct, desc, eq, inArray } from 'drizzle-orm';
+import { and, asc, countDistinct, desc, eq, inArray, sql } from 'drizzle-orm';
 import {
   campaignSchema,
   contactSchema,
@@ -26,6 +26,17 @@ const contactLabel = (contact: typeof contactSchema.$inferSelect) => {
   const fullName = [contact.firstName, contact.lastName].filter(Boolean).join(' ');
 
   return fullName === '' ? contact.email : fullName;
+};
+
+/**
+ * Reads the Parallel research of a contact.
+ * @param content The stored research, raw JSON.
+ * @returns The research, or null when there is none or it no longer parses.
+ */
+const researchFor = (content: unknown) => {
+  const research = EnrichmentContentValidation.safeParse(content);
+
+  return research.success ? research.data : null;
 };
 
 /**
@@ -79,27 +90,22 @@ const loadCampaignItems = async (options: {
   // Spend is recorded per campaign, so each sequence gets an even share of it
   const costMicros = Math.round(usage.copywritingCostMicros / written.length);
 
-  return contacts.map((contact) => {
-    // Content is stored as raw JSON, so it is re-validated before it is described
-    const research = EnrichmentContentValidation.safeParse(
-      enrichments.find((enrichment) => enrichment.contactId === contact.id)?.content,
-    );
-
-    return {
-      campaignId: options.campaign.id,
-      groupKey: contact.email.toLowerCase(),
-      groupLabel: contactLabel(contact),
-      groupDescription: describeRecipient({
-        contact,
-        research: research.success ? research.data : null,
-      }),
-      model: options.campaign.copywritingModel,
-      costMicros,
-      emails: drafts
-        .filter((draft) => draft.contactId === contact.id)
-        .map((draft) => ({ stepIndex: draft.stepIndex, subject: draft.subject, body: draft.body })),
-    };
-  });
+  return contacts.map((contact) => ({
+    campaignId: options.campaign.id,
+    groupKey: contact.email.toLowerCase(),
+    groupLabel: contactLabel(contact),
+    groupDescription: describeRecipient({
+      contact,
+      research: researchFor(
+        enrichments.find((enrichment) => enrichment.contactId === contact.id)?.content,
+      ),
+    }),
+    model: options.campaign.copywritingModel,
+    costMicros,
+    emails: drafts
+      .filter((draft) => draft.contactId === contact.id)
+      .map((draft) => ({ stepIndex: draft.stepIndex, subject: draft.subject, body: draft.body })),
+  }));
 };
 
 /**
@@ -206,6 +212,49 @@ const getPollItems = async (pollId: string) =>
     .orderBy(asc(emailPollItemSchema.groupKey), asc(emailPollItemSchema.id));
 
 /**
+ * Describes the recipients of items saved without a description, such as
+ * those of polls created before descriptions were stored. Nothing is written.
+ * @param items The poll items.
+ * @returns The items, each with a description when one can be built.
+ */
+const withDescriptions = async (items: (typeof emailPollItemSchema.$inferSelect)[]) => {
+  const missing = items.filter((item) => item.groupDescription === null && item.campaignId);
+
+  if (missing.length === 0) {
+    return items;
+  }
+
+  const contacts = await db
+    .select({ contact: contactSchema, content: enrichmentSchema.content })
+    .from(contactSchema)
+    .leftJoin(enrichmentSchema, eq(enrichmentSchema.contactId, contactSchema.id))
+    .where(
+      and(
+        inArray(contactSchema.campaignId, [
+          ...new Set(missing.map((item) => item.campaignId ?? '')),
+        ]),
+        inArray(
+          sql`lower(${contactSchema.email})`,
+          missing.map((item) => item.groupKey),
+        ),
+      ),
+    );
+
+  const descriptions = new Map(
+    contacts.map((row) => [
+      `${row.contact.campaignId}:${row.contact.email.toLowerCase()}`,
+      describeRecipient({ contact: row.contact, research: researchFor(row.content) }),
+    ]),
+  );
+
+  return items.map((item) => ({
+    ...item,
+    groupDescription:
+      item.groupDescription ?? descriptions.get(`${item.campaignId}:${item.groupKey}`) ?? null,
+  }));
+};
+
+/**
  * Loads what one anonymous voter may see of a poll.
  * @param options The ballot options.
  * @param options.pollId The poll from the shared link.
@@ -238,7 +287,7 @@ export const getEmailPollBallot = async (options: { pollId: string; voterHash: s
     name: poll.name,
     groups: buildBallot({
       poll,
-      items,
+      items: await withDescriptions(items),
       scores: new Map(votes.map((vote) => [vote.itemId, vote.score])),
       voterHash: options.voterHash,
     }),

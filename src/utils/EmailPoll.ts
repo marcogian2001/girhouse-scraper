@@ -48,7 +48,10 @@ export const seededShuffle = <T extends { id: string }>(items: readonly T[], see
 };
 
 /** Longest company blurb a voter reads before the emails. */
-const MAX_ABOUT_LENGTH = 280;
+const MAX_ABOUT_LENGTH = 200;
+
+/** Longest single fact, such as a role or a company name. */
+const MAX_FACT_LENGTH = 60;
 
 /** Research answers that mean nothing was found. */
 const EMPTY_ANSWER = /^(?:n\/?a|none|unknown|not found)$/iu;
@@ -62,6 +65,46 @@ const firstFilled = (...values: (string | null | undefined)[]) =>
   values
     .map((value) => value?.trim() ?? '')
     .find((value) => value !== '' && !EMPTY_ANSWER.test(value)) ?? null;
+
+/**
+ * Cuts a text to a length, marking the cut.
+ * @param value The text to cut.
+ * @param max The longest length kept.
+ * @returns The text, ending in an ellipsis when it was cut.
+ */
+const clip = (value: string, max: number) =>
+  value.length > max ? `${value.slice(0, max).trimEnd()}…` : value;
+
+/**
+ * Keeps the gist of a research answer, which often trails into asides and caveats.
+ * @param value The answer, or null.
+ * @returns The text before any parenthesis or semicolon, or null when nothing is left.
+ */
+const shortFact = (value: string | null) => {
+  const gist =
+    value
+      ?.split(/ \(|;/u)[0]
+      ?.trim()
+      .replace(/[.,:]+$/u, '') ?? '';
+
+  return gist === '' ? null : clip(gist, MAX_FACT_LENGTH);
+};
+
+/**
+ * Shortens a company blurb, ending on a whole sentence when one fits.
+ * @param value The blurb.
+ * @returns The blurb, at most about `MAX_ABOUT_LENGTH` characters.
+ */
+const shortAbout = (value: string) => {
+  if (value.length <= MAX_ABOUT_LENGTH) {
+    return value;
+  }
+
+  const head = value.slice(0, MAX_ABOUT_LENGTH);
+  const sentenceEnd = head.lastIndexOf('. ');
+
+  return sentenceEnd > 0 ? head.slice(0, sentenceEnd + 1) : clip(value, MAX_ABOUT_LENGTH);
+};
 
 /**
  * Sums up who a sequence was written for, so voters can judge how well it fits.
@@ -88,18 +131,18 @@ export const describeRecipient = (options: {
     firstFilled(options.research?.current_company, options.contact.company),
     firstFilled(options.research?.company_industry),
     firstFilled(options.research?.location, options.contact.extra.City),
-  ].filter((fact) => fact !== null);
+  ]
+    .map(shortFact)
+    .filter((fact) => fact !== null);
 
   const about = firstFilled(
     options.research?.company_description,
     options.contact.extra['Business description'],
   );
-  const clipped =
-    about && about.length > MAX_ABOUT_LENGTH
-      ? `${about.slice(0, MAX_ABOUT_LENGTH).trimEnd()}…`
-      : about;
 
-  const lines = [facts.join(' · '), clipped].filter((line) => line !== null && line !== '');
+  const lines = [facts.join(' · '), about === null ? null : shortAbout(about)].filter(
+    (line) => line !== null && line !== '',
+  );
 
   return lines.length > 0 ? lines.join('\n') : null;
 };
