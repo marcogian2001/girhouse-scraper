@@ -1,4 +1,4 @@
-import { and, asc, eq } from 'drizzle-orm';
+import { and, asc, eq, notInArray } from 'drizzle-orm';
 import { ArrowLeft, Send } from 'lucide-react';
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
@@ -14,6 +14,7 @@ import { db } from '@/libs/DB';
 import { Link } from '@/libs/I18nNavigation';
 import { getUsageTotals } from '@/libs/Usage';
 import { leadSchema, leadSearchSchema } from '@/models/Schema';
+import { RESERVE_LEAD_STATUSES } from '@/utils/Leads';
 import { microsToUsd, USD_FORMAT } from '@/utils/UsageFormat';
 
 export default async function LeadSearchPage(props: {
@@ -48,10 +49,18 @@ export default async function LeadSearchPage(props: {
   const leads = await db
     .select()
     .from(leadSchema)
-    .where(eq(leadSchema.leadSearchId, search.id))
+    .where(
+      and(
+        eq(leadSchema.leadSearchId, search.id),
+        notInArray(leadSchema.status, [...RESERVE_LEAD_STATUSES]),
+      ),
+    )
     .orderBy(asc(leadSchema.createdAt), asc(leadSchema.company));
 
   const readyCount = leads.filter((lead) => lead.status === 'ready').length;
+  // Only searches that scan their area know when it has run out of new businesses
+  const isShort =
+    search.locationPlaceId !== null && search.status === 'done' && leads.length < search.maxResults;
 
   return (
     <div className="space-y-6">
@@ -82,6 +91,7 @@ export default async function LeadSearchPage(props: {
           {t('spend_line', {
             total: format.number(microsToUsd(usage.totalCostMicros), USD_FORMAT),
           })}
+          {search.reserveClaimed > 0 && ` · ${t('reserve_line', { count: search.reserveClaimed })}`}
         </p>
       </div>
 
@@ -90,6 +100,14 @@ export default async function LeadSearchPage(props: {
           <LeadSearchProgress leadSearchId={search.id} initialStatus={search.status} />
         </CardContent>
       </Card>
+
+      {isShort && (
+        <Alert>
+          <AlertDescription>
+            {t('short_alert', { found: leads.length, max: search.maxResults })}
+          </AlertDescription>
+        </Alert>
+      )}
 
       {search.errorMessage && (
         <Alert variant="destructive">

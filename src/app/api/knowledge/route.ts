@@ -3,8 +3,10 @@ import { NextResponse } from 'next/server';
 import * as z from 'zod';
 import { getApiContext, unauthorized } from '@/libs/ApiAuth';
 import { db } from '@/libs/DB';
+import { Env } from '@/libs/Env';
 import { knowledgeAssetSchema } from '@/models/Schema';
-import { uploadKnowledgeFile } from '@/services/Claude';
+import { uploadKnowledgeFile as uploadToAnthropic } from '@/services/Claude';
+import { uploadKnowledgeFile as uploadToOpenAI } from '@/services/OpenAI';
 import {
   DOCUMENT_MIME_TYPES,
   KnowledgePromptValidation,
@@ -86,6 +88,11 @@ export const POST = async (request: Request) => {
   // Text is inlined into the cached system prompt; PDFs go to the Files API
   const isPdf = file.type === 'application/pdf';
 
+  // Uploaded to OpenAI too, when configured, so GPT campaigns can read the PDF
+  const [anthropicFileId, openaiFileId] = isPdf
+    ? await Promise.all([uploadToAnthropic(file), Env.OPENAI_API_KEY ? uploadToOpenAI(file) : null])
+    : [null, null];
+
   const [asset] = await db
     .insert(knowledgeAssetSchema)
     .values({
@@ -96,7 +103,8 @@ export const POST = async (request: Request) => {
       mimeType: file.type,
       sizeBytes: file.size,
       content: isPdf ? null : await file.text(),
-      anthropicFileId: isPdf ? await uploadKnowledgeFile(file) : null,
+      anthropicFileId,
+      openaiFileId,
     })
     .returning({ id: knowledgeAssetSchema.id });
 

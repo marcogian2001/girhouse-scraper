@@ -67,6 +67,7 @@ export const POST = async (request: Request) => {
         name: settings.name,
         status: 'enriching',
         processor: settings.processor,
+        copywritingModel: settings.copywritingModel,
         emailCount: settings.emailCount,
         delaysDays: settings.delaysDays,
         knowledgeAssetIds: ownedAssetIds.map((asset) => asset.id),

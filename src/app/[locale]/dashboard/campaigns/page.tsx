@@ -1,6 +1,6 @@
 import { count, desc, eq } from 'drizzle-orm';
 import { ChevronRight, Megaphone, Plus } from 'lucide-react';
-import { getTranslations, setRequestLocale } from 'next-intl/server';
+import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 import { NoCampaigns } from '@/components/NoCampaigns';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Button } from '@/components/ui/button';
@@ -25,13 +25,16 @@ import {
 import { getApiContext } from '@/libs/ApiAuth';
 import { db } from '@/libs/DB';
 import { Link } from '@/libs/I18nNavigation';
+import { campaignCostMicros } from '@/libs/Usage';
 import { campaignSchema, contactSchema } from '@/models/Schema';
+import { microsToUsd, USD_FORMAT } from '@/utils/UsageFormat';
 
 export default async function CampaignsPage(props: { params: Promise<{ locale: string }> }) {
   const { locale } = await props.params;
   setRequestLocale(locale);
 
   const t = await getTranslations({ locale, namespace: 'CampaignsPage' });
+  const format = await getFormatter({ locale });
   const context = await getApiContext();
 
   const campaigns = context
@@ -44,6 +47,7 @@ export default async function CampaignsPage(props: { params: Promise<{ locale: s
           createdAt: campaignSchema.createdAt,
           // Grouping by the primary key lets the other columns ride along
           contacts: count(contactSchema.id),
+          costMicros: campaignCostMicros,
         })
         .from(campaignSchema)
         .leftJoin(contactSchema, eq(contactSchema.campaignId, campaignSchema.id))
@@ -51,6 +55,7 @@ export default async function CampaignsPage(props: { params: Promise<{ locale: s
         .groupBy(campaignSchema.id)
         .orderBy(desc(campaignSchema.createdAt))
     : [];
+  const usd = (micros: number) => format.number(microsToUsd(micros), USD_FORMAT);
 
   return (
     <div className="space-y-6">
@@ -80,6 +85,7 @@ export default async function CampaignsPage(props: { params: Promise<{ locale: s
                   <TableHead>{t('column_status')}</TableHead>
                   <TableHead className="text-right">{t('column_contacts')}</TableHead>
                   <TableHead className="text-right">{t('column_emails')}</TableHead>
+                  <TableHead className="text-right">{t('column_cost')}</TableHead>
                   <TableHead>{t('column_created')}</TableHead>
                 </TableRow>
               </TableHeader>
@@ -104,6 +110,10 @@ export default async function CampaignsPage(props: { params: Promise<{ locale: s
 
                     <TableCell className="text-right tabular-nums">{campaign.emailCount}</TableCell>
 
+                    <TableCell className="text-right tabular-nums">
+                      {usd(campaign.costMicros)}
+                    </TableCell>
+
                     <TableCell className="text-muted-foreground">
                       {campaign.createdAt.toLocaleDateString(locale)}
                     </TableCell>
@@ -113,7 +123,7 @@ export default async function CampaignsPage(props: { params: Promise<{ locale: s
             </Table>
           </Card>
 
-          {/* A five-column table has nowhere to go on a phone, so it becomes rows */}
+          {/* A six-column table has nowhere to go on a phone, so it becomes rows */}
           <Card className="p-0 md:hidden">
             <ItemGroup>
               {campaigns.map((campaign) => (
@@ -130,6 +140,7 @@ export default async function CampaignsPage(props: { params: Promise<{ locale: s
                       <ItemDescription>
                         {t('row_meta', {
                           contacts: campaign.contacts,
+                          cost: usd(campaign.costMicros),
                           date: campaign.createdAt.toLocaleDateString(locale),
                         })}
                       </ItemDescription>

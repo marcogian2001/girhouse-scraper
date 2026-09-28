@@ -36,6 +36,8 @@ export type LeadRowView = Pick<
   | 'company'
   | 'city'
   | 'category'
+  | 'description'
+  | 'phone'
   | 'website'
   | 'domain'
   | 'hasWebsite'
@@ -59,6 +61,36 @@ const WEBSITE_VIEWS: WebsiteView[] = ['all', 'without', 'with'];
  */
 const personOf = (lead: LeadRowView) =>
   [lead.firstName, lead.lastName].filter(Boolean).join(' ') || null;
+
+/**
+ * Links the phone of a lead so it can be dialled from a phone.
+ * @param lead The lead to call.
+ * @returns The link, or nothing when no phone is known.
+ */
+const phoneLink = (lead: LeadRowView) =>
+  lead.phone && (
+    <a
+      href={`tel:${lead.phone.replaceAll(/[^\d+]/gu, '')}`}
+      className="block text-xs text-muted-foreground hover:text-primary"
+    >
+      {lead.phone}
+    </a>
+  );
+
+/**
+ * Shows the start of the business description, with the full text on hover.
+ * @param lead The lead to describe.
+ * @returns The description, or nothing when none was found.
+ */
+const descriptionLine = (lead: LeadRowView) =>
+  lead.description && (
+    <p
+      title={lead.description}
+      className="line-clamp-2 max-w-md text-xs whitespace-normal text-muted-foreground"
+    >
+      {lead.description}
+    </p>
+  );
 
 export const LeadTable = (props: { leads: LeadRowView[] }) => {
   const t = useTranslations('LeadTable');
@@ -144,6 +176,8 @@ export const LeadTable = (props: { leads: LeadRowView[] }) => {
                   <div className="text-xs text-muted-foreground">
                     {[lead.category, lead.city].filter(Boolean).join(' · ')}
                   </div>
+                  {phoneLink(lead)}
+                  {descriptionLine(lead)}
                 </TableCell>
 
                 <TableCell>{websiteCell(lead)}</TableCell>
@@ -177,6 +211,8 @@ export const LeadTable = (props: { leads: LeadRowView[] }) => {
                 <ItemDescription>
                   {[personOf(lead), lead.email].filter(Boolean).join(' · ') || lead.city}
                 </ItemDescription>
+                {phoneLink(lead)}
+                {descriptionLine(lead)}
                 <div>{websiteCell(lead)}</div>
               </ItemContent>
 

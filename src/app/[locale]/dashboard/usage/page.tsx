@@ -76,19 +76,19 @@ export default async function UsagePage(props: {
 
   const stats = [
     {
-      label: t('stat_anthropic_cost'),
-      value: usd(totals.anthropicCostMicros),
+      label: t('stat_copywriting_cost'),
+      value: usd(totals.copywritingCostMicros),
       icon: <Sparkles className="size-4" />,
     },
     {
-      label: t('stat_anthropic_tokens'),
-      value: tokens(totals.anthropicTokens),
+      label: t('stat_copywriting_tokens'),
+      value: tokens(totals.copywritingTokens),
       icon: <Hash className="size-4" />,
       description: t('stat_tokens_breakdown', {
-        input: tokens(totals.anthropicInputTokens),
-        output: tokens(totals.anthropicOutputTokens),
-        cacheWrite: tokens(totals.anthropicCacheWriteTokens),
-        cacheRead: tokens(totals.anthropicCacheReadTokens),
+        input: tokens(totals.copywritingInputTokens),
+        output: tokens(totals.copywritingOutputTokens),
+        cacheWrite: tokens(totals.copywritingCacheWriteTokens),
+        cacheRead: tokens(totals.copywritingCacheReadTokens),
       }),
     },
     {

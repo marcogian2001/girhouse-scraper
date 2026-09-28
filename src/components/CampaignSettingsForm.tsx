@@ -1,8 +1,9 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useFormatter, useTranslations } from 'next-intl';
 import type { UseFormReturn } from 'react-hook-form';
 import { useWatch } from 'react-hook-form';
+import { KnowledgeMentionTextarea } from '@/components/KnowledgeMentionTextarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   Field,
@@ -17,12 +18,20 @@ import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
 import type { parallelProcessorEnum } from '@/models/Schema';
+import type { CopywritingProvider, CopywritingTokens } from '@/utils/CopywritingModels';
+import {
+  COPYWRITING_MODELS,
+  estimateCallCostMicros,
+  findCopywritingModel,
+} from '@/utils/CopywritingModels';
+import { microsToUsd, USD_FORMAT } from '@/utils/UsageFormat';
 import type { CampaignSettingsInput } from '@/validations/CampaignValidation';
 import { MAX_EMAILS_PER_SEQUENCE } from '@/validations/CampaignValidation';
 
@@ -30,22 +39,46 @@ type Processor = (typeof parallelProcessorEnum.enumValues)[number];
 
 const PROCESSORS: Processor[] = ['lite', 'base', 'core', 'pro'];
 
+const PROVIDERS: CopywritingProvider[] = ['anthropic', 'openai'];
+
+/** What model cost estimates are based on. */
+export type CostBasis = { tokens: CopywritingTokens; fromHistory: boolean };
+
 /** The wizard owns the form so answers survive stepping back and forward. */
 export type CampaignSettingsFormApi = UseFormReturn<CampaignSettingsInput>;
 
 export const CampaignSettingsForm = (props: {
   form: CampaignSettingsFormApi;
-  knowledgeAssets: { id: string; name: string }[];
+  // `missingOnOpenAI` flags PDFs uploaded before OpenAI was configured
+  knowledgeAssets: {
+    id: string;
+    name: string;
+    kind: 'prompt' | 'document';
+    missingOnOpenAI: boolean;
+  }[];
+  contactCount: number;
+  costBasis: CostBasis;
 }) => {
   const t = useTranslations('CampaignSettingsForm');
+  const format = useFormatter();
 
   // `useWatch` rather than `form.watch`: the React compiler caches `watch` results
   // on the stable `form` reference, so the UI would never reflect later changes
   const emailCount = useWatch({ control: props.form.control, name: 'emailCount' });
   const delaysDays = useWatch({ control: props.form.control, name: 'delaysDays' });
   const selectedProcessor = useWatch({ control: props.form.control, name: 'processor' });
+  const selectedModel = useWatch({ control: props.form.control, name: 'copywritingModel' });
   const knowledgeAssetIds =
     useWatch({ control: props.form.control, name: 'knowledgeAssetIds' }) ?? [];
+  const extraPrompt = useWatch({ control: props.form.control, name: 'extraPrompt' }) ?? '';
+
+  const documents = props.knowledgeAssets.filter((asset) => asset.kind === 'document');
+
+  const skipsPdfs =
+    findCopywritingModel(selectedModel ?? '')?.provider === 'openai' &&
+    props.knowledgeAssets.some(
+      (asset) => asset.missingOnOpenAI && knowledgeAssetIds.includes(asset.id),
+    );
 
   return (
     <FieldGroup>
@@ -112,6 +145,58 @@ export const CampaignSettingsForm = (props: {
         </Field>
       </div>
 
+      <Field>
+        <FieldLabel htmlFor="copywriting-model">{t('label_model')}</FieldLabel>
+
+        <Select
+          value={selectedModel}
+          onValueChange={(value) => {
+            const model = COPYWRITING_MODELS.find((option) => option.id === value);
+
+            if (model) {
+              props.form.setValue('copywritingModel', model.id);
+            }
+          }}
+        >
+          <SelectTrigger id="copywriting-model" className="w-full">
+            <SelectValue />
+          </SelectTrigger>
+
+          <SelectContent>
+            {PROVIDERS.map((provider) => (
+              <SelectGroup key={provider}>
+                <SelectLabel>{t(`group_${provider}`)}</SelectLabel>
+
+                {COPYWRITING_MODELS.filter((model) => model.provider === provider).map((model) => (
+                  <SelectItem key={model.id} value={model.id} className="*:[span]:last:flex-1">
+                    {model.label}
+                    <span className="ml-auto text-muted-foreground tabular-nums">
+                      {t('model_cost', {
+                        cost: format.number(
+                          microsToUsd(
+                            props.contactCount *
+                              estimateCallCostMicros({ model, tokens: props.costBasis.tokens }),
+                          ),
+                          USD_FORMAT,
+                        ),
+                      })}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <FieldDescription>
+          {t(props.costBasis.fromHistory ? 'hint_model_cost_history' : 'hint_model_cost_typical', {
+            count: props.contactCount,
+          })}
+        </FieldDescription>
+
+        {skipsPdfs && <FieldDescription>{t('hint_model_pdf_missing')}</FieldDescription>}
+      </Field>
+
       <FieldSet>
         <FieldLegend variant="label">{t('label_delays')}</FieldLegend>
         <FieldDescription>{t('hint_delays')}</FieldDescription>
@@ -163,7 +248,15 @@ export const CampaignSettingsForm = (props: {
 
       <Field>
         <FieldLabel htmlFor="extra-prompt">{t('label_prompt')}</FieldLabel>
-        <Textarea id="extra-prompt" rows={6} {...props.form.register('extraPrompt')} />
+        <KnowledgeMentionTextarea
+          id="extra-prompt"
+          rows={6}
+          documents={documents}
+          value={extraPrompt}
+          onValueChange={(value) => {
+            props.form.setValue('extraPrompt', value);
+          }}
+        />
         <FieldDescription>{t('hint_prompt')}</FieldDescription>
       </Field>
     </FieldGroup>

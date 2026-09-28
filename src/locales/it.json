@@ -14,7 +14,7 @@
     "brand_title": "Cold email che sembrano scritte a mano",
     "brand_subtitle": "Carica una lista di contatti e ottieni una sequenza personale e documentata per ognuno.",
     "feature_research": "Parallel cerca informazioni su ogni contatto",
-    "feature_write": "Claude scrive la sequenza partendo da quella ricerca",
+    "feature_write": "L'AI scrive la sequenza partendo da quella ricerca",
     "feature_send": "Tu approvi, Instantly invia"
   },
   "SignInPage": {
@@ -64,6 +64,7 @@
     "nav_leads": "Ricerca lead",
     "nav_campaigns": "Campagne",
     "nav_knowledge": "Base di conoscenza",
+    "nav_email_polls": "Votazioni email",
     "new_campaign": "Nuova campagna",
     "sign_out": "Esci"
   },
@@ -74,7 +75,7 @@
   },
   "UsageSummary": {
     "title": "Spesa di {month}",
-    "anthropic_line": "Anthropic · {tokens} token",
+    "copywriting_line": "Copywriting AI · {tokens} token",
     "parallel_line": "Parallel · {runs, plural, one {# ricerca} other {# ricerche}}",
     "parallel_cost": "~{cost}",
     "tooltip": "Spesa di {month}: {total}",
@@ -83,7 +84,7 @@
   "DashboardHomePage": {
     "title": "Bentornato, {name}",
     "title_generic": "Bentornato",
-    "subtitle": "Carica una lista di contatti e Claude cerca, scrive e programma la sequenza per ogni persona.",
+    "subtitle": "Carica una lista di contatti e l'AI cerca, scrive e programma la sequenza per ogni persona.",
     "button_new": "Nuova campagna",
     "link_knowledge": "Gestisci la base di conoscenza",
     "stat_campaigns": "Campagne",
@@ -94,7 +95,7 @@
     "recent_all": "Vedi tutte",
     "recent_meta": "{contacts, plural, one {# contatto} other {# contatti}} · {date}",
     "knowledge_title": "Base di conoscenza",
-    "knowledge_description": "Prompt e documenti salvati che Claude legge prima di scrivere.",
+    "knowledge_description": "Prompt e documenti salvati che l'AI legge prima di scrivere.",
     "knowledge_button": "Apri la base di conoscenza"
   },
   "NoCampaigns": {
@@ -131,6 +132,7 @@
     "status_researching": "Ricerca in corso",
     "status_finding_email": "Ricerca email",
     "status_ready": "Pronto",
+    "status_reserve": "In riserva",
     "status_filtered_out": "Escluso dal filtro",
     "status_no_email": "Nessuna email",
     "status_failed": "Fallito"
@@ -158,12 +160,12 @@
     "label_name": "Nome della ricerca",
     "error_name": "Inserisci un nome.",
     "label_terms": "Cosa cercare",
-    "placeholder_terms": "commercialista\nagenzia immobiliare",
-    "hint_terms": "Una ricerca su Google Maps per riga.",
+    "placeholder_terms": "commercialista",
+    "hint_terms": "Premi Invio per aggiungere ogni ricerca su Google Maps.",
     "error_terms": "Inserisci da 1 a 10 ricerche.",
     "label_location": "Dove",
-    "placeholder_location": "Bergamo, Italia",
-    "error_location": "Inserisci una zona.",
+    "placeholder_location": "Cerca un comune, una provincia o una regione",
+    "error_location": "Scegli una zona tra i suggerimenti.",
     "label_max_results": "Numero massimo di attività",
     "error_max_results": "Inserisci un numero tra 1 e {max}.",
     "label_website": "Sito web",
@@ -175,6 +177,15 @@
     "estimate": "Costo stimato al massimo {cost}, se ogni attività viene analizzata e ne viene cercata l’email.",
     "button_create": "Avvia la ricerca",
     "error_create": "La ricerca non è stata avviata."
+  },
+  "SearchTermsInput": {
+    "placeholder_full": "Hai raggiunto il massimo di ricerche",
+    "remove": "Rimuovi {term}"
+  },
+  "LocationCombobox": {
+    "searching": "Ricerca delle zone…",
+    "no_results": "Nessuna zona trovata.",
+    "error_suggestions": "Suggerimenti non disponibili."
   },
   "LeadSearchProgress": {
     "searching": "Ricerca su Google Maps…",
@@ -200,11 +211,22 @@
     "back_link": "Tutte le ricerche",
     "meta_line": "{terms} · {location} · {filter} · creata il {date}",
     "spend_line": "Spesa stimata {total}",
-    "button_campaign": "Crea una campagna con {count, plural, one {# lead} other {# lead}}"
+    "button_campaign": "Crea una campagna con {count, plural, one {# lead} other {# lead}}",
+    "reserve_line": "{count, plural, one {# lead preso} other {# lead presi}} da ricerche precedenti, già pagati",
+    "short_alert": "Trovate solo {found} attività nuove su {max}. Per altre attività prova una zona più ampia o altri termini."
   },
   "DeleteLeadSearchButton": {
-    "confirm": "Eliminare questa ricerca e i suoi lead?",
-    "button": "Elimina ricerca"
+    "button": "Elimina ricerca",
+    "dialog_title": "Eliminare questa ricerca?",
+    "dialog_description": "La ricerca e tutti i lead trovati vengono eliminati definitivamente."
+  },
+  "DeleteCampaignButton": {
+    "button": "Elimina campagna",
+    "dialog_title": "Eliminare questa campagna?",
+    "dialog_description": "La campagna, i suoi contatti e le bozze vengono eliminati definitivamente. La campagna su Instantly non viene toccata."
+  },
+  "ConfirmDeleteButton": {
+    "button_cancel": "Annulla"
   },
   "CampaignsPage": {
     "title": "Campagne",
@@ -215,7 +237,8 @@
     "column_contacts": "Contatti",
     "column_emails": "Email",
     "column_created": "Creata il",
-    "row_meta": "{contacts, plural, one {# contatto} other {# contatti}} · {date}"
+    "column_cost": "Costo",
+    "row_meta": "{contacts, plural, one {# contatto} other {# contatti}} · {cost} · {date}"
   },
   "NewCampaignPage": {
     "title": "Nuova campagna",
@@ -238,11 +261,11 @@
     "tab_send": "Invio",
     "push_title": "Invia a Instantly",
     "pushed_notice": "Questa campagna è attiva su Instantly come {campaignId}.",
-    "spend_line": "Spesa stimata {total}: Anthropic {tokens} token, {anthropicCost} · Parallel {runs, plural, one {# ricerca} other {# ricerche}}, ~{parallelCost}"
+    "spend_line": "Spesa stimata {total}: copywriting AI {tokens} token, {copywritingCost} · Parallel {runs, plural, one {# ricerca} other {# ricerche}}, ~{parallelCost}"
   },
   "KnowledgePage": {
     "title": "Knowledge base",
-    "description": "Prompt e documenti che Claude legge prima di scrivere. Li scegli campagna per campagna."
+    "description": "Prompt e documenti che l'AI legge prima di scrivere. Li scegli campagna per campagna."
   },
   "NewCampaignWizard": {
     "step_upload_label": "Lista contatti",
@@ -250,7 +273,7 @@
     "step_mapping_label": "Mappatura colonne",
     "step_mapping_hint": "Indica quale colonna contiene quale campo. L’email è l’unico indispensabile.",
     "step_sequence_label": "Sequenza",
-    "step_sequence_hint": "Quante email scrivere, quanto distanziarle e cosa deve sapere Claude.",
+    "step_sequence_hint": "Quante email scrivere, quanto distanziarle e cosa deve sapere l'AI.",
     "step_review_label": "Riepilogo",
     "step_review_hint": "Un ultimo controllo prima di avviare la ricerca.",
     "step_counter": "Passo {current} di {total} · {label}",
@@ -269,6 +292,7 @@
     "review_contacts_value": "{count, plural, one {# contatto} other {# contatti}} da {file}",
     "review_emails": "Email nella sequenza",
     "review_processor": "Profondità della ricerca",
+    "review_model": "Modello",
     "review_schedule": "Programmazione",
     "review_delay": "{days}g",
     "review_knowledge": "Base di conoscenza",
@@ -304,6 +328,13 @@
     "error_name": "Inserisci un nome",
     "label_email_count": "Numero di email",
     "label_processor": "Profondità della ricerca",
+    "label_model": "Modello per la scrittura",
+    "group_anthropic": "Anthropic",
+    "group_openai": "OpenAI",
+    "model_cost": "~{cost}",
+    "hint_model_cost_history": "Costo di scrittura stimato per {count, plural, one {# contatto} other {# contatti}}, in base al consumo medio delle tue campagne precedenti.",
+    "hint_model_cost_typical": "Costo di scrittura stimato per {count, plural, one {# contatto} other {# contatti}}, in base a un consumo tipico. Diventa più precisa dopo la prima campagna.",
+    "hint_model_pdf_missing": "Alcuni PDF selezionati sono stati caricati prima di configurare OpenAI e verranno ignorati. Ricaricali per usarli con questo modello.",
     "processor_lite": "Lite — più veloce ed economica",
     "processor_base": "Base — ricerca leggera",
     "processor_core": "Core — consigliata",
@@ -313,7 +344,7 @@
     "label_delay_step": "Email {from} → {to}",
     "label_knowledge": "Knowledge base",
     "label_prompt": "Brief della campagna",
-    "hint_prompt": "Chi sei, cosa offri e quale azione vuoi ottenere. Claude lo segue per ogni contatto."
+    "hint_prompt": "Chi sei, cosa offri e quale azione vuoi ottenere. L'AI lo segue per ogni contatto."
   },
   "CampaignProgress": {
     "progress_count": "{done} contatti su {total} completati"
@@ -374,16 +405,17 @@
     "button_clear": "Deseleziona"
   },
   "KnowledgeManager": {
-    "prompt_description": "Posizionamento, tono, offerta: tutto ciò che Claude deve sapere per ogni campagna.",
+    "prompt_description": "Posizionamento, tono, offerta: tutto ciò che l'AI deve sapere per ogni campagna.",
     "label_name": "Nome",
     "label_content": "Contenuto",
     "button_save_prompt": "Salva prompt",
-    "document_description": "PDF, testo, Markdown o CSV. I PDF vengono letti direttamente da Claude.",
+    "document_description": "PDF, testo, Markdown o CSV. I PDF vengono letti direttamente dal modello.",
     "list_title": "Elementi salvati",
     "list_empty": "Nessun elemento salvato",
     "kind_prompt": "Prompt",
     "kind_document": "Documento",
     "button_delete": "Elimina",
+    "button_edit": "Modifica",
     "error_save": "Non è stato possibile salvare questo prompt.",
     "error_upload": "Non è stato possibile caricare questo file.",
     "add_title": "Aggiungi alla base di conoscenza",
@@ -392,17 +424,30 @@
     "list_empty_description": "Tutto quello che salvi qui può essere allegato a una campagna.",
     "document_hint": "PDF, testo semplice, Markdown o CSV"
   },
+  "KnowledgePromptEditor": {
+    "label_name": "Nome",
+    "label_content": "Contenuto",
+    "button_save": "Salva",
+    "button_saving": "Salvataggio…",
+    "button_cancel": "Annulla",
+    "saved": "Salvato",
+    "error_save": "Non è stato possibile salvare questo prompt."
+  },
+  "KnowledgeMentionTextarea": {
+    "hint": "Scrivi @ per citare un documento: l'AI lo leggerà sempre.",
+    "no_results": "Nessun documento trovato"
+  },
   "UsagePage": {
     "title": "Consumi",
-    "subtitle": "Spesa stimata su Anthropic, Parallel e ricerca lead, a prezzo di listino al momento di ogni chiamata.",
+    "subtitle": "Spesa stimata su copywriting AI, Parallel e ricerca lead, a prezzo di listino al momento di ogni chiamata.",
     "label_from": "Dal",
     "label_to": "Al",
     "button_filter": "Filtra",
     "preset_this_month": "Questo mese",
     "preset_last_month": "Mese scorso",
     "total_line": "Totale dal {from} al {to}: {total}",
-    "stat_anthropic_cost": "Spesa Anthropic",
-    "stat_anthropic_tokens": "Token Anthropic",
+    "stat_copywriting_cost": "Spesa copywriting AI",
+    "stat_copywriting_tokens": "Token copywriting AI",
     "stat_tokens_breakdown": "{input} input · {output} output · {cacheWrite} scritti in cache · {cacheRead} letti dalla cache",
     "stat_parallel_cost": "Spesa Parallel",
     "stat_parallel_note": "Stima: i crediti del piano gratuito non sono scalati",
@@ -419,14 +464,97 @@
     "lead_search_label": "Ricerca lead: {name}"
   },
   "UsageTable": {
-    "column_anthropic_tokens": "Token Anthropic",
-    "column_anthropic_cost": "Costo Anthropic",
+    "column_copywriting_tokens": "Token copywriting AI",
+    "column_copywriting_cost": "Costo copywriting AI",
     "column_parallel_runs": "Ricerche Parallel",
     "column_parallel_cost": "Costo Parallel",
     "column_total": "Totale",
     "row_total": "Totale",
-    "row_meta": "Anthropic {tokens} token, {anthropicCost} · Parallel {runs, plural, one {# ricerca} other {# ricerche}}, {parallelCost} · Ricerca lead {leadsCost}",
+    "row_meta": "Copywriting AI {tokens} token, {copywritingCost} · Parallel {runs, plural, one {# ricerca} other {# ricerche}}, {parallelCost} · Ricerca lead {leadsCost}",
     "column_leads_cost": "Costo ricerca lead"
+  },
+  "EmailPollsPage": {
+    "title": "Votazioni email",
+    "subtitle": "Test alla cieca in cui chiunque abbia il link vota le sequenze scritte da modelli diversi.",
+    "button_new": "Nuova votazione",
+    "empty_title": "Nessuna votazione",
+    "empty_description": "Crea una votazione per confrontare come modelli diversi scrivono la stessa sequenza.",
+    "column_name": "Nome",
+    "column_sequences": "Sequenze",
+    "column_voters": "Votanti",
+    "column_created": "Creata"
+  },
+  "NewEmailPollPage": {
+    "title": "Nuova votazione",
+    "description": "Scegli una campagna per modello. I primi contatti di ogni campagna vengono confrontati tra loro."
+  },
+  "NewEmailPollForm": {
+    "label_name": "Nome",
+    "hint_name": "Visibile ai votanti, quindi non includere i nomi dei modelli.",
+    "error_name": "Inserisci un nome",
+    "label_campaigns": "Campagne",
+    "hint_campaigns": "Si possono scegliere solo campagne con sequenze scritte.",
+    "campaign_meta": "· {model} · {written, plural, one {# sequenza} other {# sequenze}}",
+    "error_campaigns": "Scegli almeno una campagna",
+    "label_contacts": "Contatti per campagna",
+    "hint_contacts": "Presi in ordine di CSV, saltando i contatti senza sequenza.",
+    "error_contacts": "Inserisci un numero da 1 a {max}",
+    "button_create": "Crea votazione",
+    "error_create": "Impossibile creare la votazione"
+  },
+  "EmailPollPage": {
+    "back_link": "Votazioni email",
+    "share_title": "Link da condividere",
+    "share_description": "Chiunque abbia questo link può votare senza accedere. Ogni indirizzo IP vota una volta per sequenza.",
+    "visibility_title": "Cosa vedono i votanti",
+    "models_title": "Risultati per modello",
+    "models_description": "{voters, plural, =0 {Ancora nessun voto} one {# votante finora} other {# votanti finora}}",
+    "sequences_title": "Risultati per sequenza",
+    "column_model": "Modello",
+    "column_recipient": "Destinatario",
+    "column_campaign": "Campagna",
+    "column_average": "Media",
+    "column_std_dev": "Dev. std.",
+    "column_votes": "Voti",
+    "column_cost": "Costo per sequenza",
+    "campaign_deleted": "Campagna eliminata"
+  },
+  "EmailPollShareLink": {
+    "label_link": "Link della votazione",
+    "button_copy": "Copia",
+    "button_copied": "Copiato"
+  },
+  "EmailPollVisibilityForm": {
+    "label_model": "Mostra modello",
+    "hint_model": "I votanti vedono quale modello ha scritto ogni sequenza.",
+    "label_cost": "Mostra costo",
+    "hint_cost": "I votanti vedono quanto è costato scrivere ogni sequenza.",
+    "error_update": "Impossibile aggiornare la votazione"
+  },
+  "DeleteEmailPollButton": {
+    "button": "Elimina",
+    "dialog_title": "Eliminare questa votazione?",
+    "dialog_description": "Vengono eliminati la votazione, il suo link e tutti i voti. Le campagne non vengono toccate."
+  },
+  "EmailPollVotePage": {
+    "meta_title": "Votazione email",
+    "instructions": "Leggi ogni versione e dalle un voto da 1 a 10. I voti vengono salvati subito e puoi cambiarli in qualsiasi momento."
+  },
+  "EmailPollBallot": {
+    "progress": "{voted} di {total} votate",
+    "progress_done": "Tutte votate, grazie!",
+    "group_title": "Destinatario {number}: {label}",
+    "group_description": "{count, plural, one {# versione scritta} other {# versioni scritte}} per lo stesso destinatario.",
+    "error_vote": "Impossibile salvare il voto"
+  },
+  "EmailPollVariantCard": {
+    "title": "Versione {letter}",
+    "step_label": "Email {step}"
+  },
+  "EmailPollScoreScale": {
+    "label": "Voto",
+    "hint_low": "1 · Scarsa",
+    "hint_high": "10 · Eccellente"
   },
   "NotFoundPage": {
     "code": "Errore 404",

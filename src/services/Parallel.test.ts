@@ -72,6 +72,23 @@ describe('Parallel', () => {
     it('forbids constructing an email address', () => {
       expect(buildDecisionMakerInput(business())).toContain('Never guess or construct an address');
     });
+
+    it('asks for a published phone when Google Maps has none', () => {
+      const input = buildDecisionMakerInput(business({ phone: null }));
+
+      expect(input).not.toContain('- Phone:');
+      expect(input).toContain('Google Maps lists no phone');
+    });
+
+    it('skips the phone search when Google Maps has one', () => {
+      expect(buildDecisionMakerInput(business())).toContain('phone number is already known');
+    });
+
+    it('asks for the business description in Italian', () => {
+      expect(buildDecisionMakerInput(business())).toContain(
+        'business_description is written in Italian',
+      );
+    });
   });
 
   describe('Run cost', () => {

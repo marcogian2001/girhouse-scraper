@@ -40,8 +40,8 @@ export const UsageTable = (props: { title: string; rows: UsageRow[]; total: Usag
 
   const cells = (totals: UsageTotals) => (
     <>
-      <TableCell className="text-right tabular-nums">{tokens(totals.anthropicTokens)}</TableCell>
-      <TableCell className="text-right tabular-nums">{usd(totals.anthropicCostMicros)}</TableCell>
+      <TableCell className="text-right tabular-nums">{tokens(totals.copywritingTokens)}</TableCell>
+      <TableCell className="text-right tabular-nums">{usd(totals.copywritingCostMicros)}</TableCell>
       <TableCell className="text-right tabular-nums">{totals.parallelRuns}</TableCell>
       <TableCell className="text-right tabular-nums">{usd(totals.parallelCostMicros)}</TableCell>
       <TableCell className="text-right tabular-nums">{usd(totals.leadsCostMicros)}</TableCell>
@@ -58,8 +58,8 @@ export const UsageTable = (props: { title: string; rows: UsageRow[]; total: Usag
           <TableHeader className="bg-muted/50">
             <TableRow>
               <TableHead>{props.title}</TableHead>
-              <TableHead className="text-right">{t('column_anthropic_tokens')}</TableHead>
-              <TableHead className="text-right">{t('column_anthropic_cost')}</TableHead>
+              <TableHead className="text-right">{t('column_copywriting_tokens')}</TableHead>
+              <TableHead className="text-right">{t('column_copywriting_cost')}</TableHead>
               <TableHead className="text-right">{t('column_parallel_runs')}</TableHead>
               <TableHead className="text-right">{t('column_parallel_cost')}</TableHead>
               <TableHead className="text-right">{t('column_leads_cost')}</TableHead>
@@ -93,8 +93,8 @@ export const UsageTable = (props: { title: string; rows: UsageRow[]; total: Usag
                 <ItemTitle>{row.label}</ItemTitle>
                 <ItemDescription>
                   {t('row_meta', {
-                    tokens: tokens(row.totals.anthropicTokens),
-                    anthropicCost: usd(row.totals.anthropicCostMicros),
+                    tokens: tokens(row.totals.copywritingTokens),
+                    copywritingCost: usd(row.totals.copywritingCostMicros),
                     runs: row.totals.parallelRuns,
                     parallelCost: usd(row.totals.parallelCostMicros),
                     leadsCost: usd(row.totals.leadsCostMicros),

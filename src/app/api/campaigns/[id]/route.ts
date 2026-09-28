@@ -6,6 +6,31 @@ import { db } from '@/libs/DB';
 import { campaignSchema } from '@/models/Schema';
 import { CampaignNameValidation } from '@/validations/CampaignValidation';
 
+export const DELETE = async (_request: Request, props: { params: Promise<{ id: string }> }) => {
+  const context = await getApiContext();
+
+  if (!context) {
+    return unauthorized();
+  }
+
+  const { id } = await props.params;
+
+  // Contacts, drafts and queued jobs follow the campaign through their cascading
+  // foreign keys, while recorded spend stays with its campaign set to null
+  const [deleted] = await db
+    .delete(campaignSchema)
+    .where(
+      and(eq(campaignSchema.id, id), eq(campaignSchema.organizationId, context.organizationId)),
+    )
+    .returning({ id: campaignSchema.id });
+
+  if (!deleted) {
+    return notFound();
+  }
+
+  return NextResponse.json({ deleted: deleted.id });
+};
+
 export const PATCH = async (request: Request, props: { params: Promise<{ id: string }> }) => {
   const context = await getApiContext();
 

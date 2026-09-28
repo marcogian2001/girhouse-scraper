@@ -1,8 +1,10 @@
 'use client';
 
-import { FileText, MessageSquareQuote, Trash2, UploadCloud } from 'lucide-react';
+import { FileText, MessageSquareQuote, Pencil, Trash2, UploadCloud } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
+import { KnowledgeMentionTextarea } from '@/components/KnowledgeMentionTextarea';
+import { KnowledgePromptEditor } from '@/components/KnowledgePromptEditor';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,7 +28,6 @@ import {
 } from '@/components/ui/item';
 import { Spinner } from '@/components/ui/spinner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Textarea } from '@/components/ui/textarea';
 import { useRouter } from '@/libs/I18nNavigation';
 import { DOCUMENT_MIME_TYPES } from '@/validations/KnowledgeValidation';
 
@@ -34,6 +35,7 @@ export type KnowledgeAssetView = {
   id: string;
   name: string;
   kind: 'prompt' | 'document';
+  content: string | null;
 };
 
 export const KnowledgeManager = (props: { assets: KnowledgeAssetView[] }) => {
@@ -43,6 +45,9 @@ export const KnowledgeManager = (props: { assets: KnowledgeAssetView[] }) => {
   const [content, setContent] = useState('');
   const [isBusy, setIsBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  const documents = props.assets.filter((asset) => asset.kind === 'document');
 
   const handleSavePrompt = async () => {
     setIsBusy(true);
@@ -95,40 +100,67 @@ export const KnowledgeManager = (props: { assets: KnowledgeAssetView[] }) => {
           ) : (
             <ItemGroup>
               {props.assets.map((asset) => (
-                <Item key={asset.id}>
-                  <ItemMedia>
-                    <span className="flex size-9 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-                      {asset.kind === 'document' ? (
-                        <FileText className="size-4" />
-                      ) : (
-                        <MessageSquareQuote className="size-4" />
+                <Fragment key={asset.id}>
+                  <Item>
+                    <ItemMedia>
+                      <span className="flex size-9 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                        {asset.kind === 'document' ? (
+                          <FileText className="size-4" />
+                        ) : (
+                          <MessageSquareQuote className="size-4" />
+                        )}
+                      </span>
+                    </ItemMedia>
+
+                    <ItemContent>
+                      <ItemTitle>{asset.name}</ItemTitle>
+                      <ItemDescription>{t(`kind_${asset.kind}`)}</ItemDescription>
+                    </ItemContent>
+
+                    <ItemActions>
+                      {asset.kind === 'prompt' && (
+                        <Button
+                          type="button"
+                          size="icon-sm"
+                          variant="ghost"
+                          aria-label={t('button_edit')}
+                          disabled={isBusy}
+                          onClick={() => {
+                            setEditingId(editingId === asset.id ? null : asset.id);
+                          }}
+                        >
+                          <Pencil />
+                        </Button>
                       )}
-                    </span>
-                  </ItemMedia>
 
-                  <ItemContent>
-                    <ItemTitle>{asset.name}</ItemTitle>
-                    <ItemDescription>{t(`kind_${asset.kind}`)}</ItemDescription>
-                  </ItemContent>
+                      <Button
+                        type="button"
+                        size="icon-sm"
+                        variant="ghost"
+                        aria-label={t('button_delete')}
+                        disabled={isBusy}
+                        onClick={async () => {
+                          setIsBusy(true);
+                          await fetch(`/api/knowledge/${asset.id}`, { method: 'DELETE' });
+                          setIsBusy(false);
+                          router.refresh();
+                        }}
+                      >
+                        <Trash2 />
+                      </Button>
+                    </ItemActions>
+                  </Item>
 
-                  <ItemActions>
-                    <Button
-                      type="button"
-                      size="icon-sm"
-                      variant="ghost"
-                      aria-label={t('button_delete')}
-                      disabled={isBusy}
-                      onClick={async () => {
-                        setIsBusy(true);
-                        await fetch(`/api/knowledge/${asset.id}`, { method: 'DELETE' });
-                        setIsBusy(false);
-                        router.refresh();
+                  {editingId === asset.id && asset.content !== null && (
+                    <KnowledgePromptEditor
+                      asset={{ id: asset.id, name: asset.name, content: asset.content }}
+                      documents={documents}
+                      onClose={() => {
+                        setEditingId(null);
                       }}
-                    >
-                      <Trash2 />
-                    </Button>
-                  </ItemActions>
-                </Item>
+                    />
+                  )}
+                </Fragment>
               ))}
             </ItemGroup>
           )}
@@ -166,14 +198,13 @@ export const KnowledgeManager = (props: { assets: KnowledgeAssetView[] }) => {
 
                 <Field>
                   <FieldLabel htmlFor="asset-content">{t('label_content')}</FieldLabel>
-                  <Textarea
+                  <KnowledgeMentionTextarea
                     id="asset-content"
                     rows={8}
                     className="min-h-40"
+                    documents={documents}
                     value={content}
-                    onChange={(event) => {
-                      setContent(event.target.value);
-                    }}
+                    onValueChange={setContent}
                   />
                 </Field>
 

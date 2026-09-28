@@ -7,6 +7,7 @@ import { CampaignNameEditor } from '@/components/CampaignNameEditor';
 import { CampaignProgress } from '@/components/CampaignProgress';
 import type { ContactReview } from '@/components/ContactReviewList';
 import { ContactReviewList } from '@/components/ContactReviewList';
+import { DeleteCampaignButton } from '@/components/DeleteCampaignButton';
 import { InstantlyPushForm } from '@/components/InstantlyPushForm';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -131,6 +132,10 @@ export default async function CampaignDetailPage(props: {
         <div className="flex flex-wrap items-center gap-3">
           <CampaignNameEditor campaignId={campaign.id} name={campaign.name} />
           <StatusBadge kind="campaign" status={campaign.status} />
+
+          <div className="ml-auto">
+            <DeleteCampaignButton campaignId={campaign.id} />
+          </div>
         </div>
 
         <p className="text-sm text-muted-foreground">
@@ -144,8 +149,8 @@ export default async function CampaignDetailPage(props: {
         <p className="text-sm text-muted-foreground">
           {t('spend_line', {
             total: usd(usage.totalCostMicros),
-            tokens: format.number(usage.anthropicTokens, COMPACT_FORMAT),
-            anthropicCost: usd(usage.anthropicCostMicros),
+            tokens: format.number(usage.copywritingTokens, COMPACT_FORMAT),
+            copywritingCost: usd(usage.copywritingCostMicros),
             runs: usage.parallelRuns,
             parallelCost: usd(usage.parallelCostMicros),
           })}

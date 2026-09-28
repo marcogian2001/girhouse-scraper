@@ -1,9 +1,8 @@
-import type Anthropic from '@anthropic-ai/sdk';
 import { and, desc, eq, gte, inArray, lte, sql } from 'drizzle-orm';
 import type { AnyPgColumn } from 'drizzle-orm/pg-core';
 import { apiUsageSchema, campaignSchema, leadSearchSchema } from '@/models/Schema';
 import { PLACE_COST_MICROS } from '@/services/Apify';
-import { COPYWRITING_MODEL, estimateCostMicros } from '@/services/Claude';
+import type { WrittenSequence } from '@/services/EmailPrompt';
 import { VERIFICATION_COST_MICROS } from '@/services/MillionVerifier';
 import type { ParallelProcessor } from '@/services/Parallel';
 import { PROCESSOR_RUN_COST_MICROS } from '@/services/Parallel';
@@ -34,17 +33,29 @@ const sumFor = (provider: UsageProvider, column: AnyPgColumn) =>
 
 const LEAD_PROVIDERS: UsageProvider[] = ['apify', 'prospeo', 'millionverifier'];
 
+const COPYWRITING_PROVIDERS: UsageProvider[] = ['anthropic', 'openai'];
+
+/**
+ * Sums a column over the copywriting calls, whichever model wrote them.
+ * @param column The column to add up.
+ * @returns A numeric SQL aggregate, zero when nothing matches.
+ */
+const sumCopywriting = (column: AnyPgColumn) =>
+  sql<number>`coalesce(sum(${column}) filter (where ${inArray(apiUsageSchema.provider, COPYWRITING_PROVIDERS)}), 0)`.mapWith(
+    Number,
+  );
+
 /** The aggregates every spend report shows, whatever it is grouped by. */
 const usageTotals = {
-  anthropicInputTokens: sumFor('anthropic', apiUsageSchema.inputTokens),
-  anthropicOutputTokens: sumFor('anthropic', apiUsageSchema.outputTokens),
-  anthropicCacheWriteTokens: sumFor('anthropic', apiUsageSchema.cacheWriteTokens),
-  anthropicCacheReadTokens: sumFor('anthropic', apiUsageSchema.cacheReadTokens),
-  anthropicTokens:
-    sql<number>`coalesce(sum(${apiUsageSchema.inputTokens} + ${apiUsageSchema.outputTokens} + ${apiUsageSchema.cacheWriteTokens} + ${apiUsageSchema.cacheReadTokens}) filter (where ${apiUsageSchema.provider} = 'anthropic'), 0)`.mapWith(
+  copywritingInputTokens: sumCopywriting(apiUsageSchema.inputTokens),
+  copywritingOutputTokens: sumCopywriting(apiUsageSchema.outputTokens),
+  copywritingCacheWriteTokens: sumCopywriting(apiUsageSchema.cacheWriteTokens),
+  copywritingCacheReadTokens: sumCopywriting(apiUsageSchema.cacheReadTokens),
+  copywritingTokens:
+    sql<number>`coalesce(sum(${apiUsageSchema.inputTokens} + ${apiUsageSchema.outputTokens} + ${apiUsageSchema.cacheWriteTokens} + ${apiUsageSchema.cacheReadTokens}) filter (where ${inArray(apiUsageSchema.provider, COPYWRITING_PROVIDERS)}), 0)`.mapWith(
       Number,
     ),
-  anthropicCostMicros: sumFor('anthropic', apiUsageSchema.costMicros),
+  copywritingCostMicros: sumCopywriting(apiUsageSchema.costMicros),
   parallelRuns:
     sql<number>`count(*) filter (where ${apiUsageSchema.provider} = 'parallel')`.mapWith(Number),
   parallelCostMicros: sumFor('parallel', apiUsageSchema.costMicros),
@@ -60,17 +71,26 @@ export type UsageTotals = { [Key in keyof typeof usageTotals]: number };
 
 /** Totals shown when there is no one to report on. */
 export const EMPTY_USAGE_TOTALS: UsageTotals = {
-  anthropicInputTokens: 0,
-  anthropicOutputTokens: 0,
-  anthropicCacheWriteTokens: 0,
-  anthropicCacheReadTokens: 0,
-  anthropicTokens: 0,
-  anthropicCostMicros: 0,
+  copywritingInputTokens: 0,
+  copywritingOutputTokens: 0,
+  copywritingCacheWriteTokens: 0,
+  copywritingCacheReadTokens: 0,
+  copywritingTokens: 0,
+  copywritingCostMicros: 0,
   parallelRuns: 0,
   parallelCostMicros: 0,
   leadsCostMicros: 0,
   totalCostMicros: 0,
 };
+
+/**
+ * The all-time spend of each campaign, for queries that select campaigns.
+ * A subquery rather than a join, so it does not multiply other joined rows.
+ */
+export const campaignCostMicros =
+  sql<number>`(select coalesce(sum(${apiUsageSchema.costMicros}), 0) from ${apiUsageSchema} where ${apiUsageSchema.campaignId} = ${campaignSchema.id})`.mapWith(
+    Number,
+  );
 
 /** Which calls a report covers. Every report is scoped to one organization. */
 type UsageFilter = {
@@ -103,20 +123,18 @@ type UsageOwner = {
 };
 
 /**
- * Records one copywriting call. Safe to repeat: a message is only counted once.
+ * Records one copywriting call. Safe to repeat: a call is only counted once.
  * @param options The call options.
  * @param options.userId The owner of the campaign the call was made for.
  * @param options.organizationId The organization the campaign belongs to.
  * @param options.campaignId The campaign the call was made for.
- * @param options.messageId The Anthropic message id.
- * @param options.usage The token counts Claude reported.
+ * @param options.sequence The call result, with its provider, model, tokens and cost.
  */
-export const recordAnthropicUsage = async (options: {
+export const recordCopywritingUsage = async (options: {
   userId: string;
   organizationId: string;
   campaignId: string;
-  messageId: string;
-  usage: Anthropic.Usage;
+  sequence: WrittenSequence;
 }) => {
   await db
     .insert(apiUsageSchema)
@@ -124,14 +142,11 @@ export const recordAnthropicUsage = async (options: {
       userId: options.userId,
       organizationId: options.organizationId,
       campaignId: options.campaignId,
-      provider: 'anthropic',
-      externalId: options.messageId,
-      model: COPYWRITING_MODEL,
-      inputTokens: options.usage.input_tokens,
-      outputTokens: options.usage.output_tokens,
-      cacheWriteTokens: options.usage.cache_creation_input_tokens ?? 0,
-      cacheReadTokens: options.usage.cache_read_input_tokens ?? 0,
-      costMicros: estimateCostMicros(options.usage),
+      provider: options.sequence.provider,
+      externalId: options.sequence.externalId,
+      model: options.sequence.model,
+      ...options.sequence.usage,
+      costMicros: options.sequence.costMicros,
     })
     .onConflictDoNothing();
 };
@@ -238,6 +253,45 @@ export const recordMillionVerifierUsage = async (
       costMicros: VERIFICATION_COST_MICROS,
     })
     .onConflictDoNothing();
+};
+
+/**
+ * Averages a column over the matching rows.
+ * @param column The column to average.
+ * @returns A numeric SQL aggregate, zero when nothing matches.
+ */
+const average = (column: AnyPgColumn) => sql<number>`coalesce(avg(${column}), 0)`.mapWith(Number);
+
+/**
+ * Averages the tokens of an organization's past copywriting calls, so cost
+ * estimates reflect how long its briefs and sequences really are.
+ * @param organizationId The organization to average over.
+ * @returns The tokens of an average call, or null before the first one.
+ */
+export const getAverageCopywritingCall = async (organizationId: string) => {
+  const [row] = await db
+    .select({
+      calls: sql<number>`count(*)`.mapWith(Number),
+      inputTokens: average(apiUsageSchema.inputTokens),
+      outputTokens: average(apiUsageSchema.outputTokens),
+      cacheWriteTokens: average(apiUsageSchema.cacheWriteTokens),
+      cacheReadTokens: average(apiUsageSchema.cacheReadTokens),
+    })
+    .from(apiUsageSchema)
+    .where(
+      and(
+        eq(apiUsageSchema.organizationId, organizationId),
+        inArray(apiUsageSchema.provider, COPYWRITING_PROVIDERS),
+      ),
+    );
+
+  if (!row || row.calls === 0) {
+    return null;
+  }
+
+  const { calls: _calls, ...tokens } = row;
+
+  return tokens;
 };
 
 /**

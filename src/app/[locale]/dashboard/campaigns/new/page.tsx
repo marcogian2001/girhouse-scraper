@@ -4,7 +4,9 @@ import * as z from 'zod';
 import { NewCampaignWizard } from '@/components/NewCampaignWizard';
 import { getApiContext } from '@/libs/ApiAuth';
 import { db } from '@/libs/DB';
+import { getAverageCopywritingCall } from '@/libs/Usage';
 import { knowledgeAssetSchema, leadSchema, leadSearchSchema } from '@/models/Schema';
+import { TYPICAL_COPYWRITING_CALL } from '@/utils/CopywritingModels';
 import { toLeadCsv } from '@/utils/Leads';
 
 /**
@@ -47,13 +49,29 @@ export default async function NewCampaignPage(props: {
   const t = await getTranslations({ locale, namespace: 'NewCampaignPage' });
   const context = await getApiContext();
 
-  const knowledgeAssets = context
+  const storedAssets = context
     ? await db
-        .select({ id: knowledgeAssetSchema.id, name: knowledgeAssetSchema.name })
+        .select({
+          id: knowledgeAssetSchema.id,
+          name: knowledgeAssetSchema.name,
+          kind: knowledgeAssetSchema.kind,
+          anthropicFileId: knowledgeAssetSchema.anthropicFileId,
+          openaiFileId: knowledgeAssetSchema.openaiFileId,
+        })
         .from(knowledgeAssetSchema)
         .where(eq(knowledgeAssetSchema.organizationId, context.organizationId))
         .orderBy(asc(knowledgeAssetSchema.name))
     : [];
+
+  // File ids stay on the server; the form only needs to know which PDFs GPT cannot read
+  const knowledgeAssets = storedAssets.map((asset) => ({
+    id: asset.id,
+    name: asset.name,
+    kind: asset.kind,
+    missingOnOpenAI: Boolean(asset.anthropicFileId && !asset.openaiFileId),
+  }));
+
+  const averageCall = context ? await getAverageCopywritingCall(context.organizationId) : null;
 
   const initialCsv =
     context && leadSearchId && z.uuid().safeParse(leadSearchId).success
@@ -67,7 +85,14 @@ export default async function NewCampaignPage(props: {
         <p className="text-sm text-muted-foreground">{t('description')}</p>
       </div>
 
-      <NewCampaignWizard knowledgeAssets={knowledgeAssets} initialCsv={initialCsv} />
+      <NewCampaignWizard
+        knowledgeAssets={knowledgeAssets}
+        initialCsv={initialCsv}
+        costBasis={{
+          tokens: averageCall ?? TYPICAL_COPYWRITING_CALL,
+          fromHistory: averageCall !== null,
+        }}
+      />
     </div>
   );
 }

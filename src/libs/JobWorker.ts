@@ -1,4 +1,4 @@
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, desc, eq, inArray } from 'drizzle-orm';
 import * as z from 'zod';
 import type { jobSchema } from '@/models/Schema';
 import {
@@ -8,7 +8,7 @@ import {
   enrichmentSchema,
   knowledgeAssetSchema,
 } from '@/models/Schema';
-import { COPYWRITING_MODEL, writeEmailSequence } from '@/services/Claude';
+import { writeEmailSequence } from '@/services/Copywriting';
 import {
   addLeads,
   buildCampaignPayload,
@@ -17,6 +17,7 @@ import {
   createCampaign,
 } from '@/services/Instantly';
 import { createTaskRun, fetchTaskRunResult } from '@/services/Parallel';
+import { extractMentionNames } from '@/utils/KnowledgeMentions';
 import { EnrichmentContentValidation } from '@/validations/EnrichmentValidation';
 import { db } from './DB';
 import {
@@ -30,7 +31,7 @@ import {
 } from './JobQueue';
 import { leadJobHandlers, markLeadJobAbandoned } from './LeadJobs';
 import { logger } from './Logger';
-import { recordAnthropicUsage, recordParallelUsage } from './Usage';
+import { recordCopywritingUsage, recordParallelUsage } from './Usage';
 
 /** How long Parallel may hold a poll open. Short, so the worker stays snappy. */
 const PARALLEL_POLL_TIMEOUT_SECONDS = 5;
@@ -213,6 +214,54 @@ const runEnrichJob = async (job: Job) => {
 };
 
 /**
+ * Loads the knowledge a campaign writes from: the assets picked in the wizard,
+ * plus every document the brief or a picked prompt mentions as `@[name]`.
+ * @param campaign The campaign being written.
+ * @returns The picked assets followed by the mentioned documents.
+ */
+const loadKnowledgeAssets = async (campaign: typeof campaignSchema.$inferSelect) => {
+  const selected =
+    campaign.knowledgeAssetIds.length > 0
+      ? await db
+          .select()
+          .from(knowledgeAssetSchema)
+          .where(inArray(knowledgeAssetSchema.id, campaign.knowledgeAssetIds))
+      : [];
+
+  const mentionedNames = extractMentionNames(
+    [
+      campaign.extraPrompt ?? '',
+      ...selected.map((asset) => (asset.kind === 'prompt' ? asset.content : '')),
+    ].join('\n'),
+  );
+
+  if (mentionedNames.length === 0) {
+    return selected;
+  }
+
+  // Newest first, so a duplicated name resolves to the latest upload
+  const documents = await db
+    .select()
+    .from(knowledgeAssetSchema)
+    .where(
+      and(
+        eq(knowledgeAssetSchema.organizationId, campaign.organizationId),
+        eq(knowledgeAssetSchema.kind, 'document'),
+        inArray(knowledgeAssetSchema.name, mentionedNames),
+      ),
+    )
+    .orderBy(desc(knowledgeAssetSchema.createdAt));
+
+  const mentioned = mentionedNames.flatMap((name) => {
+    const document = documents.find((candidate) => candidate.name === name);
+
+    return document && !selected.some((asset) => asset.id === document.id) ? [document] : [];
+  });
+
+  return [...selected, ...mentioned];
+};
+
+/**
  * Writes the email sequence for one contact and stores the drafts.
  * @param job The write job being processed.
  */
@@ -228,13 +277,7 @@ const runWriteJob = async (job: Job) => {
 
   const parsedEnrichment = EnrichmentContentValidation.safeParse(enrichment?.content);
 
-  const knowledgeAssets =
-    campaign.knowledgeAssetIds.length > 0
-      ? await db
-          .select()
-          .from(knowledgeAssetSchema)
-          .where(inArray(knowledgeAssetSchema.id, campaign.knowledgeAssetIds))
-      : [];
+  const knowledgeAssets = await loadKnowledgeAssets(campaign);
 
   const sequence = await writeEmailSequence({
     campaign,
@@ -244,18 +287,17 @@ const runWriteJob = async (job: Job) => {
   });
 
   // Recorded before the output is checked: an unparsable response is billed too
-  await recordAnthropicUsage({
+  await recordCopywritingUsage({
     userId: campaign.userId,
     organizationId: campaign.organizationId,
     campaignId: campaign.id,
-    messageId: sequence.messageId,
-    usage: sequence.usage,
+    sequence,
   });
 
   const { emails } = sequence;
 
   if (!emails) {
-    throw new Error(`Claude returned no parsable sequence for contact ${contact.id}`);
+    throw new Error(`${sequence.model} returned no parsable sequence for contact ${contact.id}`);
   }
 
   // Upserted so a retry after a partial write refreshes the drafts in place
@@ -268,14 +310,14 @@ const runWriteJob = async (job: Job) => {
           stepIndex: email.step,
           subject: email.subject,
           body: email.body,
-          model: COPYWRITING_MODEL,
+          model: sequence.model,
         })
         .onConflictDoUpdate({
           target: [emailDraftSchema.contactId, emailDraftSchema.stepIndex],
           set: {
             subject: email.subject,
             body: email.body,
-            model: COPYWRITING_MODEL,
+            model: sequence.model,
             edited: false,
           },
         }),

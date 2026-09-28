@@ -1,4 +1,4 @@
-import { count, desc, eq, sql } from 'drizzle-orm';
+import { and, count, desc, eq, notInArray, sql } from 'drizzle-orm';
 import { ChevronRight, MapPin, Plus, Search } from 'lucide-react';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { StatusBadge } from '@/components/StatusBadge';
@@ -33,6 +33,7 @@ import { getApiContext } from '@/libs/ApiAuth';
 import { db } from '@/libs/DB';
 import { Link } from '@/libs/I18nNavigation';
 import { leadSchema, leadSearchSchema } from '@/models/Schema';
+import { RESERVE_LEAD_STATUSES } from '@/utils/Leads';
 
 export default async function LeadSearchesPage(props: { params: Promise<{ locale: string }> }) {
   const { locale } = await props.params;
@@ -57,7 +58,13 @@ export default async function LeadSearchesPage(props: { params: Promise<{ locale
             ),
         })
         .from(leadSearchSchema)
-        .leftJoin(leadSchema, eq(leadSchema.leadSearchId, leadSearchSchema.id))
+        .leftJoin(
+          leadSchema,
+          and(
+            eq(leadSchema.leadSearchId, leadSearchSchema.id),
+            notInArray(leadSchema.status, [...RESERVE_LEAD_STATUSES]),
+          ),
+        )
         .where(eq(leadSearchSchema.organizationId, context.organizationId))
         .groupBy(leadSearchSchema.id)
         .orderBy(desc(leadSearchSchema.createdAt))

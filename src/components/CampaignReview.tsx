@@ -2,6 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { Badge } from '@/components/ui/badge';
+import { findCopywritingModel } from '@/utils/CopywritingModels';
 import type { CampaignSettings } from '@/validations/CampaignValidation';
 
 export const CampaignReview = (props: {
@@ -25,6 +26,10 @@ export const CampaignReview = (props: {
     },
     { label: t('review_emails'), value: String(props.settings.emailCount) },
     { label: t('review_processor'), value: settingsT(`processor_${props.settings.processor}`) },
+    {
+      label: t('review_model'),
+      value: findCopywritingModel(props.settings.copywritingModel)?.label ?? '',
+    },
   ];
 
   return (

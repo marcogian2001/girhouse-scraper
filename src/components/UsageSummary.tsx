@@ -34,12 +34,12 @@ export const UsageSummary = (props: { period: DateRange; totals: UsageTotals }) 
 
             <span className="flex justify-between gap-2 text-muted-foreground">
               <span className="truncate">
-                {t('anthropic_line', {
-                  tokens: format.number(props.totals.anthropicTokens, COMPACT_FORMAT),
+                {t('copywriting_line', {
+                  tokens: format.number(props.totals.copywritingTokens, COMPACT_FORMAT),
                 })}
               </span>
               <span className="tabular-nums">
-                {format.number(microsToUsd(props.totals.anthropicCostMicros), USD_FORMAT)}
+                {format.number(microsToUsd(props.totals.copywritingCostMicros), USD_FORMAT)}
               </span>
             </span>
 

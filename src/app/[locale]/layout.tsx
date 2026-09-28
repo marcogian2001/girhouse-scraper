@@ -68,7 +68,8 @@ export default async function RootLayout(props: {
       className={`${GeistSans.variable} ${GeistMono.variable}`}
       suppressHydrationWarning
     >
-      <body>
+      {/* Browser extensions (e.g. ColorZilla) add attributes to body before hydration */}
+      <body suppressHydrationWarning>
         <NextIntlClientProvider>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
             {props.children}

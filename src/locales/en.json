@@ -14,7 +14,7 @@
     "brand_title": "Cold email that reads like it was written by hand",
     "brand_subtitle": "Upload a contact list and get a researched, personal sequence for every person on it.",
     "feature_research": "Parallel researches every contact on the web",
-    "feature_write": "Claude writes the sequence from that research",
+    "feature_write": "AI writes the sequence from that research",
     "feature_send": "You approve, Instantly sends"
   },
   "SignInPage": {
@@ -64,6 +64,7 @@
     "nav_leads": "Lead search",
     "nav_campaigns": "Campaigns",
     "nav_knowledge": "Knowledge base",
+    "nav_email_polls": "Email polls",
     "new_campaign": "New campaign",
     "sign_out": "Sign out"
   },
@@ -74,7 +75,7 @@
   },
   "UsageSummary": {
     "title": "{month} spend",
-    "anthropic_line": "Anthropic · {tokens} tokens",
+    "copywriting_line": "AI copywriting · {tokens} tokens",
     "parallel_line": "Parallel · {runs, plural, one {# search} other {# searches}}",
     "parallel_cost": "~{cost}",
     "tooltip": "{month} spend: {total}",
@@ -83,7 +84,7 @@
   "DashboardHomePage": {
     "title": "Welcome back, {name}",
     "title_generic": "Welcome back",
-    "subtitle": "Upload a contact list and Claude researches, writes and schedules the sequence for every person on it.",
+    "subtitle": "Upload a contact list and the AI researches, writes and schedules the sequence for every person on it.",
     "button_new": "New campaign",
     "link_knowledge": "Manage knowledge base",
     "stat_campaigns": "Campaigns",
@@ -94,7 +95,7 @@
     "recent_all": "View all",
     "recent_meta": "{contacts, plural, one {# contact} other {# contacts}} · {date}",
     "knowledge_title": "Knowledge base",
-    "knowledge_description": "Saved prompts and documents Claude reads before writing.",
+    "knowledge_description": "Saved prompts and documents the AI reads before writing.",
     "knowledge_button": "Open knowledge base"
   },
   "NoCampaigns": {
@@ -131,6 +132,7 @@
     "status_researching": "Researching",
     "status_finding_email": "Finding email",
     "status_ready": "Ready",
+    "status_reserve": "In reserve",
     "status_filtered_out": "Filtered out",
     "status_no_email": "No email",
     "status_failed": "Failed"
@@ -158,12 +160,12 @@
     "label_name": "Search name",
     "error_name": "Enter a name.",
     "label_terms": "What to search for",
-    "placeholder_terms": "accountant\nreal estate agency",
-    "hint_terms": "One Google Maps search per line.",
+    "placeholder_terms": "accountant",
+    "hint_terms": "Press Enter to add each Google Maps search.",
     "error_terms": "Enter between 1 and 10 searches.",
     "label_location": "Where",
-    "placeholder_location": "Bergamo, Italy",
-    "error_location": "Enter an area.",
+    "placeholder_location": "Search a town, province or region",
+    "error_location": "Pick an area from the suggestions.",
     "label_max_results": "Maximum businesses",
     "error_max_results": "Enter a number between 1 and {max}.",
     "label_website": "Website",
@@ -175,6 +177,15 @@
     "estimate": "Estimated cost at most {cost}, if every business is researched and has its email looked up.",
     "button_create": "Start the search",
     "error_create": "The search was not started."
+  },
+  "SearchTermsInput": {
+    "placeholder_full": "Search limit reached",
+    "remove": "Remove {term}"
+  },
+  "LocationCombobox": {
+    "searching": "Searching areas…",
+    "no_results": "No area found.",
+    "error_suggestions": "Suggestions unavailable."
   },
   "LeadSearchProgress": {
     "searching": "Searching Google Maps…",
@@ -200,11 +211,22 @@
     "back_link": "All searches",
     "meta_line": "{terms} · {location} · {filter} · created on {date}",
     "spend_line": "Estimated spend {total}",
-    "button_campaign": "Create a campaign with {count, plural, one {# lead} other {# leads}}"
+    "button_campaign": "Create a campaign with {count, plural, one {# lead} other {# leads}}",
+    "reserve_line": "{count, plural, one {# lead} other {# leads}} taken from earlier searches, already paid for",
+    "short_alert": "Found only {found} new businesses out of {max}. For more, try a wider area or other terms."
   },
   "DeleteLeadSearchButton": {
-    "confirm": "Delete this search and its leads?",
-    "button": "Delete search"
+    "button": "Delete search",
+    "dialog_title": "Delete this search?",
+    "dialog_description": "The search and all the leads it found are removed permanently."
+  },
+  "DeleteCampaignButton": {
+    "button": "Delete campaign",
+    "dialog_title": "Delete this campaign?",
+    "dialog_description": "The campaign, its contacts and drafts are removed permanently. The Instantly campaign is not affected."
+  },
+  "ConfirmDeleteButton": {
+    "button_cancel": "Cancel"
   },
   "CampaignsPage": {
     "title": "Campaigns",
@@ -215,7 +237,8 @@
     "column_contacts": "Contacts",
     "column_emails": "Emails",
     "column_created": "Created",
-    "row_meta": "{contacts, plural, one {# contact} other {# contacts}} · {date}"
+    "column_cost": "Cost",
+    "row_meta": "{contacts, plural, one {# contact} other {# contacts}} · {cost} · {date}"
   },
   "NewCampaignPage": {
     "title": "New campaign",
@@ -238,11 +261,11 @@
     "tab_send": "Send",
     "push_title": "Send to Instantly",
     "pushed_notice": "This campaign is live in Instantly as {campaignId}.",
-    "spend_line": "Estimated spend {total}: Anthropic {tokens} tokens, {anthropicCost} · Parallel {runs, plural, one {# search} other {# searches}}, ~{parallelCost}"
+    "spend_line": "Estimated spend {total}: AI copywriting {tokens} tokens, {copywritingCost} · Parallel {runs, plural, one {# search} other {# searches}}, ~{parallelCost}"
   },
   "KnowledgePage": {
     "title": "Knowledge base",
-    "description": "Prompts and documents Claude reads before writing. Pick them per campaign."
+    "description": "Prompts and documents the AI reads before writing. Pick them per campaign."
   },
   "NewCampaignWizard": {
     "step_upload_label": "Contact list",
@@ -250,7 +273,7 @@
     "step_mapping_label": "Column mapping",
     "step_mapping_hint": "Tell us which column holds which field. Email is the only one we cannot do without.",
     "step_sequence_label": "Sequence",
-    "step_sequence_hint": "How many emails to write, how far apart they go out, and what Claude should know.",
+    "step_sequence_hint": "How many emails to write, how far apart they go out, and what the AI should know.",
     "step_review_label": "Review",
     "step_review_hint": "One last look before the research starts.",
     "step_counter": "Step {current} of {total} · {label}",
@@ -269,6 +292,7 @@
     "review_contacts_value": "{count, plural, one {# contact} other {# contacts}} from {file}",
     "review_emails": "Emails in sequence",
     "review_processor": "Research depth",
+    "review_model": "Model",
     "review_schedule": "Schedule",
     "review_delay": "{days}d",
     "review_knowledge": "Knowledge base",
@@ -304,6 +328,13 @@
     "error_name": "Enter a name",
     "label_email_count": "Number of emails",
     "label_processor": "Research depth",
+    "label_model": "Writing model",
+    "group_anthropic": "Anthropic",
+    "group_openai": "OpenAI",
+    "model_cost": "~{cost}",
+    "hint_model_cost_history": "Estimated writing cost for {count, plural, one {# contact} other {# contacts}}, based on the average usage of your past campaigns.",
+    "hint_model_cost_typical": "Estimated writing cost for {count, plural, one {# contact} other {# contacts}}, based on typical usage. It gets more accurate after your first campaign.",
+    "hint_model_pdf_missing": "Some selected PDFs were uploaded before OpenAI was set up and will be skipped. Upload them again to use them with this model.",
     "processor_lite": "Lite — fastest, cheapest",
     "processor_base": "Base — light research",
     "processor_core": "Core — recommended",
@@ -313,7 +344,7 @@
     "label_delay_step": "Email {from} to {to}",
     "label_knowledge": "Knowledge base",
     "label_prompt": "Campaign brief",
-    "hint_prompt": "Who you are, what you offer, and the action you want. Claude follows this for every contact."
+    "hint_prompt": "Who you are, what you offer, and the action you want. The AI follows this for every contact."
   },
   "CampaignProgress": {
     "progress_count": "{done} of {total} contacts done"
@@ -374,16 +405,17 @@
     "button_clear": "Clear"
   },
   "KnowledgeManager": {
-    "prompt_description": "Positioning, tone, offer, anything Claude should know for every campaign.",
+    "prompt_description": "Positioning, tone, offer, anything the AI should know for every campaign.",
     "label_name": "Name",
     "label_content": "Content",
     "button_save_prompt": "Save prompt",
-    "document_description": "PDF, plain text, Markdown or CSV. PDFs are read by Claude directly.",
+    "document_description": "PDF, plain text, Markdown or CSV. PDFs are read by the model directly.",
     "list_title": "Saved items",
     "list_empty": "Nothing saved yet",
     "kind_prompt": "Prompt",
     "kind_document": "Document",
     "button_delete": "Delete",
+    "button_edit": "Edit",
     "error_save": "This prompt could not be saved.",
     "error_upload": "This file could not be uploaded.",
     "add_title": "Add to the knowledge base",
@@ -392,17 +424,30 @@
     "list_empty_description": "Anything you save here can be attached to a campaign.",
     "document_hint": "PDF, plain text, Markdown or CSV"
   },
+  "KnowledgePromptEditor": {
+    "label_name": "Name",
+    "label_content": "Content",
+    "button_save": "Save",
+    "button_saving": "Saving…",
+    "button_cancel": "Cancel",
+    "saved": "Saved",
+    "error_save": "This prompt could not be saved."
+  },
+  "KnowledgeMentionTextarea": {
+    "hint": "Type @ to mention a document: the AI will always read it.",
+    "no_results": "No matching documents"
+  },
   "UsagePage": {
     "title": "Usage",
-    "subtitle": "Estimated spend on Anthropic, Parallel and lead search, priced at list rates when each call was made.",
+    "subtitle": "Estimated spend on AI copywriting, Parallel and lead search, priced at list rates when each call was made.",
     "label_from": "From",
     "label_to": "To",
     "button_filter": "Filter",
     "preset_this_month": "This month",
     "preset_last_month": "Last month",
     "total_line": "Total from {from} to {to}: {total}",
-    "stat_anthropic_cost": "Anthropic spend",
-    "stat_anthropic_tokens": "Anthropic tokens",
+    "stat_copywriting_cost": "AI copywriting spend",
+    "stat_copywriting_tokens": "AI copywriting tokens",
     "stat_tokens_breakdown": "{input} input · {output} output · {cacheWrite} cache writes · {cacheRead} cache reads",
     "stat_parallel_cost": "Parallel spend",
     "stat_parallel_note": "Estimate: free plan credits are not deducted",
@@ -419,14 +464,97 @@
     "lead_search_label": "Lead search: {name}"
   },
   "UsageTable": {
-    "column_anthropic_tokens": "Anthropic tokens",
-    "column_anthropic_cost": "Anthropic cost",
+    "column_copywriting_tokens": "AI copywriting tokens",
+    "column_copywriting_cost": "AI copywriting cost",
     "column_parallel_runs": "Parallel searches",
     "column_parallel_cost": "Parallel cost",
     "column_total": "Total",
     "row_total": "Total",
-    "row_meta": "Anthropic {tokens} tokens, {anthropicCost} · Parallel {runs, plural, one {# search} other {# searches}}, {parallelCost} · Lead search {leadsCost}",
+    "row_meta": "AI copywriting {tokens} tokens, {copywritingCost} · Parallel {runs, plural, one {# search} other {# searches}}, {parallelCost} · Lead search {leadsCost}",
     "column_leads_cost": "Lead search cost"
+  },
+  "EmailPollsPage": {
+    "title": "Email polls",
+    "subtitle": "Blind tests where anyone with the link scores sequences written by different models.",
+    "button_new": "New poll",
+    "empty_title": "No polls yet",
+    "empty_description": "Create a poll to compare how different models write the same sequence.",
+    "column_name": "Name",
+    "column_sequences": "Sequences",
+    "column_voters": "Voters",
+    "column_created": "Created"
+  },
+  "NewEmailPollPage": {
+    "title": "New poll",
+    "description": "Pick one campaign per model. The first contacts of each campaign are compared side by side."
+  },
+  "NewEmailPollForm": {
+    "label_name": "Name",
+    "hint_name": "Shown to voters, so leave model names out.",
+    "error_name": "Enter a name",
+    "label_campaigns": "Campaigns",
+    "hint_campaigns": "Only campaigns with written sequences can be picked.",
+    "campaign_meta": "· {model} · {written, plural, one {# sequence} other {# sequences}}",
+    "error_campaigns": "Pick at least one campaign",
+    "label_contacts": "Contacts per campaign",
+    "hint_contacts": "Taken in CSV order, skipping contacts without a sequence.",
+    "error_contacts": "Enter a number from 1 to {max}",
+    "button_create": "Create poll",
+    "error_create": "Could not create the poll"
+  },
+  "EmailPollPage": {
+    "back_link": "Email polls",
+    "share_title": "Share link",
+    "share_description": "Anyone with this link can vote without signing in. Each IP address votes once per sequence.",
+    "visibility_title": "What voters see",
+    "models_title": "Results by model",
+    "models_description": "{voters, plural, =0 {No votes yet} one {# voter so far} other {# voters so far}}",
+    "sequences_title": "Results by sequence",
+    "column_model": "Model",
+    "column_recipient": "Recipient",
+    "column_campaign": "Campaign",
+    "column_average": "Average",
+    "column_std_dev": "Std. dev.",
+    "column_votes": "Votes",
+    "column_cost": "Cost per sequence",
+    "campaign_deleted": "Deleted campaign"
+  },
+  "EmailPollShareLink": {
+    "label_link": "Poll link",
+    "button_copy": "Copy",
+    "button_copied": "Copied"
+  },
+  "EmailPollVisibilityForm": {
+    "label_model": "Show model",
+    "hint_model": "Voters see which model wrote each sequence.",
+    "label_cost": "Show cost",
+    "hint_cost": "Voters see what each sequence cost to write.",
+    "error_update": "Could not update the poll"
+  },
+  "DeleteEmailPollButton": {
+    "button": "Delete",
+    "dialog_title": "Delete this poll?",
+    "dialog_description": "The poll, its link and every vote are deleted. Campaigns are not affected."
+  },
+  "EmailPollVotePage": {
+    "meta_title": "Email poll",
+    "instructions": "Read each version and score it from 1 to 10. Your scores are saved as you go, and you can change them at any time."
+  },
+  "EmailPollBallot": {
+    "progress": "{voted} of {total} scored",
+    "progress_done": "All scored, thank you!",
+    "group_title": "Recipient {number}: {label}",
+    "group_description": "{count, plural, one {# version} other {# versions}} written for the same recipient.",
+    "error_vote": "Could not save your score"
+  },
+  "EmailPollVariantCard": {
+    "title": "Version {letter}",
+    "step_label": "Email {step}"
+  },
+  "EmailPollScoreScale": {
+    "label": "Score",
+    "hint_low": "1 · Poor",
+    "hint_high": "10 · Excellent"
   },
   "NotFoundPage": {
     "code": "Error 404",

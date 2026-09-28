@@ -41,6 +41,7 @@ const LEAD_TONE: Record<LeadStatus, Tone> = {
   researching: 'info',
   finding_email: 'info',
   ready: 'success',
+  reserve: 'neutral',
   filtered_out: 'neutral',
   no_email: 'warning',
   failed: 'danger',

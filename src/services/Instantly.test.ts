@@ -18,6 +18,7 @@ const campaign = (
   name: 'Q4 outreach',
   status: 'review',
   processor: 'core',
+  copywritingModel: 'claude-opus-5',
   emailCount: 3,
   delaysDays: [2, 4, 0],
   knowledgeAssetIds: [],

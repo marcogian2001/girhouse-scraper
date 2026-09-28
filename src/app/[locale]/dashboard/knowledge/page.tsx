@@ -18,6 +18,7 @@ export default async function KnowledgePage(props: { params: Promise<{ locale: s
           id: knowledgeAssetSchema.id,
           name: knowledgeAssetSchema.name,
           kind: knowledgeAssetSchema.kind,
+          content: knowledgeAssetSchema.content,
         })
         .from(knowledgeAssetSchema)
         .where(eq(knowledgeAssetSchema.organizationId, context.organizationId))

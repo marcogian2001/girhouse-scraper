@@ -1,8 +1,9 @@
-import { and, count, eq, inArray } from 'drizzle-orm';
+import { and, count, eq, inArray, notInArray } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 import { getApiContext, notFound, unauthorized } from '@/libs/ApiAuth';
 import { db } from '@/libs/DB';
 import { jobSchema, leadSchema, leadSearchSchema } from '@/models/Schema';
+import { RESERVE_LEAD_STATUSES } from '@/utils/Leads';
 
 export const GET = async (_request: Request, props: { params: Promise<{ id: string }> }) => {
   const context = await getApiContext();
@@ -27,7 +28,12 @@ export const GET = async (_request: Request, props: { params: Promise<{ id: stri
   const leadCounts = await db
     .select({ status: leadSchema.status, total: count() })
     .from(leadSchema)
-    .where(eq(leadSchema.leadSearchId, search.id))
+    .where(
+      and(
+        eq(leadSchema.leadSearchId, search.id),
+        notInArray(leadSchema.status, [...RESERVE_LEAD_STATUSES]),
+      ),
+    )
     .groupBy(leadSchema.status);
 
   const [outstandingJobs] = await db

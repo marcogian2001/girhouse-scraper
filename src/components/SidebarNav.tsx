@@ -1,6 +1,6 @@
 'use client';
 
-import { BookOpen, LayoutDashboard, Search, Send } from 'lucide-react';
+import { BookOpen, LayoutDashboard, Search, Send, Vote } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import {
   SidebarGroup,
@@ -28,6 +28,7 @@ export const SidebarNav = (props: { pathname: string }) => {
     { href: '/dashboard/leads/', label: t('nav_leads'), icon: Search, exact: false },
     { href: '/dashboard/campaigns/', label: t('nav_campaigns'), icon: Send, exact: false },
     { href: '/dashboard/knowledge/', label: t('nav_knowledge'), icon: BookOpen, exact: false },
+    { href: '/dashboard/email-polls/', label: t('nav_email_polls'), icon: Vote, exact: false },
   ];
 
   const current = stripTrailingSlash(props.pathname);

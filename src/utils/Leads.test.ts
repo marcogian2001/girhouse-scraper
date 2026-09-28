@@ -4,7 +4,11 @@ import {
   matchesWebsiteFilter,
   pickEmailRoutes,
   readPublicEmail,
+  scrapeBudget,
+  splitRectangle,
+  splitScrapedPlaces,
   toLeadCsv,
+  toSearchKey,
   uniqueByPlaceId,
 } from './Leads';
 
@@ -82,6 +86,65 @@ describe('Leads', () => {
     });
   });
 
+  describe('Search key', () => {
+    it('lowercases a term and collapses its spaces', () => {
+      expect(toSearchKey('  Studio   Commercialista ')).toBe('studio commercialista');
+    });
+  });
+
+  describe('Scrape budget', () => {
+    it('scrapes exactly the missing leads without a website filter', () => {
+      expect(scrapeBudget({ missing: 50, filter: 'any' })).toBe(50);
+    });
+
+    it('scrapes more than the missing leads with a website filter', () => {
+      expect(scrapeBudget({ missing: 50, filter: 'without' })).toBe(75);
+    });
+
+    it('caps the places of one run', () => {
+      expect(scrapeBudget({ missing: 1000, filter: 'with' })).toBe(1000);
+    });
+  });
+
+  describe('Rectangle split', () => {
+    it('returns four quarters meeting at the centre', () => {
+      const quarters = splitRectangle({
+        low: { latitude: 40, longitude: 10 },
+        high: { latitude: 42, longitude: 14 },
+      });
+
+      expect(quarters).toStrictEqual([
+        { low: { latitude: 40, longitude: 10 }, high: { latitude: 41, longitude: 12 } },
+        { low: { latitude: 40, longitude: 12 }, high: { latitude: 41, longitude: 14 } },
+        { low: { latitude: 41, longitude: 10 }, high: { latitude: 42, longitude: 12 } },
+        { low: { latitude: 41, longitude: 12 }, high: { latitude: 42, longitude: 14 } },
+      ]);
+    });
+  });
+
+  describe('Scraped places split', () => {
+    const rows = [
+      { placeId: 'a', hasWebsite: true },
+      { placeId: 'b', hasWebsite: false },
+      { placeId: 'c', hasWebsite: false },
+      { placeId: 'd', hasWebsite: false },
+    ];
+
+    it('keeps businesses the filter drops in reserve', () => {
+      const split = splitScrapedPlaces({ rows, filter: 'without', missing: 5 });
+
+      expect(split.wanted.map((row) => row.placeId)).toStrictEqual(['b', 'c', 'd']);
+      expect(split.reserve.map((row) => row.placeId)).toStrictEqual(['a']);
+    });
+
+    it('keeps businesses beyond the missing leads in reserve', () => {
+      const split = splitScrapedPlaces({ rows, filter: 'any', missing: 2 });
+
+      expect(split.wanted.map((row) => row.placeId)).toStrictEqual(['a', 'b']);
+      expect(split.reserve.map((row) => row.placeId)).toStrictEqual(['c', 'd']);
+    });
+  });
+
   describe('Lead CSV', () => {
     const lead = {
       email: 'mario@gmail.com',
@@ -93,6 +156,7 @@ describe('Leads', () => {
       linkedinUrl: null,
       role: 'Titolare',
       category: 'Commercialista',
+      description: 'Studio commercialista specializzato in partite IVA e piccole imprese.',
       city: 'Bergamo',
       address: 'Via Roma 1',
       hasWebsite: false,
@@ -122,6 +186,16 @@ describe('Leads', () => {
         Role: 'Titolare',
         'Google reviews': '',
       });
+    });
+
+    it('passes the business description to the copywriter as extra context', () => {
+      const csv = toLeadCsv({ name: 'Bergamo', leads: [lead] });
+
+      expect(csv.rows[0]).toMatchObject({
+        'Business description':
+          'Studio commercialista specializzato in partite IVA e piccole imprese.',
+      });
+      expect(Object.values(autoDetectMapping(csv.headers))).not.toContain('Business description');
     });
   });
 });

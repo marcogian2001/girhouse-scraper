@@ -4,6 +4,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useFormatter, useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
+import { LocationCombobox } from '@/components/LocationCombobox';
+import { SearchTermsInput } from '@/components/SearchTermsInput';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
@@ -16,11 +18,10 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
-import { Textarea } from '@/components/ui/textarea';
 import { useRouter } from '@/libs/I18nNavigation';
 import type { leadSearchSchema, parallelProcessorEnum } from '@/models/Schema';
 import { microsToUsd, USD_FORMAT } from '@/utils/UsageFormat';
-import { LeadSearchFormValidation, MAX_LEADS_PER_SEARCH } from '@/validations/LeadSearchValidation';
+import { LeadSearchValidation, MAX_LEADS_PER_SEARCH } from '@/validations/LeadSearchValidation';
 
 type Processor = (typeof parallelProcessorEnum.enumValues)[number];
 
@@ -46,11 +47,12 @@ export const LeadSearchForm = (props: { pricing: LeadPricing }) => {
   const [hasError, setHasError] = useState(false);
 
   const form = useForm({
-    resolver: zodResolver(LeadSearchFormValidation),
+    resolver: zodResolver(LeadSearchValidation),
     defaultValues: {
       name: '',
-      searchTerms: '',
+      searchTerms: [],
       location: '',
+      locationPlaceId: '',
       maxResults: 50,
       websiteFilter: 'any' as const,
       processor: 'base' as const,
@@ -61,6 +63,8 @@ export const LeadSearchForm = (props: { pricing: LeadPricing }) => {
   const maxResults = useWatch({ control: form.control, name: 'maxResults' });
   const processor = useWatch({ control: form.control, name: 'processor' }) ?? 'base';
   const websiteFilter = useWatch({ control: form.control, name: 'websiteFilter' }) ?? 'any';
+  const searchTerms = useWatch({ control: form.control, name: 'searchTerms' });
+  const location = useWatch({ control: form.control, name: 'location' });
 
   // Worst case: every place is researched, looked up on Prospeo and verified
   const perLeadMicros =
@@ -104,11 +108,14 @@ export const LeadSearchForm = (props: { pricing: LeadPricing }) => {
 
         <Field>
           <FieldLabel htmlFor="search-terms">{t('label_terms')}</FieldLabel>
-          <Textarea
+          <SearchTermsInput
             id="search-terms"
-            rows={4}
+            value={searchTerms}
             placeholder={t('placeholder_terms')}
-            {...form.register('searchTerms')}
+            invalid={Boolean(form.formState.errors.searchTerms)}
+            onValueChange={(value) => {
+              form.setValue('searchTerms', value, { shouldValidate: form.formState.isSubmitted });
+            }}
           />
           <FieldDescription>{t('hint_terms')}</FieldDescription>
           {form.formState.errors.searchTerms && <FieldError>{t('error_terms')}</FieldError>}
@@ -117,10 +124,17 @@ export const LeadSearchForm = (props: { pricing: LeadPricing }) => {
         <div className="grid gap-4 sm:grid-cols-2">
           <Field>
             <FieldLabel htmlFor="search-location">{t('label_location')}</FieldLabel>
-            <Input
+            <LocationCombobox
               id="search-location"
+              value={location}
               placeholder={t('placeholder_location')}
-              {...form.register('location')}
+              invalid={Boolean(form.formState.errors.location)}
+              onValueChange={(value) => {
+                const options = { shouldValidate: form.formState.isSubmitted };
+
+                form.setValue('location', value?.label ?? '', options);
+                form.setValue('locationPlaceId', value?.placeId ?? '', options);
+              }}
             />
             {form.formState.errors.location && <FieldError>{t('error_location')}</FieldError>}
           </Field>

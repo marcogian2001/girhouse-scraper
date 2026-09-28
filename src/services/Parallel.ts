@@ -120,6 +120,16 @@ const DECISION_MAKER_JSON_SCHEMA = {
       type: 'string',
       description: 'URL of the page where public_email was found, or "".',
     },
+    business_phone: {
+      type: 'string',
+      description:
+        'A phone number the business or its owner publishes for contact, exactly as published, or "" if none was found.',
+    },
+    business_description: {
+      type: 'string',
+      description:
+        'One or two sentences in Italian on what the business or professional does, for whom, and what sets them apart, or "" if nothing verifiable was found.',
+    },
     confidence: {
       type: 'string',
       enum: ['low', 'medium', 'high'],
@@ -138,6 +148,8 @@ const DECISION_MAKER_JSON_SCHEMA = {
     'linkedin_url',
     'public_email',
     'public_email_source',
+    'business_phone',
+    'business_description',
     'confidence',
     'reasoning',
   ],
@@ -232,6 +244,10 @@ export const buildDecisionMakerInput = (lead: DecisionMakerTarget) => {
     '- The decision maker is the owner, CEO, managing partner or equivalent. For a sole trader it is the owner.',
     `- ${lead.hasWebsite ? 'Start from the website, then' : 'The business has no website of its own, so'} check the Facebook and Instagram pages, PagineGialle, industry directories, LinkedIn and the Italian business register.`,
     '- public_email is any address the business or its owner publishes for contact, including a Gmail or similar personal address. Never guess or construct an address.',
+    lead.phone
+      ? '- The phone number is already known, so leave business_phone as an empty string.'
+      : '- Google Maps lists no phone, so report in business_phone any number the business or its owner publishes, exactly as published. Never guess a number.',
+    '- business_description is written in Italian and only states facts the sources support: what the business or professional offers, to whom, and any specialisation, history or area served.',
     '- Only report a person you can tie to this exact business, using the address, phone or name. Namesakes are common.',
     '- Leave a field as an empty string rather than guessing. An empty field is more useful than a wrong one.',
   ].join('\n');

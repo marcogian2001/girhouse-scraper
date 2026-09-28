@@ -150,27 +150,17 @@ export const toLeadRow = (place: MapsPlace): LeadRow => {
 };
 
 /**
- * Starts a Google Maps scrape limited to Italy.
- * @param options The call options.
- * @param options.searchTerms What to search for, one scrape per term.
- * @param options.location Where to search, as free text.
- * @param options.maxResults How many places to collect across all terms.
+ * Starts a Google Maps scrape of the given places, so only places not paid for before are billed.
+ * @param placeIds The Google place ids to scrape.
  * @returns The identifier of the created run.
  * @throws {Error} When the token is missing or Apify rejects the request.
  */
-export const startMapsRun = async (options: {
-  searchTerms: string[];
-  location: string;
-  maxResults: number;
-}) => {
+export const startMapsRun = async (placeIds: string[]) => {
   const response = await request(`/acts/${MAPS_ACTOR_ID}/runs`, {
     method: 'POST',
     body: JSON.stringify({
-      searchStringsArray: options.searchTerms,
-      locationQuery: options.location,
-      maxCrawledPlacesPerSearch: Math.ceil(options.maxResults / options.searchTerms.length),
+      placeIds,
       language: 'it',
-      countryCode: 'it',
       skipClosedPlaces: true,
       // Everything billed on top of the base place price stays off
       scrapePlaceDetailPage: false,

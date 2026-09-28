@@ -1,5 +1,8 @@
+import { sql } from 'drizzle-orm';
 import {
   boolean,
+  check,
+  doublePrecision,
   index,
   integer,
   jsonb,
@@ -192,6 +195,7 @@ export const parallelProcessorEnum = pgEnum('parallel_processor', ['lite', 'base
 
 export const usageProviderEnum = pgEnum('usage_provider', [
   'anthropic',
+  'openai',
   'parallel',
   'apify',
   'prospeo',
@@ -212,6 +216,7 @@ export const leadStatusEnum = pgEnum('lead_status', [
   'researching',
   'finding_email',
   'ready',
+  'reserve',
   'filtered_out',
   'no_email',
   'failed',
@@ -221,7 +226,7 @@ export const leadEmailSourceEnum = pgEnum('lead_email_source', ['prospeo', 'publ
 
 export const emailVerificationEnum = pgEnum('email_verification', ['valid', 'catch_all']);
 
-/** Reusable prompts and documents Claude reads when writing a campaign. */
+/** Reusable prompts and documents the copywriting model reads when writing a campaign. */
 export const knowledgeAssetSchema = pgTable(
   'knowledge_asset',
   {
@@ -236,6 +241,8 @@ export const knowledgeAssetSchema = pgTable(
     content: text('content'),
     // Anthropic Files API identifier, set for PDFs only
     anthropicFileId: text('anthropic_file_id'),
+    // OpenAI Files API identifier, set for PDFs uploaded while OpenAI was configured
+    openaiFileId: text('openai_file_id'),
     mimeType: text('mime_type'),
     sizeBytes: integer('size_bytes'),
     ...timestamps,
@@ -254,6 +261,8 @@ export const campaignSchema = pgTable(
     name: text('name').notNull(),
     status: campaignStatusEnum('status').notNull().default('draft'),
     processor: parallelProcessorEnum('processor').notNull().default('core'),
+    // Plain text rather than an enum, so offering a new model needs no migration
+    copywritingModel: text('copywriting_model').notNull().default('claude-opus-5'),
     emailCount: integer('email_count').notNull(),
     // Days to wait after each step before the next one, one entry per step
     delaysDays: jsonb('delays_days').$type<number[]>().notNull(),
@@ -347,15 +356,88 @@ export const leadSearchSchema = pgTable(
     name: text('name').notNull(),
     searchTerms: jsonb('search_terms').$type<string[]>().notNull(),
     location: text('location').notNull(),
+    // Google place id of the area, missing on searches made before areas were scanned
+    locationPlaceId: text('location_place_id'),
     maxResults: integer('max_results').notNull(),
     websiteFilter: websiteFilterEnum('website_filter').notNull().default('any'),
     processor: parallelProcessorEnum('processor').notNull().default('base'),
     status: leadSearchStatusEnum('status').notNull().default('searching'),
     apifyRunId: text('apify_run_id'),
+    // How many Apify runs the search has started, capped so a sparse area stops early
+    scrapeRounds: integer('scrape_rounds').notNull().default(0),
+    // Leads taken over from earlier searches, which were already paid for
+    reserveClaimed: integer('reserve_claimed').notNull().default(0),
     errorMessage: text('error_message'),
     ...timestamps,
   },
   (table) => [index('lead_search_organization_id_idx').on(table.organizationId)],
+);
+
+/** A search term looked up in one area, so each search continues where the last one stopped. */
+export const searchAreaSchema = pgTable(
+  'search_area',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    organizationId: organizationId(),
+    locationPlaceId: text('location_place_id').notNull(),
+    // Normalised, so the same term typed differently shares its progress
+    searchTerm: text('search_term').notNull(),
+    ...timestamps,
+  },
+  (table) => [
+    unique('search_area_organization_id_location_place_id_search_term_unique').on(
+      table.organizationId,
+      table.locationPlaceId,
+      table.searchTerm,
+    ),
+  ],
+);
+
+/** A rectangle of a search area, scanned once with Google Text Search. */
+export const searchCellSchema = pgTable(
+  'search_cell',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    searchAreaId: uuid('search_area_id')
+      .notNull()
+      .references(() => searchAreaSchema.id, { onDelete: 'cascade' }),
+    // How many times the area viewport was split to get this cell
+    depth: integer('depth').notNull().default(0),
+    lowLatitude: doublePrecision('low_latitude').notNull(),
+    lowLongitude: doublePrecision('low_longitude').notNull(),
+    highLatitude: doublePrecision('high_latitude').notNull(),
+    highLongitude: doublePrecision('high_longitude').notNull(),
+    scannedAt: timestamp('scanned_at', { mode: 'date' }),
+    ...timestamps,
+  },
+  (table) => [
+    index('search_cell_search_area_id_scanned_at_idx').on(table.searchAreaId, table.scannedAt),
+    // Two searches splitting the same cell at once add its quarters only once
+    unique('search_cell_search_area_id_depth_low_unique').on(
+      table.searchAreaId,
+      table.depth,
+      table.lowLatitude,
+      table.lowLongitude,
+    ),
+  ],
+);
+
+/** A Google Maps place found in a search area, before Apify is paid to scrape it. */
+export const discoveredPlaceSchema = pgTable(
+  'discovered_place',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    searchAreaId: uuid('search_area_id')
+      .notNull()
+      .references(() => searchAreaSchema.id, { onDelete: 'cascade' }),
+    placeId: text('place_id').notNull(),
+    // Set once the place is sent to Apify, so a place Apify skips is never paid for again
+    scrapedAt: timestamp('scraped_at', { mode: 'date' }),
+    ...timestamps,
+  },
+  (table) => [
+    unique('discovered_place_search_area_id_place_id_unique').on(table.searchAreaId, table.placeId),
+  ],
 );
 
 /** A business found by a lead search, with its decision maker and email once qualified. */
@@ -377,6 +459,8 @@ export const leadSchema = pgTable(
     address: text('address'),
     city: text('city'),
     category: text('category'),
+    // What the business or professional does, written in Italian by Parallel
+    description: text('description'),
     rating: real('rating'),
     reviewsCount: integer('reviews_count'),
     firstName: text('first_name'),
@@ -448,7 +532,7 @@ export const apiUsageSchema = pgTable(
     provider: usageProviderEnum('provider').notNull(),
     // Provider call id (message, run, request or lead id), so a retried job never counts twice
     externalId: text('external_id').notNull(),
-    // Claude model id, Parallel processor, or the kind of call for the other providers
+    // Copywriting model id, Parallel processor, or the kind of call for the other providers
     model: text('model').notNull(),
     inputTokens: integer('input_tokens').notNull().default(0),
     outputTokens: integer('output_tokens').notNull().default(0),
@@ -463,5 +547,76 @@ export const apiUsageSchema = pgTable(
     index('api_usage_organization_id_created_at_idx').on(table.organizationId, table.createdAt),
     index('api_usage_campaign_id_idx').on(table.campaignId),
     index('api_usage_lead_search_id_idx').on(table.leadSearchId),
+  ],
+);
+
+// ---------------------------------------------------------------------------
+// Email polls
+// ---------------------------------------------------------------------------
+
+/** One email of a polled sequence, copied so later draft edits leave past votes intact. */
+export type EmailPollEmail = { stepIndex: number; subject: string; body: string };
+
+/** A blind test where anyone with the link scores sequences written by different models. */
+export const emailPollSchema = pgTable(
+  'email_poll',
+  {
+    // Also the token in the public link, so it must stay unguessable
+    id: uuid('id').primaryKey().defaultRandom(),
+    organizationId: organizationId(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => userSchema.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    // Hidden by default, so voters are not swayed by the model or its price
+    showModel: boolean('show_model').notNull().default(false),
+    showCost: boolean('show_cost').notNull().default(false),
+    ...timestamps,
+  },
+  (table) => [index('email_poll_organization_id_idx').on(table.organizationId)],
+);
+
+/** One contact's sequence from one campaign, as voters see it. */
+export const emailPollItemSchema = pgTable(
+  'email_poll_item',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    pollId: uuid('poll_id')
+      .notNull()
+      .references(() => emailPollSchema.id, { onDelete: 'cascade' }),
+    campaignId: uuid('campaign_id').references(() => campaignSchema.id, { onDelete: 'set null' }),
+    // The contact's email, lower-cased, so the same recipient is compared across campaigns
+    groupKey: text('group_key').notNull(),
+    groupLabel: text('group_label').notNull(),
+    // Copywriting model id when the poll was created
+    model: text('model').notNull(),
+    // The campaign's copywriting spend split evenly across the contacts it wrote
+    costMicros: integer('cost_micros').notNull(),
+    emails: jsonb('emails').$type<EmailPollEmail[]>().notNull(),
+    ...timestamps,
+  },
+  (table) => [index('email_poll_item_poll_id_idx').on(table.pollId)],
+);
+
+/** One voter's score for one sequence. Voting again replaces it. */
+export const emailPollVoteSchema = pgTable(
+  'email_poll_vote',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    pollId: uuid('poll_id')
+      .notNull()
+      .references(() => emailPollSchema.id, { onDelete: 'cascade' }),
+    itemId: uuid('item_id')
+      .notNull()
+      .references(() => emailPollItemSchema.id, { onDelete: 'cascade' }),
+    // Hash of the poll id and the voter's IP address, so no address is stored
+    voterHash: text('voter_hash').notNull(),
+    score: integer('score').notNull(),
+    ...timestamps,
+  },
+  (table) => [
+    unique('email_poll_vote_item_id_voter_hash_unique').on(table.itemId, table.voterHash),
+    index('email_poll_vote_poll_id_idx').on(table.pollId),
+    check('email_poll_vote_score_check', sql`${table.score} between 1 and 10`),
   ],
 );

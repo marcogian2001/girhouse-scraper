@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { CampaignMappingStep } from '@/components/CampaignMappingStep';
 import { CampaignReview } from '@/components/CampaignReview';
+import type { CostBasis } from '@/components/CampaignSettingsForm';
 import { CampaignSettingsForm } from '@/components/CampaignSettingsForm';
 import { CampaignWizardFooter } from '@/components/CampaignWizardFooter';
 import { CampaignWizardSteps } from '@/components/CampaignWizardSteps';
@@ -14,6 +15,7 @@ import { CsvUploader } from '@/components/CsvUploader';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { useRouter } from '@/libs/I18nNavigation';
+import { DEFAULT_COPYWRITING_MODEL } from '@/utils/CopywritingModels';
 import type { ColumnMapping } from '@/utils/Csv';
 import { autoDetectMapping, toContactRows } from '@/utils/Csv';
 import type { CampaignSettings } from '@/validations/CampaignValidation';
@@ -37,7 +39,14 @@ const startFrom = (csv: ParsedCsv | null) =>
     : { step: 1, csv: null, mapping: {}, name: '' };
 
 export const NewCampaignWizard = (props: {
-  knowledgeAssets: { id: string; name: string }[];
+  knowledgeAssets: {
+    id: string;
+    name: string;
+    kind: 'prompt' | 'document';
+    missingOnOpenAI: boolean;
+  }[];
+  // Tokens of an average copywriting call, and whether they come from past campaigns
+  costBasis: CostBasis;
   // Contacts handed over from a lead search, which skip the upload step
   initialCsv: ParsedCsv | null;
 }) => {
@@ -58,6 +67,7 @@ export const NewCampaignWizard = (props: {
     defaultValues: {
       name: start.name,
       processor: 'core' as const,
+      copywritingModel: DEFAULT_COPYWRITING_MODEL,
       emailCount: 3,
       delaysDays: [3, 4, 0],
       knowledgeAssetIds: [] as string[],
@@ -179,7 +189,14 @@ export const NewCampaignWizard = (props: {
           />
         )}
 
-        {step === 3 && <CampaignSettingsForm form={form} knowledgeAssets={props.knowledgeAssets} />}
+        {step === 3 && (
+          <CampaignSettingsForm
+            form={form}
+            knowledgeAssets={props.knowledgeAssets}
+            contactCount={contacts.length}
+            costBasis={props.costBasis}
+          />
+        )}
 
         {step === 4 && csv && settings && (
           <CampaignReview

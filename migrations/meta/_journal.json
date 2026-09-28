@@ -43,6 +43,34 @@
       "when": 1790236429079,
       "tag": "0005_lead_search",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790433965351,
+      "tag": "0006_lead_description",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1790438879650,
+      "tag": "0007_search_areas",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1790445824174,
+      "tag": "0008_copywriting_model",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1790609685235,
+      "tag": "0009_email_poll",
+      "breakpoints": true
     }
   ]
 }

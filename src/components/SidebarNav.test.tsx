@@ -33,6 +33,14 @@ describe('Sidebar nav', () => {
       await expect.element(campaigns).toHaveAttribute('data-active', 'true');
     });
 
+    it('marks email polls active on a poll detail path', async () => {
+      await renderNav('/dashboard/email-polls/abc-123');
+
+      const polls = page.getByRole('link', { name: messages.AppSidebar.nav_email_polls });
+
+      await expect.element(polls).toHaveAttribute('data-active', 'true');
+    });
+
     it('leaves home inactive on a nested dashboard path', async () => {
       await renderNav('/dashboard/campaigns');
 

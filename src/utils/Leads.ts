@@ -1,5 +1,6 @@
 import * as z from 'zod';
 import type { leadSchema, leadSearchSchema } from '@/models/Schema';
+import type { Rectangle } from '@/services/GooglePlaces';
 
 type WebsiteFilter = (typeof leadSearchSchema.$inferSelect)['websiteFilter'];
 
@@ -14,6 +15,68 @@ export const readResearchField = (value?: string) => (value?.trim() ? value.trim
 
 /** Lead states the worker still has something to do for. */
 export const OPEN_LEAD_STATUSES = ['found', 'researching', 'finding_email'] as const;
+
+/**
+ * Lead states of businesses already scraped but never researched, which a later search can take.
+ * `filtered_out` is what searches made before the reserve called them.
+ */
+export const RESERVE_LEAD_STATUSES = ['reserve', 'filtered_out'] as const;
+
+/** The most places one Apify run is asked to scrape. */
+const MAX_PLACES_PER_ROUND = 1000;
+
+/**
+ * A website filter drops part of what is scraped, so a filtered search scrapes this much more.
+ * What the filter drops is kept in reserve, never thrown away.
+ */
+const FILTERED_SCRAPE_FACTOR = 1.5;
+
+/**
+ * Normalises a search term, so the same term typed differently shares its progress.
+ * @param term The term as typed.
+ * @returns The lowercase term with single spaces.
+ */
+export const toSearchKey = (term: string) => term.trim().replaceAll(/\s+/gu, ' ').toLowerCase();
+
+/**
+ * Decides how many places to scrape for the leads a search still needs.
+ * @param options The call options.
+ * @param options.missing How many leads the search still needs.
+ * @param options.filter Which businesses the search wants.
+ * @returns How many places to send to Apify.
+ */
+export const scrapeBudget = (options: { missing: number; filter: WebsiteFilter }) =>
+  Math.min(
+    options.filter === 'any'
+      ? options.missing
+      : Math.ceil(options.missing * FILTERED_SCRAPE_FACTOR),
+    MAX_PLACES_PER_ROUND,
+  );
+
+/**
+ * Splits a rectangle into its four quarters.
+ * @param rectangle The rectangle to split.
+ * @returns The quarters, which together cover the rectangle.
+ */
+export const splitRectangle = (rectangle: Rectangle): Rectangle[] => {
+  const middle = {
+    latitude: (rectangle.low.latitude + rectangle.high.latitude) / 2,
+    longitude: (rectangle.low.longitude + rectangle.high.longitude) / 2,
+  };
+
+  return [
+    { low: rectangle.low, high: middle },
+    {
+      low: { latitude: rectangle.low.latitude, longitude: middle.longitude },
+      high: { latitude: middle.latitude, longitude: rectangle.high.longitude },
+    },
+    {
+      low: { latitude: middle.latitude, longitude: rectangle.low.longitude },
+      high: { latitude: rectangle.high.latitude, longitude: middle.longitude },
+    },
+    { low: middle, high: rectangle.high },
+  ];
+};
 
 /**
  * Checks a business against the website filter of its search.
@@ -83,6 +146,30 @@ export const uniqueByPlaceId = <Place extends { placeId: string }>(places: Place
 };
 
 /**
+ * Splits scraped businesses into the leads a search takes and those kept in reserve.
+ * @param options The call options.
+ * @param options.rows The scraped businesses.
+ * @param options.filter Which businesses the search wants.
+ * @param options.missing How many leads the search still needs.
+ * @returns The businesses to research now, and the rest.
+ */
+export const splitScrapedPlaces = <Row extends { hasWebsite: boolean }>(options: {
+  rows: Row[];
+  filter: WebsiteFilter;
+  missing: number;
+}) => {
+  const matching = options.rows.filter((row) =>
+    matchesWebsiteFilter({ hasWebsite: row.hasWebsite, filter: options.filter }),
+  );
+  const wanted = matching.slice(0, options.missing);
+
+  return {
+    wanted,
+    reserve: options.rows.filter((row) => !wanted.includes(row)),
+  };
+};
+
+/**
  * Lays out ready leads as the rows of an uploaded CSV, so a campaign can be
  * created from them with the same wizard. Headers the column mapper knows land
  * on contact fields; the rest reach Claude as extra context.
@@ -104,6 +191,7 @@ export const toLeadCsv = (options: {
     | 'linkedinUrl'
     | 'role'
     | 'category'
+    | 'description'
     | 'city'
     | 'address'
     | 'hasWebsite'
@@ -121,6 +209,7 @@ export const toLeadCsv = (options: {
     LinkedIn: lead.linkedinUrl ?? '',
     Role: lead.role ?? '',
     Category: lead.category ?? '',
+    'Business description': lead.description ?? '',
     City: lead.city ?? '',
     Address: lead.address ?? '',
     'Has own website': lead.hasWebsite ? 'yes' : 'no',
