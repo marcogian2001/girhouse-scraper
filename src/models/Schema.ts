@@ -344,6 +344,43 @@ export const emailDraftSchema = pgTable(
   ],
 );
 
+/** The daily sweep of every Italian province for every term of the catalog. */
+export const coveragePlanSchema = pgTable('coverage_plan', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  // One plan per organization, so its searches never compete with another plan's
+  organizationId: organizationId().unique('coverage_plan_organization_id_unique'),
+  // Who the scheduled searches are billed to
+  userId: text('user_id')
+    .notNull()
+    .references(() => userSchema.id, { onDelete: 'cascade' }),
+  dailyLeads: integer('daily_leads').notNull().default(750),
+  leadsPerSearch: integer('leads_per_search').notNull().default(250),
+  websiteFilter: websiteFilterEnum('website_filter').notNull().default('any'),
+  processor: parallelProcessorEnum('processor').notNull().default('base'),
+  isActive: boolean('is_active').notNull().default(false),
+  ...timestamps,
+});
+
+/** A term of a coverage plan, searched in every province. Lower tiers go first. */
+export const coverageTermSchema = pgTable(
+  'coverage_term',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    planId: uuid('plan_id')
+      .notNull()
+      .references(() => coveragePlanSchema.id, { onDelete: 'cascade' }),
+    // Normalised, so it matches the search areas the scheduled searches create
+    term: text('term').notNull(),
+    tier: integer('tier').notNull().default(1),
+    isActive: boolean('is_active').notNull().default(true),
+    ...timestamps,
+  },
+  (table) => [
+    unique('coverage_term_plan_id_term_unique').on(table.planId, table.term),
+    check('coverage_term_tier_check', sql`${table.tier} between 1 and 3`),
+  ],
+);
+
 /** A Google Maps search whose results are qualified into leads. */
 export const leadSearchSchema = pgTable(
   'lead_search',
@@ -367,10 +404,17 @@ export const leadSearchSchema = pgTable(
     scrapeRounds: integer('scrape_rounds').notNull().default(0),
     // Leads taken over from earlier searches, which were already paid for
     reserveClaimed: integer('reserve_claimed').notNull().default(0),
+    // Set on the searches a coverage plan schedules, to count its daily quota and passes
+    coveragePlanId: uuid('coverage_plan_id').references(() => coveragePlanSchema.id, {
+      onDelete: 'set null',
+    }),
     errorMessage: text('error_message'),
     ...timestamps,
   },
-  (table) => [index('lead_search_organization_id_idx').on(table.organizationId)],
+  (table) => [
+    index('lead_search_organization_id_idx').on(table.organizationId),
+    index('lead_search_coverage_plan_id_idx').on(table.coveragePlanId),
+  ],
 );
 
 /** A search term looked up in one area, so each search continues where the last one stopped. */

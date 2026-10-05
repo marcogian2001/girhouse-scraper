@@ -201,22 +201,23 @@ const toRectangle = (cell: SearchCell): Rectangle => ({
 });
 
 /**
- * Loads the areas of a search, one per term, creating those never searched before.
+ * Loads the areas of some terms in one place, creating those never searched before.
  * A new area starts as a single cell covering the whole Google Maps viewport.
- * @param search The lead search.
- * @returns The areas of the search.
- * @throws {Error} When the search has no area place id.
+ * @param options The call options.
+ * @param options.organizationId The organization searching.
+ * @param options.locationPlaceId The Google place id of the area.
+ * @param options.searchTerms The terms to search for, as typed.
+ * @returns The areas, one per distinct term.
  */
-const loadSearchAreas = async (search: LeadSearch) => {
-  const { locationPlaceId } = search;
-
-  if (!locationPlaceId) {
-    throw new Error('Lead search has no area to search in');
-  }
-
-  const terms = [...new Set(search.searchTerms.map(toSearchKey))];
+export const loadSearchAreas = async (options: {
+  organizationId: string;
+  locationPlaceId: string;
+  searchTerms: string[];
+}) => {
+  const { organizationId, locationPlaceId } = options;
+  const terms = [...new Set(options.searchTerms.map(toSearchKey))];
   const where = and(
-    eq(searchAreaSchema.organizationId, search.organizationId),
+    eq(searchAreaSchema.organizationId, organizationId),
     eq(searchAreaSchema.locationPlaceId, locationPlaceId),
     inArray(searchAreaSchema.searchTerm, terms),
   );
@@ -235,7 +236,7 @@ const loadSearchAreas = async (search: LeadSearch) => {
       .insert(searchAreaSchema)
       .values(
         newTerms.map((searchTerm) => ({
-          organizationId: search.organizationId,
+          organizationId,
           locationPlaceId,
           searchTerm,
         })),
@@ -254,6 +255,24 @@ const loadSearchAreas = async (search: LeadSearch) => {
 };
 
 /**
+ * Keeps the discovered places the organization never scraped.
+ * @param organizationId The organization searching.
+ * @returns The where clause over discovered places.
+ */
+export const isUnusedPlace = (organizationId: string) =>
+  sql`${isNull(discoveredPlaceSchema.scrapedAt)} and ${notExists(
+    db
+      .select({ id: leadSchema.id })
+      .from(leadSchema)
+      .where(
+        and(
+          eq(leadSchema.organizationId, organizationId),
+          eq(leadSchema.placeId, discoveredPlaceSchema.placeId),
+        ),
+      ),
+  )}`;
+
+/**
  * Filters the places found in some areas down to those never scraped by the organization.
  * @param options The call options.
  * @param options.organizationId The organization searching.
@@ -263,18 +282,7 @@ const loadSearchAreas = async (search: LeadSearch) => {
 const unusedPlaces = (options: { organizationId: string; areaIds: string[] }) =>
   and(
     inArray(discoveredPlaceSchema.searchAreaId, options.areaIds),
-    isNull(discoveredPlaceSchema.scrapedAt),
-    notExists(
-      db
-        .select({ id: leadSchema.id })
-        .from(leadSchema)
-        .where(
-          and(
-            eq(leadSchema.organizationId, options.organizationId),
-            eq(leadSchema.placeId, discoveredPlaceSchema.placeId),
-          ),
-        ),
-    ),
+    isUnusedPlace(options.organizationId),
   );
 
 /**
@@ -421,7 +429,7 @@ const scanCell = async (options: { cell: SearchCell; searchTerm: string }) => {
  * @param options.wanted How many unscraped places are wanted.
  * @returns Whether some cells are still to scan.
  */
-const discoverPlaces = async (options: {
+export const discoverPlaces = async (options: {
   organizationId: string;
   areas: (typeof searchAreaSchema.$inferSelect)[];
   wanted: number;
@@ -618,7 +626,16 @@ const finishLeadSearch = async (options: { job: Job; search: LeadSearch }) => {
  */
 const startScrapeRound = async (options: { job: Job; search: LeadSearch }) => {
   const { search } = options;
-  const areas = await loadSearchAreas(search);
+
+  if (!search.locationPlaceId) {
+    throw new Error('Lead search has no area to search in');
+  }
+
+  const areas = await loadSearchAreas({
+    organizationId: search.organizationId,
+    locationPlaceId: search.locationPlaceId,
+    searchTerms: search.searchTerms,
+  });
   const areaIds = areas.map((area) => area.id);
 
   await claimReserve({ search, areaIds, limit: await countMissingLeads(search) });

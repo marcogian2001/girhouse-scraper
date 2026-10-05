@@ -2,6 +2,7 @@ import * as z from 'zod';
 import { Env } from '@/libs/Env';
 import type { campaignSchema, contactSchema, emailDraftSchema } from '@/models/Schema';
 import { requireEnv } from '@/utils/Helpers';
+import { SEGMENT_VARIABLES } from '@/utils/Leads';
 import type { EnrichmentContent } from '@/validations/EnrichmentValidation';
 
 const INSTANTLY_API_URL = 'https://api.instantly.ai/api/v2';
@@ -158,7 +159,7 @@ export const buildResearchVariables = (enrichment: EnrichmentContent | null) => 
 };
 
 /**
- * Builds one lead, carrying its personalised copy and research as custom variables.
+ * Builds one lead, carrying its personalised copy, research and segment as custom variables.
  * @param options The call options.
  * @param options.contact The contact to send to.
  * @param options.drafts The approved drafts for that contact.
@@ -171,6 +172,15 @@ export const buildLeadPayload = (options: {
   enrichment: EnrichmentContent | null;
 }) => {
   const customVariables: Record<string, string> = buildResearchVariables(options.enrichment);
+
+  // Lets campaigns be filtered and segmented by where and what the business is
+  for (const [header, variable] of Object.entries(SEGMENT_VARIABLES)) {
+    const value = options.contact.extra[header];
+
+    if (value) {
+      customVariables[variable] = value;
+    }
+  }
 
   for (const draft of options.drafts) {
     customVariables[`email_subject_${draft.stepIndex}`] = draft.subject;

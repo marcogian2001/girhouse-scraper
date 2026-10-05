@@ -34,7 +34,7 @@ const loadLeadCsv = async (options: { leadSearchId: string; organizationId: stri
     .where(and(eq(leadSchema.leadSearchId, search.id), eq(leadSchema.status, 'ready')))
     .orderBy(asc(leadSchema.company));
 
-  return leads.length > 0 ? toLeadCsv({ name: search.name, leads }) : null;
+  return leads.length > 0 ? toLeadCsv({ search, leads }) : null;
 };
 
 export default async function NewCampaignPage(props: {

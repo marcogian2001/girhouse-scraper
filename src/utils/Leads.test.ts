@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { autoDetectMapping } from './Csv';
+import { ITALIAN_PROVINCES } from './ItalianProvinces';
 import {
   matchesWebsiteFilter,
   pickEmailRoutes,
@@ -165,8 +166,15 @@ describe('Leads', () => {
       reviewsCount: null,
     };
 
+    const search = {
+      name: 'Bergamo',
+      searchTerms: ['commercialista'],
+      locationPlaceId:
+        ITALIAN_PROVINCES.find((province) => province.code === 'BG')?.placeId ?? null,
+    };
+
     it('uses headers the column mapper recognises', () => {
-      const csv = toLeadCsv({ name: 'Bergamo', leads: [lead] });
+      const csv = toLeadCsv({ search, leads: [lead] });
 
       expect(autoDetectMapping(csv.headers)).toStrictEqual({
         email: 'Email',
@@ -180,7 +188,7 @@ describe('Leads', () => {
     });
 
     it('flags a business without its own website for the copywriter', () => {
-      const [row] = toLeadCsv({ name: 'Bergamo', leads: [lead] }).rows;
+      const [row] = toLeadCsv({ search, leads: [lead] }).rows;
 
       expect(row).toMatchObject({
         'Has own website': 'no',
@@ -189,8 +197,32 @@ describe('Leads', () => {
       });
     });
 
+    it('adds the profession, province and region of a province search', () => {
+      const [row] = toLeadCsv({ search, leads: [lead] }).rows;
+
+      expect(row).toMatchObject({
+        Category: 'Commercialista',
+        Profession: 'commercialista',
+        Province: 'Bergamo',
+        Region: 'Lombardia',
+      });
+    });
+
+    it('leaves province and region empty for a search outside a province', () => {
+      const [row] = toLeadCsv({
+        search: { ...search, searchTerms: ['idraulico', 'elettricista'], locationPlaceId: 'town' },
+        leads: [lead],
+      }).rows;
+
+      expect(row).toMatchObject({
+        Profession: 'idraulico, elettricista',
+        Province: '',
+        Region: '',
+      });
+    });
+
     it('passes the business description to the copywriter as extra context', () => {
-      const csv = toLeadCsv({ name: 'Bergamo', leads: [lead] });
+      const csv = toLeadCsv({ search, leads: [lead] });
 
       expect(csv.rows[0]).toMatchObject({
         'Business description':

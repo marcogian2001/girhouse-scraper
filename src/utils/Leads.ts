@@ -3,10 +3,13 @@ import type { leadSchema, leadSearchSchema } from '@/models/Schema';
 import type { Rectangle } from '@/services/GooglePlaces';
 import type { EnrichmentContent } from '@/validations/EnrichmentValidation';
 import { DecisionMakerValidation } from '@/validations/LeadSearchValidation';
+import { ITALIAN_PROVINCES } from './ItalianProvinces';
 
 type WebsiteFilter = (typeof leadSearchSchema.$inferSelect)['websiteFilter'];
 
 type Lead = typeof leadSchema.$inferSelect;
+
+type LeadSearch = typeof leadSearchSchema.$inferSelect;
 
 /**
  * Reads a text field Parallel fills in, where an empty string means unknown.
@@ -171,17 +174,25 @@ export const splitScrapedPlaces = <Row extends { hasWebsite: boolean }>(options:
   };
 };
 
+/** Lead CSV columns sent on to Instantly, with the custom variable each one becomes. */
+export const SEGMENT_VARIABLES = {
+  Category: 'category',
+  Province: 'province',
+  Region: 'region',
+  Profession: 'profession',
+} as const;
+
 /**
  * Lays out ready leads as the rows of an uploaded CSV, so a campaign can be
  * created from them with the same wizard. Headers the column mapper knows land
  * on contact fields; the rest reach Claude as extra context.
  * @param options The call options.
- * @param options.name The name of the lead search, shown as the file name.
+ * @param options.search The lead search the leads come from.
  * @param options.leads The leads to include.
  * @returns The parsed CSV the campaign wizard starts from.
  */
 export const toLeadCsv = (options: {
-  name: string;
+  search: Pick<LeadSearch, 'name' | 'searchTerms' | 'locationPlaceId'>;
   leads: Pick<
     Lead,
     | 'email'
@@ -201,6 +212,9 @@ export const toLeadCsv = (options: {
     | 'reviewsCount'
   >[];
 }) => {
+  const { search } = options;
+  // Only searches made in a province know their province and region
+  const province = ITALIAN_PROVINCES.find((item) => item.placeId === search.locationPlaceId);
   const rows = options.leads.map((lead) => ({
     Email: lead.email ?? '',
     'First name': lead.firstName ?? '',
@@ -217,10 +231,13 @@ export const toLeadCsv = (options: {
     'Has own website': lead.hasWebsite ? 'yes' : 'no',
     'Google rating': lead.rating === null ? '' : String(lead.rating),
     'Google reviews': lead.reviewsCount === null ? '' : String(lead.reviewsCount),
+    Profession: search.searchTerms.join(', '),
+    Province: province?.name ?? '',
+    Region: province?.region ?? '',
   }));
 
   return {
-    fileName: options.name,
+    fileName: search.name,
     headers: Object.keys(rows[0] ?? {}),
     rows,
   };

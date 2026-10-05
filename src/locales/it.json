@@ -66,7 +66,8 @@
     "nav_knowledge": "Base di conoscenza",
     "nav_email_polls": "Votazioni email",
     "new_campaign": "Nuova campagna",
-    "sign_out": "Esci"
+    "sign_out": "Esci",
+    "nav_coverage": "Copertura"
   },
   "OrganizationSwitcher": {
     "label": "Organizzazioni",
@@ -214,6 +215,60 @@
     "button_campaign": "Crea una campagna con {count, plural, one {# lead} other {# lead}}",
     "reserve_line": "{count, plural, one {# lead preso} other {# lead presi}} da ricerche precedenti, già pagati",
     "short_alert": "Trovate solo {found} attività nuove su {max}. Per altre attività prova una zona più ampia o altri termini."
+  },
+  "CoveragePage": {
+    "title": "Copertura Italia",
+    "subtitle": "Ogni giorno cerca la prossima provincia per ogni professione, finché non resta nulla da trovare.",
+    "empty_title": "Nessun piano di copertura",
+    "empty_description": "Crea il piano con le 107 province e un catalogo di professioni da modificare. Parte in pausa.",
+    "title_settings": "Impostazioni",
+    "title_terms": "Professioni"
+  },
+  "CreateCoveragePlanButton": {
+    "button_create": "Crea il piano",
+    "error_create": "Il piano non è stato creato."
+  },
+  "CoveragePlanForm": {
+    "label_daily_leads": "Lead al giorno",
+    "label_leads_per_search": "Lead per ricerca",
+    "error_number": "Inserisci un numero tra 1 e {max}.",
+    "label_active": "Piano attivo",
+    "hint_active": "Crea le ricerche ogni giorno e intanto censisce le province gratis.",
+    "estimate": "Costo stimato al massimo {cost} al giorno.",
+    "button_save": "Salva",
+    "error_save": "Le impostazioni non sono state salvate."
+  },
+  "CoverageTermsEditor": {
+    "label_term": "Professione",
+    "placeholder_term": "idraulico",
+    "label_tier": "Priorità",
+    "tier": "Priorità {tier}",
+    "button_add": "Aggiungi",
+    "button_delete": "Rimuovi",
+    "column_term": "Professione",
+    "column_tier": "Priorità",
+    "column_active": "Attiva",
+    "error_duplicate": "Questa professione è già nel catalogo.",
+    "error_save": "La modifica non è stata salvata."
+  },
+  "CoverageSummary": {
+    "stat_exhausted": "Coppie esaurite",
+    "stat_exhausted_hint": "{exhausted} di {total} province × professioni",
+    "stat_census": "Censimento",
+    "stat_census_hint": "Coppie scansionate per intero su Google",
+    "stat_unused": "Attività da contattare",
+    "stat_unused_hint": "Su {known} attività censite",
+    "stat_months": "Mesi stimati",
+    "stat_months_hint": "Al ritmo attuale, sulle attività già censite",
+    "title_terms": "Per professione",
+    "title_regions": "Per regione",
+    "column_term": "Professione",
+    "column_region": "Regione",
+    "column_exhausted": "Esaurite",
+    "column_in_progress": "In corso",
+    "column_not_started": "Da iniziare",
+    "column_known": "Censite",
+    "column_unused": "Da contattare"
   },
   "DeleteLeadSearchButton": {
     "button": "Elimina ricerca",

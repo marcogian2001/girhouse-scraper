@@ -134,6 +134,30 @@ describe('Instantly', () => {
       });
     });
 
+    it('carries the segment columns of the contact as custom variables', () => {
+      const lead = buildLeadPayload({
+        contact: {
+          ...contact(),
+          extra: {
+            Category: 'Idraulico',
+            Province: 'Milano',
+            Region: 'Lombardia',
+            Profession: 'idraulico',
+            City: 'Sesto San Giovanni',
+          },
+        },
+        drafts: [],
+        enrichment: null,
+      });
+
+      expect(lead.custom_variables).toStrictEqual({
+        category: 'Idraulico',
+        province: 'Milano',
+        region: 'Lombardia',
+        profession: 'idraulico',
+      });
+    });
+
     it('sends undefined rather than null for missing contact fields', () => {
       const lead = buildLeadPayload({ contact: contact(), drafts: [], enrichment: null });
 
