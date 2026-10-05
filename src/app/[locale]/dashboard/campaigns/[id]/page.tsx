@@ -1,5 +1,5 @@
 import { and, asc, eq, inArray } from 'drizzle-orm';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Download } from 'lucide-react';
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import * as z from 'zod';
@@ -12,6 +12,7 @@ import { InstantlyPushForm } from '@/components/InstantlyPushForm';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getApiContext } from '@/libs/ApiAuth';
@@ -133,7 +134,15 @@ export default async function CampaignDetailPage(props: {
           <CampaignNameEditor campaignId={campaign.id} name={campaign.name} />
           <StatusBadge kind="campaign" status={campaign.status} />
 
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-2">
+            {contacts.length > 0 && (
+              <Button asChild variant="outline">
+                <a href={`/api/campaigns/${campaign.id}/export`} download>
+                  <Download />
+                  {t('button_export')}
+                </a>
+              </Button>
+            )}
             <DeleteCampaignButton campaignId={campaign.id} />
           </div>
         </div>

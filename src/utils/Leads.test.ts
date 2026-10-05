@@ -7,6 +7,7 @@ import {
   scrapeBudget,
   splitRectangle,
   splitScrapedPlaces,
+  toEnrichmentContent,
   toLeadCsv,
   toSearchKey,
   uniqueByPlaceId,
@@ -196,6 +197,66 @@ describe('Leads', () => {
           'Studio commercialista specializzato in partite IVA e piccole imprese.',
       });
       expect(Object.values(autoDetectMapping(csv.headers))).not.toContain('Business description');
+    });
+  });
+
+  describe('Enrichment from lead research', () => {
+    const research = {
+      decision_maker_found: true,
+      first_name: 'Mario',
+      last_name: 'Rossi',
+      role: 'Titolare',
+      linkedin_url: '',
+      public_email: 'mario@gmail.com',
+      public_email_source: 'https://facebook.com/studiorossi',
+      business_phone: '',
+      business_description: 'Studio commercialista specializzato in partite IVA.',
+      recent_activity: 'Ha aperto una seconda sede a Seriate',
+      personalization_hooks: 'Seconda sede a Seriate; consulenze per startup',
+      confidence: 'high',
+      reasoning: 'Nome e indirizzo coincidono con il registro imprese',
+    };
+
+    const lead = {
+      research,
+      company: 'Studio Rossi',
+      description: 'Studio commercialista specializzato in partite IVA.',
+      category: 'Commercialista',
+      city: 'Bergamo',
+      firstName: 'Mario',
+      lastName: 'Rossi',
+      role: 'Titolare',
+      linkedinUrl: null,
+    };
+
+    it('maps the decision maker research onto the campaign research', () => {
+      expect(toEnrichmentContent(lead)).toStrictEqual({
+        person_found: true,
+        identity_match_confidence: 'high',
+        identity_match_reasoning: 'Nome e indirizzo coincidono con il registro imprese',
+        full_name: 'Mario Rossi',
+        current_role: 'Titolare',
+        current_company: 'Studio Rossi',
+        company_description: 'Studio commercialista specializzato in partite IVA.',
+        company_industry: 'Commercialista',
+        location: 'Bergamo',
+        linkedin_url: '',
+        recent_activity: 'Ha aperto una seconda sede a Seriate',
+        personalization_hooks: 'Seconda sede a Seriate; consulenze per startup',
+      });
+    });
+
+    it('leaves hooks empty for research made before they were asked for', () => {
+      const { recent_activity: _activity, personalization_hooks: _hooks, ...older } = research;
+
+      expect(toEnrichmentContent({ ...lead, research: older })).toMatchObject({
+        recent_activity: '',
+        personalization_hooks: '',
+      });
+    });
+
+    it('returns null for research that does not parse', () => {
+      expect(toEnrichmentContent({ ...lead, research: { raw: 'unexpected' } })).toBeNull();
     });
   });
 });

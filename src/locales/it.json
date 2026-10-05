@@ -258,6 +258,7 @@
     "back_link": "Tutte le campagne",
     "meta_line": "{contacts, plural, one {# contatto} other {# contatti}} · {emails, plural, one {# email} other {# email}} · creata il {date}",
     "tab_review": "Revisione",
+    "button_export": "Esporta CSV",
     "tab_send": "Invio",
     "push_title": "Invia a Instantly",
     "pushed_notice": "Questa campagna è attiva su Instantly come {campaignId}.",

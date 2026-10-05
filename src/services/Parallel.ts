@@ -130,6 +130,16 @@ const DECISION_MAKER_JSON_SCHEMA = {
       description:
         'One or two sentences in Italian on what the business or professional does, for whom, and what sets them apart, or "" if nothing verifiable was found.',
     },
+    recent_activity: {
+      type: 'string',
+      description:
+        'Anything recent and verifiable about the business or its decision maker: openings, new services, awards, hiring, posts, press. "" if nothing was found.',
+    },
+    personalization_hooks: {
+      type: 'string',
+      description:
+        'Two or three concrete, checkable details about the business or its decision maker a cold email could reference. Leave "" rather than inventing anything.',
+    },
     confidence: {
       type: 'string',
       enum: ['low', 'medium', 'high'],
@@ -150,6 +160,8 @@ const DECISION_MAKER_JSON_SCHEMA = {
     'public_email_source',
     'business_phone',
     'business_description',
+    'recent_activity',
+    'personalization_hooks',
     'confidence',
     'reasoning',
   ],
@@ -248,6 +260,7 @@ export const buildDecisionMakerInput = (lead: DecisionMakerTarget) => {
       ? '- The phone number is already known, so leave business_phone as an empty string.'
       : '- Google Maps lists no phone, so report in business_phone any number the business or its owner publishes, exactly as published. Never guess a number.',
     '- business_description is written in Italian and only states facts the sources support: what the business or professional offers, to whom, and any specialisation, history or area served.',
+    '- recent_activity and personalization_hooks only state facts a stranger could check online, so a cold email can reference them.',
     '- Only report a person you can tie to this exact business, using the address, phone or name. Namesakes are common.',
     '- Leave a field as an empty string rather than guessing. An empty field is more useful than a wrong one.',
   ].join('\n');

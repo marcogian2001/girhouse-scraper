@@ -38,7 +38,7 @@ export const ConfirmDeleteButton = (props: {
       }}
     >
       <AlertDialogTrigger asChild>
-        <Button type="button" variant="outline">
+        <Button type="button" variant="destructive">
           <Trash2 />
           {props.label}
         </Button>

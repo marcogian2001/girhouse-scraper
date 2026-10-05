@@ -1,6 +1,8 @@
 import * as z from 'zod';
 import type { leadSchema, leadSearchSchema } from '@/models/Schema';
 import type { Rectangle } from '@/services/GooglePlaces';
+import type { EnrichmentContent } from '@/validations/EnrichmentValidation';
+import { DecisionMakerValidation } from '@/validations/LeadSearchValidation';
 
 type WebsiteFilter = (typeof leadSearchSchema.$inferSelect)['websiteFilter'];
 
@@ -221,5 +223,52 @@ export const toLeadCsv = (options: {
     fileName: options.name,
     headers: Object.keys(rows[0] ?? {}),
     rows,
+  };
+};
+
+/**
+ * Turns the decision maker research of a lead into the research a campaign
+ * writes from, so a lead found on the platform is not researched twice.
+ * The person fields come from the lead columns, which are empty unless the
+ * decision maker was confirmed. Leads researched before hooks were asked for
+ * come back with them empty.
+ * @param lead The lead and the research stored with it.
+ * @returns The research content, or null when the stored research does not parse.
+ */
+export const toEnrichmentContent = (
+  lead: Pick<
+    Lead,
+    | 'research'
+    | 'company'
+    | 'description'
+    | 'category'
+    | 'city'
+    | 'firstName'
+    | 'lastName'
+    | 'role'
+    | 'linkedinUrl'
+  >,
+): EnrichmentContent | null => {
+  const parse = DecisionMakerValidation.safeParse(lead.research);
+
+  if (!parse.success) {
+    return null;
+  }
+
+  const research = parse.data;
+
+  return {
+    person_found: research.decision_maker_found,
+    identity_match_confidence: research.confidence,
+    identity_match_reasoning: research.reasoning,
+    full_name: [lead.firstName, lead.lastName].filter(Boolean).join(' '),
+    current_role: lead.role ?? '',
+    current_company: lead.company,
+    company_description: lead.description ?? '',
+    company_industry: lead.category ?? '',
+    location: lead.city ?? '',
+    linkedin_url: lead.linkedinUrl ?? '',
+    recent_activity: research.recent_activity,
+    personalization_hooks: research.personalization_hooks,
   };
 };

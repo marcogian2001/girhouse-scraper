@@ -34,6 +34,8 @@ export const DecisionMakerValidation = z.object({
   // Defaulted, so runs started before these fields were asked for still parse
   business_phone: z.string().default(''),
   business_description: z.string().default(''),
+  recent_activity: z.string().default(''),
+  personalization_hooks: z.string().default(''),
   confidence: z.enum(['low', 'medium', 'high']),
   reasoning: z.string(),
 });

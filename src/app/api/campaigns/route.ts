@@ -4,8 +4,14 @@ import * as z from 'zod';
 import { getApiContext, unauthorized } from '@/libs/ApiAuth';
 import { db } from '@/libs/DB';
 import { enqueue } from '@/libs/JobQueue';
+import { findResearchedLeads } from '@/libs/LeadResearch';
 import { logger } from '@/libs/Logger';
-import { campaignSchema, contactSchema, knowledgeAssetSchema } from '@/models/Schema';
+import {
+  campaignSchema,
+  contactSchema,
+  enrichmentSchema,
+  knowledgeAssetSchema,
+} from '@/models/Schema';
 import { CampaignValidation } from '@/validations/CampaignValidation';
 
 export const GET = async () => {
@@ -58,6 +64,16 @@ export const POST = async (request: Request) => {
     ...new Map(contacts.map((contact) => [contact.email.toLowerCase(), contact])).values(),
   ];
 
+  // Leads found on the platform were researched already, so they go straight to writing
+  const leadResearch = await findResearchedLeads({
+    organizationId: context.organizationId,
+    emails: uniqueContacts.map((contact) => contact.email.toLowerCase()),
+  });
+
+  const isAllReused = uniqueContacts.every((contact) =>
+    leadResearch.has(contact.email.toLowerCase()),
+  );
+
   const created = await db.transaction(async (tx) => {
     const [campaign] = await tx
       .insert(campaignSchema)
@@ -65,7 +81,7 @@ export const POST = async (request: Request) => {
         userId: context.userId,
         organizationId: context.organizationId,
         name: settings.name,
-        status: 'enriching',
+        status: isAllReused ? 'writing' : 'enriching',
         processor: settings.processor,
         copywritingModel: settings.copywritingModel,
         emailCount: settings.emailCount,
@@ -93,23 +109,54 @@ export const POST = async (request: Request) => {
           website: contact.website,
           linkedinUrl: contact.linkedinUrl,
           extra: contact.extra,
+          status: leadResearch.has(contact.email.toLowerCase())
+            ? ('enriched' as const)
+            : ('pending' as const),
         })),
       )
-      .returning({ id: contactSchema.id });
+      .returning({ id: contactSchema.id, email: contactSchema.email });
 
-    return { campaign, contactIds: insertedContacts.map((contact) => contact.id) };
+    const now = new Date();
+
+    const reusedEnrichments = insertedContacts.flatMap((contact) => {
+      const research = leadResearch.get(contact.email);
+
+      return research
+        ? [
+            {
+              contactId: contact.id,
+              parallelRunId: research.parallelRunId,
+              processor: research.processor,
+              content: research.content,
+              basis: [],
+              personFound: research.content.person_found,
+              identityConfidence: research.content.identity_match_confidence,
+              identityReasoning: research.content.identity_match_reasoning,
+              startedAt: now,
+              completedAt: now,
+            },
+          ]
+        : [];
+    });
+
+    // Not recorded as spend: the run was billed to the lead search
+    if (reusedEnrichments.length > 0) {
+      await tx.insert(enrichmentSchema).values(reusedEnrichments);
+    }
+
+    return { campaign, contacts: insertedContacts };
   });
 
   await enqueue(
-    created.contactIds.map((contactId) => ({
+    created.contacts.map((contact) => ({
       campaignId: created.campaign.id,
-      contactId,
-      type: 'enrich' as const,
+      contactId: contact.id,
+      type: leadResearch.has(contact.email) ? ('write' as const) : ('enrich' as const),
     })),
   );
 
   logger.info(
-    `Campaign ${created.campaign.id} queued with ${created.contactIds.length} contacts to enrich`,
+    `Campaign ${created.campaign.id} queued with ${created.contacts.length} contacts, ${leadResearch.size} reusing lead research`,
   );
 
   return NextResponse.json({ id: created.campaign.id }, { status: 201 });

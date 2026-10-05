@@ -258,6 +258,7 @@
     "back_link": "All campaigns",
     "meta_line": "{contacts, plural, one {# contact} other {# contacts}} · {emails, plural, one {# email} other {# emails}} · created {date}",
     "tab_review": "Review",
+    "button_export": "Export CSV",
     "tab_send": "Send",
     "push_title": "Send to Instantly",
     "pushed_notice": "This campaign is live in Instantly as {campaignId}.",
