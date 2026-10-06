@@ -44,6 +44,22 @@ export type WrittenSequence = {
   emails: z.infer<typeof emailSequenceSchema>['emails'] | null;
 };
 
+/** One contact's request in a batch, keyed so its result can be matched back. */
+export type SequenceBatchRequest = {
+  customId: string;
+  options: WriteSequenceOptions;
+};
+
+/** One contact's outcome in a finished batch: a billed sequence, or why no call was made. */
+export type SequenceBatchResult =
+  | { customId: string; sequence: WrittenSequence }
+  | { customId: string; error: string };
+
+/** Where a submitted batch stands. */
+export type SequenceBatchOutcome =
+  | { state: 'pending' }
+  | { state: 'ended'; results: SequenceBatchResult[] };
+
 export const SYSTEM_INSTRUCTIONS = [
   'You write cold outreach emails that a busy professional would actually reply to.',
   '',
@@ -183,3 +199,25 @@ export const normalizeSequence = (options: {
   options.emails
     ?.slice(0, options.emailCount)
     .map((email, index) => ({ ...email, step: index + 1 })) ?? null;
+
+/**
+ * Parses JSON that may be malformed, e.g. a reply cut off by `max_tokens`.
+ * @param text The text to parse.
+ * @returns The parsed value, or null when the text is not valid JSON.
+ */
+const parseJson = (text: string): unknown => {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * Reads the sequence out of a structured-output reply that the SDK did not parse,
+ * as batch results come back as raw text.
+ * @param text The model's JSON reply.
+ * @returns The emails, or undefined when the reply is missing or malformed.
+ */
+export const parseSequenceText = (text: string | undefined) =>
+  emailSequenceSchema.safeParse(text ? parseJson(text) : null).data?.emails;

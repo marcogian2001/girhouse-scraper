@@ -78,6 +78,12 @@ export const toHtmlBody = (body: string) =>
     .replaceAll('\n', '<br/>');
 
 /**
+ * Zones Instantly's timezone list leaves out, mapped to a listed zone on the same clock.
+ * Instantly's own "Rome" option is saved as Arctic/Longyearbyen, which shares Central European time.
+ */
+const INSTANTLY_TIMEZONES: Record<string, string> = { 'Europe/Rome': 'Arctic/Longyearbyen' };
+
+/**
  * Builds the campaign payload. Every step carries placeholders instead of copy,
  * because the actual subject and body travel per lead as custom variables.
  * @param options The call options.
@@ -98,7 +104,7 @@ export const buildCampaignPayload = (options: {
         name: 'Business hours',
         timing: { from: '09:00', to: '17:00' },
         days: { 0: false, 1: true, 2: true, 3: true, 4: true, 5: true, 6: false },
-        timezone: options.timezone,
+        timezone: INSTANTLY_TIMEZONES[options.timezone] ?? options.timezone,
       },
     ],
   },

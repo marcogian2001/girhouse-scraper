@@ -27,6 +27,10 @@ describe('Prospeo', () => {
       expect(parseEnrichResponse({ error: true, error_code: 'NO_MATCH' })).toBeNull();
     });
 
+    it('returns null once the credits run out, so the published address is tried', () => {
+      expect(parseEnrichResponse({ error: true, error_code: 'INSUFFICIENT_CREDITS' })).toBeNull();
+    });
+
     it('returns null for an unverified email', () => {
       const match = parseEnrichResponse({
         error: false,
@@ -37,9 +41,9 @@ describe('Prospeo', () => {
     });
 
     it('throws on any other error', () => {
-      expect(() =>
-        parseEnrichResponse({ error: true, error_code: 'INSUFFICIENT_CREDITS' }),
-      ).toThrow('INSUFFICIENT_CREDITS');
+      expect(() => parseEnrichResponse({ error: true, error_code: 'INVALID_API_KEY' })).toThrow(
+        'INVALID_API_KEY',
+      );
     });
   });
 });

@@ -9,6 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { useRouter } from '@/libs/I18nNavigation';
+import { AppConfig } from '@/utils/AppConfig';
 
 type Step = 'idle' | 'loading-accounts' | 'choosing' | 'pushing';
 
@@ -24,7 +25,8 @@ export const InstantlyPushForm = (props: {
   const [selected, setSelected] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  const timezone = new Intl.DateTimeFormat().resolvedOptions().timeZone;
+  // Recipients are Italian, so the schedule follows Italian time wherever the sender is
+  const timezone = AppConfig.timeZone;
 
   const handleApprove = async () => {
     setError(null);

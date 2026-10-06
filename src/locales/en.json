@@ -275,6 +275,10 @@
     "dialog_title": "Delete this search?",
     "dialog_description": "The search and all the leads it found are removed permanently."
   },
+  "ArchiveCampaignButton": {
+    "button_archive": "Archive",
+    "button_restore": "Restore"
+  },
   "DeleteCampaignButton": {
     "button": "Delete campaign",
     "dialog_title": "Delete this campaign?",
@@ -287,12 +291,20 @@
     "title": "Campaigns",
     "subtitle": "Every contact list you have turned into a sequence.",
     "button_new": "New campaign",
+    "button_export_active": "Export active",
+    "label_export": "Export {name} as CSV",
     "column_name": "Name",
     "column_status": "Status",
     "column_contacts": "Contacts",
     "column_emails": "Emails",
     "column_created": "Created",
     "column_cost": "Cost",
+    "column_actions": "Actions",
+    "button_export_archived": "Export archived",
+    "tab_active": "Active ({count})",
+    "tab_archived": "Archived ({count})",
+    "empty_active": "Every campaign is archived.",
+    "empty_archived": "No archived campaigns.",
     "row_meta": "{contacts, plural, one {# contact} other {# contacts}} · {cost} · {date}"
   },
   "NewCampaignPage": {
@@ -310,6 +322,7 @@
     "error_create": "The organization could not be created."
   },
   "CampaignDetailPage": {
+    "badge_archived": "Archived",
     "back_link": "All campaigns",
     "meta_line": "{contacts, plural, one {# contact} other {# contacts}} · {emails, plural, one {# email} other {# emails}} · created {date}",
     "tab_review": "Review",
@@ -349,6 +362,10 @@
     "review_emails": "Emails in sequence",
     "review_processor": "Research depth",
     "review_model": "Model",
+    "review_effort": "Reasoning",
+    "review_batch": "Saving mode",
+    "review_batch_on": "On (−50%)",
+    "review_batch_off": "Off",
     "review_schedule": "Schedule",
     "review_delay": "{days}d",
     "review_knowledge": "Knowledge base",
@@ -391,6 +408,14 @@
     "hint_model_cost_history": "Estimated writing cost for {count, plural, one {# contact} other {# contacts}}, based on the average usage of your past campaigns.",
     "hint_model_cost_typical": "Estimated writing cost for {count, plural, one {# contact} other {# contacts}}, based on typical usage. It gets more accurate after your first campaign.",
     "hint_model_pdf_missing": "Some selected PDFs were uploaded before OpenAI was set up and will be skipped. Upload them again to use them with this model.",
+    "label_effort": "Reasoning",
+    "effort_low": "Low — cheapest",
+    "effort_medium": "Medium — balanced",
+    "effort_high": "High — most careful",
+    "hint_effort": "More reasoning writes more carefully and uses more tokens.",
+    "hint_effort_unsupported": "Claude Haiku 4.5 does not support reasoning levels.",
+    "label_batch": "Saving mode (batch)",
+    "hint_batch": "Halves the writing cost. Emails usually arrive within an hour, at most within 24 hours.",
     "processor_lite": "Lite — fastest, cheapest",
     "processor_base": "Base — light research",
     "processor_core": "Core — recommended",

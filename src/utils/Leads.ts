@@ -102,16 +102,32 @@ export const matchesWebsiteFilter = (options: { hasWebsite: boolean; filter: Web
   return true;
 };
 
-/**
- * Cleans up an email address found on a public page.
- * @param value The address as Parallel reported it.
- * @returns The lowercase address, or null when it is empty or malformed.
- */
-export const readPublicEmail = (value?: string) => {
-  const email = value?.trim().toLowerCase();
+/** Labels of certified email (PEC) domains that do not start or end with "pec". */
+const PEC_DOMAIN_LABELS = new Set(['legalmail', 'postecert', 'postacert', 'sicurezzapostale']);
 
-  return email && z.email().safeParse(email).success ? email : null;
-};
+/**
+ * Tells whether an address is a PEC, Italy's certified email, which rejects
+ * ordinary mail and so cannot receive a cold email.
+ * @param email The lowercase address.
+ * @returns Whether the address belongs to a PEC domain, such as pec.it or legalmail.it.
+ */
+export const isPecEmail = (email: string) =>
+  (email.split('@')[1] ?? '')
+    .split('.')
+    .some(
+      (label) => label.startsWith('pec') || label.endsWith('pec') || PEC_DOMAIN_LABELS.has(label),
+    );
+
+/**
+ * Cleans up the email address found on a public page, skipping PEC addresses.
+ * @param value The address as Parallel reported it, possibly several separated by commas or semicolons.
+ * @returns The first well-formed address that is not a PEC, lowercased, or null when there is none.
+ */
+export const readPublicEmail = (value?: string) =>
+  (value ?? '')
+    .toLowerCase()
+    .split(/[\s,;/]+/u)
+    .find((email) => z.email().safeParse(email).success && !isPecEmail(email)) ?? null;
 
 /**
  * Picks how the email of a lead will be looked up.
@@ -185,7 +201,8 @@ export const SEGMENT_VARIABLES = {
 /**
  * Lays out ready leads as the rows of an uploaded CSV, so a campaign can be
  * created from them with the same wizard. Headers the column mapper knows land
- * on contact fields; the rest reach Claude as extra context.
+ * on contact fields; the rest reach Claude as extra context. A repeated email
+ * keeps only its first lead.
  * @param options The call options.
  * @param options.search The lead search the leads come from.
  * @param options.leads The leads to include.
@@ -215,7 +232,22 @@ export const toLeadCsv = (options: {
   const { search } = options;
   // Only searches made in a province know their province and region
   const province = ITALIAN_PROVINCES.find((item) => item.placeId === search.locationPlaceId);
-  const rows = options.leads.map((lead) => ({
+  const seen = new Set<string>();
+  // A business listed several times on Google Maps shares one address, and is written to once
+  const leads = options.leads.filter((lead) => {
+    if (!lead.email) {
+      return true;
+    }
+
+    if (seen.has(lead.email)) {
+      return false;
+    }
+
+    seen.add(lead.email);
+
+    return true;
+  });
+  const rows = leads.map((lead) => ({
     Email: lead.email ?? '',
     'First name': lead.firstName ?? '',
     'Last name': lead.lastName ?? '',

@@ -15,7 +15,7 @@ import { CsvUploader } from '@/components/CsvUploader';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { useRouter } from '@/libs/I18nNavigation';
-import { DEFAULT_COPYWRITING_MODEL } from '@/utils/CopywritingModels';
+import { DEFAULT_COPYWRITING_EFFORT, DEFAULT_COPYWRITING_MODEL } from '@/utils/CopywritingModels';
 import type { ColumnMapping } from '@/utils/Csv';
 import { autoDetectMapping, toContactRows } from '@/utils/Csv';
 import type { CampaignSettings } from '@/validations/CampaignValidation';
@@ -68,6 +68,8 @@ export const NewCampaignWizard = (props: {
       name: start.name,
       processor: 'core' as const,
       copywritingModel: DEFAULT_COPYWRITING_MODEL,
+      copywritingEffort: DEFAULT_COPYWRITING_EFFORT,
+      copywritingBatch: true,
       emailCount: 3,
       delaysDays: [3, 4, 0],
       knowledgeAssetIds: [] as string[],

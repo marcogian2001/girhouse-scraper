@@ -31,6 +31,12 @@ export const COPYWRITING_MODELS = [
     pricing: { input: 5, output: 25, cacheWrite5m: 6.25, cacheWrite1h: 10, cacheRead: 0.5 },
   },
   {
+    id: 'claude-sonnet-5-5',
+    provider: 'anthropic',
+    label: 'Claude Sonnet 5.5',
+    pricing: { input: 2, output: 10, cacheWrite5m: 2.5, cacheWrite1h: 4, cacheRead: 0.2 },
+  },
+  {
     id: 'claude-sonnet-5',
     provider: 'anthropic',
     label: 'Claude Sonnet 5',
@@ -107,6 +113,24 @@ export const COPYWRITING_MODEL_IDS = COPYWRITING_MODELS.map((model) => model.id)
 
 export const DEFAULT_COPYWRITING_MODEL: CopywritingModel = 'claude-opus-5';
 
+/** How hard the model reasons before writing; more reasoning costs more output tokens. */
+export const COPYWRITING_EFFORTS = ['low', 'medium', 'high'] as const;
+
+export type CopywritingEffort = (typeof COPYWRITING_EFFORTS)[number];
+
+export const DEFAULT_COPYWRITING_EFFORT: CopywritingEffort = 'high';
+
+/**
+ * Narrows a stored effort, falling back to the default for a value no longer offered.
+ * @param value The effort as saved on the campaign.
+ * @returns The effort to request.
+ */
+export const toCopywritingEffort = (value: string) =>
+  COPYWRITING_EFFORTS.find((effort) => effort === value) ?? DEFAULT_COPYWRITING_EFFORT;
+
+/** Both providers bill batch calls at half their list rates, cached tokens included. */
+export const BATCH_PRICE_FACTOR = 0.5;
+
 /** Tokens of one copywriting call, with cached input split out as the usage table stores it. */
 export type CopywritingTokens = {
   inputTokens: number;
@@ -134,20 +158,23 @@ export const TYPICAL_COPYWRITING_CALL: CopywritingTokens = {
  * @param options The estimate options.
  * @param options.model The model to price.
  * @param options.tokens The tokens of the call.
+ * @param options.batch Whether the call goes through the discounted batch API.
  * @returns The cost in millionths of a US dollar.
  */
 export const estimateCallCostMicros = (options: {
   model: CopywritingModelInfo;
   tokens: CopywritingTokens;
+  batch?: boolean;
 }) => {
   const price = options.model.pricing;
   const cacheWrite = 'cacheWrite1h' in price ? price.cacheWrite1h : price.input;
 
   return Math.round(
-    options.tokens.inputTokens * price.input +
+    (options.tokens.inputTokens * price.input +
       options.tokens.outputTokens * price.output +
       options.tokens.cacheWriteTokens * cacheWrite +
-      options.tokens.cacheReadTokens * price.cacheRead,
+      options.tokens.cacheReadTokens * price.cacheRead) *
+      (options.batch ? BATCH_PRICE_FACTOR : 1),
   );
 };
 

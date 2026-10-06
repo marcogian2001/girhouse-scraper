@@ -275,6 +275,10 @@
     "dialog_title": "Eliminare questa ricerca?",
     "dialog_description": "La ricerca e tutti i lead trovati vengono eliminati definitivamente."
   },
+  "ArchiveCampaignButton": {
+    "button_archive": "Archivia",
+    "button_restore": "Ripristina"
+  },
   "DeleteCampaignButton": {
     "button": "Elimina campagna",
     "dialog_title": "Eliminare questa campagna?",
@@ -287,12 +291,20 @@
     "title": "Campagne",
     "subtitle": "Tutte le liste di contatti trasformate in sequenze.",
     "button_new": "Nuova campagna",
+    "button_export_active": "Esporta attive",
+    "label_export": "Esporta {name} in CSV",
     "column_name": "Nome",
     "column_status": "Stato",
     "column_contacts": "Contatti",
     "column_emails": "Email",
     "column_created": "Creata il",
     "column_cost": "Costo",
+    "column_actions": "Azioni",
+    "button_export_archived": "Esporta archiviate",
+    "tab_active": "Attive ({count})",
+    "tab_archived": "Archiviate ({count})",
+    "empty_active": "Tutte le campagne sono archiviate.",
+    "empty_archived": "Nessuna campagna archiviata.",
     "row_meta": "{contacts, plural, one {# contatto} other {# contatti}} · {cost} · {date}"
   },
   "NewCampaignPage": {
@@ -310,6 +322,7 @@
     "error_create": "Impossibile creare l'organizzazione."
   },
   "CampaignDetailPage": {
+    "badge_archived": "Archiviata",
     "back_link": "Tutte le campagne",
     "meta_line": "{contacts, plural, one {# contatto} other {# contatti}} · {emails, plural, one {# email} other {# email}} · creata il {date}",
     "tab_review": "Revisione",
@@ -349,6 +362,10 @@
     "review_emails": "Email nella sequenza",
     "review_processor": "Profondità della ricerca",
     "review_model": "Modello",
+    "review_effort": "Ragionamento",
+    "review_batch": "Modalità risparmio",
+    "review_batch_on": "Attiva (−50%)",
+    "review_batch_off": "Disattivata",
     "review_schedule": "Programmazione",
     "review_delay": "{days}g",
     "review_knowledge": "Base di conoscenza",
@@ -391,6 +408,14 @@
     "hint_model_cost_history": "Costo di scrittura stimato per {count, plural, one {# contatto} other {# contatti}}, in base al consumo medio delle tue campagne precedenti.",
     "hint_model_cost_typical": "Costo di scrittura stimato per {count, plural, one {# contatto} other {# contatti}}, in base a un consumo tipico. Diventa più precisa dopo la prima campagna.",
     "hint_model_pdf_missing": "Alcuni PDF selezionati sono stati caricati prima di configurare OpenAI e verranno ignorati. Ricaricali per usarli con questo modello.",
+    "label_effort": "Ragionamento",
+    "effort_low": "Basso — più economico",
+    "effort_medium": "Medio — equilibrato",
+    "effort_high": "Alto — più accurato",
+    "hint_effort": "Più ragionamento scrive con più cura e consuma più token.",
+    "hint_effort_unsupported": "Claude Haiku 4.5 non supporta i livelli di ragionamento.",
+    "label_batch": "Modalità risparmio (batch)",
+    "hint_batch": "Dimezza il costo di scrittura. Le email arrivano di solito entro un'ora, al massimo entro 24 ore.",
     "processor_lite": "Lite — più veloce ed economica",
     "processor_base": "Base — ricerca leggera",
     "processor_core": "Core — consigliata",

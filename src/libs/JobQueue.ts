@@ -110,14 +110,20 @@ export const completeJob = async (jobId: string) => {
  * @param options The call options.
  * @param options.jobId The job to reschedule.
  * @param options.delaySeconds How long to wait before picking it up again.
+ * @param options.payload Progress to carry into the next run, replacing the stored payload.
  */
-export const rescheduleJob = async (options: { jobId: string; delaySeconds: number }) => {
+export const rescheduleJob = async (options: {
+  jobId: string;
+  delaySeconds: number;
+  payload?: Record<string, unknown>;
+}) => {
   await db
     .update(jobSchema)
     .set({
       status: 'queued',
       lockedAt: null,
       runAfter: new Date(Date.now() + options.delaySeconds * 1000),
+      payload: options.payload,
     })
     .where(eq(jobSchema.id, options.jobId));
 };

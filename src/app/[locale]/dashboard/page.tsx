@@ -1,4 +1,4 @@
-import { count, desc, eq } from 'drizzle-orm';
+import { and, count, desc, eq, isNull } from 'drizzle-orm';
 import { BookOpen, ChevronRight, Mail, Megaphone, Plus, Rocket, Users } from 'lucide-react';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { headers } from 'next/headers';
@@ -76,7 +76,12 @@ export default async function DashboardHomePage(props: { params: Promise<{ local
           })
           .from(campaignSchema)
           .leftJoin(contactSchema, eq(contactSchema.campaignId, campaignSchema.id))
-          .where(eq(campaignSchema.organizationId, organizationId))
+          .where(
+            and(
+              eq(campaignSchema.organizationId, organizationId),
+              isNull(campaignSchema.archivedAt),
+            ),
+          )
           .groupBy(campaignSchema.id)
           .orderBy(desc(campaignSchema.createdAt))
           .limit(RECENT_CAMPAIGN_LIMIT),

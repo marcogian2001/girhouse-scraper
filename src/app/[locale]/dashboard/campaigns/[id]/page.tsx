@@ -3,6 +3,7 @@ import { ArrowLeft, Download } from 'lucide-react';
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import * as z from 'zod';
+import { ArchiveCampaignButton } from '@/components/ArchiveCampaignButton';
 import { CampaignNameEditor } from '@/components/CampaignNameEditor';
 import { CampaignProgress } from '@/components/CampaignProgress';
 import type { ContactReview } from '@/components/ContactReviewList';
@@ -133,6 +134,7 @@ export default async function CampaignDetailPage(props: {
         <div className="flex flex-wrap items-center gap-3">
           <CampaignNameEditor campaignId={campaign.id} name={campaign.name} />
           <StatusBadge kind="campaign" status={campaign.status} />
+          {campaign.archivedAt && <Badge variant="secondary">{t('badge_archived')}</Badge>}
 
           <div className="ml-auto flex items-center gap-2">
             {contacts.length > 0 && (
@@ -143,6 +145,10 @@ export default async function CampaignDetailPage(props: {
                 </a>
               </Button>
             )}
+            <ArchiveCampaignButton
+              campaignId={campaign.id}
+              isArchived={Boolean(campaign.archivedAt)}
+            />
             <DeleteCampaignButton campaignId={campaign.id} />
           </div>
         </div>

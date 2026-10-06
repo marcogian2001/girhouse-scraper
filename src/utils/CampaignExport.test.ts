@@ -138,6 +138,28 @@ describe(buildCampaignCsv, () => {
     expect(row?.extra_status).toBe('hot lead');
   });
 
+  it('leads with the campaign name when names are given', () => {
+    const csv = buildCampaignCsv({
+      emailCount: 1,
+      contacts: [
+        makeContact({ extra: { campaign: 'Spring' } }),
+        makeContact({ id: 'contact-2', campaignId: 'campaign-2' }),
+      ],
+      enrichments: [],
+      drafts: [],
+      campaignNames: new Map([
+        ['campaign-1', 'Ristoranti Milano'],
+        ['campaign-2', 'Hotel Roma'],
+      ]),
+    });
+
+    const { data, meta } = parse(csv);
+
+    expect(meta.fields?.at(0)).toBe('campaign');
+    expect(data.map((row) => row.campaign)).toStrictEqual(['Ristoranti Milano', 'Hotel Roma']);
+    expect(data.at(0)?.extra_campaign).toBe('Spring');
+  });
+
   it('fills research and emails for each step', () => {
     const csv = buildCampaignCsv({
       emailCount: 2,

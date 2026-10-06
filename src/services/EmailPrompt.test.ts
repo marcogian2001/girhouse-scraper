@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { campaignSchema, contactSchema, knowledgeAssetSchema } from '@/models/Schema';
 import type { EnrichmentContent } from '@/validations/EnrichmentValidation';
-import { buildCampaignBrief, buildContactPrompt, normalizeSequence } from './EmailPrompt';
+import {
+  buildCampaignBrief,
+  buildContactPrompt,
+  normalizeSequence,
+  parseSequenceText,
+} from './EmailPrompt';
 
 const campaign = (
   overrides: Partial<typeof campaignSchema.$inferSelect> = {},
@@ -13,12 +18,15 @@ const campaign = (
   status: 'review',
   processor: 'core',
   copywritingModel: 'claude-opus-5',
+  copywritingEffort: 'high',
+  copywritingBatch: false,
   emailCount: 3,
   delaysDays: [2, 4, 0],
   knowledgeAssetIds: [],
   extraPrompt: null,
   instantlyCampaignId: null,
   errorMessage: null,
+  archivedAt: null,
   updatedAt: new Date(),
   createdAt: new Date(),
   ...overrides,
@@ -165,6 +173,22 @@ describe('Email prompt', () => {
 
     it('returns null when nothing parsed', () => {
       expect(normalizeSequence({ emails: undefined, emailCount: 3 })).toBeNull();
+    });
+  });
+
+  describe('Raw reply', () => {
+    it('reads the emails from a JSON reply', () => {
+      expect(
+        parseSequenceText(JSON.stringify({ emails: [{ step: 1, subject: 'a', body: 'b' }] })),
+      ).toStrictEqual([{ step: 1, subject: 'a', body: 'b' }]);
+    });
+
+    it('returns nothing for a reply cut off mid-JSON', () => {
+      expect(parseSequenceText('{"emails": [{"step": 1')).toBeUndefined();
+    });
+
+    it('returns nothing for JSON of the wrong shape', () => {
+      expect(parseSequenceText('{"subject": "a"}')).toBeUndefined();
     });
   });
 });

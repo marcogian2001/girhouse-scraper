@@ -179,6 +179,7 @@ export const contactStatusEnum = pgEnum('contact_status', [
 export const jobTypeEnum = pgEnum('job_type', [
   'enrich',
   'write',
+  'write_batch',
   'push',
   'lead_search',
   'lead_research',
@@ -263,6 +264,10 @@ export const campaignSchema = pgTable(
     processor: parallelProcessorEnum('processor').notNull().default('core'),
     // Plain text rather than an enum, so offering a new model needs no migration
     copywritingModel: text('copywriting_model').notNull().default('claude-opus-5'),
+    // Plain text for the same reason: low, medium or high
+    copywritingEffort: text('copywriting_effort').notNull().default('high'),
+    // Writes through the discounted, asynchronous batch API instead of one call per contact
+    copywritingBatch: boolean('copywriting_batch').notNull().default(false),
     emailCount: integer('email_count').notNull(),
     // Days to wait after each step before the next one, one entry per step
     delaysDays: jsonb('delays_days').$type<number[]>().notNull(),
@@ -270,6 +275,8 @@ export const campaignSchema = pgTable(
     extraPrompt: text('extra_prompt'),
     instantlyCampaignId: text('instantly_campaign_id'),
     errorMessage: text('error_message'),
+    // Set while the campaign is hidden from the active list; null when active
+    archivedAt: timestamp('archived_at', { mode: 'date' }),
     ...timestamps,
   },
   (table) => [index('campaign_organization_id_idx').on(table.organizationId)],

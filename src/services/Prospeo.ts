@@ -38,7 +38,8 @@ export const parseEnrichResponse = (body: unknown): EmailMatch | null => {
   const response = enrichResponseSchema.parse(body);
 
   if (response.error) {
-    if (response.error_code === 'NO_MATCH') {
+    // Out of credits, the lead still has its published address to fall back on
+    if (response.error_code === 'NO_MATCH' || response.error_code === 'INSUFFICIENT_CREDITS') {
       return null;
     }
 
@@ -60,7 +61,8 @@ export const parseEnrichResponse = (body: unknown): EmailMatch | null => {
  * @param options.firstName The person's first name.
  * @param options.lastName The person's last name.
  * @param options.domain The company's website domain.
- * @returns The verified email and whether it was billed, or null when there is none.
+ * @returns The verified email and whether it was billed, null when there is none,
+ * or `rate_limited` when the plan's request rate was exceeded.
  * @throws {Error} When the API key is missing or Prospeo rejects the request.
  */
 export const findEmail = async (options: {
@@ -85,6 +87,11 @@ export const findEmail = async (options: {
       },
     }),
   });
+
+  // Too many requests for the plan: nothing is wrong with the lead, so the caller waits
+  if (response.status === 429) {
+    return 'rate_limited' as const;
+  }
 
   // A missing match comes back as a 400 with an error code in the body
   if (!response.ok && response.status !== 400) {

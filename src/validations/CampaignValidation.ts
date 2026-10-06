@@ -1,5 +1,10 @@
 import * as z from 'zod';
-import { COPYWRITING_MODEL_IDS, DEFAULT_COPYWRITING_MODEL } from '@/utils/CopywritingModels';
+import {
+  COPYWRITING_EFFORTS,
+  COPYWRITING_MODEL_IDS,
+  DEFAULT_COPYWRITING_EFFORT,
+  DEFAULT_COPYWRITING_MODEL,
+} from '@/utils/CopywritingModels';
 
 export const MAX_EMAILS_PER_SEQUENCE = 5;
 
@@ -28,6 +33,9 @@ const campaignSettingsShape = z.object({
   name: z.string().trim().min(1).max(120),
   processor: z.enum(['lite', 'base', 'core', 'pro']).default('core'),
   copywritingModel: z.enum(COPYWRITING_MODEL_IDS).default(DEFAULT_COPYWRITING_MODEL),
+  copywritingEffort: z.enum(COPYWRITING_EFFORTS).default(DEFAULT_COPYWRITING_EFFORT),
+  // Half price, at the cost of drafts arriving within hours rather than minutes
+  copywritingBatch: z.boolean().default(true),
   emailCount: z.number().int().min(1).max(MAX_EMAILS_PER_SEQUENCE),
   // Days to wait after each step before the following email
   delaysDays: z.array(z.number().int().min(0).max(60)).max(MAX_EMAILS_PER_SEQUENCE),
@@ -43,8 +51,8 @@ export const CampaignSettingsValidation = campaignSettingsShape.refine(hasOneDel
 });
 
 /**
- * What the wizard form holds. `processor`, `copywritingModel` and `knowledgeAssetIds` carry a
- * schema default, so they are optional until the schema has parsed the values.
+ * What the wizard form holds. `processor`, the copywriting settings and `knowledgeAssetIds`
+ * carry a schema default, so they are optional until the schema has parsed the values.
  */
 export type CampaignSettingsInput = z.input<typeof CampaignSettingsValidation>;
 
@@ -59,3 +67,5 @@ export const CampaignValidation = campaignSettingsShape
     error: 'One delay is required per email',
     path: ['delaysDays'],
   });
+
+export type CampaignInput = z.output<typeof CampaignValidation>;

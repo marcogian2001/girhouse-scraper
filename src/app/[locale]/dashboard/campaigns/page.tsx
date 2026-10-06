@@ -1,5 +1,5 @@
 import { count, desc, eq } from 'drizzle-orm';
-import { ChevronRight, Megaphone, Plus } from 'lucide-react';
+import { ChevronRight, Download, Megaphone, Plus } from 'lucide-react';
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 import { NoCampaigns } from '@/components/NoCampaigns';
 import { StatusBadge } from '@/components/StatusBadge';
@@ -22,6 +22,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getApiContext } from '@/libs/ApiAuth';
 import { db } from '@/libs/DB';
 import { Link } from '@/libs/I18nNavigation';
@@ -29,15 +30,21 @@ import { campaignCostMicros } from '@/libs/Usage';
 import { campaignSchema, contactSchema } from '@/models/Schema';
 import { microsToUsd, USD_FORMAT } from '@/utils/UsageFormat';
 
-export default async function CampaignsPage(props: { params: Promise<{ locale: string }> }) {
+export default async function CampaignsPage(props: {
+  params: Promise<{ locale: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const { locale } = await props.params;
   setRequestLocale(locale);
+
+  const searchParams = await props.searchParams;
+  const isArchivedView = searchParams.view === 'archived';
 
   const t = await getTranslations({ locale, namespace: 'CampaignsPage' });
   const format = await getFormatter({ locale });
   const context = await getApiContext();
 
-  const campaigns = context
+  const allCampaigns = context
     ? await db
         .select({
           id: campaignSchema.id,
@@ -45,6 +52,7 @@ export default async function CampaignsPage(props: { params: Promise<{ locale: s
           status: campaignSchema.status,
           emailCount: campaignSchema.emailCount,
           createdAt: campaignSchema.createdAt,
+          archivedAt: campaignSchema.archivedAt,
           // Grouping by the primary key lets the other columns ride along
           contacts: count(contactSchema.id),
           costMicros: campaignCostMicros,
@@ -55,6 +63,10 @@ export default async function CampaignsPage(props: { params: Promise<{ locale: s
         .groupBy(campaignSchema.id)
         .orderBy(desc(campaignSchema.createdAt))
     : [];
+  const archivedCount = allCampaigns.filter((campaign) => campaign.archivedAt).length;
+  const campaigns = allCampaigns.filter(
+    (campaign) => Boolean(campaign.archivedAt) === isArchivedView,
+  );
   const usd = (micros: number) => format.number(microsToUsd(micros), USD_FORMAT);
 
   return (
@@ -65,17 +77,52 @@ export default async function CampaignsPage(props: { params: Promise<{ locale: s
           <p className="text-sm text-muted-foreground">{t('subtitle')}</p>
         </div>
 
-        <Button asChild className="h-10 px-4">
-          <Link href="/dashboard/campaigns/new/">
-            <Plus />
-            {t('button_new')}
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          {campaigns.length > 0 && (
+            <Button asChild variant="outline" className="h-10 px-4">
+              <a href={`/api/campaigns/export${isArchivedView ? '?view=archived' : ''}`} download>
+                <Download />
+                {isArchivedView ? t('button_export_archived') : t('button_export_active')}
+              </a>
+            </Button>
+          )}
+
+          <Button asChild className="h-10 px-4">
+            <Link href="/dashboard/campaigns/new/">
+              <Plus />
+              {t('button_new')}
+            </Link>
+          </Button>
+        </div>
       </div>
 
-      {campaigns.length === 0 ? (
-        <NoCampaigns />
-      ) : (
+      {allCampaigns.length > 0 && (
+        <Tabs value={isArchivedView ? 'archived' : 'active'}>
+          <TabsList>
+            <TabsTrigger value="active" asChild>
+              <Link href="/dashboard/campaigns/">
+                {t('tab_active', { count: allCampaigns.length - archivedCount })}
+              </Link>
+            </TabsTrigger>
+
+            <TabsTrigger value="archived" asChild>
+              <Link href="/dashboard/campaigns/?view=archived">
+                {t('tab_archived', { count: archivedCount })}
+              </Link>
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+      )}
+
+      {allCampaigns.length === 0 && <NoCampaigns />}
+
+      {allCampaigns.length > 0 && campaigns.length === 0 && (
+        <p className="text-sm text-muted-foreground">
+          {isArchivedView ? t('empty_archived') : t('empty_active')}
+        </p>
+      )}
+
+      {campaigns.length > 0 && (
         <>
           <Card className="hidden p-0 md:block">
             <Table>
@@ -87,6 +134,9 @@ export default async function CampaignsPage(props: { params: Promise<{ locale: s
                   <TableHead className="text-right">{t('column_emails')}</TableHead>
                   <TableHead className="text-right">{t('column_cost')}</TableHead>
                   <TableHead>{t('column_created')}</TableHead>
+                  <TableHead>
+                    <span className="sr-only">{t('column_actions')}</span>
+                  </TableHead>
                 </TableRow>
               </TableHeader>
 
@@ -117,13 +167,27 @@ export default async function CampaignsPage(props: { params: Promise<{ locale: s
                     <TableCell className="text-muted-foreground">
                       {campaign.createdAt.toLocaleDateString(locale)}
                     </TableCell>
+
+                    <TableCell className="text-right">
+                      {campaign.contacts > 0 && (
+                        <Button asChild variant="ghost" size="icon">
+                          <a
+                            href={`/api/campaigns/${campaign.id}/export`}
+                            download
+                            aria-label={t('label_export', { name: campaign.name })}
+                          >
+                            <Download />
+                          </a>
+                        </Button>
+                      )}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
           </Card>
 
-          {/* A six-column table has nowhere to go on a phone, so it becomes rows */}
+          {/* A seven-column table has nowhere to go on a phone, so it becomes rows */}
           <Card className="p-0 md:hidden">
             <ItemGroup>
               {campaigns.map((campaign) => (

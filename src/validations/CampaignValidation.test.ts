@@ -31,4 +31,25 @@ describe('Campaign validation', () => {
       expect(parsed.success).toBeFalsy();
     });
   });
+
+  describe('Copywriting effort', () => {
+    it('defaults to high reasoning when none is chosen', () => {
+      expect(CampaignSettingsValidation.parse(settings).copywritingEffort).toBe('high');
+    });
+
+    it('rejects a level above high', () => {
+      const parsed = CampaignSettingsValidation.safeParse({
+        ...settings,
+        copywritingEffort: 'max',
+      });
+
+      expect(parsed.success).toBeFalsy();
+    });
+  });
+
+  describe('Batch mode', () => {
+    it('defaults to writing through the batch API', () => {
+      expect(CampaignSettingsValidation.parse(settings).copywritingBatch).toBeTruthy();
+    });
+  });
 });

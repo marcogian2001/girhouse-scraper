@@ -30,6 +30,14 @@ export const CampaignReview = (props: {
       label: t('review_model'),
       value: findCopywritingModel(props.settings.copywritingModel)?.label ?? '',
     },
+    {
+      label: t('review_effort'),
+      value: settingsT(`effort_${props.settings.copywritingEffort}`),
+    },
+    {
+      label: t('review_batch'),
+      value: props.settings.copywritingBatch ? t('review_batch_on') : t('review_batch_off'),
+    },
   ];
 
   return (

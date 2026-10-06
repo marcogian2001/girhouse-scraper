@@ -1,13 +1,7 @@
-import { and, desc, eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import * as z from 'zod';
 import type { jobSchema } from '@/models/Schema';
-import {
-  campaignSchema,
-  contactSchema,
-  emailDraftSchema,
-  enrichmentSchema,
-  knowledgeAssetSchema,
-} from '@/models/Schema';
+import { campaignSchema, contactSchema, emailDraftSchema, enrichmentSchema } from '@/models/Schema';
 import { writeEmailSequence } from '@/services/Copywriting';
 import {
   addLeads,
@@ -17,13 +11,18 @@ import {
   createCampaign,
 } from '@/services/Instantly';
 import { createTaskRun, fetchTaskRunResult } from '@/services/Parallel';
-import { extractMentionNames } from '@/utils/KnowledgeMentions';
 import { EnrichmentContentValidation } from '@/validations/EnrichmentValidation';
+import {
+  enqueueWriting,
+  loadKnowledgeAssets,
+  requireCampaign,
+  saveSequence,
+  syncCampaignStatus,
+} from './CampaignWriting';
 import { db } from './DB';
 import {
   claimJobs,
   completeJob,
-  enqueue,
   failJob,
   pollDelaySeconds,
   releaseStaleJobs,
@@ -31,7 +30,8 @@ import {
 } from './JobQueue';
 import { leadJobHandlers, markLeadJobAbandoned } from './LeadJobs';
 import { logger } from './Logger';
-import { recordCopywritingUsage, recordParallelUsage } from './Usage';
+import { recordParallelUsage } from './Usage';
+import { markWriteBatchAbandoned, writeBatchJobHandlers } from './WriteBatchJobs';
 
 /** How long Parallel may hold a poll open. Short, so the worker stays snappy. */
 const PARALLEL_POLL_TIMEOUT_SECONDS = 5;
@@ -42,28 +42,6 @@ const pushPayloadSchema = z.object({
   emailList: z.array(z.string()).min(1),
   timezone: z.string(),
 });
-
-/**
- * Loads the campaign a job belongs to.
- * @param campaignId The campaign to load, when the job carries one.
- * @returns The campaign row.
- * @throws {Error} When the job has no campaign or the campaign no longer exists.
- */
-const requireCampaign = async (campaignId: string | null) => {
-  if (!campaignId) {
-    throw new Error('Job is missing its campaign');
-  }
-
-  const campaign = await db.query.campaignSchema.findFirst({
-    where: eq(campaignSchema.id, campaignId),
-  });
-
-  if (!campaign) {
-    throw new Error(`Campaign ${campaignId} no longer exists`);
-  }
-
-  return campaign;
-};
 
 /**
  * Loads the contact a job targets.
@@ -85,40 +63,6 @@ const requireContact = async (contactId: string | null) => {
   }
 
   return contact;
-};
-
-/**
- * Derives the campaign status from where its contacts are.
- * Terminal campaign states are left alone: a campaign being pushed is no longer
- * described by its contacts.
- * @param campaignId The campaign to refresh.
- */
-const syncCampaignStatus = async (campaignId: string) => {
-  const campaign = await requireCampaign(campaignId);
-
-  if (['pushing', 'pushed', 'failed'].includes(campaign.status)) {
-    return;
-  }
-
-  const contacts = await db
-    .select({ status: contactSchema.status })
-    .from(contactSchema)
-    .where(eq(contactSchema.campaignId, campaignId));
-
-  const has = (...statuses: (typeof contactSchema.$inferSelect)['status'][]) =>
-    contacts.some((contact) => statuses.includes(contact.status));
-
-  let status: (typeof campaignSchema.$inferSelect)['status'] = 'review';
-
-  if (has('pending', 'enriching')) {
-    status = 'enriching';
-  } else if (has('enriched', 'writing')) {
-    status = 'writing';
-  }
-
-  if (status !== campaign.status) {
-    await db.update(campaignSchema).set({ status }).where(eq(campaignSchema.id, campaignId));
-  }
 };
 
 /**
@@ -208,57 +152,9 @@ const runEnrichJob = async (job: Job) => {
     .set({ status: 'enriched' })
     .where(eq(contactSchema.id, contact.id));
 
-  await enqueue([{ campaignId: campaign.id, contactId: contact.id, type: 'write' }]);
+  await enqueueWriting({ campaign, contactIds: [contact.id] });
   await syncCampaignStatus(campaign.id);
   await completeJob(job.id);
-};
-
-/**
- * Loads the knowledge a campaign writes from: the assets picked in the wizard,
- * plus every document the brief or a picked prompt mentions as `@[name]`.
- * @param campaign The campaign being written.
- * @returns The picked assets followed by the mentioned documents.
- */
-const loadKnowledgeAssets = async (campaign: typeof campaignSchema.$inferSelect) => {
-  const selected =
-    campaign.knowledgeAssetIds.length > 0
-      ? await db
-          .select()
-          .from(knowledgeAssetSchema)
-          .where(inArray(knowledgeAssetSchema.id, campaign.knowledgeAssetIds))
-      : [];
-
-  const mentionedNames = extractMentionNames(
-    [
-      campaign.extraPrompt ?? '',
-      ...selected.map((asset) => (asset.kind === 'prompt' ? asset.content : '')),
-    ].join('\n'),
-  );
-
-  if (mentionedNames.length === 0) {
-    return selected;
-  }
-
-  // Newest first, so a duplicated name resolves to the latest upload
-  const documents = await db
-    .select()
-    .from(knowledgeAssetSchema)
-    .where(
-      and(
-        eq(knowledgeAssetSchema.organizationId, campaign.organizationId),
-        eq(knowledgeAssetSchema.kind, 'document'),
-        inArray(knowledgeAssetSchema.name, mentionedNames),
-      ),
-    )
-    .orderBy(desc(knowledgeAssetSchema.createdAt));
-
-  const mentioned = mentionedNames.flatMap((name) => {
-    const document = documents.find((candidate) => candidate.name === name);
-
-    return document && !selected.some((asset) => asset.id === document.id) ? [document] : [];
-  });
-
-  return [...selected, ...mentioned];
 };
 
 /**
@@ -286,45 +182,11 @@ const runWriteJob = async (job: Job) => {
     knowledgeAssets,
   });
 
-  // Recorded before the output is checked: an unparsable response is billed too
-  await recordCopywritingUsage({
-    userId: campaign.userId,
-    organizationId: campaign.organizationId,
-    campaignId: campaign.id,
-    sequence,
-  });
+  const saved = await saveSequence({ campaign, contactId: contact.id, sequence });
 
-  const { emails } = sequence;
-
-  if (!emails) {
+  if (!saved) {
     throw new Error(`${sequence.model} returned no parsable sequence for contact ${contact.id}`);
   }
-
-  // Upserted so a retry after a partial write refreshes the drafts in place
-  await Promise.all(
-    emails.map((email) =>
-      db
-        .insert(emailDraftSchema)
-        .values({
-          contactId: contact.id,
-          stepIndex: email.step,
-          subject: email.subject,
-          body: email.body,
-          model: sequence.model,
-        })
-        .onConflictDoUpdate({
-          target: [emailDraftSchema.contactId, emailDraftSchema.stepIndex],
-          set: {
-            subject: email.subject,
-            body: email.body,
-            model: sequence.model,
-            edited: false,
-          },
-        }),
-    ),
-  );
-
-  await db.update(contactSchema).set({ status: 'ready' }).where(eq(contactSchema.id, contact.id));
 
   await syncCampaignStatus(campaign.id);
   await completeJob(job.id);
@@ -410,6 +272,12 @@ const runPushJob = async (job: Job) => {
  * @param message The error to surface.
  */
 const markAbandoned = async (job: Job, message: string) => {
+  if (job.type === 'write_batch') {
+    await markWriteBatchAbandoned(job, message);
+
+    return;
+  }
+
   if (!job.campaignId) {
     await markLeadJobAbandoned(job, message);
 
@@ -438,6 +306,7 @@ const handlers = {
   enrich: runEnrichJob,
   write: runWriteJob,
   push: runPushJob,
+  ...writeBatchJobHandlers,
   ...leadJobHandlers,
 };
 

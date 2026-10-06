@@ -19,12 +19,15 @@ const campaign = (
   status: 'review',
   processor: 'core',
   copywritingModel: 'claude-opus-5',
+  copywritingEffort: 'high',
+  copywritingBatch: false,
   emailCount: 3,
   delaysDays: [2, 4, 0],
   knowledgeAssetIds: [],
   extraPrompt: null,
   instantlyCampaignId: null,
   errorMessage: null,
+  archivedAt: null,
   updatedAt: new Date(),
   createdAt: new Date(),
   ...overrides,
@@ -110,11 +113,21 @@ describe('Instantly', () => {
       const payload = buildCampaignPayload({
         campaign: campaign(),
         emailList: ['a@acme.com', 'b@acme.com'],
-        timezone: 'Europe/Rome',
+        timezone: 'Asia/Dubai',
       });
 
       expect(payload.email_list).toStrictEqual(['a@acme.com', 'b@acme.com']);
-      expect(payload.campaign_schedule.schedules.at(0)?.timezone).toBe('Europe/Rome');
+      expect(payload.campaign_schedule.schedules.at(0)?.timezone).toBe('Asia/Dubai');
+    });
+
+    it('sends Italian time as the zone Instantly lists for Rome', () => {
+      const payload = buildCampaignPayload({
+        campaign: campaign(),
+        emailList: ['a@acme.com'],
+        timezone: 'Europe/Rome',
+      });
+
+      expect(payload.campaign_schedule.schedules.at(0)?.timezone).toBe('Arctic/Longyearbyen');
     });
   });
 

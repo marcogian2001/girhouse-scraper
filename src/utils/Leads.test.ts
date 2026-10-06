@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { autoDetectMapping } from './Csv';
 import { ITALIAN_PROVINCES } from './ItalianProvinces';
 import {
+  isPecEmail,
   matchesWebsiteFilter,
   pickEmailRoutes,
   readPublicEmail,
@@ -41,6 +42,33 @@ describe('Leads', () => {
       expect(readPublicEmail('')).toBeNull();
       expect(readPublicEmail('not an email')).toBeNull();
       expect(readPublicEmail()).toBeNull();
+    });
+
+    it('rejects a PEC address', () => {
+      expect(readPublicEmail('mocciasimone@pec.it')).toBeNull();
+      expect(readPublicEmail('fabrizi.moreno@legalmail.it')).toBeNull();
+      expect(readPublicEmail('studio@pec.aruba.it')).toBeNull();
+      expect(readPublicEmail('rossi@arubapec.it')).toBeNull();
+    });
+
+    it('picks the first ordinary address out of several', () => {
+      expect(readPublicEmail('rossi@pec.it; Info@StudioRossi.it, altro@gmail.com')).toBe(
+        'info@studiorossi.it',
+      );
+    });
+  });
+
+  describe('PEC address', () => {
+    it('recognises certified email domains', () => {
+      expect(isPecEmail('a@pec.it')).toBeTruthy();
+      expect(isPecEmail('a@cert.legalmail.it')).toBeTruthy();
+      expect(isPecEmail('a@registerpec.it')).toBeTruthy();
+      expect(isPecEmail('a@postacert.inps.gov.it')).toBeTruthy();
+    });
+
+    it('accepts ordinary domains', () => {
+      expect(isPecEmail('a@gmail.com')).toBeFalsy();
+      expect(isPecEmail('a@specialisti.it')).toBeFalsy();
     });
   });
 
@@ -219,6 +247,16 @@ describe('Leads', () => {
         Province: '',
         Region: '',
       });
+    });
+
+    it('keeps one lead per email when a business is listed several times', () => {
+      const csv = toLeadCsv({
+        search,
+        leads: [lead, { ...lead, company: 'Studio Rossi Bergamo' }, { ...lead, email: null }],
+      });
+
+      expect(csv.rows.map((row) => row.Company)).toStrictEqual(['Studio Rossi', 'Studio Rossi']);
+      expect(csv.rows.map((row) => row.Email)).toStrictEqual(['mario@gmail.com', '']);
     });
 
     it('passes the business description to the copywriter as extra context', () => {

@@ -72,6 +72,8 @@ const toResearchCells = (enrichment: Enrichment | undefined) => {
  * @param options.contacts The campaign contacts, in the order to export them.
  * @param options.enrichments The research rows of those contacts.
  * @param options.drafts The email drafts of those contacts.
+ * @param options.campaignNames The campaign names by id, which add a leading
+ * `campaign` column when several campaigns are exported together.
  * @returns The CSV text, prefixed with a BOM so spreadsheets read it as UTF-8.
  */
 export const buildCampaignCsv = (options: {
@@ -79,11 +81,15 @@ export const buildCampaignCsv = (options: {
   contacts: Contact[];
   enrichments: Enrichment[];
   drafts: EmailDraft[];
+  campaignNames?: Map<string, string>;
 }) => {
+  const { campaignNames } = options;
+  const fixedColumns = campaignNames ? ['campaign', ...CONTACT_COLUMNS] : CONTACT_COLUMNS;
+
   // An unmapped column named like a fixed one is renamed, so neither overwrites the other
   const extraColumns = [
     ...new Set(options.contacts.flatMap((contact) => Object.keys(contact.extra))),
-  ].map((key) => ({ key, column: CONTACT_COLUMNS.includes(key) ? `extra_${key}` : key }));
+  ].map((key) => ({ key, column: fixedColumns.includes(key) ? `extra_${key}` : key }));
 
   const researchColumns = [
     ...RESEARCH_FIELDS.map((field) => `research_${field}`),
@@ -113,6 +119,7 @@ export const buildCampaignCsv = (options: {
       ...Object.fromEntries(
         extraColumns.map((extra) => [extra.column, contact.extra[extra.key] ?? '']),
       ),
+      ...(campaignNames && { campaign: campaignNames.get(contact.campaignId) ?? '' }),
       email: contact.email,
       first_name: contact.firstName ?? '',
       last_name: contact.lastName ?? '',
@@ -130,7 +137,7 @@ export const buildCampaignCsv = (options: {
   const csv = Papa.unparse(
     {
       fields: [
-        ...CONTACT_COLUMNS,
+        ...fixedColumns,
         ...extraColumns.map((extra) => extra.column),
         ...researchColumns,
         ...emailColumns,
@@ -143,4 +150,23 @@ export const buildCampaignCsv = (options: {
   );
 
   return `\uFEFF${csv}`;
+};
+
+/**
+ * Builds the response that downloads a CSV as a file.
+ * @param options The call options.
+ * @param options.fileName The file name, accents included.
+ * @param options.csv The CSV text.
+ * @returns The attachment response.
+ */
+export const toCsvDownload = (options: { fileName: string; csv: string }) => {
+  // The ASCII name covers old clients, `filename*` keeps accents where supported
+  const asciiName = options.fileName.replaceAll(/[^\w .-]/gu, '_');
+
+  return new Response(options.csv, {
+    headers: {
+      'Content-Type': 'text/csv; charset=utf-8',
+      'Content-Disposition': `attachment; filename="${asciiName}"; filename*=UTF-8''${encodeURIComponent(options.fileName)}`,
+    },
+  });
 };

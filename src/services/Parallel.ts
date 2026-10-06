@@ -114,7 +114,7 @@ const DECISION_MAKER_JSON_SCHEMA = {
     public_email: {
       type: 'string',
       description:
-        'An email address the business or its owner publishes for contact, exactly as published, or "" if none was found.',
+        'An ordinary email address the business or its owner publishes for contact, exactly as published, or "" if none was found. Never a PEC (certified email) address.',
     },
     public_email_source: {
       type: 'string',
@@ -256,6 +256,7 @@ export const buildDecisionMakerInput = (lead: DecisionMakerTarget) => {
     '- The decision maker is the owner, CEO, managing partner or equivalent. For a sole trader it is the owner.',
     `- ${lead.hasWebsite ? 'Start from the website, then' : 'The business has no website of its own, so'} check the Facebook and Instagram pages, PagineGialle, industry directories, LinkedIn and the Italian business register.`,
     '- public_email is any address the business or its owner publishes for contact, including a Gmail or similar personal address. Never guess or construct an address.',
+    '- public_email is never a PEC (posta elettronica certificata), such as an address at pec.it, legalmail.it or another domain containing "pec": PEC mailboxes reject ordinary email. When the business only lists a PEC, keep looking for an ordinary address on its website, Facebook, Instagram and directories, and leave the field empty if there is none.',
     lead.phone
       ? '- The phone number is already known, so leave business_phone as an empty string.'
       : '- Google Maps lists no phone, so report in business_phone any number the business or its owner publishes, exactly as published. Never guess a number.',

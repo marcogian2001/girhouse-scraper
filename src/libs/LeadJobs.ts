@@ -26,6 +26,7 @@ import { verifyEmail } from '@/services/MillionVerifier';
 import { createDecisionMakerRun, fetchTaskRunResult } from '@/services/Parallel';
 import { findEmail } from '@/services/Prospeo';
 import {
+  isPecEmail,
   OPEN_LEAD_STATUSES,
   pickEmailRoutes,
   readPublicEmail,
@@ -53,6 +54,9 @@ const PARALLEL_POLL_TIMEOUT_SECONDS = 5;
 
 /** A search that still lacks leads after this many Apify runs stops with what it has. */
 const MAX_SCRAPE_ROUNDS = 3;
+
+/** How long a lead waits for Prospeo after hitting its rate limit. */
+const PROSPEO_RATE_LIMIT_DELAY_SECONDS = 60;
 
 /** Cells scanned with Google in one round at most, so a job stays well under its lock. */
 const MAX_CELLS_PER_ROUND = 30;
@@ -876,7 +880,8 @@ const runLeadResearchJob = async (job: Job) => {
  * @param options The call options.
  * @param options.lead The lead to find an email for.
  * @param options.search The lead search the lead belongs to, billed for the calls.
- * @returns The email columns to store, or null when no deliverable address was found.
+ * @returns The email columns to store, null when no deliverable address was found,
+ * or `rate_limited` when Prospeo asked to slow down.
  */
 const findLeadEmail = async (options: {
   lead: Lead;
@@ -900,11 +905,16 @@ const findLeadEmail = async (options: {
       domain: lead.domain,
     });
 
-    if (match) {
-      if (match.charged) {
-        await recordProspeoUsage(owner);
-      }
+    if (match === 'rate_limited') {
+      return match;
+    }
 
+    if (match?.charged) {
+      await recordProspeoUsage(owner);
+    }
+
+    // A PEC rejects ordinary mail, so the published address gets its turn
+    if (match && !isPecEmail(match.email)) {
       return {
         email: match.email,
         emailSource: 'prospeo' as const,
@@ -935,6 +945,13 @@ const runLeadEmailJob = async (job: Job) => {
   const search = await requireLeadSearch(lead.leadSearchId);
 
   const found = await findLeadEmail({ lead, search });
+
+  // Prospeo's rate limit is not the lead's fault, so the job waits without spending an attempt
+  if (found === 'rate_limited') {
+    await rescheduleJob({ jobId: job.id, delaySeconds: PROSPEO_RATE_LIMIT_DELAY_SECONDS });
+
+    return;
+  }
 
   await db
     .update(leadSchema)

@@ -27,6 +27,7 @@ import {
 import type { parallelProcessorEnum } from '@/models/Schema';
 import type { CopywritingProvider, CopywritingTokens } from '@/utils/CopywritingModels';
 import {
+  COPYWRITING_EFFORTS,
   COPYWRITING_MODELS,
   estimateCallCostMicros,
   findCopywritingModel,
@@ -68,6 +69,8 @@ export const CampaignSettingsForm = (props: {
   const delaysDays = useWatch({ control: props.form.control, name: 'delaysDays' });
   const selectedProcessor = useWatch({ control: props.form.control, name: 'processor' });
   const selectedModel = useWatch({ control: props.form.control, name: 'copywritingModel' });
+  const selectedEffort = useWatch({ control: props.form.control, name: 'copywritingEffort' });
+  const isBatch = useWatch({ control: props.form.control, name: 'copywritingBatch' }) ?? true;
   const knowledgeAssetIds =
     useWatch({ control: props.form.control, name: 'knowledgeAssetIds' }) ?? [];
   const extraPrompt = useWatch({ control: props.form.control, name: 'extraPrompt' }) ?? '';
@@ -175,7 +178,11 @@ export const CampaignSettingsForm = (props: {
                         cost: format.number(
                           microsToUsd(
                             props.contactCount *
-                              estimateCallCostMicros({ model, tokens: props.costBasis.tokens }),
+                              estimateCallCostMicros({
+                                model,
+                                tokens: props.costBasis.tokens,
+                                batch: isBatch,
+                              }),
                           ),
                           USD_FORMAT,
                         ),
@@ -195,6 +202,51 @@ export const CampaignSettingsForm = (props: {
         </FieldDescription>
 
         {skipsPdfs && <FieldDescription>{t('hint_model_pdf_missing')}</FieldDescription>}
+      </Field>
+
+      <Field>
+        <FieldLabel htmlFor="copywriting-effort">{t('label_effort')}</FieldLabel>
+
+        <Select
+          value={selectedEffort}
+          disabled={selectedModel === 'claude-haiku-4-5'}
+          onValueChange={(value) => {
+            const effort = COPYWRITING_EFFORTS.find((option) => option === value);
+
+            if (effort) {
+              props.form.setValue('copywritingEffort', effort);
+            }
+          }}
+        >
+          <SelectTrigger id="copywriting-effort" className="w-full">
+            <SelectValue />
+          </SelectTrigger>
+
+          <SelectContent>
+            {COPYWRITING_EFFORTS.map((effort) => (
+              <SelectItem key={effort} value={effort}>
+                {t(`effort_${effort}`)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <FieldDescription>
+          {t(selectedModel === 'claude-haiku-4-5' ? 'hint_effort_unsupported' : 'hint_effort')}
+        </FieldDescription>
+      </Field>
+
+      <Field>
+        <FieldLabel className="flex items-center gap-2">
+          <Checkbox
+            checked={isBatch}
+            onCheckedChange={(checked) => {
+              props.form.setValue('copywritingBatch', checked === true);
+            }}
+          />
+          {t('label_batch')}
+        </FieldLabel>
+        <FieldDescription>{t('hint_batch')}</FieldDescription>
       </Field>
 
       <FieldSet>

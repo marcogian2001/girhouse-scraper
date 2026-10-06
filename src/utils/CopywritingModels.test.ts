@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { estimateCallCostMicros, findCopywritingModel } from './CopywritingModels';
+import {
+  estimateCallCostMicros,
+  findCopywritingModel,
+  toCopywritingEffort,
+} from './CopywritingModels';
 
 const tokens = {
   inputTokens: 1000,
@@ -22,6 +26,22 @@ describe('Copywriting models', () => {
 
       // $2 input twice, $10 output, $0.20 read per million tokens
       expect(model && estimateCallCostMicros({ model, tokens })).toBe(14_200);
+    });
+
+    it('halves the estimate for batch calls', () => {
+      const model = findCopywritingModel('claude-opus-5');
+
+      expect(model && estimateCallCostMicros({ model, tokens, batch: true })).toBe(20_250);
+    });
+  });
+
+  describe('Effort', () => {
+    it('keeps an offered level', () => {
+      expect(toCopywritingEffort('medium')).toBe('medium');
+    });
+
+    it('falls back to high for a level no longer offered', () => {
+      expect(toCopywritingEffort('max')).toBe('high');
     });
   });
 });
