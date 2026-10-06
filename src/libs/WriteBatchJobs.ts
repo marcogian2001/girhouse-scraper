@@ -1,7 +1,11 @@
 import { and, eq, inArray } from 'drizzle-orm';
 import * as z from 'zod';
 import { contactSchema, enrichmentSchema, jobSchema } from '@/models/Schema';
-import { fetchSequenceBatch, submitSequenceBatch } from '@/services/Copywriting';
+import {
+  fetchSequenceBatch,
+  submitSequenceBatch,
+  writeEmailSequence,
+} from '@/services/Copywriting';
 import type { Campaign } from '@/services/EmailPrompt';
 import { EnrichmentContentValidation } from '@/validations/EnrichmentValidation';
 import {
@@ -23,7 +27,7 @@ const writeBatchPayloadSchema = z.object({
   contactIds: z.array(z.string()),
   batchId: z.string().optional(),
   submittedAt: z.iso.datetime().optional(),
-  // Contacts whose result is already saved, so a resumed run skips them
+  // Contacts already written: the cache warm-up one, then each saved batch result
   doneIds: z.array(z.string()).default([]),
 });
 
@@ -95,7 +99,9 @@ const claimContacts = async (options: { jobId: string; campaignId: string }) =>
   });
 
 /**
- * Builds and submits the batch for the claimed contacts.
+ * Builds and submits the batch for the claimed contacts. The first contact is
+ * written directly beforehand: batch requests run in parallel, so without a
+ * warm cache each one would pay to write the shared brief and documents itself.
  * @param options The submit options.
  * @param options.job The batch job.
  * @param options.campaign The campaign being written.
@@ -111,12 +117,6 @@ const submitBatch = async (options: {
     .from(contactSchema)
     .where(inArray(contactSchema.id, options.payload.contactIds));
 
-  if (contacts.length === 0) {
-    await completeJob(options.job.id);
-
-    return;
-  }
-
   const enrichments = await db
     .select()
     .from(enrichmentSchema)
@@ -124,9 +124,9 @@ const submitBatch = async (options: {
 
   const knowledgeAssets = await loadKnowledgeAssets(options.campaign);
 
-  const batchId = await submitSequenceBatch({
-    campaign: options.campaign,
-    requests: contacts.map((contact) => {
+  const requests = contacts
+    .filter((contact) => !options.payload.doneIds.includes(contact.id))
+    .map((contact) => {
       const enrichment = enrichments.find((item) => item.contactId === contact.id);
       const parsedEnrichment = EnrichmentContentValidation.safeParse(enrichment?.content);
 
@@ -139,8 +139,47 @@ const submitBatch = async (options: {
           knowledgeAssets,
         },
       };
-    }),
-  });
+    });
+
+  const [first] = requests;
+
+  if (!first) {
+    await syncCampaignStatus(options.campaign.id);
+    await completeJob(options.job.id);
+
+    return;
+  }
+
+  // Nothing is done before submission except the warm-up contact
+  if (options.payload.doneIds.length === 0) {
+    const sequence = await writeEmailSequence(first.options);
+    const saved = await saveSequence({
+      campaign: options.campaign,
+      contactId: first.customId,
+      sequence,
+    });
+
+    if (!saved) {
+      await writeDirectly({
+        campaign: options.campaign,
+        contactId: first.customId,
+        reason: 'unparsable output',
+      });
+    }
+
+    logger.info(`Warmed the cache for campaign ${options.campaign.id} before its batch`);
+
+    // Submitted on the next pass, while the one-hour cache is fresh
+    await rescheduleJob({
+      jobId: options.job.id,
+      delaySeconds: 0,
+      payload: { ...options.payload, doneIds: [first.customId] },
+    });
+
+    return;
+  }
+
+  const batchId = await submitSequenceBatch({ campaign: options.campaign, requests });
 
   await rescheduleJob({
     jobId: options.job.id,
@@ -250,8 +289,9 @@ const collectBatch = async (options: {
 
 /**
  * Writes a campaign's researched contacts through the discounted batch API.
- * One job runs three phases across several worker passes: it claims the
- * contacts, submits them as one batch, then polls and saves the results.
+ * One job runs four phases across several worker passes: it claims the
+ * contacts, writes one directly to warm the cache, submits the rest as one
+ * batch, then polls and saves the results.
  * @param job The batch job being processed.
  */
 const runWriteBatchJob = async (job: Job) => {
