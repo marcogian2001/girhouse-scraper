@@ -19,6 +19,7 @@ import {
   saveSequence,
   syncCampaignStatus,
 } from './CampaignWriting';
+import { checkpointSequence, CopywritingReviewRequiredError } from './CopywritingCheckpoint';
 import { db } from './DB';
 import {
   claimJobs,
@@ -74,6 +75,12 @@ const requireContact = async (contactId: string | null) => {
 const runEnrichJob = async (job: Job) => {
   const contact = await requireContact(job.contactId);
   const campaign = await requireCampaign(job.campaignId);
+
+  if (['writing', 'ready', 'approved'].includes(contact.status)) {
+    await syncCampaignStatus(campaign.id);
+    await completeJob(job.id);
+    return;
+  }
 
   const existing = await db.query.enrichmentSchema.findFirst({
     where: eq(enrichmentSchema.contactId, contact.id),
@@ -165,6 +172,12 @@ const runWriteJob = async (job: Job) => {
   const contact = await requireContact(job.contactId);
   const campaign = await requireCampaign(job.campaignId);
 
+  if (['ready', 'approved'].includes(contact.status)) {
+    await syncCampaignStatus(campaign.id);
+    await completeJob(job.id);
+    return;
+  }
+
   await db.update(contactSchema).set({ status: 'writing' }).where(eq(contactSchema.id, contact.id));
 
   const enrichment = await db.query.enrichmentSchema.findFirst({
@@ -175,17 +188,24 @@ const runWriteJob = async (job: Job) => {
 
   const knowledgeAssets = await loadKnowledgeAssets(campaign);
 
-  const sequence = await writeEmailSequence({
-    campaign,
-    contact,
-    enrichment: parsedEnrichment.success ? parsedEnrichment.data : null,
-    knowledgeAssets,
+  const sequence = await checkpointSequence({
+    jobId: job.id,
+    contactId: contact.id,
+    run: async () =>
+      await writeEmailSequence({
+        campaign,
+        contact,
+        enrichment: parsedEnrichment.success ? parsedEnrichment.data : null,
+        knowledgeAssets,
+      }),
   });
 
   const saved = await saveSequence({ campaign, contactId: contact.id, sequence });
 
   if (!saved) {
-    throw new Error(`${sequence.model} returned no parsable sequence for contact ${contact.id}`);
+    throw new CopywritingReviewRequiredError(
+      `${sequence.model} returned no parsable sequence for contact ${contact.id}`,
+    );
   }
 
   await syncCampaignStatus(campaign.id);
@@ -288,7 +308,12 @@ const markAbandoned = async (job: Job, message: string) => {
     await db
       .update(contactSchema)
       .set({ status: 'failed', errorMessage: message })
-      .where(eq(contactSchema.id, job.contactId));
+      .where(
+        and(
+          eq(contactSchema.id, job.contactId),
+          inArray(contactSchema.status, ['pending', 'enriching', 'enriched', 'writing']),
+        ),
+      );
 
     // The campaign may now be fully settled, with this contact simply dropped
     await syncCampaignStatus(job.campaignId);
@@ -334,7 +359,11 @@ export const processJobs = async (limit: number) => {
 
       const message = error instanceof Error ? error.message : String(error);
       // oxlint-disable-next-line no-await-in-loop
-      const exhausted = await failJob({ job, error: message });
+      const exhausted = await failJob({
+        job,
+        error: message,
+        retryable: !(error instanceof CopywritingReviewRequiredError),
+      });
 
       // Passed as a property: LogTape reads `{...}` in the message as a
       // placeholder, which would swallow the JSON body of an API error

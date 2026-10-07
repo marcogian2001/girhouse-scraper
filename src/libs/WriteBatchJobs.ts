@@ -14,8 +14,9 @@ import {
   saveSequence,
   syncCampaignStatus,
 } from './CampaignWriting';
+import { checkpointBatch, checkpointSequence } from './CopywritingCheckpoint';
 import { db } from './DB';
-import { completeJob, enqueue, rescheduleJob } from './JobQueue';
+import { completeJob, rescheduleJob } from './JobQueue';
 import { logger } from './Logger';
 
 type Job = typeof jobSchema.$inferSelect;
@@ -52,22 +53,17 @@ const batchPollDelaySeconds = (elapsedMs: number) => {
 };
 
 /**
- * Hands one contact back to the direct writer after the batch could not write it.
- * @param options The fallback options.
- * @param options.campaign The campaign being written.
- * @param options.contactId The contact to retry.
- * @param options.reason Why the batch left it unwritten.
+ * Keeps failed batch items visible without silently paying for direct generation.
+ * @param options The contact and failure reason.
  */
-const writeDirectly = async (options: {
-  campaign: Campaign;
-  contactId: string;
-  reason: string;
-}) => {
-  logger.warn(
-    `Batch left contact ${options.contactId} unwritten (${options.reason}); writing it directly`,
-  );
-
-  await enqueue([{ campaignId: options.campaign.id, contactId: options.contactId, type: 'write' }]);
+const requireReview = async (options: { contactId: string; reason: string }) => {
+  await db
+    .update(contactSchema)
+    .set({
+      status: 'failed',
+      errorMessage: `Batch needs review; no direct retry was started: ${options.reason}`,
+    })
+    .where(and(eq(contactSchema.id, options.contactId), eq(contactSchema.status, 'writing')));
 };
 
 /**
@@ -115,7 +111,8 @@ const submitBatch = async (options: {
   const contacts = await db
     .select()
     .from(contactSchema)
-    .where(inArray(contactSchema.id, options.payload.contactIds));
+    .where(inArray(contactSchema.id, options.payload.contactIds))
+    .orderBy(contactSchema.id);
 
   const enrichments = await db
     .select()
@@ -152,7 +149,11 @@ const submitBatch = async (options: {
 
   // Nothing is done before submission except the warm-up contact
   if (options.payload.doneIds.length === 0) {
-    const sequence = await writeEmailSequence(first.options);
+    const sequence = await checkpointSequence({
+      jobId: options.job.id,
+      contactId: first.customId,
+      run: async () => await writeEmailSequence(first.options),
+    });
     const saved = await saveSequence({
       campaign: options.campaign,
       contactId: first.customId,
@@ -160,8 +161,7 @@ const submitBatch = async (options: {
     });
 
     if (!saved) {
-      await writeDirectly({
-        campaign: options.campaign,
+      await requireReview({
         contactId: first.customId,
         reason: 'unparsable output',
       });
@@ -179,7 +179,10 @@ const submitBatch = async (options: {
     return;
   }
 
-  const batchId = await submitSequenceBatch({ campaign: options.campaign, requests });
+  const batchId = await checkpointBatch({
+    jobId: options.job.id,
+    run: async () => await submitSequenceBatch({ campaign: options.campaign, requests }),
+  });
 
   await rescheduleJob({
     jobId: options.job.id,
@@ -190,7 +193,7 @@ const submitBatch = async (options: {
 
 /**
  * Polls the submitted batch and, once it has finished, saves its results a
- * slice at a time. Anything the batch could not write goes to the direct writer.
+ * slice at a time. Anything the batch could not write is flagged for review without extra paid calls.
  * @param options The poll options.
  * @param options.job The batch job.
  * @param options.campaign The campaign being written.
@@ -225,7 +228,8 @@ const collectBatch = async (options: {
   const live = await db
     .select({ id: contactSchema.id })
     .from(contactSchema)
-    .where(inArray(contactSchema.id, options.payload.contactIds));
+    .where(inArray(contactSchema.id, options.payload.contactIds))
+    .orderBy(contactSchema.id);
 
   const pending = new Set(
     live.map((contact) => contact.id).filter((id) => !options.payload.doneIds.includes(id)),
@@ -256,7 +260,7 @@ const collectBatch = async (options: {
 
     if ('error' in result) {
       // oxlint-disable-next-line no-await-in-loop
-      await writeDirectly({ campaign: options.campaign, contactId, reason: result.error });
+      await requireReview({ contactId, reason: result.error });
     } else {
       // oxlint-disable-next-line no-await-in-loop
       const saved = await saveSequence({
@@ -267,7 +271,7 @@ const collectBatch = async (options: {
 
       if (!saved) {
         // oxlint-disable-next-line no-await-in-loop
-        await writeDirectly({ campaign: options.campaign, contactId, reason: 'unparsable output' });
+        await requireReview({ contactId, reason: 'unparsable output' });
       }
     }
 
@@ -278,7 +282,7 @@ const collectBatch = async (options: {
   // Requests the provider never answered, e.g. when the whole batch failed validation
   for (const contactId of pending) {
     // oxlint-disable-next-line no-await-in-loop
-    await writeDirectly({ campaign: options.campaign, contactId, reason: 'no result' });
+    await requireReview({ contactId, reason: 'no result' });
   }
 
   logger.info(`Saved batch ${options.batchId} for campaign ${options.campaign.id}`);

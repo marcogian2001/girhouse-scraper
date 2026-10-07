@@ -29,6 +29,14 @@ export default defineConfig({
       {
         extends: true,
         test: {
+          name: 'storage',
+          include: ['tests/integration/CopywritingRecovery.integ.ts'],
+          environment: 'node',
+        },
+      },
+      {
+        extends: true,
+        test: {
           name: 'ui',
           include: ['**/*.test.tsx', 'src/hooks/**/*.test.ts'],
           browser: {
