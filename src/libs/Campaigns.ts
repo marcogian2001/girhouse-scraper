@@ -128,6 +128,10 @@ export const createCampaign = async (options: {
         userId: options.userId,
         organizationId: options.organizationId,
         name: settings.name,
+        budgetMicros:
+          typeof settings.budgetUsd === 'number'
+            ? Math.round(settings.budgetUsd * 1_000_000)
+            : null,
         status: isAllReused ? 'writing' : 'enriching',
         processor: settings.processor,
         copywritingModel: settings.copywritingModel,

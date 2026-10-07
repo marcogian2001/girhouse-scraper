@@ -10,8 +10,14 @@ import {
   chunkLeads,
   createCampaign,
 } from '@/services/Instantly';
-import { createTaskRun, fetchTaskRunResult } from '@/services/Parallel';
+import { createTaskRun, fetchTaskRunResult, PROCESSOR_RUN_COST_MICROS } from '@/services/Parallel';
 import { EnrichmentContentValidation } from '@/validations/EnrichmentValidation';
+import {
+  CampaignBudgetError,
+  reserveCampaignBudget,
+  reserveSequenceMicros,
+  settleCampaignBudget,
+} from './CampaignBudget';
 import {
   enqueueWriting,
   loadKnowledgeAssets,
@@ -19,6 +25,11 @@ import {
   saveSequence,
   syncCampaignStatus,
 } from './CampaignWriting';
+import {
+  checkpointResearch,
+  checkpointSequence,
+  CopywritingReviewRequiredError,
+} from './CopywritingCheckpoint';
 import { db } from './DB';
 import {
   claimJobs,
@@ -28,6 +39,7 @@ import {
   releaseStaleJobs,
   rescheduleJob,
 } from './JobQueue';
+import { LeadEmailReviewRequiredError } from './LeadEmailCheckpoint';
 import { leadJobHandlers, markLeadJobAbandoned } from './LeadJobs';
 import { logger } from './Logger';
 import { recordParallelUsage } from './Usage';
@@ -75,12 +87,41 @@ const runEnrichJob = async (job: Job) => {
   const contact = await requireContact(job.contactId);
   const campaign = await requireCampaign(job.campaignId);
 
+  if (['writing', 'ready', 'approved'].includes(contact.status)) {
+    await syncCampaignStatus(campaign.id);
+    await completeJob(job.id);
+    return;
+  }
+
   const existing = await db.query.enrichmentSchema.findFirst({
     where: eq(enrichmentSchema.contactId, contact.id),
   });
 
   if (!existing?.parallelRunId) {
-    const run = await createTaskRun({ contact, processor: campaign.processor });
+    let runId: string;
+    if (campaign.budgetMicros === null) {
+      const run = await createTaskRun({ contact, processor: campaign.processor });
+      runId = run.run_id;
+    } else {
+      runId = await checkpointResearch({
+        jobId: job.id,
+        beforeStart: async () => {
+          await reserveCampaignBudget({
+            campaignId: campaign.id,
+            items: [
+              {
+                operationId: `${job.id}:research`,
+                amount: PROCESSOR_RUN_COST_MICROS[campaign.processor],
+              },
+            ],
+          });
+        },
+        run: async () => {
+          const run = await createTaskRun({ contact, processor: campaign.processor });
+          return run.run_id;
+        },
+      });
+    }
     const startedAt = new Date();
 
     await db
@@ -88,12 +129,12 @@ const runEnrichJob = async (job: Job) => {
       .values({
         contactId: contact.id,
         processor: campaign.processor,
-        parallelRunId: run.run_id,
+        parallelRunId: runId,
         startedAt,
       })
       .onConflictDoUpdate({
         target: enrichmentSchema.contactId,
-        set: { parallelRunId: run.run_id, startedAt, error: null },
+        set: { parallelRunId: runId, startedAt, error: null },
       });
 
     await db
@@ -132,6 +173,12 @@ const runEnrichJob = async (job: Job) => {
     processor: existing.processor,
   });
 
+  await settleCampaignBudget({
+    campaignId: campaign.id,
+    operationId: `${job.id}:research`,
+    costMicros: PROCESSOR_RUN_COST_MICROS[existing.processor],
+  });
+
   const parsed = EnrichmentContentValidation.safeParse(outcome.content);
 
   await db
@@ -165,6 +212,12 @@ const runWriteJob = async (job: Job) => {
   const contact = await requireContact(job.contactId);
   const campaign = await requireCampaign(job.campaignId);
 
+  if (['ready', 'approved'].includes(contact.status)) {
+    await syncCampaignStatus(campaign.id);
+    await completeJob(job.id);
+    return;
+  }
+
   await db.update(contactSchema).set({ status: 'writing' }).where(eq(contactSchema.id, contact.id));
 
   const enrichment = await db.query.enrichmentSchema.findFirst({
@@ -175,17 +228,36 @@ const runWriteJob = async (job: Job) => {
 
   const knowledgeAssets = await loadKnowledgeAssets(campaign);
 
-  const sequence = await writeEmailSequence({
+  const writeOptions = {
     campaign,
     contact,
     enrichment: parsedEnrichment.success ? parsedEnrichment.data : null,
     knowledgeAssets,
+  };
+  const operationId = `${job.id}:write:${contact.id}`;
+  const sequence = await checkpointSequence({
+    jobId: job.id,
+    contactId: contact.id,
+    beforeStart: async () => {
+      await reserveCampaignBudget({
+        campaignId: campaign.id,
+        items: [{ operationId, amount: reserveSequenceMicros(writeOptions) }],
+      });
+    },
+    run: async () => await writeEmailSequence(writeOptions),
   });
 
-  const saved = await saveSequence({ campaign, contactId: contact.id, sequence });
+  const saved = await saveSequence({
+    campaign,
+    contactId: contact.id,
+    sequence,
+    budgetOperationId: operationId,
+  });
 
   if (!saved) {
-    throw new Error(`${sequence.model} returned no parsable sequence for contact ${contact.id}`);
+    throw new CopywritingReviewRequiredError(
+      `${sequence.model} returned no parsable sequence for contact ${contact.id}`,
+    );
   }
 
   await syncCampaignStatus(campaign.id);
@@ -288,7 +360,12 @@ const markAbandoned = async (job: Job, message: string) => {
     await db
       .update(contactSchema)
       .set({ status: 'failed', errorMessage: message })
-      .where(eq(contactSchema.id, job.contactId));
+      .where(
+        and(
+          eq(contactSchema.id, job.contactId),
+          inArray(contactSchema.status, ['pending', 'enriching', 'enriched', 'writing']),
+        ),
+      );
 
     // The campaign may now be fully settled, with this contact simply dropped
     await syncCampaignStatus(job.campaignId);
@@ -334,7 +411,15 @@ export const processJobs = async (limit: number) => {
 
       const message = error instanceof Error ? error.message : String(error);
       // oxlint-disable-next-line no-await-in-loop
-      const exhausted = await failJob({ job, error: message });
+      const exhausted = await failJob({
+        job,
+        error: message,
+        retryable: !(
+          error instanceof CopywritingReviewRequiredError ||
+          error instanceof LeadEmailReviewRequiredError ||
+          error instanceof CampaignBudgetError
+        ),
+      });
 
       // Passed as a property: LogTape reads `{...}` in the message as a
       // placeholder, which would swallow the JSON body of an API error
@@ -343,6 +428,15 @@ export const processJobs = async (limit: number) => {
         type: job.type,
         error: message,
       });
+
+      if (error instanceof CampaignBudgetError && job.campaignId) {
+        // Keep existing results; no automatic retry of a budget-blocked operation.
+        // oxlint-disable-next-line no-await-in-loop
+        await db
+          .update(campaignSchema)
+          .set({ errorMessage: message, budgetBlocked: true })
+          .where(eq(campaignSchema.id, job.campaignId));
+      }
 
       if (exhausted) {
         // oxlint-disable-next-line no-await-in-loop

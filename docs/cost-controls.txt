@@ -1,0 +1,96 @@
+GIRHOUSE SCRAPER — CONTROLLI DEI CONSUMI
+Documento per revisione tecnica — 7 ottobre 2026
+
+STATO DELLA PROPOSTA
+Implementazione locale, non ancora pubblicata su GitHub o distribuita su Vercel.
+Base repository: 1fc400492c9d06d50b7d6f581320eb73750f476a.
+Branch di revisione: improvement/scraper-costs; destinazione proposta: main.
+Nessuna misura di risparmio reale: test con dati sintetici e provider simulati.
+
+PROBLEMA E RISULTATO
+Un job interrotto poteva ripetere una chiamata a pagamento; il registro dei consumi non distingueva sempre una nuova operazione dal salvataggio ripetuto di un risultato. I costi Apify erano stimati dal numero di luoghi, e non esisteva un limite operativo per campagna.
+La proposta conserva gli esiti riutilizzabili, ferma le richieste ambigue, registra meglio i costi e introduce un budget facoltativo con prenotazioni atomiche. Non modifica i prompt commerciali, i modelli scelti o l'invio Instantly.
+
+1. RECUPERO COPYWRITING
+- Checkpoint persistente prima della generazione diretta, del warm-up e della creazione batch.
+- Risultati e batch ID salvati vengono riutilizzati dopo errori del database.
+- Avvio senza esito salvato: verifica tecnica, senza ripetizione automatica della chiamata.
+- Risultati batch mancanti o non interpretabili non attivano piu un fallback diretto a pagamento.
+- Salvataggio atomico delle bozze; bozze pronte/approvate e modifiche umane preservate.
+- Deduplicazione dell'accodamento diretto e conteggio delle risposte AI per identificativo provider.
+
+2. RICERCA E VERIFICA EMAIL
+- Checkpoint separati per Prospeo e MillionVerifier nel payload del job.
+- Identificativo job/provider per operazione: il salvataggio ripetuto non duplica la spesa; nuove operazioni sullo stesso lead possono essere registrate separatamente.
+- Conservato anche il risultato senza corrispondenza e il flag gratuito Prospeo.
+- Rate limit esplicito Prospeo: attesa e ripresa; esito perso: stop per verifica.
+- Lead completati non vengono ricontattati dal job email; un errore tardivo non ne cancella lo stato finale.
+- Protezione per job/provider, non deduplicazione globale di job distinti sullo stesso lead.
+- MillionVerifier conserva una stima lorda: rimborsi e prezzi del pacchetto account non sono riconciliati.
+
+3. COSTI APIFY
+- Per i run letti dal nuovo codice si usa usageTotalUsd, convertito in microdollari.
+- Spesa registrata anche per run FAILED, ABORTED e TIMED-OUT, prima di scaricare il dataset.
+- Seconda lettura dopo 15 secondi: aggiornamento della stessa voce provider/runId senza sommare duplicati.
+- Zero esplicito e costo assente distinti. Il dato assente non crea una voce a zero e non cancella un precedente importo conosciuto.
+- Se il costo resta assente dopo i normali tentativi del job, la ricerca si ferma con errore di riconciliazione; non parte un nuovo scrape.
+- Il totale Consumi esclude importi sconosciuti; la descrizione invita a controllare gli errori delle ricerche. Non e stato aggiunto un contatore aggregato degli importi incerti.
+- Nessun ricalcolo globale dello storico o riconciliazione periodica dopo la chiusura del job.
+Fonte: https://docs.apify.com/api/v2/actor-run-get
+
+4. BUDGET OPERATIVO CAMPAGNA
+Campo facoltativo alla creazione: da 0,01 a 2.000 USD, con precisione al centesimo. Vuoto significa nessun limite. Il riepilogo iniziale mostra la scelta; il dettaglio campagna mostra limite, importo speso/prenotato e disponibilita.
+
+Perimetro: ricerca Parallel dei contatti della campagna e copywriting AI. Esclusi acquisizione lead, Apify, Prospeo, MillionVerifier, Google Places, hosting, abbonamenti e invii Instantly. Non e il costo totale dell'acquisizione clienti.
+
+Prima della chiamata il worker prenota il costo sotto lock della riga campagna. Tutte le richieste di un batch sono prenotate nella stessa transazione: o c'e disponibilita per l'intero gruppo o il batch non viene inviato. Le invocazioni concorrenti condividono lo stesso saldo; ripetere una prenotazione non la duplica.
+
+Parallel usa la tariffa del processor configurata nel repository. Il copywriting usa una stima prudente: un token per byte UTF-8 dei testi, margine di formattazione, prezzo input maggiorato per cache e intero limite output di 16.000 token. Non si anticipano sconti batch o cache hit. Le tariffe restano quelle del codice, non quelle certificate da una fattura.
+
+PDF con file ID: nelle campagne con budget la generazione si ferma prima della chiamata, perche il sistema non ne stima i token in modo affidabile. La ricerca Parallel puo essere gia avvenuta. Le campagne senza budget mantengono il supporto PDF.
+
+Quando arriva e viene registrato il costo della sequenza o della ricerca, la prenotazione e sostituita dall'importo registrato. Se la risposta manca, i fondi restano impegnati. Errori batch e richieste non riconciliate non liberano automaticamente il budget. Gli SDK AI non ritentano automaticamente generazione/creazione batch nelle campagne con budget.
+
+Se il budget non basta, il job si ferma senza chiamata provider, viene segnato failed e la campagna conserva un blocco budget e un messaggio. Altri job non iniziano nuove operazioni a pagamento; risultati di chiamate gia avviate possono ancora essere raccolti e salvati. Le bozze precedenti restano disponibili.
+Non esiste ancora una UI per aumentare il limite o sbloccare i job. La ripresa richiede verifica tecnica di spesa, prenotazioni e richieste incerte. Non cancellare checkpoint per forzare una ripresa.
+
+Il budget e un controllo operativo prudenziale, non una garanzia contrattuale di fattura. Se un costo effettivamente registrato supera la prenotazione, viene mantenuto integralmente: non viene nascosto per far rientrare il totale. Le nuove prenotazioni vengono rifiutate quando non c'e disponibilita.
+
+DATABASE E COMPATIBILITA
+Migrazione additiva 0014_campaign_budget.sql: budget_micros nullable, budget_blocked, budget_committed_micros e budget_operations JSONB nella tabella campaign. Snapshot e journal Drizzle aggiornati.
+Campagne preesistenti: budget nullo, nessun limite imposto retroattivamente. Nessuna riconciliazione automatica del loro storico. Il budget non e modificabile dalle API di rinomina esistenti.
+I checkpoint aumentano il payload dei job; le prenotazioni aumentano i dati della campagna. Nessuna nuova politica di retention.
+
+VALIDAZIONE LOCALE
+- 268 test unitari/integrativi superati, incluse le migrazioni reali applicate a PGlite in memoria.
+- 2 test browser mirati superati: campo facoltativo intatto, importo numerico e cancellazione dell'importo.
+- Test browser eseguiti con Chrome installato, profilo temporaneo isolato, tramite override locale del provider Playwright; il Chromium incluso non era installato.
+- Build Next.js completa riuscita con database temporaneo e segreto di sessione effimero; nessun servizio reale collegato.
+- Lint con controllo tipi e verifica diff.
+- Check traduzioni superato.
+- check:deps segnala lefthook inutilizzato: stessa segnalazione riprodotta sulla base 1fc4004 usando le dipendenze locali. Problema preesistente, non corretto in questa proposta.
+- Non certificati: produzione Vercel, fatture reali, intero flusso browser, processi worker separati su PostgreSQL remoto.
+
+FILE PRINCIPALI DA RIVEDERE
+src/libs/CopywritingCheckpoint.ts, CampaignWriting.ts, JobQueue.ts, JobWorker.ts, WriteBatchJobs.ts
+src/libs/LeadEmailCheckpoint.ts, LeadJobs.ts, Usage.ts
+src/services/Apify.ts, src/libs/ApifyUsage.ts
+src/libs/CampaignBudget.ts, Campaigns.ts
+src/models/Schema.ts, src/validations/CampaignValidation.ts
+src/components/CampaignSettingsForm.tsx, CampaignReview.tsx
+src/app/[locale]/dashboard/campaigns/[id]/page.tsx
+src/services/Claude.ts, OpenAI.ts, src/locales/it.json, en.json
+migrations/0014_campaign_budget.sql e relativo metadata
+Test in tests/integration/ e test co-localizzati; configurazione Vitest e dipendenza PGlite del primo intervento.
+
+PROPOSTA GITHUB E RILASCIO
+1. Revisionare insieme il diff e questo documento; confermare comportamento dei job interrotti e limitazioni del budget.
+2. Verificare identita Git dell'autore, aggiornamenti del branch principale e permessi. Preparare commit sul branch dedicato, senza modificare main direttamente.
+3. Solo dopo autorizzazione, push del branch e apertura di una Pull Request, includendo questo file nel repository e collegandolo nella descrizione. Un push puo gia attivare una preview Vercel: verificare isolamento di database e API prima. Lo script build esegue db:migrate prima di compilare Next.js: se usato dal deploy, la migrazione interessa il DATABASE_URL configurato anche senza aprire la preview.
+4. Gianmarco o altro responsabile rivede codice e flusso operativo. Provare su staging isolato con PostgreSQL e worker separati.
+5. Rilascio distinto dalla PR: backup database, coda ferma, job e richieste precedenti riconciliati, migrazione applicata prima del nuovo worker, nessuna sovrapposizione fra worker vecchi e nuovi.
+
+ROLLBACK
+Al momento e tutto locale: nessun rollback online necessario.
+Per un futuro rollback fermare prima worker e scheduler, preservare database e payload e riconciliare le richieste in corso. Il codice vecchio ignora checkpoint e budget: riavviarlo senza riconciliazione puo ripetere chiamate e rimuovere le protezioni di spesa.
+La migrazione e additiva: conservare i nuovi campi durante un rollback del codice, senza cancellare prenotazioni o ricevute. Non eseguire rollback SQL distruttivi come parte di questa proposta.

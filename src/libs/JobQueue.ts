@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, lt, lte } from 'drizzle-orm';
+import { and, asc, eq, inArray, lt, lte, sql } from 'drizzle-orm';
 import { jobSchema } from '@/models/Schema';
 import { db } from './DB';
 
@@ -110,7 +110,7 @@ export const completeJob = async (jobId: string) => {
  * @param options The call options.
  * @param options.jobId The job to reschedule.
  * @param options.delaySeconds How long to wait before picking it up again.
- * @param options.payload Progress to carry into the next run, replacing the stored payload.
+ * @param options.payload Progress to carry into the next run, merging into the stored payload to preserve paid-call checkpoints.
  */
 export const rescheduleJob = async (options: {
   jobId: string;
@@ -123,7 +123,10 @@ export const rescheduleJob = async (options: {
       status: 'queued',
       lockedAt: null,
       runAfter: new Date(Date.now() + options.delaySeconds * 1000),
-      payload: options.payload,
+      payload:
+        options.payload === undefined
+          ? undefined
+          : sql`coalesce(${jobSchema.payload}, '{}'::jsonb) || ${JSON.stringify(options.payload)}::jsonb`,
     })
     .where(eq(jobSchema.id, options.jobId));
 };
@@ -135,9 +138,9 @@ export const rescheduleJob = async (options: {
  * @param options.error The message to store for the user.
  * @returns Whether the job has been abandoned for good.
  */
-export const failJob = async (options: { job: Job; error: string }) => {
+export const failJob = async (options: { job: Job; error: string; retryable?: boolean }) => {
   const attempts = options.job.attempts + 1;
-  const exhausted = attempts >= MAX_ATTEMPTS;
+  const exhausted = options.retryable === false || attempts >= MAX_ATTEMPTS;
 
   await db
     .update(jobSchema)

@@ -330,7 +330,8 @@
     "tab_send": "Send",
     "push_title": "Send to Instantly",
     "pushed_notice": "This campaign is live in Instantly as {campaignId}.",
-    "spend_line": "Estimated spend {total}: AI copywriting {tokens} tokens, {copywritingCost} · Parallel {runs, plural, one {# search} other {# searches}}, ~{parallelCost}"
+    "spend_line": "Estimated spend {total}: AI copywriting {tokens} tokens, {copywritingCost} · Parallel {runs, plural, one {# search} other {# searches}}, ~{parallelCost}",
+    "budget_line": "Budget {limit} · Spent and reserved {committed} · Available {available}"
   },
   "KnowledgePage": {
     "title": "Knowledge base",
@@ -425,7 +426,10 @@
     "label_delay_step": "Email {from} to {to}",
     "label_knowledge": "Knowledge base",
     "label_prompt": "Campaign brief",
-    "hint_prompt": "Who you are, what you offer, and the action you want. The AI follows this for every contact."
+    "hint_prompt": "Who you are, what you offer, and the action you want. The AI follows this for every contact.",
+    "label_budget": "Campaign operating budget (USD, optional)",
+    "hint_budget": "Conservative limit for Parallel and AI writing, including reserved amounts. Excludes lead search, scraping and sending. Generation stops for PDFs whose cost cannot be estimated. Not an invoice guarantee. Blank means no limit. A blocked campaign requires technical review.",
+    "budget_none": "No limit"
   },
   "CampaignProgress": {
     "progress_count": "{done} of {total} contacts done"
@@ -520,7 +524,7 @@
   },
   "UsagePage": {
     "title": "Usage",
-    "subtitle": "Estimated spend on AI copywriting, Parallel and lead search, priced at list rates when each call was made.",
+    "subtitle": "Recorded costs: new Apify runs use provider-reported amounts; other services and historical costs remain estimates. Unavailable amounts are excluded: check search errors.",
     "label_from": "From",
     "label_to": "To",
     "button_filter": "Filter",

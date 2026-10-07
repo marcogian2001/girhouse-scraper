@@ -21,6 +21,12 @@ export const CampaignReview = (props: {
   const rows = [
     { label: t('review_name'), value: props.settings.name },
     {
+      label: settingsT('label_budget'),
+      value: props.settings.budgetUsd
+        ? `${props.settings.budgetUsd.toFixed(2)} USD`
+        : settingsT('budget_none'),
+    },
+    {
       label: t('review_contacts'),
       value: t('review_contacts_value', { count: props.contactCount, file: props.fileName }),
     },

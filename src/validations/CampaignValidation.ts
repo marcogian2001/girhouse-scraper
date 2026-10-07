@@ -31,6 +31,7 @@ const hasOneDelayPerEmail = (campaign: { emailCount: number; delaysDays: number[
 
 const campaignSettingsShape = z.object({
   name: z.string().trim().min(1).max(120),
+  budgetUsd: z.number().positive().max(2000).multipleOf(0.01).nullish(),
   processor: z.enum(['lite', 'base', 'core', 'pro']).default('core'),
   copywritingModel: z.enum(COPYWRITING_MODEL_IDS).default(DEFAULT_COPYWRITING_MODEL),
   copywritingEffort: z.enum(COPYWRITING_EFFORTS).default(DEFAULT_COPYWRITING_EFFORT),

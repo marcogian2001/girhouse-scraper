@@ -8,6 +8,7 @@ import {
 } from '@/models/Schema';
 import type { WrittenSequence } from '@/services/EmailPrompt';
 import { extractMentionNames } from '@/utils/KnowledgeMentions';
+import { settleCampaignBudget } from './CampaignBudget';
 import { db } from './DB';
 import { enqueue } from './JobQueue';
 import { recordCopywritingUsage } from './Usage';
@@ -137,6 +138,7 @@ export const saveSequence = async (options: {
   campaign: Campaign;
   contactId: string;
   sequence: WrittenSequence;
+  budgetOperationId?: string;
 }) => {
   // Recorded before the output is checked: an unparsable response is billed too
   await recordCopywritingUsage({
@@ -146,37 +148,51 @@ export const saveSequence = async (options: {
     sequence: options.sequence,
   });
 
+  if (options.budgetOperationId) {
+    await settleCampaignBudget({
+      campaignId: options.campaign.id,
+      operationId: options.budgetOperationId,
+      costMicros: options.sequence.costMicros,
+    });
+  }
+
   const { emails, model } = options.sequence;
 
   if (!emails) {
     return false;
   }
 
-  // Upserted so a retry after a partial write refreshes the drafts in place
-  await Promise.all(
-    emails.map((email) =>
-      db
-        .insert(emailDraftSchema)
-        .values({
+  return await db.transaction(async (tx) => {
+    const [contact] = await tx
+      .select({ status: contactSchema.status })
+      .from(contactSchema)
+      .where(eq(contactSchema.id, options.contactId))
+      .for('update');
+    if (!contact) {
+      throw new Error('Contact no longer exists');
+    }
+    // Replayed batch results must preserve drafts already reviewed or edited.
+    if (['ready', 'approved'].includes(contact.status)) {
+      return true;
+    }
+    await tx
+      .insert(emailDraftSchema)
+      .values(
+        emails.map((email) => ({
           contactId: options.contactId,
           stepIndex: email.step,
           subject: email.subject,
           body: email.body,
           model,
-        })
-        .onConflictDoUpdate({
-          target: [emailDraftSchema.contactId, emailDraftSchema.stepIndex],
-          set: { subject: email.subject, body: email.body, model, edited: false },
-        }),
-    ),
-  );
-
-  await db
-    .update(contactSchema)
-    .set({ status: 'ready' })
-    .where(eq(contactSchema.id, options.contactId));
-
-  return true;
+        })),
+      )
+      .onConflictDoNothing();
+    await tx
+      .update(contactSchema)
+      .set({ status: 'ready', errorMessage: null })
+      .where(eq(contactSchema.id, options.contactId));
+    return true;
+  });
 };
 
 /**
@@ -196,13 +212,35 @@ export const enqueueWriting = async (options: {
   }
 
   if (!options.campaign.copywritingBatch) {
-    await enqueue(
-      options.contactIds.map((contactId) => ({
-        campaignId: options.campaign.id,
-        contactId,
-        type: 'write' as const,
-      })),
-    );
+    await db.transaction(async (tx) => {
+      // Serializes writers for this campaign, including overlapping enrichment retries.
+      await tx
+        .select({ id: campaignSchema.id })
+        .from(campaignSchema)
+        .where(eq(campaignSchema.id, options.campaign.id))
+        .for('update');
+      const existing = await tx
+        .select({ contactId: jobSchema.contactId })
+        .from(jobSchema)
+        .where(
+          and(
+            eq(jobSchema.campaignId, options.campaign.id),
+            eq(jobSchema.type, 'write'),
+            inArray(jobSchema.contactId, options.contactIds),
+          ),
+        );
+      const queued = new Set(existing.map((job) => job.contactId));
+      const missing = [...new Set(options.contactIds)].filter((id) => !queued.has(id));
+      if (missing.length > 0) {
+        await tx.insert(jobSchema).values(
+          missing.map((contactId) => ({
+            campaignId: options.campaign.id,
+            contactId,
+            type: 'write' as const,
+          })),
+        );
+      }
+    });
 
     return;
   }

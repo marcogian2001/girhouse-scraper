@@ -35,6 +35,7 @@ const runResponseSchema = z.object({
     id: z.string(),
     status: z.string(),
     defaultDatasetId: z.string(),
+    usageTotalUsd: z.number().nonnegative().nullish(),
   }),
 });
 
@@ -53,9 +54,9 @@ const placeSchema = z.looseObject({
 export type MapsPlace = z.infer<typeof placeSchema>;
 
 export type MapsRunOutcome =
-  | { state: 'succeeded'; places: MapsPlace[] }
+  | { state: 'succeeded'; datasetId: string; costMicros: number | null }
   | { state: 'pending' }
-  | { state: 'failed'; error: string };
+  | { state: 'failed'; error: string; costMicros: number | null };
 
 /** The lead columns a place fills in, before it is tied to a search. */
 export type LeadRow = Pick<
@@ -175,7 +176,7 @@ export const startMapsRun = async (placeIds: string[]) => {
 };
 
 /**
- * Reads a Google Maps scrape and, once it has finished, its places.
+ * Reads the status and provider-reported cost of a Google Maps scrape.
  * @param runId The run to read.
  * @returns Whether the run succeeded, is still running, or failed.
  * @throws {Error} When the token is missing or Apify rejects the request.
@@ -187,11 +188,24 @@ export const fetchMapsRun = async (runId: string): Promise<MapsRunOutcome> => {
     return { state: 'pending' };
   }
 
-  if (run.status !== 'SUCCEEDED') {
-    return { state: 'failed', error: `Apify run ended as ${run.status}` };
+  const costMicros =
+    typeof run.usageTotalUsd === 'number' ? Math.round(run.usageTotalUsd * 1_000_000) : null;
+  if (costMicros !== null && (!Number.isSafeInteger(costMicros) || costMicros > 2_147_483_647)) {
+    throw new Error('Apify cost exceeds the supported storage range');
   }
+  if (run.status !== 'SUCCEEDED') {
+    return { state: 'failed', error: `Apify run ended as ${run.status}`, costMicros };
+  }
+  return { state: 'succeeded', datasetId: run.defaultDatasetId, costMicros };
+};
 
-  const items = await request(`/datasets/${run.defaultDatasetId}/items?clean=true&format=json`);
+/**
+ * Reads places separately so dataset errors cannot hide a run charge.
+ * @param datasetId The run's dataset identifier.
+ * @returns The usable places in the dataset.
+ */
+export const fetchMapsPlaces = async (datasetId: string) => {
+  const items = await request(`/datasets/${datasetId}/items?clean=true&format=json`);
   // A place without an id or a name cannot become a lead, so it is skipped
   const places = z
     .array(z.unknown())
@@ -202,5 +216,5 @@ export const fetchMapsRun = async (runId: string): Promise<MapsRunOutcome> => {
       return parsed.success ? [parsed.data] : [];
     });
 
-  return { state: 'succeeded', places };
+  return places;
 };

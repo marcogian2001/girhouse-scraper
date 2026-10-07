@@ -121,6 +121,23 @@ export const CampaignSettingsForm = (props: {
         </Field>
 
         <Field>
+          <FieldLabel htmlFor="budgetUsd">{t('label_budget')}</FieldLabel>
+          <Input
+            id="budgetUsd"
+            type="number"
+            min="0.01"
+            max="2000"
+            step="0.01"
+            {...props.form.register('budgetUsd', {
+              setValueAs: (value: unknown) =>
+                value === '' || value === undefined || value === null ? null : Number(value),
+            })}
+          />
+          <FieldDescription>{t('hint_budget')}</FieldDescription>
+          <FieldError errors={[props.form.formState.errors.budgetUsd]} />
+        </Field>
+
+        <Field>
           <FieldLabel htmlFor="processor">{t('label_processor')}</FieldLabel>
 
           <Select

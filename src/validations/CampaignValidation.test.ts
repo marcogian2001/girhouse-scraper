@@ -53,3 +53,25 @@ describe('Campaign validation', () => {
     });
   });
 });
+
+describe('Campaign budget input', () => {
+  const budgetSettings = { name: 'Test', emailCount: 1, delaysDays: [0] };
+
+  it.each([undefined, null, 0.01, 25, 2000])(
+    'accepts an optional budget of %s USD',
+    (budgetUsd) => {
+      expect(
+        CampaignSettingsValidation.safeParse({ ...budgetSettings, budgetUsd }).success,
+      ).toBeTruthy();
+    },
+  );
+
+  it.each([0, -1, 2001, 0.001, Number.NaN, Number.POSITIVE_INFINITY])(
+    'rejects invalid budget %s',
+    (budgetUsd) => {
+      expect(
+        CampaignSettingsValidation.safeParse({ ...budgetSettings, budgetUsd }).success,
+      ).toBeFalsy();
+    },
+  );
+});
