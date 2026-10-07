@@ -182,6 +182,16 @@ export default async function CampaignDetailPage(props: {
         </CardContent>
       </Card>
 
+      {campaign.budgetMicros !== null && (
+        <p className="text-sm text-muted-foreground">
+          {t('budget_line', {
+            limit: usd(campaign.budgetMicros),
+            committed: usd(campaign.budgetCommittedMicros),
+            available: usd(Math.max(0, campaign.budgetMicros - campaign.budgetCommittedMicros)),
+          })}
+        </p>
+      )}
+
       {campaign.errorMessage && (
         <Alert variant="destructive">
           <AlertDescription>{campaign.errorMessage}</AlertDescription>

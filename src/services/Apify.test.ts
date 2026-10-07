@@ -1,6 +1,11 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { MapsPlace } from './Apify';
-import { extractDomain, toLeadRow } from './Apify';
+import { extractDomain, fetchMapsRun, toLeadRow } from './Apify';
+
+vi.mock(import('@/libs/Env'), async (original) => {
+  const originalEnv = await original();
+  return { Env: { ...originalEnv.Env, APIFY_API_TOKEN: 'test-only' } };
+});
 
 const place = (overrides: Partial<MapsPlace> = {}): MapsPlace => ({
   placeId: 'ChIJ123',
@@ -65,5 +70,54 @@ describe('Apify', () => {
         reviewsCount: 31,
       });
     });
+  });
+});
+
+describe('Apify run cost', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it.each([
+    { usageTotalUsd: 0, expected: 0 },
+    { usageTotalUsd: 0.2654, expected: 265_400 },
+    { usageTotalUsd: null, expected: null },
+    { usageTotalUsd: undefined, expected: null },
+  ])(
+    'reads cost without fetching dataset for $usageTotalUsd',
+    async ({ usageTotalUsd, expected }) => {
+      const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(
+        Response.json({
+          data: {
+            id: 'run',
+            status: 'SUCCEEDED',
+            defaultDatasetId: 'dataset',
+            usageTotalUsd,
+          },
+        }),
+      );
+      vi.stubGlobal('fetch', fetch);
+      await expect(fetchMapsRun('run')).resolves.toStrictEqual({
+        state: 'succeeded',
+        datasetId: 'dataset',
+        costMicros: expected,
+      });
+      expect(fetch).toHaveBeenCalledOnce();
+    },
+  );
+
+  it('rejects a negative cost', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof globalThis.fetch>().mockResolvedValue(
+        Response.json({
+          data: {
+            id: 'run',
+            status: 'SUCCEEDED',
+            defaultDatasetId: 'dataset',
+            usageTotalUsd: -1,
+          },
+        }),
+      ),
+    );
+    await expect(fetchMapsRun('run')).rejects.toThrow('Too small');
   });
 });

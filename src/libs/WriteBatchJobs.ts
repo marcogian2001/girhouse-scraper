@@ -8,6 +8,7 @@ import {
 } from '@/services/Copywriting';
 import type { Campaign } from '@/services/EmailPrompt';
 import { EnrichmentContentValidation } from '@/validations/EnrichmentValidation';
+import { reserveCampaignBudget, reserveSequenceMicros } from './CampaignBudget';
 import {
   loadKnowledgeAssets,
   requireCampaign,
@@ -152,12 +153,24 @@ const submitBatch = async (options: {
     const sequence = await checkpointSequence({
       jobId: options.job.id,
       contactId: first.customId,
+      beforeStart: async () => {
+        await reserveCampaignBudget({
+          campaignId: options.campaign.id,
+          items: [
+            {
+              operationId: `${options.job.id}:write:${first.customId}`,
+              amount: reserveSequenceMicros(first.options),
+            },
+          ],
+        });
+      },
       run: async () => await writeEmailSequence(first.options),
     });
     const saved = await saveSequence({
       campaign: options.campaign,
       contactId: first.customId,
       sequence,
+      budgetOperationId: `${options.job.id}:write:${first.customId}`,
     });
 
     if (!saved) {
@@ -181,6 +194,15 @@ const submitBatch = async (options: {
 
   const batchId = await checkpointBatch({
     jobId: options.job.id,
+    beforeStart: async () => {
+      await reserveCampaignBudget({
+        campaignId: options.campaign.id,
+        items: requests.map((request) => ({
+          operationId: `${options.job.id}:write:${request.customId}`,
+          amount: reserveSequenceMicros(request.options),
+        })),
+      });
+    },
     run: async () => await submitSequenceBatch({ campaign: options.campaign, requests }),
   });
 
@@ -267,6 +289,7 @@ const collectBatch = async (options: {
         campaign: options.campaign,
         contactId,
         sequence: result.sequence,
+        budgetOperationId: `${options.job.id}:write:${contactId}`,
       });
 
       if (!saved) {

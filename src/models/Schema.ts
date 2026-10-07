@@ -268,6 +268,13 @@ export const campaignSchema = pgTable(
     copywritingEffort: text('copywriting_effort').notNull().default('high'),
     // Writes through the discounted, asynchronous batch API instead of one call per contact
     copywritingBatch: boolean('copywriting_batch').notNull().default(false),
+    budgetMicros: integer('budget_micros'),
+    budgetBlocked: boolean('budget_blocked').notNull().default(false),
+    budgetCommittedMicros: integer('budget_committed_micros').notNull().default(0),
+    budgetOperations: jsonb('budget_operations')
+      .$type<Record<string, { amount: number; settled: boolean }>>()
+      .notNull()
+      .default({}),
     emailCount: integer('email_count').notNull(),
     // Days to wait after each step before the next one, one entry per step
     delaysDays: jsonb('delays_days').$type<number[]>().notNull(),

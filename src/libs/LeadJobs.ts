@@ -19,12 +19,10 @@ import {
   searchCellSchema,
 } from '@/models/Schema';
 import type { MapsPlace } from '@/services/Apify';
-import { fetchMapsRun, startMapsRun, toLeadRow } from '@/services/Apify';
+import { fetchMapsPlaces, fetchMapsRun, startMapsRun, toLeadRow } from '@/services/Apify';
 import type { Rectangle } from '@/services/GooglePlaces';
 import { fetchAreaViewport, scanRectangle } from '@/services/GooglePlaces';
-import { verifyEmail } from '@/services/MillionVerifier';
 import { createDecisionMakerRun, fetchTaskRunResult } from '@/services/Parallel';
-import { findEmail } from '@/services/Prospeo';
 import {
   isPecEmail,
   OPEN_LEAD_STATUSES,
@@ -40,14 +38,11 @@ import {
 } from '@/utils/Leads';
 import type { DecisionMaker } from '@/validations/LeadSearchValidation';
 import { DecisionMakerValidation } from '@/validations/LeadSearchValidation';
+import { reconcileApifyUsage } from './ApifyUsage';
 import { db } from './DB';
 import { completeJob, pollDelaySeconds, rescheduleJob } from './JobQueue';
-import {
-  recordApifyUsage,
-  recordMillionVerifierUsage,
-  recordParallelUsage,
-  recordProspeoUsage,
-} from './Usage';
+import { checkpointEmailLookup, checkpointEmailVerification } from './LeadEmailCheckpoint';
+import { recordMillionVerifierUsage, recordParallelUsage, recordProspeoUsage } from './Usage';
 
 /** How long Parallel may hold a poll open. Short, so the worker stays snappy. */
 const PARALLEL_POLL_TIMEOUT_SECONDS = 5;
@@ -769,20 +764,20 @@ const runLeadSearchJob = async (job: Job) => {
     return;
   }
 
+  const settled = await reconcileApifyUsage({
+    job,
+    search,
+    runId: search.apifyRunId,
+    costMicros: outcome.costMicros,
+  });
+  if (!settled) {
+    return;
+  }
   if (outcome.state === 'failed') {
     throw new Error(outcome.error);
   }
-
-  // Apify bills every place scraped, including those kept in reserve
-  await recordApifyUsage({
-    userId: search.userId,
-    organizationId: search.organizationId,
-    leadSearchId: search.id,
-    runId: search.apifyRunId,
-    places: outcome.places.length,
-  });
-
-  await storeScrapedPlaces({ search, places: outcome.places });
+  const places = await fetchMapsPlaces(outcome.datasetId);
+  await storeScrapedPlaces({ search, places });
 
   // Places Apify skipped, or another search took meanwhile, leave a gap for one more round
   if (search.scrapeRounds < MAX_SCRAPE_ROUNDS && (await countMissingLeads(search)) > 0) {
@@ -884,6 +879,7 @@ const runLeadResearchJob = async (job: Job) => {
  * or `rate_limited` when Prospeo asked to slow down.
  */
 const findLeadEmail = async (options: {
+  jobId: string;
   lead: Lead;
   search: typeof leadSearchSchema.$inferSelect;
 }) => {
@@ -895,22 +891,23 @@ const findLeadEmail = async (options: {
     userId: search.userId,
     organizationId: search.organizationId,
     leadSearchId: search.id,
-    leadId: lead.id,
   };
 
   if (routes.prospeo && lead.domain && lead.firstName && lead.lastName) {
-    const match = await findEmail({
+    const lookup = await checkpointEmailLookup({
+      jobId: options.jobId,
       firstName: lead.firstName,
       lastName: lead.lastName,
       domain: lead.domain,
     });
 
+    const match = lookup.result;
     if (match === 'rate_limited') {
       return match;
     }
 
     if (match?.charged) {
-      await recordProspeoUsage(owner);
+      await recordProspeoUsage({ ...owner, operationId: lookup.operationId });
     }
 
     // A PEC rejects ordinary mail, so the published address gets its turn
@@ -927,9 +924,13 @@ const findLeadEmail = async (options: {
     return null;
   }
 
-  const verdict = await verifyEmail(publicEmail);
+  const verification = await checkpointEmailVerification({
+    jobId: options.jobId,
+    email: publicEmail,
+  });
+  const verdict = verification.result;
 
-  await recordMillionVerifierUsage(owner);
+  await recordMillionVerifierUsage({ ...owner, operationId: verification.operationId });
 
   return verdict === 'valid' || verdict === 'catch_all'
     ? { email: publicEmail, emailSource: 'public' as const, emailVerification: verdict }
@@ -944,7 +945,13 @@ const runLeadEmailJob = async (job: Job) => {
   const lead = await requireLead(job.leadId);
   const search = await requireLeadSearch(lead.leadSearchId);
 
-  const found = await findLeadEmail({ lead, search });
+  if (['ready', 'no_email', 'reserve', 'filtered_out'].includes(lead.status)) {
+    await syncLeadSearchStatus(search.id);
+    await completeJob(job.id);
+    return;
+  }
+
+  const found = await findLeadEmail({ jobId: job.id, lead, search });
 
   // Prospeo's rate limit is not the lead's fault, so the job waits without spending an attempt
   if (found === 'rate_limited') {
@@ -972,7 +979,12 @@ export const markLeadJobAbandoned = async (job: Job, message: string) => {
     await db
       .update(leadSchema)
       .set({ status: 'failed', errorMessage: message })
-      .where(eq(leadSchema.id, job.leadId));
+      .where(
+        and(
+          eq(leadSchema.id, job.leadId),
+          inArray(leadSchema.status, ['found', 'researching', 'finding_email', 'failed']),
+        ),
+      );
 
     if (job.leadSearchId) {
       // The search may now be fully settled, with this lead simply dropped

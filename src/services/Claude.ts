@@ -203,7 +203,10 @@ export const writeEmailSequence = async (
   options: WriteSequenceOptions,
 ): Promise<WrittenSequence> => {
   const request = buildSequenceRequest(options);
-  const response = await getClient().messages.parse(request.params);
+  const response = await getClient().messages.parse(
+    request.params,
+    typeof options.campaign.budgetMicros === 'number' ? { maxRetries: 0 } : undefined,
+  );
 
   logger.info(
     `Wrote sequence for contact ${options.contact.id} with ${request.model.id} (cache read: ${response.usage.cache_read_input_tokens ?? 0} tokens)`,
@@ -225,12 +228,17 @@ export const writeEmailSequence = async (
  * @throws {Error} When the API key is missing or a model is not a Claude model.
  */
 export const submitSequenceBatch = async (requests: SequenceBatchRequest[]) => {
-  const batch = await getClient().messages.batches.create({
-    requests: requests.map((request) => ({
-      custom_id: request.customId,
-      params: buildSequenceRequest(request.options).params,
-    })),
-  });
+  const batch = await getClient().messages.batches.create(
+    {
+      requests: requests.map((request) => ({
+        custom_id: request.customId,
+        params: buildSequenceRequest(request.options).params,
+      })),
+    },
+    requests.some((request) => typeof request.options.campaign.budgetMicros === 'number')
+      ? { maxRetries: 0 }
+      : undefined,
+  );
 
   logger.info(`Submitted Claude batch ${batch.id} with ${requests.length} sequence(s)`);
 

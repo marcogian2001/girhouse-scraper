@@ -1,7 +1,6 @@
 import { and, desc, eq, gte, inArray, lte, sql } from 'drizzle-orm';
 import type { AnyPgColumn } from 'drizzle-orm/pg-core';
 import { apiUsageSchema, campaignSchema, leadSearchSchema } from '@/models/Schema';
-import { PLACE_COST_MICROS } from '@/services/Apify';
 import type { WrittenSequence } from '@/services/EmailPrompt';
 import { VERIFICATION_COST_MICROS } from '@/services/MillionVerifier';
 import type { ParallelProcessor } from '@/services/Parallel';
@@ -186,10 +185,10 @@ export const recordParallelUsage = async (
  * @param options.organizationId The organization the lead search belongs to.
  * @param options.leadSearchId The lead search the scrape was made for.
  * @param options.runId The Apify run id.
- * @param options.places How many places the scrape returned.
+ * @param options.costMicros The cost reported by Apify, in millionths of a dollar.
  */
 export const recordApifyUsage = async (
-  options: UsageOwner & { leadSearchId: string; runId: string; places: number },
+  options: UsageOwner & { leadSearchId: string; runId: string; costMicros: number },
 ) => {
   await db
     .insert(apiUsageSchema)
@@ -200,21 +199,24 @@ export const recordApifyUsage = async (
       provider: 'apify',
       externalId: options.runId,
       model: 'google_maps',
-      costMicros: options.places * PLACE_COST_MICROS,
+      costMicros: options.costMicros,
     })
-    .onConflictDoNothing();
+    .onConflictDoUpdate({
+      target: [apiUsageSchema.provider, apiUsageSchema.externalId],
+      set: { costMicros: options.costMicros },
+    });
 };
 
 /**
- * Records one billed email lookup. Safe to repeat: a lead is only counted once.
+ * Records one billed email lookup. Safe to repeat: an operation is only counted once.
  * @param options The call options.
  * @param options.userId The owner of the lead search.
  * @param options.organizationId The organization the lead search belongs to.
  * @param options.leadSearchId The lead search the lookup was made for.
- * @param options.leadId The lead whose email was found.
+ * @param options.operationId The persisted lookup operation identifier.
  */
 export const recordProspeoUsage = async (
-  options: UsageOwner & { leadSearchId: string; leadId: string },
+  options: UsageOwner & { leadSearchId: string; operationId: string },
 ) => {
   await db
     .insert(apiUsageSchema)
@@ -223,7 +225,7 @@ export const recordProspeoUsage = async (
       organizationId: options.organizationId,
       leadSearchId: options.leadSearchId,
       provider: 'prospeo',
-      externalId: options.leadId,
+      externalId: options.operationId,
       model: 'enrich_person',
       costMicros: EMAIL_COST_MICROS,
     })
@@ -231,15 +233,15 @@ export const recordProspeoUsage = async (
 };
 
 /**
- * Records one email verification. Safe to repeat: a lead is only counted once.
+ * Records one email verification. Safe to repeat: an operation is only counted once.
  * @param options The call options.
  * @param options.userId The owner of the lead search.
  * @param options.organizationId The organization the lead search belongs to.
  * @param options.leadSearchId The lead search the verification was made for.
- * @param options.leadId The lead whose email was verified.
+ * @param options.operationId The persisted verification operation identifier.
  */
 export const recordMillionVerifierUsage = async (
-  options: UsageOwner & { leadSearchId: string; leadId: string },
+  options: UsageOwner & { leadSearchId: string; operationId: string },
 ) => {
   await db
     .insert(apiUsageSchema)
@@ -248,7 +250,7 @@ export const recordMillionVerifierUsage = async (
       organizationId: options.organizationId,
       leadSearchId: options.leadSearchId,
       provider: 'millionverifier',
-      externalId: options.leadId,
+      externalId: options.operationId,
       model: 'verify',
       costMicros: VERIFICATION_COST_MICROS,
     })

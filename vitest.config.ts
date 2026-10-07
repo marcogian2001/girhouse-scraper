@@ -30,7 +30,12 @@ export default defineConfig({
         extends: true,
         test: {
           name: 'storage',
-          include: ['tests/integration/CopywritingRecovery.integ.ts'],
+          include: [
+            'tests/integration/CopywritingRecovery.integ.ts',
+            'tests/integration/LeadEmailRecovery.integ.ts',
+            'tests/integration/ApifyUsage.integ.ts',
+            'tests/integration/CampaignBudget.integ.ts',
+          ],
           environment: 'node',
         },
       },

@@ -190,7 +190,10 @@ export const writeEmailSequence = async (
   options: WriteSequenceOptions,
 ): Promise<WrittenSequence> => {
   const request = buildSequenceRequest(options);
-  const response = await getClient().responses.parse(request.params);
+  const response = await getClient().responses.parse(
+    request.params,
+    typeof options.campaign.budgetMicros === 'number' ? { maxRetries: 0 } : undefined,
+  );
 
   if (!response.usage) {
     throw new Error(`OpenAI response ${response.id} reported no usage`);
@@ -301,11 +304,16 @@ export const submitSequenceBatch = async (requests: SequenceBatchRequest[]) => {
     purpose: 'batch',
   });
 
-  const batch = await getClient().batches.create({
-    input_file_id: inputFile.id,
-    endpoint: '/v1/responses',
-    completion_window: '24h',
-  });
+  const batch = await getClient().batches.create(
+    {
+      input_file_id: inputFile.id,
+      endpoint: '/v1/responses',
+      completion_window: '24h',
+    },
+    requests.some((request) => typeof request.options.campaign.budgetMicros === 'number')
+      ? { maxRetries: 0 }
+      : undefined,
+  );
 
   logger.info(`Submitted OpenAI batch ${batch.id} with ${requests.length} sequence(s)`);
 

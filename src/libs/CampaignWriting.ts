@@ -8,6 +8,7 @@ import {
 } from '@/models/Schema';
 import type { WrittenSequence } from '@/services/EmailPrompt';
 import { extractMentionNames } from '@/utils/KnowledgeMentions';
+import { settleCampaignBudget } from './CampaignBudget';
 import { db } from './DB';
 import { enqueue } from './JobQueue';
 import { recordCopywritingUsage } from './Usage';
@@ -137,6 +138,7 @@ export const saveSequence = async (options: {
   campaign: Campaign;
   contactId: string;
   sequence: WrittenSequence;
+  budgetOperationId?: string;
 }) => {
   // Recorded before the output is checked: an unparsable response is billed too
   await recordCopywritingUsage({
@@ -145,6 +147,14 @@ export const saveSequence = async (options: {
     campaignId: options.campaign.id,
     sequence: options.sequence,
   });
+
+  if (options.budgetOperationId) {
+    await settleCampaignBudget({
+      campaignId: options.campaign.id,
+      operationId: options.budgetOperationId,
+      costMicros: options.sequence.costMicros,
+    });
+  }
 
   const { emails, model } = options.sequence;
 

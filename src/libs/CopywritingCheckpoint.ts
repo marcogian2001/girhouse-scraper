@@ -35,6 +35,7 @@ const checkpoint = async <Result>(options: {
   key: string;
   schema: z.ZodType<Result>;
   run: () => Promise<Result>;
+  beforeStart?: () => Promise<void>;
 }) => {
   const job = await db.query.jobSchema.findFirst({ where: eq(jobSchema.id, options.jobId) });
   if (!job) {
@@ -50,6 +51,8 @@ const checkpoint = async <Result>(options: {
       'Paid request outcome is unknown; inspect the provider before retrying',
     );
   }
+
+  await options.beforeStart?.();
 
   const [claimed] = await db
     .update(jobSchema)
@@ -86,6 +89,7 @@ export const checkpointSequence = async (options: {
   jobId: string;
   contactId: string;
   run: () => Promise<z.infer<typeof sequenceSchema>>;
+  beforeStart?: () => Promise<void>;
 }) =>
   await checkpoint({
     ...options,
@@ -98,5 +102,14 @@ export const checkpointSequence = async (options: {
  * @param options The job and submission callback.
  * @returns The submitted batch identifier.
  */
-export const checkpointBatch = async (options: { jobId: string; run: () => Promise<string> }) =>
-  await checkpoint({ ...options, key: 'paidBatch', schema: z.string().min(1) });
+export const checkpointBatch = async (options: {
+  jobId: string;
+  run: () => Promise<string>;
+  beforeStart?: () => Promise<void>;
+}) => await checkpoint({ ...options, key: 'paidBatch', schema: z.string().min(1) });
+
+export const checkpointResearch = async (options: {
+  jobId: string;
+  run: () => Promise<string>;
+  beforeStart: () => Promise<void>;
+}) => await checkpoint({ ...options, key: 'paidResearch', schema: z.string().min(1) });
