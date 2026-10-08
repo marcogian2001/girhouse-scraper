@@ -48,7 +48,7 @@ export type LeadRowView = Pick<
   | 'emailSource'
   | 'emailVerification'
   | 'status'
->;
+> & { errorMessage?: string | null };
 
 type WebsiteView = 'all' | 'without' | 'with';
 
@@ -125,6 +125,19 @@ export const LeadTable = (props: { leads: LeadRowView[] }) => {
     return lead.emailVerification === 'catch_all' ? t('note_catch_all', { source }) : source;
   };
 
+  const outcome = (lead: LeadRowView) => (
+    <div className="space-y-1">
+      {lead.status === 'ready' && (!lead.email?.trim() || lead.emailVerification !== 'valid') ? (
+        <Badge variant="secondary">{t('badge_review')}</Badge>
+      ) : (
+        <StatusBadge kind="lead" status={lead.status} />
+      )}
+      {lead.status === 'failed' && lead.errorMessage && (
+        <p className="max-w-xs text-xs break-words text-destructive">{lead.errorMessage}</p>
+      )}
+    </div>
+  );
+
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -192,9 +205,7 @@ export const LeadTable = (props: { leads: LeadRowView[] }) => {
                   <div className="text-xs text-muted-foreground">{emailNote(lead)}</div>
                 </TableCell>
 
-                <TableCell>
-                  <StatusBadge kind="lead" status={lead.status} />
-                </TableCell>
+                <TableCell>{outcome(lead)}</TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -216,9 +227,7 @@ export const LeadTable = (props: { leads: LeadRowView[] }) => {
                 <div>{websiteCell(lead)}</div>
               </ItemContent>
 
-              <ItemActions>
-                <StatusBadge kind="lead" status={lead.status} />
-              </ItemActions>
+              <ItemActions>{outcome(lead)}</ItemActions>
             </Item>
           ))}
         </ItemGroup>

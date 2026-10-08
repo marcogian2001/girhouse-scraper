@@ -6,10 +6,12 @@ import * as z from 'zod';
 import { ArchiveCampaignButton } from '@/components/ArchiveCampaignButton';
 import { CampaignNameEditor } from '@/components/CampaignNameEditor';
 import { CampaignProgress } from '@/components/CampaignProgress';
+import { CampaignRecoveryPanel } from '@/components/CampaignRecoveryPanel';
 import type { ContactReview } from '@/components/ContactReviewList';
 import { ContactReviewList } from '@/components/ContactReviewList';
 import { DeleteCampaignButton } from '@/components/DeleteCampaignButton';
 import { InstantlyPushForm } from '@/components/InstantlyPushForm';
+import { ResultCostSummary } from '@/components/ResultCostSummary';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -17,8 +19,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getApiContext } from '@/libs/ApiAuth';
+import { getCampaignRecovery } from '@/libs/CampaignRecovery';
 import { db } from '@/libs/DB';
 import { Link } from '@/libs/I18nNavigation';
+import { countReadySequences, getResultCostProviders } from '@/libs/ResultCosts';
 import { getUsageTotals } from '@/libs/Usage';
 import { campaignSchema, contactSchema, emailDraftSchema, enrichmentSchema } from '@/models/Schema';
 import { COMPACT_FORMAT, microsToUsd, USD_FORMAT } from '@/utils/UsageFormat';
@@ -115,6 +119,12 @@ export default async function CampaignDetailPage(props: {
     };
   });
 
+  const [recovery, resultProviders] = await Promise.all([
+    getCampaignRecovery({ campaignId: campaign.id, organizationId: campaign.organizationId }),
+    getResultCostProviders({ campaignId: campaign.id, organizationId: campaign.organizationId }),
+  ]);
+  const readySequences = countReadySequences({ contacts, drafts, emailCount: campaign.emailCount });
+
   const readyCount = contacts.filter((contact) => contact.status === 'ready').length;
   const approvedCount = contacts.filter((contact) => contact.status === 'approved').length;
 
@@ -191,6 +201,20 @@ export default async function CampaignDetailPage(props: {
           })}
         </p>
       )}
+
+      <ResultCostSummary kind="sequence" results={readySequences} providers={resultProviders} />
+
+      {campaign.budgetMicros !== null &&
+        recovery &&
+        (campaign.budgetBlocked || recovery.review.candidates.length > 0) && (
+          <CampaignRecoveryPanel
+            key={recovery.review.revision}
+            campaignId={campaign.id}
+            budgetMicros={campaign.budgetMicros}
+            reason={campaign.errorMessage}
+            review={recovery.review}
+          />
+        )}
 
       {campaign.errorMessage && (
         <Alert variant="destructive">

@@ -1,0 +1,84 @@
+Marketing Girhouse — ripresa campagne e costo per risultato
+Verifica locale: 8 ottobre 2026
+
+FUNZIONAMENTO
+Nel dettaglio delle campagne con budget compare il pannello di ripresa quando
+il budget è bloccato o esistono job falliti. Mostra motivo, operazioni registrate,
+prenotazioni e casi che richiedono verifica.
+Il limite inserito è il nuovo totale in USD, non un credito aggiuntivo.
+“Aumenta solo il limite” non sblocca la campagna né modifica i job.
+“Riprendi” richiede la revisione esplicita e ricontrolla lo stato sotto lock:
+una revisione obsoleta, job attivi, budget insufficiente/incoerente o richieste
+incerte impediscono la ripresa. L'accesso è autenticato e limitato all'organizzazione.
+
+La ripresa riaccoda gli stessi job mantenendo payload, ID del provider, risultati
+pagati, operazioni di budget e avanzamento batch. I contatti già pronti/approvati
+e le bozze modificate restano preservati. L'endpoint non chiama provider;
+il worker successivo può avviare le richieste fermate prima dell'invio per budget.
+
+LIMITI
+Gli esiti incerti mantengono le prenotazioni: non esiste un pulsante che azzeri
+checkpoint o trasformi automaticamente una prenotazione in una spesa confermata.
+Serve una riconciliazione tecnica con evidenza del provider prima della ripresa.
+Errori non classificati, PDF non stimabili, operazioni residue di job completati,
+campagne senza budget, archiviate o in fase di invio non sono riprese automaticamente.
+Il contatore comprende operazioni/risultati da verificare, non addebiti certi.
+Aumentare il budget da solo non risolve questi casi.
+
+COSTO PER RISULTATO
+Ricerca lead: costi registrati della ricerca / email valide distinte con stato ready.
+Catch-all e indirizzi non verificati sono separati ed esclusi dal denominatore.
+Campagna: costi registrati della campagna / destinatari distinti ready o approved
+con tutti gli step previsti, soggetto e corpo non vuoti.
+La verifica dei draft usa un indice per contatto, evitando scansioni ripetute.
+Zero risultati: valore non disponibile, senza divisione per zero.
+La suddivisione è per provider. I tentativi falliti registrati restano nel costo.
+
+Questi due rapporti hanno perimetri distinti: manca un collegamento affidabile
+tra spesa di acquisizione, email verificata e CSV importato nella campagna.
+Non vengono inventati un costo complessivo o una verifica email del CSV.
+I nuovi costi Apify comunicati dal provider sono marcati google_maps_reported;
+le righe storiche non sono riclassificate senza un aggiornamento effettivo del run.
+Le altre tariffe memorizzate restano stime, non fatture. Costi mancanti, prenotazioni
+incerte, hosting, abbonamenti e invii non sono inclusi nel rapporto.
+Non è ancora stato misurato un risparmio reale né un miglioramento dei tempi:
+questa modifica permette riprese senza duplicare lavoro e rende misurabile la spesa.
+
+FILE
+Nuovi:
+- src/libs/CampaignRecovery.ts
+- src/validations/CampaignRecoveryValidation.ts
+- src/app/api/campaigns/[id]/recovery/route.ts
+- src/components/CampaignRecoveryPanel.tsx e relativo test browser
+- src/libs/ResultCosts.ts
+- src/components/ResultCostSummary.tsx
+- tests/integration/CampaignRecovery.integ.ts
+- tests/integration/ResultCosts.integ.ts
+Modificati:
+- src/app/[locale]/dashboard/campaigns/[id]/page.tsx
+- src/app/[locale]/dashboard/leads/[id]/page.tsx
+- src/libs/CopywritingCheckpoint.ts (esporta lo schema già esistente)
+- src/libs/Usage.ts (marcatore del costo Apify comunicato dal provider)
+- src/locales/it.json e en.json
+- vitest.config.ts (registra i due nuovi test storage)
+Nessuna nuova migrazione per questa modifica. Il filtro categorie preesistente
+rimane preservato, incluse le sue modifiche locali non ancora committate.
+
+VERIFICA
+- Suite completa: 298 test unitari/storage passati con massimo 2 worker.
+- Ripresa: ulteriori test di polling Parallel e raccolta batch esistente;
+  suite dedicata finale di 16 test, con provider simulati e PGlite in memoria.
+- Browser Chrome: 3 test ripresa e 2 regressioni del filtro categorie passati.
+- Lint con controllo tipi, traduzioni e diff senza errori.
+- Build locale riuscita con database effimero e segreto auth effimero.
+  Avviso Better Auth: base URL assente nella configurazione locale della build.
+Un avvio iniziale della suite ha superato il timeout di inizializzazione DB sotto
+carico; il nuovo setup dispone di 30 secondi e la suite completa passa con 2 worker.
+Nessuna chiamata a pagamento, invio, push Git o pubblicazione eseguiti.
+
+ROLLBACK
+Gli originali dei file già esistenti, comprensivi del filtro categorie precedente,
+sono in ../rollback/scraper-recovery-2026-10-08/ rispetto a scraper-local.
+Ripristinare soltanto quei file e rimuovere solo i nuovi file elencati sopra,
+se si vuole annullare questa modifica; non usare reset/clean globali.
+Non serve un rollback del database, perché non c'è una migrazione nuova.

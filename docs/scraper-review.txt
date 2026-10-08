@@ -1,0 +1,50 @@
+DRAFT PR — misurazione, filtri e ripresa dello scraper
+8 ottobre 2026
+
+SCOPO
+Misurare tempi e risultati prima di scegliere altre ottimizzazioni. Include il
+filtro categorie, la ripresa guidata delle campagne e il costo per risultato
+già implementati localmente. Non dimostra un risparmio reale.
+La PR dipende dalla bozza #4: base improvement/scraper-costs, commit 6848ccc.
+Prima del merge su main integrare #4 e aggiornare la base di questa PR,
+risolvere eventuali differenze e rieseguire la CI su main.
+
+DOCUMENTAZIONE
+- category-filter.txt: filtro esatto Maps prima della ricerca contatti.
+- campaign-recovery.txt: ripresa, richieste incerte e perimetri dei costi.
+- search-observability.txt: riepilogo, tempi, contatori e limiti delle metriche.
+I documenti descrivono le verifiche locali dei singoli passi; questo file
+riporta la preparazione successiva della richiesta Git.
+
+VERIFICHE PER LA PR
+308 test unitari/storage superati con 2 worker, database PGlite temporanei
+e servizi simulati. DATABASE_URL fittizio usato solo per validare l'ambiente.
+Lint e traduzioni superati. Build e prove browser dei singoli passi descritte
+nei documenti sopra. Nessuna chiamata a pagamento o invio reale.
+Due export inutilizzati nuovi resi privati, senza cambiare il comportamento.
+check:deps segnala lefthook inutilizzato, già segnalato nella PR #4.
+Node locale v23; progetto e CI richiedono Node >=24.
+
+PREVIEW E RILASCIO
+vercel.json disabilita il deploy Git automatico esclusivamente per il branch
+improvement/scraper-observability tramite git.deploymentEnabled.
+Fonte: https://vercel.com/docs/project-configuration/git-configuration
+Lo script build esegue db:migrate; la separazione del database di Preview
+da produzione non è verificata. Non avviare deploy manuali prima di verificarla.
+Il blocco del branch non impedisce deploy manuali o il rilascio dopo merge.
+La CI attuale filtra le PR verso main: la base dipendente non avvia quella CI.
+
+Prima del rilascio concordare col responsabile:
+1. Ambiente PostgreSQL e credenziali provider isolati per staging.
+2. Backup e ripristino verificabile; coordinamento worker e richieste in corso.
+3. Migrazioni pendenti: 0014 della PR #4 se non applicata, poi 0015 e 0016.
+4. Codice nuovo solo dopo le migrazioni, quindi prova controllata in staging.
+5. Misurazione reale di consumi e tempi prima di dichiarare benefici.
+Nessun database dell'app aggiornato durante la preparazione della PR.
+
+ROLLBACK
+Ripristinare il codice precedente compatibile con lo schema. Le colonne additive
+possono restare; evitare SQL distruttivo. Coordinare worker e stato dei job.
+Il codice precedente non applica il filtro categorie. Dettagli nei documenti
+dei singoli passi. Originale vercel.json conservato nel backup locale
+../rollback/scraper-observability-2026-10-08/.

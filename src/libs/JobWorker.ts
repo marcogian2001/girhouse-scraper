@@ -31,6 +31,7 @@ import {
   CopywritingReviewRequiredError,
 } from './CopywritingCheckpoint';
 import { db } from './DB';
+import { observeLeadJob } from './JobObservation';
 import {
   claimJobs,
   completeJob,
@@ -405,7 +406,12 @@ export const processJobs = async (limit: number) => {
   for (const job of jobs) {
     try {
       // oxlint-disable-next-line no-await-in-loop
-      await handlers[job.type](job);
+      await observeLeadJob({
+        job,
+        run: async () => {
+          await handlers[job.type](job);
+        },
+      });
     } catch (error) {
       failed += 1;
 

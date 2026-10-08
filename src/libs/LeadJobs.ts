@@ -40,6 +40,7 @@ import type { DecisionMaker } from '@/validations/LeadSearchValidation';
 import { DecisionMakerValidation } from '@/validations/LeadSearchValidation';
 import { reconcileApifyUsage } from './ApifyUsage';
 import { db } from './DB';
+import { observeProviderOperation } from './JobObservation';
 import { completeJob, pollDelaySeconds, rescheduleJob } from './JobQueue';
 import { checkpointEmailLookup, checkpointEmailVerification } from './LeadEmailCheckpoint';
 import { recordMillionVerifierUsage, recordParallelUsage, recordProspeoUsage } from './Usage';
@@ -227,7 +228,11 @@ export const loadSearchAreas = async (options: {
     return existing;
   }
 
-  const viewport = await fetchAreaViewport(locationPlaceId);
+  const viewport = await observeProviderOperation({
+    provider: 'google',
+    kind: 'reads',
+    run: async () => await fetchAreaViewport(locationPlaceId),
+  });
 
   // One transaction, so an area never exists without its first cell
   await db.transaction(async (tx) => {
@@ -389,7 +394,12 @@ const releasePlaces = async (booking: { placeIds: string[]; bookedAt: Date }) =>
  */
 const scanCell = async (options: { cell: SearchCell; searchTerm: string }) => {
   const { cell } = options;
-  const scan = await scanRectangle({ query: options.searchTerm, rectangle: toRectangle(cell) });
+  const scan = await observeProviderOperation({
+    provider: 'google',
+    kind: 'reads',
+    run: async () =>
+      await scanRectangle({ query: options.searchTerm, rectangle: toRectangle(cell) }),
+  });
 
   await db.transaction(async (tx) => {
     if (scan.placeIds.length > 0) {
@@ -559,6 +569,12 @@ const claimReserve = async (options: { search: LeadSearch; areaIds: string[]; li
     .where(
       and(
         isReserve,
+        search.allowedCategories.length === 0
+          ? undefined
+          : inArray(
+              sql<string>`lower(regexp_replace(regexp_replace(coalesce(${leadSchema.category}, ''), ${'^\\s+|\\s+$'}, '', 'g'), ${'\\s+'}, ' ', 'g'))`,
+              search.allowedCategories.map(toSearchKey),
+            ),
         search.websiteFilter === 'any'
           ? undefined
           : eq(leadSchema.hasWebsite, search.websiteFilter === 'with'),
@@ -670,7 +686,11 @@ const startScrapeRound = async (options: { job: Job; search: LeadSearch }) => {
     return;
   }
 
-  const runId = await startMapsRun(placeIds).catch(async (error: unknown) => {
+  const runId = await observeProviderOperation({
+    provider: 'apify',
+    kind: 'starts',
+    run: async () => await startMapsRun(placeIds),
+  }).catch(async (error: unknown) => {
     // Nothing was scraped, so the places go back for the retry to book again
     await releasePlaces({ placeIds, bookedAt });
     throw error;
@@ -700,6 +720,7 @@ const storeScrapedPlaces = async (options: { search: LeadSearch; places: MapsPla
   }));
   const { wanted, reserve } = splitScrapedPlaces({
     rows,
+    allowedCategories: search.allowedCategories,
     filter: search.websiteFilter,
     missing: await countMissingLeads(search),
   });
@@ -754,7 +775,12 @@ const runLeadSearchJob = async (job: Job) => {
     return;
   }
 
-  const outcome = await fetchMapsRun(search.apifyRunId);
+  const runId = search.apifyRunId;
+  const outcome = await observeProviderOperation({
+    provider: 'apify',
+    kind: 'polls',
+    run: async () => await fetchMapsRun(runId),
+  });
 
   if (outcome.state === 'pending') {
     const elapsedMs = Date.now() - search.updatedAt.getTime();
@@ -776,7 +802,11 @@ const runLeadSearchJob = async (job: Job) => {
   if (outcome.state === 'failed') {
     throw new Error(outcome.error);
   }
-  const places = await fetchMapsPlaces(outcome.datasetId);
+  const places = await observeProviderOperation({
+    provider: 'apify',
+    kind: 'reads',
+    run: async () => await fetchMapsPlaces(outcome.datasetId),
+  });
   await storeScrapedPlaces({ search, places });
 
   // Places Apify skipped, or another search took meanwhile, leave a gap for one more round
@@ -798,7 +828,11 @@ const runLeadResearchJob = async (job: Job) => {
   const search = await requireLeadSearch(lead.leadSearchId);
 
   if (!lead.parallelRunId) {
-    const run = await createDecisionMakerRun({ lead, processor: search.processor });
+    const run = await observeProviderOperation({
+      provider: 'parallel',
+      kind: 'starts',
+      run: async () => await createDecisionMakerRun({ lead, processor: search.processor }),
+    });
 
     await db
       .update(leadSchema)
@@ -810,9 +844,12 @@ const runLeadResearchJob = async (job: Job) => {
     return;
   }
 
-  const outcome = await fetchTaskRunResult({
-    runId: lead.parallelRunId,
-    timeoutSeconds: PARALLEL_POLL_TIMEOUT_SECONDS,
+  const runId = lead.parallelRunId;
+  const outcome = await observeProviderOperation({
+    provider: 'parallel',
+    kind: 'polls',
+    run: async () =>
+      await fetchTaskRunResult({ runId, timeoutSeconds: PARALLEL_POLL_TIMEOUT_SECONDS }),
   });
 
   if (outcome.state === 'pending') {

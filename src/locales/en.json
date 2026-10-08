@@ -1,4 +1,36 @@
 {
+  "CampaignRecoveryPanel": {
+    "title": "Campaign recovery",
+    "totals": "Costs recorded against the budget: {recorded} · Reservations: {reserved} · Operations requiring review: {uncertain}",
+    "scope_hint": "Recorded costs may be estimates and are not invoices. Reservations are not confirmed charges; unknown outcomes retain committed funds.",
+    "details": "Operations and blocking reasons",
+    "state_recorded": "Recorded cost",
+    "state_reserved": "Reserved budget",
+    "job_budget": "Stopped before the request due to budget",
+    "job_saved": "Saved result or provider identifier",
+    "job_uncertain": "Unknown request outcome",
+    "job_manual": "Technical review required",
+    "review_required": "Recovery remains blocked: reconcile uncertain requests or other errors before continuing. Increasing the limit does not resolve these outcomes.",
+    "running": "Wait for running jobs to finish before changing the budget.",
+    "budget_label": "New total campaign limit (USD)",
+    "review_label": "I reviewed costs, reservations and blocking reasons.",
+    "increase": "Increase limit only",
+    "resume": "Resume {count} reviewed jobs",
+    "error_update": "Change not applied. Reload and review the budget and job states."
+  },
+  "ResultCostSummary": {
+    "title": "Cost per useful result",
+    "email_results": "{count} distinct valid emails · Cost per valid email: {cost}",
+    "sequence_results": "{count} contacts with complete sequences · Cost per ready sequence: {cost}",
+    "unavailable": "Unavailable",
+    "catch_all": "{count} distinct catch-all addresses, excluded from the valid email count.",
+    "basis_provider": "Provider-reported amount",
+    "basis_historical": "Historical: estimate or provider amount cannot be distinguished",
+    "basis_estimate": "Recorded estimate",
+    "email_scope": "Scope: recorded costs for this search, including unsuccessful attempts. Emails are valid according to the provider; this does not authorize outreach.",
+    "sequence_scope": "Scope: recorded costs for this campaign only. Acquisition and verification paid by lead searches are excluded. Uploading a CSV does not verify emails.",
+    "unknown_costs": "Missing costs, uncertain requests, hosting, subscriptions and sending are excluded: this is not the full acquisition cost."
+  },
   "LocaleSwitcher": {
     "change_language": "Change language",
     "label_en": "English",
@@ -136,7 +168,7 @@
     "status_reserve": "In reserve",
     "status_filtered_out": "Filtered out",
     "status_no_email": "No email",
-    "status_failed": "Failed"
+    "status_failed": "Blocked: review required"
   },
   "LeadSearchesPage": {
     "title": "Lead search",
@@ -158,6 +190,10 @@
     "description": "Pick what to look for and where. Each business is researched for its decision maker and a verified email."
   },
   "LeadSearchForm": {
+    "label_categories": "Allowed Maps categories (optional)",
+    "placeholder_categories": "Centro estetico, Estetista, Salone di bellezza",
+    "hint_categories": "Separate categories with commas or new lines. Exact matches ignore case and repeated spaces. Other or missing categories stay in reserve without contact research. Leave empty to allow all categories. The filter does not reduce the cost of Maps places already scraped.",
+    "error_categories": "Enter at most 20 categories, up to 120 characters each.",
     "label_name": "Search name",
     "error_name": "Enter a name.",
     "label_terms": "What to search for",
@@ -177,7 +213,8 @@
     "label_processor": "Research depth",
     "estimate": "Estimated cost at most {cost}, if every business is researched and has its email looked up.",
     "button_create": "Start the search",
-    "error_create": "The search was not started."
+    "error_create": "The search was not started.",
+    "filter_effect": "Website filter: {website}. Selected categories are checked before contact research. Restrictive filters can reduce coverage and require more Maps rounds; they do not guarantee a lower total cost."
   },
   "SearchTermsInput": {
     "placeholder_full": "Search limit reached",
@@ -206,9 +243,13 @@
     "column_website": "Website",
     "column_person": "Decision maker",
     "column_email": "Email",
-    "column_status": "Status"
+    "column_status": "Status",
+    "badge_review": "Requires review"
   },
   "LeadSearchPage": {
+    "categories_line": "Allowed categories: {categories}",
+    "reserve_summary": "Reserve businesses to review ({count})",
+    "reserve_hint": "Businesses retained without contact research: different or missing category, website filter or limit reached. Review category and website before another search. A Maps category does not establish commercial suitability.",
     "back_link": "All searches",
     "meta_line": "{terms} · {location} · {filter} · created on {date}",
     "spend_line": "Estimated spend {total}",
@@ -650,5 +691,24 @@
     "title": "This page does not exist",
     "description": "The link may be out of date, or the campaign may have been deleted.",
     "button": "Back to the dashboard"
+  },
+  "LeadSearchSummary": {
+    "title": "Search results",
+    "collected": "Collected places",
+    "matching": "Matching the filters",
+    "email_found": "Distinct saved emails",
+    "valid": "Distinct valid emails",
+    "funnel_hint": "Places currently associated with this search. Filters do not prove commercial suitability. Saved emails may include catch-all addresses; outcomes without a saved address are excluded.",
+    "outcomes": "Processing: {pending} · No usable email: {noEmail} · Requires review: {review} · Blocked contacts: {blocked} · Failed jobs: {failedJobs}",
+    "reserve": "In reserve: {count} · Places reused from an earlier reserve: {reused}",
+    "measurement_title": "Observed time and operations",
+    "phase_maps": "Place collection",
+    "phase_research": "Decision maker research",
+    "phase_email": "Email lookup and verification",
+    "phase": "{phase}: {measured}/{jobs} jobs measured · Processing: {seconds} s · Observed interval: {interval} s · Passes: {runs} · Observed errors: {errors} · Email results reused: {reuses}",
+    "partial": "Partial data",
+    "unavailable": "Unavailable",
+    "provider": "{name}: starts {starts} · Status checks {polls} · Reads {reads} · Errors {failed} · Operation wait {seconds} s",
+    "measurement_hint": "Processing time excludes pauses; the observed interval includes them. Status checks do not indicate new charges. Only passes recorded by this version are measured, without reconstructing history; data may be incomplete."
   }
 }

@@ -1,4 +1,36 @@
 {
+  "CampaignRecoveryPanel": {
+    "title": "Ripresa della campagna",
+    "totals": "Costi registrati nel budget: {recorded} · Prenotazioni: {reserved} · Operazioni da verificare: {uncertain}",
+    "scope_hint": "I costi registrati possono essere stime e non sono fatture. Le prenotazioni non sono addebiti confermati; gli esiti incerti mantengono il budget impegnato.",
+    "details": "Operazioni e motivi del blocco",
+    "state_recorded": "Costo registrato",
+    "state_reserved": "Budget prenotato",
+    "job_budget": "Fermo prima della chiamata per budget",
+    "job_saved": "Risultato o identificativo salvato",
+    "job_uncertain": "Esito della richiesta incerto",
+    "job_manual": "Verifica tecnica necessaria",
+    "review_required": "La ripresa resta bloccata: riconciliare le richieste incerte o gli altri errori prima di continuare. Aumentare il limite non risolve questi esiti.",
+    "running": "Attendi il completamento dei job in esecuzione prima di modificare il budget.",
+    "budget_label": "Nuovo limite totale campagna (USD)",
+    "review_label": "Ho controllato costi, prenotazioni e motivi del blocco.",
+    "increase": "Aumenta solo il limite",
+    "resume": "Riprendi {count} job verificati",
+    "error_update": "Modifica non applicata. Ricarica e controlla budget e stato dei job."
+  },
+  "ResultCostSummary": {
+    "title": "Costo per risultato utile",
+    "email_results": "{count} email valide distinte · Costo per email valida: {cost}",
+    "sequence_results": "{count} contatti con sequenza completa · Costo per sequenza pronta: {cost}",
+    "unavailable": "Non disponibile",
+    "catch_all": "{count} indirizzi catch-all distinti, esclusi dal conteggio delle email valide.",
+    "basis_provider": "Importo comunicato dal provider",
+    "basis_historical": "Storico: stima o importo provider non distinguibili",
+    "basis_estimate": "Stima registrata",
+    "email_scope": "Perimetro: costi registrati di questa ricerca, compresi tentativi senza risultato. Email valide secondo il provider; nessuna autorizzazione al contatto implicita.",
+    "sequence_scope": "Perimetro: solo costi registrati di questa campagna. Acquisizione e verifica email pagate nelle ricerche lead sono escluse. Il caricamento di un CSV non verifica le email.",
+    "unknown_costs": "Costi mancanti, richieste incerte, hosting, abbonamenti e invii sono esclusi: il valore non rappresenta il costo completo di acquisizione."
+  },
   "LocaleSwitcher": {
     "change_language": "Cambia lingua",
     "label_en": "Inglese",
@@ -136,7 +168,7 @@
     "status_reserve": "In riserva",
     "status_filtered_out": "Escluso dal filtro",
     "status_no_email": "Nessuna email",
-    "status_failed": "Fallito"
+    "status_failed": "Bloccato: verifica necessaria"
   },
   "LeadSearchesPage": {
     "title": "Ricerca lead",
@@ -158,6 +190,10 @@
     "description": "Scegli cosa cercare e dove. Per ogni attività vengono cercati il decisore e un’email verificata."
   },
   "LeadSearchForm": {
+    "label_categories": "Categorie Maps ammesse (facoltativo)",
+    "placeholder_categories": "Centro estetico, Estetista, Salone di bellezza",
+    "hint_categories": "Separa le categorie con virgole o vai a capo. Corrispondenza esatta, ignorando maiuscole e spazi ripetuti. Le categorie diverse o mancanti restano in riserva senza ricerca contatti. Lascia vuoto per ammetterle tutte. Il filtro non riduce il costo delle schede Maps già raccolte.",
+    "error_categories": "Inserisci al massimo 20 categorie, fino a 120 caratteri ciascuna.",
     "label_name": "Nome della ricerca",
     "error_name": "Inserisci un nome.",
     "label_terms": "Cosa cercare",
@@ -177,7 +213,8 @@
     "label_processor": "Profondità della ricerca",
     "estimate": "Costo stimato al massimo {cost}, se ogni attività viene analizzata e ne viene cercata l’email.",
     "button_create": "Avvia la ricerca",
-    "error_create": "La ricerca non è stata avviata."
+    "error_create": "La ricerca non è stata avviata.",
+    "filter_effect": "Filtro sito: {website}. Le categorie selezionate sono controllate prima della ricerca contatti. Filtri restrittivi possono ridurre la copertura e richiedere altri round Maps; non garantiscono un costo totale più basso."
   },
   "SearchTermsInput": {
     "placeholder_full": "Hai raggiunto il massimo di ricerche",
@@ -206,9 +243,13 @@
     "column_website": "Sito",
     "column_person": "Decisore",
     "column_email": "Email",
-    "column_status": "Stato"
+    "column_status": "Stato",
+    "badge_review": "Da verificare"
   },
   "LeadSearchPage": {
+    "categories_line": "Categorie ammesse: {categories}",
+    "reserve_summary": "Schede in riserva da revisionare ({count})",
+    "reserve_hint": "Schede conservate senza ricerca contatti: categoria diversa o mancante, filtro sito o limite raggiunto. Controlla categoria e sito prima di una nuova ricerca. Una categoria Maps non prova l’idoneità commerciale.",
     "back_link": "Tutte le ricerche",
     "meta_line": "{terms} · {location} · {filter} · creata il {date}",
     "spend_line": "Spesa stimata {total}",
@@ -650,5 +691,24 @@
     "title": "Questa pagina non esiste",
     "description": "Il link potrebbe non essere più valido, oppure la campagna è stata eliminata.",
     "button": "Torna alla dashboard"
+  },
+  "LeadSearchSummary": {
+    "title": "Risultati della ricerca",
+    "collected": "Schede raccolte",
+    "matching": "Compatibili con i filtri",
+    "email_found": "Email salvate distinte",
+    "valid": "Email valide distinte",
+    "funnel_hint": "Schede attualmente associate alla ricerca. I filtri non provano l’idoneità commerciale. Le email salvate possono includere catch-all; gli esiti senza un indirizzo salvato sono esclusi.",
+    "outcomes": "In lavorazione: {pending} · Senza email utilizzabile: {noEmail} · Da verificare: {review} · Contatti bloccati: {blocked} · Lavorazioni fallite: {failedJobs}",
+    "reserve": "In riserva: {count} · Schede riutilizzate da una riserva precedente: {reused}",
+    "measurement_title": "Tempi e operazioni osservate",
+    "phase_maps": "Raccolta schede",
+    "phase_research": "Ricerca referente",
+    "phase_email": "Ricerca e verifica email",
+    "phase": "{phase}: {measured}/{jobs} lavorazioni misurate · Elaborazione: {seconds} s · Intervallo osservato: {interval} s · Esecuzioni: {runs} · Errori osservati: {errors} · Risultati email riutilizzati: {reuses}",
+    "partial": "Dati parziali",
+    "unavailable": "Non disponibile",
+    "provider": "{name}: avvii {starts} · Controlli stato {polls} · Letture {reads} · Errori {failed} · Attesa operazioni {seconds} s",
+    "measurement_hint": "Il tempo di elaborazione esclude le pause; l’intervallo osservato le include. I controlli di stato non indicano nuovi addebiti. Sono misurate solo le esecuzioni registrate da questa versione, senza ricostruire lo storico; i dati possono essere incompleti."
   }
 }

@@ -1,0 +1,126 @@
+MISURAZIONE E USABILITÀ DELLO SCRAPER — 8 ottobre 2026
+
+RISULTATO
+Nel dettaglio ricerca compare un riepilogo delle schede attualmente associate:
+- raccolte;
+- compatibili con i filtri scelti;
+- email salvate distinte;
+- email valide distinte.
+Compatibilità non significa qualificazione commerciale. Le email catch-all e
+quelle senza verifica valida vengono mostrate come “Da verificare”, anche quando
+il vecchio stato operativo del lead è ready. I contatti falliti sono indicati come
+bloccati con il motivo disponibile. La logica di acquisizione/invio non cambia.
+Sono separati contatti in lavorazione, senza email utilizzabile, da verificare,
+bloccati, job falliti, schede in riserva e schede riutilizzate.
+
+Prima dell'avvio, il form chiarisce l'effetto del filtro sito e delle categorie:
+la selezione più restrittiva può richiedere altri round Maps e non garantisce
+una spesa complessiva inferiore. Nessun valore di default è cambiato.
+
+MISURAZIONE
+Nuova colonna nullable job.observation, aggregata per job:
+- prima e ultima esecuzione osservate;
+- numero di passaggi del worker ed errori di quei passaggi;
+- tempo attivo del gestore del job;
+- operazioni applicative per provider: avvii, polling, letture, errori e durata;
+- riusi di esiti email da checkpoint;
+- indicazione di dati parziali quando rilevabile.
+Nessun recapito, contenuto della risposta, token o credenziale viene copiato nelle
+metriche. I checkpoint e gli identificativi delle richieste pagate restano intatti.
+
+Tempi separati:
+1. Elaborazione: somma del tempo speso nei gestori durante le esecuzioni osservate,
+   comprese chiamate e letture DB del gestore, ma escluso il salvataggio delle metriche.
+2. Intervallo osservato: dalla prima all'ultima esecuzione registrata della fase;
+   include le pause tra esse. Non è una durata completa ricostruita retroattivamente.
+3. Durata operazioni provider: tempo trascorso nelle funzioni del servizio.
+Con worker concorrenti i tempi attivi sono sommati; non sottrarli all'intervallo
+per ricavare automaticamente un tempo di coda.
+
+Per provider si contano invocazioni delle funzioni applicative, non ogni singola
+richiesta HTTP interna, pagina scaricata o retry dell'SDK. Polling, letture e avvii
+sono distinti: il contatore non determina gli addebiti. Costi e stime restano nel
+registro Usage esistente, senza nuove tariffe o ricostruzioni della spesa.
+Sono coperti Google nella scansione del worker, Apify, Parallel per i lead,
+Prospeo e MillionVerifier nei checkpoint email. Autocomplete del form, campagne
+copywriting, webhook, invii e servizi esterni al worker lead non sono misurati qui.
+
+I contatori vengono raccolti nel contesto asincrono del job e salvati alla fine
+con una transazione breve che blocca solo quel job. L'aggregazione non perde
+incrementi se due registrazioni coincidono. Un errore di telemetria produce un
+avviso nel log ma non ripete una richiesta, non invalida un job completato e
+non sostituisce l'errore originale del gestore.
+Non è un registro contabile durevole di ogni richiesta: se il processo si interrompe
+prima del salvataggio finale, l'ultima esecuzione può mancare. La UI avvisa che
+la copertura può essere incompleta. Nessun tentativo di stimare i dati persi.
+Lo storico senza osservazioni mostra tempo non disponibile, non zero inventato.
+
+AGGIORNAMENTO UI
+L'endpoint stato restituisce una revisione basata sull'ultima osservazione salvata
+in tutti i job della ricerca, anche dopo il completamento. Il polling esistente
+aggiorna così il riepilogo quando cambiano le metriche, senza nuove chiamate di
+polling o un endpoint aggiuntivo. L'accesso rimane autenticato e limitato alla
+stessa organizzazione tramite la ricerca già verificata.
+Non ci sono nuovi filtri, moduli o schede di qualificazione commerciale.
+Non sono state aggiunte cache o maggiore concorrenza.
+
+SCHEMA E PUBBLICAZIONE
+Nuova migrazione 0016_job_observation.sql e relativo snapshot/journal.
+Aggiunge una sola colonna JSON nullable, senza backfill o eliminazione di dati.
+Applicata soltanto a database effimeri dei test e della build.
+Prima di una futura pubblicazione applicare le migrazioni necessarie (inclusa la
+0015 categorie ancora locale) prima di eseguire il nuovo codice: le letture dei
+job richiedono la colonna observation. Nessun deploy o DB remoto modificato qui.
+
+VERIFICHE
+- Suite unitari/storage: 307 test superati prima dell'ultimo test endpoint.
+- Verifica finale mirata: 2 test riepilogo + 6 integrazioni osservazioni/endpoint
+  superati, includendo revisione delle metriche dopo completamento dei job.
+- 5 test browser Chrome: dati storici non disponibili, tempo attivo vs intervallo,
+  polling, catch-all e motivo blocco su mobile, due regressioni del form categorie.
+- Lint con controllo tipi e traduzioni senza errori.
+- Build locale con database in memoria, migrazioni e auth effimera.
+- Controllo visivo del riepilogo a 390 px e screenshot anche desktop a 1100 px,
+  usando dati sintetici, non una ricerca o misurazione reale.
+- Diff senza errori; modifiche precedenti preservate.
+Le prove certificano funzionamento locale, non un risparmio o tempi dei provider.
+Nessuna richiesta a pagamento, importazione, invio, push o pubblicazione.
+
+FILE NUOVI
+- src/utils/JobObservation.ts
+- src/libs/JobObservation.ts
+- src/utils/LeadSearchSummary.ts e relativo test
+- src/components/LeadSearchSummary.tsx e relativo test browser
+- tests/integration/JobObservation.integ.ts
+- migrations/0016_job_observation.sql e meta/0016_snapshot.json
+- questo documento
+
+FILE ESISTENTI MODIFICATI IN QUESTO PASSO
+- src/models/Schema.ts
+- src/libs/JobWorker.ts
+- src/libs/LeadJobs.ts
+- src/libs/LeadEmailCheckpoint.ts
+- src/app/[locale]/dashboard/leads/[id]/page.tsx
+- src/app/api/lead-searches/[id]/status/route.ts
+- src/components/LeadSearchProgress.tsx
+- src/components/LeadSearchForm.tsx
+- src/components/LeadTable.tsx
+- src/locales/it.json e en.json
+- migrations/meta/_journal.json
+- vitest.config.ts
+
+RISCHI E ROLLBACK
+La registrazione aggiunge una transazione locale (lettura e aggiornamento) per
+passaggio del worker lead. Il suo costo/tempo in produzione è ancora da misurare.
+Non crea una transazione per ogni polling del browser o operazione provider.
+Le osservazioni sono aggregate per job: non si conserva un elenco illimitato
+con una riga per chiamata. I dati storici possono restare incompleti.
+
+Originali dei file esistenti salvati in:
+../rollback/scraper-observability-2026-10-08/ rispetto alla cartella scraper-local.
+Comprendono le modifiche precedenti a categorie e ripresa campagne.
+Per il rollback ripristinare solo quei file e annullare solo i nuovi file di
+questo passo, senza reset/clean globale. Se la migrazione fosse già applicata,
+la colonna nullable può rimanere: il codice precedente la ignora. Evitare di
+cancellare le osservazioni senza un'esigenza e autorizzazione esplicite.
+Anteprime sintetiche in ../output/scraper-observability-2026-10-08/.

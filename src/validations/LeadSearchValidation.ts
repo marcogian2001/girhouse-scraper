@@ -19,6 +19,13 @@ export const LeadSearchValidation = z.object({
   locationPlaceId: z.string().trim().min(1).max(300),
   maxResults: z.number().int().min(1).max(MAX_LEADS_PER_SEARCH),
   websiteFilter: z.enum(['any', 'without', 'with']).default('any'),
+  allowedCategories: z
+    .array(z.string().trim().min(1).max(120))
+    .max(20)
+    .default([])
+    .transform((categories) => [
+      ...new Set(categories.map((category) => category.replaceAll(/\s+/gu, ' ').toLowerCase())),
+    ]),
   processor: z.enum(['lite', 'base', 'core', 'pro']).default('base'),
 });
 

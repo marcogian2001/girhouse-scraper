@@ -1,0 +1,1 @@
+ALTER TABLE "lead_search" ADD COLUMN "allowed_categories" jsonb DEFAULT '[]'::jsonb NOT NULL;

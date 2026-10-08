@@ -10,7 +10,7 @@ export class CopywritingReviewRequiredError extends Error {
   override name = 'CopywritingReviewRequiredError';
 }
 
-const sequenceSchema = z.object({
+export const sequenceSchema = z.object({
   provider: z.enum(['anthropic', 'openai']),
   model: z.enum(COPYWRITING_MODEL_IDS),
   externalId: z.string(),
