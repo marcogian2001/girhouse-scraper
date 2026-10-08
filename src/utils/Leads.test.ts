@@ -3,6 +3,7 @@ import { autoDetectMapping } from './Csv';
 import { ITALIAN_PROVINCES } from './ItalianProvinces';
 import {
   isPecEmail,
+  matchesCategoryFilter,
   matchesWebsiteFilter,
   pickEmailRoutes,
   readPublicEmail,
@@ -30,6 +31,44 @@ describe('Leads', () => {
     it('keeps only businesses with a website', () => {
       expect(matchesWebsiteFilter({ hasWebsite: true, filter: 'with' })).toBeTruthy();
       expect(matchesWebsiteFilter({ hasWebsite: false, filter: 'with' })).toBeFalsy();
+    });
+  });
+
+  describe('Category filter', () => {
+    it('admits missing categories when the filter is empty', () => {
+      expect(matchesCategoryFilter({ category: null, allowedCategories: [] })).toBeTruthy();
+    });
+
+    it('matches exact categories ignoring case and repeated spaces', () => {
+      expect(
+        matchesCategoryFilter({
+          category: '  Centro\t ESTETICO  ',
+          allowedCategories: ['centro estetico'],
+        }),
+      ).toBeTruthy();
+      expect(
+        matchesCategoryFilter({
+          category: 'Centro estetico medico',
+          allowedCategories: ['centro estetico'],
+        }),
+      ).toBeFalsy();
+    });
+
+    it('retains excluded and unknown categories without researching them', () => {
+      const rows = [
+        { hasWebsite: true, category: 'Estetista' },
+        { hasWebsite: true, category: 'Dentista' },
+        { hasWebsite: true, category: null },
+        { hasWebsite: false, category: 'Estetista' },
+      ];
+      const split = splitScrapedPlaces({
+        rows,
+        filter: 'with',
+        allowedCategories: ['estetista'],
+        missing: 4,
+      });
+      expect(split.wanted).toStrictEqual([rows[0]]);
+      expect(split.reserve).toStrictEqual(rows.slice(1));
     });
   });
 

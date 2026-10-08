@@ -102,6 +102,20 @@ export const matchesWebsiteFilter = (options: { hasWebsite: boolean; filter: Web
   return true;
 };
 
+/**
+ * Keeps only exact Maps categories when a search has a category filter.
+ * @param options The category and allowed categories of the search.
+ * @returns Whether the category is admitted before paid research.
+ */
+export const matchesCategoryFilter = (options: {
+  category?: string | null;
+  allowedCategories: string[];
+}) =>
+  options.allowedCategories.length === 0 ||
+  options.allowedCategories.some(
+    (category) => toSearchKey(category) === toSearchKey(options.category ?? ''),
+  );
+
 /** Labels of certified email (PEC) domains that do not start or end with "pec". */
 const PEC_DOMAIN_LABELS = new Set(['legalmail', 'postecert', 'postacert', 'sicurezzapostale']);
 
@@ -174,13 +188,21 @@ export const uniqueByPlaceId = <Place extends { placeId: string }>(places: Place
  * @param options.missing How many leads the search still needs.
  * @returns The businesses to research now, and the rest.
  */
-export const splitScrapedPlaces = <Row extends { hasWebsite: boolean }>(options: {
+export const splitScrapedPlaces = <
+  Row extends { hasWebsite: boolean; category?: string | null },
+>(options: {
   rows: Row[];
+  allowedCategories?: string[];
   filter: WebsiteFilter;
   missing: number;
 }) => {
-  const matching = options.rows.filter((row) =>
-    matchesWebsiteFilter({ hasWebsite: row.hasWebsite, filter: options.filter }),
+  const matching = options.rows.filter(
+    (row) =>
+      matchesWebsiteFilter({ hasWebsite: row.hasWebsite, filter: options.filter }) &&
+      matchesCategoryFilter({
+        category: row.category,
+        allowedCategories: options.allowedCategories ?? [],
+      }),
   );
   const wanted = matching.slice(0, options.missing);
 

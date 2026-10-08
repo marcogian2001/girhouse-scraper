@@ -1,4 +1,4 @@
-import { and, count, eq, inArray, notInArray } from 'drizzle-orm';
+import { and, count, eq, notInArray, sql } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 import { getApiContext, notFound, unauthorized } from '@/libs/ApiAuth';
 import { db } from '@/libs/DB';
@@ -37,11 +37,15 @@ export const GET = async (_request: Request, props: { params: Promise<{ id: stri
     .groupBy(leadSchema.status);
 
   const [outstandingJobs] = await db
-    .select({ total: count() })
+    .select({
+      total:
+        sql<number>`count(*) filter (where ${jobSchema.status} in ('queued', 'running'))`.mapWith(
+          Number,
+        ),
+      observationRevision: sql<string | null>`max(${jobSchema.observation} ->> 'lastFinishedAt')`,
+    })
     .from(jobSchema)
-    .where(
-      and(eq(jobSchema.leadSearchId, search.id), inArray(jobSchema.status, ['queued', 'running'])),
-    );
+    .where(eq(jobSchema.leadSearchId, search.id));
 
   return NextResponse.json({
     status: search.status,
@@ -49,5 +53,6 @@ export const GET = async (_request: Request, props: { params: Promise<{ id: stri
     leads: Object.fromEntries(leadCounts.map((row) => [row.status, row.total])),
     // Non-zero while the worker still has something to do for this search
     outstandingJobs: outstandingJobs?.total ?? 0,
+    observationRevision: outstandingJobs?.observationRevision ?? null,
   });
 };

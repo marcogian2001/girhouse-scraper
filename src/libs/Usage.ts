@@ -198,12 +198,12 @@ export const recordApifyUsage = async (
       leadSearchId: options.leadSearchId,
       provider: 'apify',
       externalId: options.runId,
-      model: 'google_maps',
+      model: 'google_maps_reported',
       costMicros: options.costMicros,
     })
     .onConflictDoUpdate({
       target: [apiUsageSchema.provider, apiUsageSchema.externalId],
-      set: { costMicros: options.costMicros },
+      set: { costMicros: options.costMicros, model: 'google_maps_reported' },
     });
 };
 

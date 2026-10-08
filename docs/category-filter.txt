@@ -1,0 +1,56 @@
+FILTRO CATEGORIE MAPS — 8 ottobre 2026
+
+Stato: implementazione locale sul branch improvement/scraper-costs, base 6848ccc.
+Nessun commit, push, deploy, run a pagamento, importazione o invio eseguito.
+
+COMPORTAMENTO
+- Nuovo campo facoltativo nelle ricerche manuali: Categorie Maps ammesse.
+- Fino a 20 categorie di 120 caratteri, separate da virgole o righe.
+- Confronto esatto della categoria principale Maps; maiuscole e spazi ripetuti ignorati. Nessuna traduzione, sinonimo o corrispondenza parziale implicita.
+- Campo vuoto: comportamento precedente. Le ricerche storiche e quelle pianificate ricevono per default una lista vuota.
+- Filtro applicato alle schede nuove prima dei job Parallel e alle schede recuperate dalla riserva. Restano attivi anche filtro sito e limite risultati.
+- Categorie diverse o mancanti: schede in riserva, senza job di ricerca contatti. Nessuna cancellazione degli originali.
+- Nel dettaglio ricerca: elenco delle categorie configurate e sezione apribile con le schede in riserva, inclusa la categoria quando disponibile.
+- Nessuna riqualificazione retroattiva dei lead già elaborati. Nessun comando di approvazione, modifica o ripresa delle singole schede introdotto.
+- Limite esistente di tre run Apify conservato. Il filtro non riduce il costo delle schede Maps già raccolte; per raggiungere il numero richiesto possono servire altri round entro il limite esistente. Non è un tetto di spesa.
+- La categoria non prova bisogno commerciale, qualità del contatto o autorizzazione al contatto.
+
+FILE MODIFICATI
+src/models/Schema.ts
+src/validations/LeadSearchValidation.ts
+src/validations/LeadSearchValidation.test.ts
+src/utils/Leads.ts
+src/utils/Leads.test.ts
+src/libs/LeadJobs.ts
+src/components/LeadSearchForm.tsx
+src/app/[locale]/dashboard/leads/[id]/page.tsx
+src/locales/it.json
+src/locales/en.json
+vitest.config.ts
+migrations/meta/_journal.json
+
+FILE NUOVI
+migrations/0015_lead_category_filter.sql
+migrations/meta/0015_snapshot.json
+src/components/LeadSearchForm.test.tsx
+tests/integration/LeadCategoryFilter.integ.ts
+docs/category-filter.txt
+
+L'API esistente salva già i campi validati: nessuna modifica al route handler necessaria.
+
+VERIFICHE
+- 281 test unitari e di integrazione superati: 13 nuovi casi su selezione, validazione e riserva.
+- 2 nuovi test browser superati in Chrome: filtro vuoto, separatori, normalizzazione, duplicati e cancellazione del filtro.
+- Database PGlite in memoria con migrazioni reali; provider simulati e chiamate di rete vietate nel test di filtro.
+- Lint con controllo tipi, check traduzioni e git diff --check superati.
+- Bun non disponibile nell'ambiente: eseguiti gli stessi script consentiti tramite npm run.
+- Test con variabile DATABASE_URL fittizia per la validazione ambiente; nessun database reale collegato.
+- Browser con configurazione temporanea per Chrome installato, eliminata dopo i test.
+- Non eseguiti build completa, provider reali, intero flusso browser, PostgreSQL remoto o deploy.
+
+MIGRAZIONE E ROLLBACK
+0015 aggiunge lead_search.allowed_categories JSONB NOT NULL con default [].
+Applicata solo ai database temporanei dei test. Prima dell'uso in staging/produzione, coordinare applicazione della migrazione prima del codice nuovo; il nuovo schema richiede la colonna anche per le letture delle ricerche precedenti.
+Originali dei file modificati conservati in ../rollback/scraper-category-filter-2026-10-08/.
+Per annullare il lavoro locale: ripristinare solo questi originali e rimuovere solo i nuovi file di questo intervento. Preservare i precedenti controlli sui consumi; nessun reset globale.
+Se la migrazione fosse già applicata, conservare colonna e dati durante il rollback del codice; non eseguire SQL distruttivo. Coordinare worker e ricerche in corso: il codice precedente non applica il filtro.

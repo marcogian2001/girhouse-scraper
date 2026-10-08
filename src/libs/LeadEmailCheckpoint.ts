@@ -4,6 +4,7 @@ import { jobSchema } from '@/models/Schema';
 import { verifyEmail } from '@/services/MillionVerifier';
 import { findEmail } from '@/services/Prospeo';
 import { db } from './DB';
+import { observeProviderOperation, observeSavedResult } from './JobObservation';
 
 /** Stops retries when an email provider may already have charged the request. */
 export class LeadEmailReviewRequiredError extends Error {
@@ -29,6 +30,7 @@ const checkpoint = async <Result>(options: {
   if (state !== undefined) {
     const saved = z.object({ result: options.schema }).safeParse(state);
     if (saved.success) {
+      observeSavedResult();
       return { operationId, result: saved.data.result };
     }
     throw new LeadEmailReviewRequiredError(
@@ -47,7 +49,11 @@ const checkpoint = async <Result>(options: {
   }
   let result: Result | 'rate_limited';
   try {
-    result = await options.run();
+    result = await observeProviderOperation({
+      provider: options.provider,
+      kind: 'starts',
+      run: options.run,
+    });
   } catch {
     throw new LeadEmailReviewRequiredError(
       'Email request outcome is unknown; inspect the provider',

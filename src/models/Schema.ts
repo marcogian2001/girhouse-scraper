@@ -14,6 +14,7 @@ import {
   unique,
   uuid,
 } from 'drizzle-orm/pg-core';
+import type { JobObservation } from '@/utils/JobObservation';
 
 // This file defines the structure of your database tables using the Drizzle ORM.
 
@@ -410,6 +411,7 @@ export const leadSearchSchema = pgTable(
     // Google place id of the area, missing on searches made before areas were scanned
     locationPlaceId: text('location_place_id'),
     maxResults: integer('max_results').notNull(),
+    allowedCategories: jsonb('allowed_categories').$type<string[]>().notNull().default([]),
     websiteFilter: websiteFilterEnum('website_filter').notNull().default('any'),
     processor: parallelProcessorEnum('processor').notNull().default('base'),
     status: leadSearchStatusEnum('status').notNull().default('searching'),
@@ -560,6 +562,7 @@ export const jobSchema = pgTable(
     status: jobStatusEnum('status').notNull().default('queued'),
     // Job-type specific arguments, e.g. the mailboxes a push should send from
     payload: jsonb('payload').$type<Record<string, unknown>>(),
+    observation: jsonb('observation').$type<JobObservation>(),
     attempts: integer('attempts').notNull().default(0),
     lastError: text('last_error'),
     runAfter: timestamp('run_after', { mode: 'date' }).defaultNow().notNull(),

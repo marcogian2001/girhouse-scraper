@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
+import { Textarea } from '@/components/ui/textarea';
 import { useRouter } from '@/libs/I18nNavigation';
 import type { leadSearchSchema, parallelProcessorEnum } from '@/models/Schema';
 import { microsToUsd, USD_FORMAT } from '@/utils/UsageFormat';
@@ -51,6 +52,7 @@ export const LeadSearchForm = (props: { pricing: LeadPricing }) => {
     defaultValues: {
       name: '',
       searchTerms: [],
+      allowedCategories: [],
       location: '',
       locationPlaceId: '',
       maxResults: 50,
@@ -119,6 +121,31 @@ export const LeadSearchForm = (props: { pricing: LeadPricing }) => {
           />
           <FieldDescription>{t('hint_terms')}</FieldDescription>
           {form.formState.errors.searchTerms && <FieldError>{t('error_terms')}</FieldError>}
+        </Field>
+
+        <Field>
+          <FieldLabel htmlFor="search-categories">{t('label_categories')}</FieldLabel>
+          <Textarea
+            id="search-categories"
+            placeholder={t('placeholder_categories')}
+            aria-invalid={Boolean(form.formState.errors.allowedCategories)}
+            onChange={(event) => {
+              form.setValue(
+                'allowedCategories',
+                event.target.value
+                  .split(/[,\n]/u)
+                  .map((category) => category.trim())
+                  .filter(Boolean),
+                {
+                  shouldValidate: form.formState.isSubmitted,
+                },
+              );
+            }}
+          />
+          <FieldDescription>{t('hint_categories')}</FieldDescription>
+          {form.formState.errors.allowedCategories && (
+            <FieldError>{t('error_categories')}</FieldError>
+          )}
         </Field>
 
         <div className="grid gap-4 sm:grid-cols-2">
@@ -209,6 +236,12 @@ export const LeadSearchForm = (props: { pricing: LeadPricing }) => {
             </Select>
           </Field>
         </div>
+
+        <Alert>
+          <AlertDescription>
+            {t('filter_effect', { website: t(`website_${websiteFilter}`) })}
+          </AlertDescription>
+        </Alert>
 
         <p className="text-sm text-muted-foreground">{t('estimate', { cost: estimate })}</p>
 

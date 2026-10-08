@@ -16,6 +16,7 @@ type StatusPayload = {
   status: LeadSearchStatus;
   leads: Record<string, number>;
   outstandingJobs: number;
+  observationRevision: string | null;
 };
 
 /** Leads in these states have nothing left for the worker to do. */

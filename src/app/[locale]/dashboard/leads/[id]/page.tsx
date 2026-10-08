@@ -1,10 +1,12 @@
-import { and, asc, eq, notInArray } from 'drizzle-orm';
+import { and, asc, eq } from 'drizzle-orm';
 import { ArrowLeft, Send } from 'lucide-react';
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { DeleteLeadSearchButton } from '@/components/DeleteLeadSearchButton';
 import { LeadSearchProgress } from '@/components/LeadSearchProgress';
+import { LeadSearchSummary } from '@/components/LeadSearchSummary';
 import { LeadTable } from '@/components/LeadTable';
+import { ResultCostSummary } from '@/components/ResultCostSummary';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -12,9 +14,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import { getApiContext } from '@/libs/ApiAuth';
 import { db } from '@/libs/DB';
 import { Link } from '@/libs/I18nNavigation';
+import { countVerifiedEmails, getResultCostProviders } from '@/libs/ResultCosts';
 import { getUsageTotals } from '@/libs/Usage';
-import { leadSchema, leadSearchSchema } from '@/models/Schema';
-import { RESERVE_LEAD_STATUSES } from '@/utils/Leads';
+import { jobSchema, leadSchema, leadSearchSchema } from '@/models/Schema';
+import { summarizeLeadSearch } from '@/utils/LeadSearchSummary';
 import { microsToUsd, USD_FORMAT } from '@/utils/UsageFormat';
 
 export default async function LeadSearchPage(props: {
@@ -46,16 +49,35 @@ export default async function LeadSearchPage(props: {
     leadSearchId: search.id,
   });
 
-  const leads = await db
+  const allLeads = await db
     .select()
     .from(leadSchema)
-    .where(
-      and(
-        eq(leadSchema.leadSearchId, search.id),
-        notInArray(leadSchema.status, [...RESERVE_LEAD_STATUSES]),
-      ),
-    )
+    .where(eq(leadSchema.leadSearchId, search.id))
     .orderBy(asc(leadSchema.createdAt), asc(leadSchema.company));
+
+  const reserve = allLeads.filter(
+    (lead) => lead.status === 'reserve' || lead.status === 'filtered_out',
+  );
+  const leads = allLeads.filter(
+    (lead) => lead.status !== 'reserve' && lead.status !== 'filtered_out',
+  );
+
+  const verified = countVerifiedEmails(allLeads);
+  const resultProviders = await getResultCostProviders({
+    leadSearchId: search.id,
+    organizationId: search.organizationId,
+  });
+
+  const jobs = await db
+    .select({ type: jobSchema.type, status: jobSchema.status, observation: jobSchema.observation })
+    .from(jobSchema)
+    .where(eq(jobSchema.leadSearchId, search.id));
+  const summary = summarizeLeadSearch({
+    leads: allLeads,
+    jobs,
+    websiteFilter: search.websiteFilter,
+    allowedCategories: search.allowedCategories,
+  });
 
   const readyCount = leads.filter((lead) => lead.status === 'ready').length;
   // Only searches that scan their area know when it has run out of new businesses
@@ -87,6 +109,12 @@ export default async function LeadSearchPage(props: {
           })}
         </p>
 
+        {search.allowedCategories.length > 0 && (
+          <p className="text-sm text-muted-foreground">
+            {t('categories_line', { categories: search.allowedCategories.join(', ') })}
+          </p>
+        )}
+
         <p className="text-sm text-muted-foreground">
           {t('spend_line', {
             total: format.number(microsToUsd(usage.totalCostMicros), USD_FORMAT),
@@ -100,6 +128,19 @@ export default async function LeadSearchPage(props: {
           <LeadSearchProgress leadSearchId={search.id} initialStatus={search.status} />
         </CardContent>
       </Card>
+
+      <LeadSearchSummary
+        summary={summary}
+        validEmails={verified.valid}
+        reusedPlaces={search.reserveClaimed}
+      />
+
+      <ResultCostSummary
+        kind="email"
+        results={verified.valid}
+        catchAll={verified.catchAll}
+        providers={resultProviders}
+      />
 
       {isShort && (
         <Alert>
@@ -129,6 +170,15 @@ export default async function LeadSearchPage(props: {
       </div>
 
       {leads.length > 0 && <LeadTable leads={leads} />}
+      {reserve.length > 0 && (
+        <details className="space-y-3">
+          <summary className="cursor-pointer text-sm font-medium">
+            {t('reserve_summary', { count: reserve.length })}
+          </summary>
+          <p className="text-sm text-muted-foreground">{t('reserve_hint')}</p>
+          <LeadTable leads={reserve} />
+        </details>
+      )}
     </div>
   );
 }
