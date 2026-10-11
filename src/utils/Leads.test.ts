@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { autoDetectMapping } from './Csv';
 import { ITALIAN_PROVINCES } from './ItalianProvinces';
 import {
+  countLeadsToTake,
+  estimateEmailYield,
   isPecEmail,
   matchesWebsiteFilter,
   pickEmailRoutes,
@@ -51,6 +53,10 @@ describe('Leads', () => {
       expect(readPublicEmail('rossi@arubapec.it')).toBeNull();
     });
 
+    it('rejects a booking platform address', () => {
+      expect(readPublicEmail('contatto@miodottore.it')).toBeNull();
+    });
+
     it('picks the first ordinary address out of several', () => {
       expect(readPublicEmail('rossi@pec.it; Info@StudioRossi.it, altro@gmail.com')).toBe(
         'info@studiorossi.it',
@@ -89,6 +95,15 @@ describe('Leads', () => {
       });
 
       expect(routes).toStrictEqual({ prospeo: false, publicEmail: true });
+    });
+
+    it('skips Prospeo for a profile on a booking platform', () => {
+      const routes = pickEmailRoutes({
+        lead: { ...named, domain: 'miodottore.it' },
+        publicEmail: null,
+      });
+
+      expect(routes).toStrictEqual({ prospeo: false, publicEmail: false });
     });
 
     it('skips Prospeo without a decision maker name', () => {
@@ -133,6 +148,52 @@ describe('Leads', () => {
 
     it('caps the places of one run', () => {
       expect(scrapeBudget({ missing: 1000, filter: 'with' })).toBe(1000);
+    });
+  });
+
+  describe('Email yield', () => {
+    const none = { ready: 0, settled: 0 };
+
+    it('assumes half the leads get an email without any history', () => {
+      expect(estimateEmailYield({ search: none, organization: none })).toBe(0.5);
+    });
+
+    it('starts from the organization history', () => {
+      const organization = { ready: 300, settled: 1000 };
+
+      expect(estimateEmailYield({ search: none, organization })).toBeCloseTo(0.304, 3);
+    });
+
+    it('follows the search outcomes once many leads settled', () => {
+      const search = { ready: 720, settled: 900 };
+
+      expect(estimateEmailYield({ search, organization: none })).toBeCloseTo(0.793, 3);
+    });
+
+    it('never assumes fewer than one email every five leads', () => {
+      const search = { ready: 0, settled: 500 };
+
+      expect(estimateEmailYield({ search, organization: search })).toBe(0.2);
+    });
+  });
+
+  describe('Leads to take', () => {
+    it('takes enough leads to reach the target at the expected yield', () => {
+      expect(countLeadsToTake({ target: 500, ready: 0, pending: 0, emailYield: 0.5 })).toBe(1000);
+    });
+
+    it('counts the pending leads toward the target', () => {
+      expect(countLeadsToTake({ target: 500, ready: 200, pending: 400, emailYield: 0.5 })).toBe(
+        200,
+      );
+    });
+
+    it('takes nothing once the pending leads cover the target', () => {
+      expect(countLeadsToTake({ target: 500, ready: 300, pending: 500, emailYield: 0.5 })).toBe(0);
+    });
+
+    it('takes nothing once the target is reached', () => {
+      expect(countLeadsToTake({ target: 500, ready: 520, pending: 0, emailYield: 0.5 })).toBe(0);
     });
   });
 

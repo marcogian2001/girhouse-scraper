@@ -70,8 +70,8 @@ export const planDailySearches = (options: { remaining: number; leadsPerSearch: 
  * Estimates how long the places already found will last at the daily pace.
  * @param options The call options.
  * @param options.unusedPlaces Places found but never scraped.
- * @param options.dailyLeads Leads asked for each day.
+ * @param options.dailyPlaces Places scraped each day to find the emails asked for.
  * @returns The months left, rounded up to one decimal.
  */
-export const estimateMonths = (options: { unusedPlaces: number; dailyLeads: number }) =>
-  Math.ceil((options.unusedPlaces / options.dailyLeads / DAYS_PER_MONTH) * 10) / 10;
+export const estimateMonths = (options: { unusedPlaces: number; dailyPlaces: number }) =>
+  Math.ceil((options.unusedPlaces / options.dailyPlaces / DAYS_PER_MONTH) * 10) / 10;

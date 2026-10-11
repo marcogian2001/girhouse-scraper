@@ -409,6 +409,8 @@ export const leadSearchSchema = pgTable(
     apifyRunId: text('apify_run_id'),
     // How many Apify runs the search has started, capped so a sparse area stops early
     scrapeRounds: integer('scrape_rounds').notNull().default(0),
+    // Set once a round finds no new business, so the search stops topping up
+    areaExhausted: boolean('area_exhausted').notNull().default(false),
     // Leads taken over from earlier searches, which were already paid for
     reserveClaimed: integer('reserve_claimed').notNull().default(0),
     // Set on the searches a coverage plan schedules, to count its daily quota and passes

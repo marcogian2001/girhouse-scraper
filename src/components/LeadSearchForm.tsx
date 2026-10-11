@@ -39,7 +39,7 @@ export type LeadPricing = {
   runMicros: Record<Processor, number>;
 };
 
-export const LeadSearchForm = (props: { pricing: LeadPricing }) => {
+export const LeadSearchForm = (props: { pricing: LeadPricing; emailYield: number }) => {
   const t = useTranslations('LeadSearchForm');
   const settingsT = useTranslations('CampaignSettingsForm');
   const format = useFormatter();
@@ -66,14 +66,16 @@ export const LeadSearchForm = (props: { pricing: LeadPricing }) => {
   const searchTerms = useWatch({ control: form.control, name: 'searchTerms' });
   const location = useWatch({ control: form.control, name: 'location' });
 
-  // Worst case: every place is researched, looked up on Prospeo and verified
-  const perLeadMicros =
+  // Every place taken is researched, looked up on Prospeo and verified, and only part ends with an email
+  const perPlaceMicros =
     props.pricing.placeMicros +
     props.pricing.runMicros[processor] +
     props.pricing.emailMicros +
     props.pricing.verificationMicros;
   const estimate = format.number(
-    microsToUsd((Number.isFinite(maxResults) ? maxResults : 0) * perLeadMicros),
+    microsToUsd(
+      ((Number.isFinite(maxResults) ? maxResults : 0) * perPlaceMicros) / props.emailYield,
+    ),
     USD_FORMAT,
   );
 

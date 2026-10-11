@@ -52,7 +52,7 @@ export const POST = async (request: Request) => {
 
   await enqueue([{ leadSearchId: search.id, type: 'lead_search' }]);
 
-  logger.info(`Lead search ${search.id} queued for up to ${search.maxResults} places`);
+  logger.info(`Lead search ${search.id} queued for ${search.maxResults} leads with an email`);
 
   return NextResponse.json({ id: search.id }, { status: 201 });
 };

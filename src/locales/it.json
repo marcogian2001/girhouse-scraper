@@ -167,7 +167,7 @@
     "label_location": "Dove",
     "placeholder_location": "Cerca un comune, una provincia o una regione",
     "error_location": "Scegli una zona tra i suggerimenti.",
-    "label_max_results": "Numero massimo di attività",
+    "label_max_results": "Numero di email valide",
     "error_max_results": "Inserisci un numero tra 1 e {max}.",
     "label_website": "Sito web",
     "website_any": "Tutte le attività",
@@ -175,7 +175,7 @@
     "website_with": "Solo con sito",
     "hint_website": "Applicato prima di pagare qualsiasi ricerca.",
     "label_processor": "Profondità della ricerca",
-    "estimate": "Costo stimato al massimo {cost}, se ogni attività viene analizzata e ne viene cercata l’email.",
+    "estimate": "Costo stimato circa {cost}, in base a quante attività di solito hanno un’email valida.",
     "button_create": "Avvia la ricerca",
     "error_create": "La ricerca non è stata avviata."
   },
@@ -190,7 +190,7 @@
   },
   "LeadSearchProgress": {
     "searching": "Ricerca su Google Maps…",
-    "progress_count": "{done} attività su {total} completate · {ready} pronte"
+    "progress_count": "{ready} email pronte su {target} · {done} attività analizzate su {total}"
   },
   "LeadTable": {
     "badge_no_website": "Senza sito",
@@ -214,7 +214,7 @@
     "spend_line": "Spesa stimata {total}",
     "button_campaign": "Crea una campagna con {count, plural, one {# lead} other {# lead}}",
     "reserve_line": "{count, plural, one {# lead preso} other {# lead presi}} da ricerche precedenti, già pagati",
-    "short_alert": "Trovate solo {found} attività nuove su {max}. Per altre attività prova una zona più ampia o altri termini."
+    "short_alert": "Trovate {found} email valide su {max}: nella zona non ci sono altre attività nuove. Per averne altre prova una zona più ampia o altri termini."
   },
   "CoveragePage": {
     "title": "Copertura Italia",
@@ -229,12 +229,12 @@
     "error_create": "Il piano non è stato creato."
   },
   "CoveragePlanForm": {
-    "label_daily_leads": "Lead al giorno",
-    "label_leads_per_search": "Lead per ricerca",
+    "label_daily_leads": "Email valide al giorno",
+    "label_leads_per_search": "Email valide per ricerca",
     "error_number": "Inserisci un numero tra 1 e {max}.",
     "label_active": "Piano attivo",
     "hint_active": "Crea le ricerche ogni giorno e intanto censisce le province gratis.",
-    "estimate": "Costo stimato al massimo {cost} al giorno.",
+    "estimate": "Costo stimato circa {cost} al giorno.",
     "button_save": "Salva",
     "error_save": "Le impostazioni non sono state salvate."
   },

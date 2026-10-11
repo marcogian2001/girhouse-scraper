@@ -76,8 +76,8 @@ describe('Coverage', () => {
 
   describe('Months estimate', () => {
     it('rounds the months left up to one decimal', () => {
-      expect(estimateMonths({ unusedPlaces: 22_500, dailyLeads: 750 })).toBe(1);
-      expect(estimateMonths({ unusedPlaces: 23_000, dailyLeads: 750 })).toBe(1.1);
+      expect(estimateMonths({ unusedPlaces: 22_500, dailyPlaces: 750 })).toBe(1);
+      expect(estimateMonths({ unusedPlaces: 23_000, dailyPlaces: 750 })).toBe(1.1);
     });
   });
 });

@@ -17,6 +17,7 @@ import {
 import { getApiContext } from '@/libs/ApiAuth';
 import { loadPairStatuses } from '@/libs/Coverage';
 import { db } from '@/libs/DB';
+import { loadOrganizationEmailYield } from '@/libs/LeadJobs';
 import { coveragePlanSchema, coverageTermSchema } from '@/models/Schema';
 import { PLACE_COST_MICROS } from '@/services/Apify';
 import { VERIFICATION_COST_MICROS } from '@/services/MillionVerifier';
@@ -68,7 +69,7 @@ export default async function CoveragePage(props: { params: Promise<{ locale: st
     );
   }
 
-  const [pairs, terms] = await Promise.all([
+  const [pairs, terms, emailYield] = await Promise.all([
     loadPairStatuses(plan),
     db
       .select({
@@ -79,13 +80,15 @@ export default async function CoveragePage(props: { params: Promise<{ locale: st
       })
       .from(coverageTermSchema)
       .where(eq(coverageTermSchema.planId, plan.id)),
+    loadOrganizationEmailYield(plan.organizationId),
   ]);
 
   return (
     <div className="space-y-6">
       {header}
 
-      <CoverageSummary pairs={pairs} dailyLeads={plan.dailyLeads} />
+      {/* Each email asked for takes more than one place, at the organization's usual yield */}
+      <CoverageSummary pairs={pairs} dailyPlaces={plan.dailyLeads / emailYield} />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
@@ -109,6 +112,7 @@ export default async function CoveragePage(props: { params: Promise<{ locale: st
                 verificationMicros: VERIFICATION_COST_MICROS,
                 runMicros: PROCESSOR_RUN_COST_MICROS,
               }}
+              emailYield={emailYield}
             />
           </CardContent>
         </Card>

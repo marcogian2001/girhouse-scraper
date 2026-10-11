@@ -46,7 +46,11 @@ export type CoveragePlanView = Pick<
   'dailyLeads' | 'leadsPerSearch' | 'websiteFilter' | 'processor' | 'isActive'
 >;
 
-export const CoveragePlanForm = (props: { plan: CoveragePlanView; pricing: LeadPricing }) => {
+export const CoveragePlanForm = (props: {
+  plan: CoveragePlanView;
+  pricing: LeadPricing;
+  emailYield: number;
+}) => {
   const t = useTranslations('CoveragePlanForm');
   const searchT = useTranslations('LeadSearchForm');
   const settingsT = useTranslations('CampaignSettingsForm');
@@ -65,14 +69,16 @@ export const CoveragePlanForm = (props: { plan: CoveragePlanView; pricing: LeadP
   const websiteFilter = useWatch({ control: form.control, name: 'websiteFilter' });
   const isActive = useWatch({ control: form.control, name: 'isActive' });
 
-  // Worst case, as on a single search: every place is researched, looked up and verified
-  const perLeadMicros =
+  // As on a single search: every place taken is researched, looked up and verified
+  const perPlaceMicros =
     props.pricing.placeMicros +
     props.pricing.runMicros[processor] +
     props.pricing.emailMicros +
     props.pricing.verificationMicros;
   const estimate = format.number(
-    microsToUsd((Number.isFinite(dailyLeads) ? dailyLeads : 0) * perLeadMicros),
+    microsToUsd(
+      ((Number.isFinite(dailyLeads) ? dailyLeads : 0) * perPlaceMicros) / props.emailYield,
+    ),
     USD_FORMAT,
   );
 

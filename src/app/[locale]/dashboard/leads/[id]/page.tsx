@@ -60,7 +60,7 @@ export default async function LeadSearchPage(props: {
   const readyCount = leads.filter((lead) => lead.status === 'ready').length;
   // Only searches that scan their area know when it has run out of new businesses
   const isShort =
-    search.locationPlaceId !== null && search.status === 'done' && leads.length < search.maxResults;
+    search.locationPlaceId !== null && search.status === 'done' && readyCount < search.maxResults;
 
   return (
     <div className="space-y-6">
@@ -104,7 +104,7 @@ export default async function LeadSearchPage(props: {
       {isShort && (
         <Alert>
           <AlertDescription>
-            {t('short_alert', { found: leads.length, max: search.maxResults })}
+            {t('short_alert', { found: readyCount, max: search.maxResults })}
           </AlertDescription>
         </Alert>
       )}

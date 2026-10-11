@@ -47,6 +47,8 @@ export const GET = async (_request: Request, props: { params: Promise<{ id: stri
     status: search.status,
     errorMessage: search.errorMessage,
     leads: Object.fromEntries(leadCounts.map((row) => [row.status, row.total])),
+    // How many leads with a deliverable email the search wants
+    target: search.maxResults,
     // Non-zero while the worker still has something to do for this search
     outstandingJobs: outstandingJobs?.total ?? 0,
   });

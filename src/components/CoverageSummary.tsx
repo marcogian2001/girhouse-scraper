@@ -94,7 +94,7 @@ const CoverageTable = (props: { heading: string; rows: CoverageRow[] }) => {
   );
 };
 
-export const CoverageSummary = (props: { pairs: CoveragePairStatus[]; dailyLeads: number }) => {
+export const CoverageSummary = (props: { pairs: CoveragePairStatus[]; dailyPlaces: number }) => {
   const t = useTranslations('CoverageSummary');
   const format = useFormatter();
 
@@ -134,7 +134,7 @@ export const CoverageSummary = (props: { pairs: CoveragePairStatus[]; dailyLeads
           value={format.number(
             estimateMonths({
               unusedPlaces: total?.unusedPlaces ?? 0,
-              dailyLeads: props.dailyLeads,
+              dailyPlaces: props.dailyPlaces,
             }),
           )}
           icon={<Hourglass className="size-4" />}

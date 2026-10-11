@@ -1,15 +1,5 @@
-import {
-  and,
-  asc,
-  count,
-  countDistinct,
-  eq,
-  inArray,
-  isNull,
-  notExists,
-  notInArray,
-  sql,
-} from 'drizzle-orm';
+import { and, asc, countDistinct, eq, inArray, isNull, notExists, sql } from 'drizzle-orm';
+import type { SQL } from 'drizzle-orm';
 import {
   discoveredPlaceSchema,
   jobSchema,
@@ -26,6 +16,8 @@ import { verifyEmail } from '@/services/MillionVerifier';
 import { createDecisionMakerRun, fetchTaskRunResult } from '@/services/Parallel';
 import { findEmail } from '@/services/Prospeo';
 import {
+  countLeadsToTake,
+  estimateEmailYield,
   isPecEmail,
   OPEN_LEAD_STATUSES,
   pickEmailRoutes,
@@ -52,8 +44,14 @@ import {
 /** How long Parallel may hold a poll open. Short, so the worker stays snappy. */
 const PARALLEL_POLL_TIMEOUT_SECONDS = 5;
 
-/** A search that still lacks leads after this many Apify runs stops with what it has. */
-const MAX_SCRAPE_ROUNDS = 3;
+/**
+ * A search that still lacks emails after this many Apify runs stops with what it has.
+ * Each run takes up to 1000 places, and topping up after qualification takes runs too.
+ */
+const MAX_SCRAPE_ROUNDS = 8;
+
+/** Lead states research is over for, whether or not it found a deliverable email. */
+const SETTLED_LEAD_STATUSES = ['ready', 'no_email', 'failed'] as const;
 
 /** How long a lead waits for Prospeo after hitting its rate limit. */
 const PROSPEO_RATE_LIMIT_DELAY_SECONDS = 60;
@@ -135,7 +133,116 @@ const toContactFields = (research: DecisionMaker | null) => {
 };
 
 /**
- * Marks a lead search as done once none of its leads is still being worked on.
+ * Counts the rows of a query that meet a condition, next to other counts.
+ * @param condition The condition a row must meet.
+ * @returns The count as a selected column.
+ */
+const countWhere = (condition: SQL) =>
+  sql<number>`count(*) filter (where ${condition})`.mapWith(Number);
+
+/**
+ * Counts how research went for the leads of a search, and for every lead of its organization.
+ * @param options The call options.
+ * @param options.organizationId The organization searching.
+ * @param options.leadSearchId The lead search, or null to count the organization alone.
+ * @returns Ready, pending and settled leads of the search, and ready and settled leads of the organization.
+ */
+const countEmailOutcomes = async (options: {
+  organizationId: string;
+  leadSearchId: string | null;
+}) => {
+  const inSearch = options.leadSearchId
+    ? eq(leadSchema.leadSearchId, options.leadSearchId)
+    : sql`false`;
+  const isReady = eq(leadSchema.status, 'ready');
+  const isPending = inArray(leadSchema.status, [...OPEN_LEAD_STATUSES]);
+  const isSettled = inArray(leadSchema.status, [...SETTLED_LEAD_STATUSES]);
+  const [counts] = await db
+    .select({
+      ready: countWhere(sql`${inSearch} and ${isReady}`),
+      pending: countWhere(sql`${inSearch} and ${isPending}`),
+      settled: countWhere(sql`${inSearch} and ${isSettled}`),
+      organizationReady: countWhere(isReady),
+      organizationSettled: countWhere(isSettled),
+    })
+    .from(leadSchema)
+    .where(eq(leadSchema.organizationId, options.organizationId));
+
+  return {
+    search: {
+      ready: counts?.ready ?? 0,
+      pending: counts?.pending ?? 0,
+      settled: counts?.settled ?? 0,
+    },
+    organization: {
+      ready: counts?.organizationReady ?? 0,
+      settled: counts?.organizationSettled ?? 0,
+    },
+  };
+};
+
+/**
+ * Estimates the share of an organization's researched leads that end with a deliverable email.
+ * @param organizationId The organization.
+ * @returns The expected share, used to size searches before they start.
+ */
+export const loadOrganizationEmailYield = async (organizationId: string) => {
+  const outcomes = await countEmailOutcomes({ organizationId, leadSearchId: null });
+
+  return estimateEmailYield(outcomes);
+};
+
+/**
+ * Hands the leads a search never started researching back to the reserve, once it has its emails.
+ * Leads already being researched go on, since their research is paid for.
+ * @param leadSearchId The lead search that reached its target.
+ * @returns How many leads went back to the reserve.
+ */
+const releaseSurplusLeads = async (leadSearchId: string) =>
+  await db.transaction(async (tx) => {
+    // Only queued jobs: a running one may be starting its research right now
+    const dropped = await tx
+      .delete(jobSchema)
+      .where(
+        and(
+          eq(jobSchema.leadSearchId, leadSearchId),
+          eq(jobSchema.type, 'lead_research'),
+          eq(jobSchema.status, 'queued'),
+          inArray(
+            jobSchema.leadId,
+            tx
+              .select({ id: leadSchema.id })
+              .from(leadSchema)
+              .where(
+                and(
+                  eq(leadSchema.leadSearchId, leadSearchId),
+                  eq(leadSchema.status, 'found'),
+                  isNull(leadSchema.parallelRunId),
+                ),
+              ),
+          ),
+        ),
+      )
+      .returning({ leadId: jobSchema.leadId });
+    const leadIds = dropped.flatMap((job) => (job.leadId ? [job.leadId] : []));
+
+    if (leadIds.length === 0) {
+      return 0;
+    }
+
+    const released = await tx
+      .update(leadSchema)
+      .set({ status: 'reserve' })
+      .where(and(inArray(leadSchema.id, leadIds), eq(leadSchema.status, 'found')))
+      .returning({ id: leadSchema.id });
+
+    return released.length;
+  });
+
+/**
+ * Settles a qualifying lead search once none of its leads is still being worked on:
+ * short of emails, it goes back to searching while its area has new businesses; otherwise it is done.
+ * A search that reached its target gives the leads it no longer needs back to the reserve.
  * @param leadSearchId The lead search to refresh.
  */
 const syncLeadSearchStatus = async (leadSearchId: string) => {
@@ -145,41 +252,60 @@ const syncLeadSearchStatus = async (leadSearchId: string) => {
     return;
   }
 
-  const [open] = await db
-    .select({ total: count() })
-    .from(leadSchema)
-    .where(
-      and(
-        eq(leadSchema.leadSearchId, leadSearchId),
-        inArray(leadSchema.status, [...OPEN_LEAD_STATUSES]),
-      ),
-    );
+  const outcomes = await countEmailOutcomes({
+    organizationId: search.organizationId,
+    leadSearchId,
+  });
+  const isComplete = outcomes.search.ready >= search.maxResults;
+  const released = isComplete ? await releaseSurplusLeads(leadSearchId) : 0;
 
-  if ((open?.total ?? 0) === 0) {
-    await db
-      .update(leadSearchSchema)
-      .set({ status: 'done' })
-      .where(eq(leadSearchSchema.id, leadSearchId));
+  if (outcomes.search.pending - released > 0) {
+    return;
   }
+
+  const isQualifying = and(
+    eq(leadSearchSchema.id, leadSearchId),
+    eq(leadSearchSchema.status, 'qualifying'),
+  );
+
+  if (isComplete || search.areaExhausted || search.scrapeRounds >= MAX_SCRAPE_ROUNDS) {
+    await db.update(leadSearchSchema).set({ status: 'done' }).where(isQualifying);
+
+    return;
+  }
+
+  // Only the job that flips the status tops up, when several leads settle at once
+  await db.transaction(async (tx) => {
+    const reopened = await tx
+      .update(leadSearchSchema)
+      .set({ status: 'searching' })
+      .where(isQualifying)
+      .returning({ id: leadSearchSchema.id });
+
+    if (reopened.length > 0) {
+      await tx.insert(jobSchema).values({ leadSearchId, type: 'lead_search' });
+    }
+  });
 };
 
 /**
- * Counts the leads a search still needs, leaving out those held in reserve.
+ * Counts the businesses a search still needs to take to reach its target of deliverable emails,
+ * leaving out those held in reserve.
  * @param search The lead search.
- * @returns How many more leads the search wants.
+ * @returns How many more businesses the search wants.
  */
 const countMissingLeads = async (search: LeadSearch) => {
-  const [taken] = await db
-    .select({ total: count() })
-    .from(leadSchema)
-    .where(
-      and(
-        eq(leadSchema.leadSearchId, search.id),
-        notInArray(leadSchema.status, [...RESERVE_LEAD_STATUSES]),
-      ),
-    );
+  const outcomes = await countEmailOutcomes({
+    organizationId: search.organizationId,
+    leadSearchId: search.id,
+  });
 
-  return Math.max(search.maxResults - (taken?.total ?? 0), 0);
+  return countLeadsToTake({
+    target: search.maxResults,
+    ready: outcomes.search.ready,
+    pending: outcomes.search.pending,
+    emailYield: estimateEmailYield(outcomes),
+  });
 };
 
 /**
@@ -670,6 +796,14 @@ const startScrapeRound = async (options: { job: Job; search: LeadSearch }) => {
       : [];
 
   if (placeIds.length === 0) {
+    if (missing > 0) {
+      // Nothing new is left to scrape, so the search stops topping up
+      await db
+        .update(leadSearchSchema)
+        .set({ areaExhausted: true })
+        .where(eq(leadSearchSchema.id, search.id));
+    }
+
     await finishLeadSearch(options);
 
     return;

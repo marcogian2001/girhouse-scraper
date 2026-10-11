@@ -58,6 +58,62 @@ export const scrapeBudget = (options: { missing: number; filter: WebsiteFilter }
     MAX_PLACES_PER_ROUND,
   );
 
+/** Share of researched leads expected to end with a deliverable email, before any is known. */
+export const DEFAULT_EMAIL_YIELD = 0.5;
+
+/** The lowest share ever assumed, so a search takes at most five businesses per email it wants. */
+const MIN_EMAIL_YIELD = 0.2;
+
+/** How many leads the estimate of the level above weighs, so a few early outcomes don't sway it. */
+const EMAIL_YIELD_PRIOR_WEIGHT = 20;
+
+/** Lead counts that tell how often research ends with a deliverable email. */
+type EmailOutcomes = {
+  ready: number;
+  settled: number;
+};
+
+/**
+ * Estimates the share of researched leads that end with a deliverable email.
+ * The organization's history is the starting point, and the search's own outcomes take over as they come in.
+ * @param options The call options.
+ * @param options.search Ready and settled leads of the search.
+ * @param options.organization Ready and settled leads of the whole organization.
+ * @returns The expected share, between 0.2 and 1.
+ */
+export const estimateEmailYield = (options: {
+  search: EmailOutcomes;
+  organization: EmailOutcomes;
+}) => {
+  const smooth = (outcomes: EmailOutcomes, prior: number) =>
+    (outcomes.ready + EMAIL_YIELD_PRIOR_WEIGHT * prior) /
+    (outcomes.settled + EMAIL_YIELD_PRIOR_WEIGHT);
+  const organizationYield = smooth(options.organization, DEFAULT_EMAIL_YIELD);
+
+  return Math.min(Math.max(smooth(options.search, organizationYield), MIN_EMAIL_YIELD), 1);
+};
+
+/**
+ * Decides how many more businesses a search takes to reach its target of deliverable emails.
+ * The leads still being researched count for the emails they are expected to give.
+ * @param options The call options.
+ * @param options.target How many leads with a deliverable email the search wants.
+ * @param options.ready How many leads already have one.
+ * @param options.pending How many leads are still being researched.
+ * @param options.emailYield The expected share of leads that end with a deliverable email.
+ * @returns How many more businesses to research.
+ */
+export const countLeadsToTake = (options: {
+  target: number;
+  ready: number;
+  pending: number;
+  emailYield: number;
+}) =>
+  Math.max(
+    Math.ceil(Math.max(options.target - options.ready, 0) / options.emailYield) - options.pending,
+    0,
+  );
+
 /**
  * Splits a rectangle into its four quarters.
  * @param rectangle The rectangle to split.
@@ -118,16 +174,31 @@ export const isPecEmail = (email: string) =>
       (label) => label.startsWith('pec') || label.endsWith('pec') || PEC_DOMAIN_LABELS.has(label),
     );
 
+/** Booking platforms that host the profile pages of professionals, whose addresses reach the platform. */
+const DIRECTORY_DOMAINS = new Set(['miodottore.it']);
+
 /**
- * Cleans up the email address found on a public page, skipping PEC addresses.
+ * Tells whether a domain belongs to a booking platform rather than the business itself.
+ * @param domain The lowercase domain.
+ * @returns Whether the domain is a platform, such as miodottore.it.
+ */
+const isDirectoryDomain = (domain: string) => DIRECTORY_DOMAINS.has(domain);
+
+/**
+ * Cleans up the email address found on a public page, skipping PEC and platform addresses.
  * @param value The address as Parallel reported it, possibly several separated by commas or semicolons.
- * @returns The first well-formed address that is not a PEC, lowercased, or null when there is none.
+ * @returns The first well-formed address the business owns that is not a PEC, lowercased, or null when there is none.
  */
 export const readPublicEmail = (value?: string) =>
   (value ?? '')
     .toLowerCase()
     .split(/[\s,;/]+/u)
-    .find((email) => z.email().safeParse(email).success && !isPecEmail(email)) ?? null;
+    .find(
+      (email) =>
+        z.email().safeParse(email).success &&
+        !isPecEmail(email) &&
+        !isDirectoryDomain(email.split('@')[1] ?? ''),
+    ) ?? null;
 
 /**
  * Picks how the email of a lead will be looked up.
@@ -143,7 +214,13 @@ export const pickEmailRoutes = (options: {
   lead: Pick<Lead, 'domain' | 'firstName' | 'lastName'>;
   publicEmail: string | null;
 }) => ({
-  prospeo: Boolean(options.lead.domain && options.lead.firstName && options.lead.lastName),
+  // A platform domain would make Prospeo look up someone who works for the platform
+  prospeo: Boolean(
+    options.lead.domain &&
+    !isDirectoryDomain(options.lead.domain) &&
+    options.lead.firstName &&
+    options.lead.lastName,
+  ),
   publicEmail: options.publicEmail !== null,
 });
 

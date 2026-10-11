@@ -1,0 +1,1 @@
+ALTER TABLE "lead_search" ADD COLUMN "area_exhausted" boolean DEFAULT false NOT NULL;

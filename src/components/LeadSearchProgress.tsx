@@ -15,6 +15,7 @@ type LeadSearchStatus = (typeof leadSearchSchema.$inferSelect)['status'];
 type StatusPayload = {
   status: LeadSearchStatus;
   leads: Record<string, number>;
+  target: number;
   outstandingJobs: number;
 };
 
@@ -86,6 +87,7 @@ export const LeadSearchProgress = (props: {
     .filter(([status]) => SETTLED.has(status))
     .reduce((sum, [, count]) => sum + count, 0);
 
+  const ready = payload?.leads.ready ?? 0;
   const status = payload?.status ?? props.initialStatus;
 
   return (
@@ -98,12 +100,12 @@ export const LeadSearchProgress = (props: {
         <span className="ml-auto text-sm text-muted-foreground tabular-nums">
           {status === 'searching'
             ? t('searching')
-            : t('progress_count', { done: settled, total, ready: payload?.leads.ready ?? 0 })}
+            : t('progress_count', { ready, target: payload?.target ?? 0, done: settled, total })}
         </span>
       </div>
 
       <Progress
-        value={total > 0 ? (settled / total) * 100 : 0}
+        value={payload?.target ? Math.min(ready / payload.target, 1) * 100 : 0}
         className="*:data-[slot=progress-indicator]:bg-primary"
       />
     </div>
