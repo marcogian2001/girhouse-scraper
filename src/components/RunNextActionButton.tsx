@@ -9,9 +9,9 @@ import { Spinner } from '@/components/ui/spinner';
 import { useRouter } from '@/libs/I18nNavigation';
 
 /**
- * Runs a test conversation's next follow-up now, so the sequence can be tried in minutes.
+ * Runs a conversation's next follow-up now, so the sequence can be tried in minutes.
  * @param props Component props.
- * @param props.conversationId The test conversation.
+ * @param props.conversationId The conversation.
  * @returns The button.
  */
 export const RunNextActionButton = (props: { conversationId: string }) => {

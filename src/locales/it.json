@@ -856,7 +856,7 @@
     "event_whatsapp_cancelled": "WhatsApp annullato",
     "event_whatsapp_reply": "Risposta su WhatsApp",
     "event_test_skipped_ghl_whatsapp": "Passaggio a WhatsApp saltato (test)",
-    "run_next_action": "Esegui ora il prossimo passo (test)",
+    "run_next_action": "Esegui ora il prossimo passo",
     "error_next_action": "Nessun passo in programma",
     "outbound_title_reply": "Risposta",
     "outbound_title_follow_up": "Follow-up",

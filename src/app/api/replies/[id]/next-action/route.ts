@@ -3,7 +3,7 @@ import * as z from 'zod';
 import { getApiContext, notFound, unauthorized } from '@/libs/ApiAuth';
 import { runNextActionNow } from '@/libs/FollowUps';
 
-// Test conversations only: runs the next follow-up now instead of in a few days
+// Test conversations, or real ones in draft mode: runs the next follow-up now instead of in a few days
 export const POST = async (_request: Request, props: { params: Promise<{ id: string }> }) => {
   const context = await getApiContext();
 

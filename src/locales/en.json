@@ -856,7 +856,7 @@
     "event_whatsapp_cancelled": "WhatsApp cancelled",
     "event_whatsapp_reply": "WhatsApp reply",
     "event_test_skipped_ghl_whatsapp": "WhatsApp hand-off skipped (test)",
-    "run_next_action": "Run the next step now (test)",
+    "run_next_action": "Run the next step now",
     "error_next_action": "No step is due",
     "outbound_title_reply": "Reply",
     "outbound_title_follow_up": "Follow-up",

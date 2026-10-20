@@ -308,7 +308,27 @@ export const markConversationTickAbandoned = async (job: Job, error: string) => 
 };
 
 /**
- * Runs a test conversation's next step now, so a simulation does not wait for days.
+ * Tells whether a conversation's next step may be run ahead of time: always on a test
+ * conversation, and on a real one only in draft mode, where the step waits for approval.
+ * @param conversation The conversation.
+ * @returns True when the step may run now.
+ */
+export const canRunNextActionNow = async (conversation: Conversation) => {
+  if (!conversation.nextActionAt) {
+    return false;
+  }
+
+  if (conversation.isTest) {
+    return true;
+  }
+
+  const settings = await getAutomationSettings(conversation.organizationId);
+
+  return settings.mode === 'draft';
+};
+
+/**
+ * Runs a conversation's next step now, so a simulation does not wait for days.
  * @param options The conversation.
  * @param options.organizationId The organization it must belong to.
  * @param options.conversationId The conversation.
@@ -325,7 +345,7 @@ export const runNextActionNow = async (options: {
     ),
   });
 
-  if (!conversation?.isTest || !conversation.nextActionAt) {
+  if (!conversation || !(await canRunNextActionNow(conversation))) {
     return false;
   }
 

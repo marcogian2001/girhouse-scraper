@@ -280,7 +280,7 @@ Tutto il codice è committato su `main`. Restano fuori solo le modifiche `bg-whi
 ### Fase 5: follow-up in base al comportamento [x] (20/10)
 
 - [x] **Decisione pura** `nextAction` in `src/utils/FollowUps.ts`, con test, basata su `summarizeDemo`. Si applica solo a chi ha ricevuto la demo e non ha prenotato.
-  - Ogni 2 giorni lavorativi (campo "Giorni lavorativi tra un follow-up e l'altro" in Automazione), fino a 3 follow-up:
+  - Ogni giorno lavorativo (campo "Giorni lavorativi tra un follow-up e l'altro" in Automazione), fino a 3 follow-up:
     - demo non aperta: "ti è arrivata?" con di nuovo il link;
     - vista a metà: link a `?passo=N`, il primo passo non visto, più l'offerta di spiegarla al telefono;
     - vista tutta: "cosa ti ha frenato?", senza link.
@@ -297,7 +297,7 @@ Tutto il codice è committato su `main`. Restano fuori solo le modifiche `bg-whi
 - [x] **Invio:** i follow-up rispondono all'ultima email del lead nel thread Instantly, dalla stessa casella.
 - [x] **Dashboard:**
   - nel dettaglio conversazione: prossimo follow-up, follow-up inviati e nurturing inviati;
-  - solo sulle conversazioni di test: "Esegui ora il prossimo passo (test)".
+  - "Esegui ora il prossimo passo": sulle conversazioni di test sempre, su quelle vere solo in modalità bozza (il passo diventa una bozza da approvare).
 - [x] **Migrazione 0020:** stato `closed_no_reply`, job `conversation_tick`.
 - [x] **Verifica su PGlite** con il lead Michienzi: l'intera sequenza (non aperta, a metà con `?passo=4`, completa, chiusura con orari, chiusura senza risposta), la risposta a metà sequenza e il nurturing.
 - [x] **Ripresa dopo il fuori ufficio:** il giorno lavorativo dopo la data di rientro (o dopo 5 giorni lavorativi se la data manca) l'app legge il lead su Instantly.
