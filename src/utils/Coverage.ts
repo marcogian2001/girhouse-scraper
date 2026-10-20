@@ -151,3 +151,53 @@ export const sumCompletion = (areas: { usedPlaces: number; estimatedPlaces: numb
     usedPlaces: areas.reduce((sum, area) => sum + area.usedPlaces, 0),
     estimatedPlaces: areas.reduce((sum, area) => sum + area.estimatedPlaces, 0),
   });
+
+export type CoverageGrouping = 'term' | 'region';
+
+/**
+ * Orders group keys alphabetically, the unknown one last.
+ * @param a The first key.
+ * @param b The second key.
+ * @returns A negative, zero or positive number, as `sort` expects.
+ */
+const compareKeys = (a: string | null, b: string | null) => {
+  if (a === b) {
+    return 0;
+  }
+
+  if (a === null || b === null) {
+    return a === null ? 1 : -1;
+  }
+
+  return a.localeCompare(b);
+};
+
+/**
+ * Groups searched areas on two levels: by term then region, or by region then term.
+ * @param options The call options.
+ * @param options.rows The areas, each with its term, region and completion.
+ * @param options.by What the outer level groups on.
+ * @returns The outer groups with their inner groups, keys in alphabetical order
+ * and the most complete areas first.
+ */
+export const groupCoverage = <
+  Row extends { term: string; region: string | null; completion: number },
+>(options: {
+  rows: Row[];
+  by: CoverageGrouping;
+}) => {
+  const outerKey = (row: Row) => (options.by === 'term' ? row.term : row.region);
+  const innerKey = (row: Row) => (options.by === 'term' ? row.region : row.term);
+
+  return [...Map.groupBy(options.rows, outerKey).entries()]
+    .toSorted(([a], [b]) => compareKeys(a, b))
+    .map(([key, rows]) => ({
+      key,
+      groups: [...Map.groupBy(rows, innerKey).entries()]
+        .toSorted(([a], [b]) => compareKeys(a, b))
+        .map(([innerGroupKey, items]) => ({
+          key: innerGroupKey,
+          rows: items.toSorted((a, b) => b.completion - a.completion),
+        })),
+    }));
+};

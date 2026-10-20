@@ -1,11 +1,10 @@
 import { eq } from 'drizzle-orm';
-import { Gauge, Map as MapIcon, MapPin, Store } from 'lucide-react';
-import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
+import { Map as MapIcon } from 'lucide-react';
+import { getTranslations, setRequestLocale } from 'next-intl/server';
+import { CoverageOverview } from '@/components/CoverageOverview';
 import { CoveragePlanForm } from '@/components/CoveragePlanForm';
-import { CoverageTermCard } from '@/components/CoverageTermCard';
 import { CoverageTermsEditor } from '@/components/CoverageTermsEditor';
 import { CreateCoveragePlanButton } from '@/components/CreateCoveragePlanButton';
-import { StatCard } from '@/components/StatCard';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -26,14 +25,12 @@ import { PLACE_COST_MICROS } from '@/services/Apify';
 import { VERIFICATION_COST_MICROS } from '@/services/MillionVerifier';
 import { PROCESSOR_RUN_COST_MICROS } from '@/services/Parallel';
 import { EMAIL_COST_MICROS } from '@/services/Prospeo';
-import { estimateMonths, sumCompletion } from '@/utils/Coverage';
 
 export default async function CoveragePage(props: { params: Promise<{ locale: string }> }) {
   const { locale } = await props.params;
   setRequestLocale(locale);
 
   const t = await getTranslations({ locale, namespace: 'CoveragePage' });
-  const format = await getFormatter({ locale });
   const context = await getApiContext();
 
   const plan = context
@@ -94,8 +91,6 @@ export default async function CoveragePage(props: { params: Promise<{ locale: st
       .where(eq(coverageTermSchema.planId, plan.id)),
     loadOrganizationEmailYield(plan.organizationId),
   ]);
-  const areas = coverage.flatMap((item) => item.areas);
-  const unusedPlaces = areas.reduce((sum, area) => sum + area.unusedPlaces, 0);
 
   return (
     <div className="space-y-6">
@@ -107,44 +102,9 @@ export default async function CoveragePage(props: { params: Promise<{ locale: st
           <TabsTrigger value="settings">{t('tab_settings')}</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="space-y-6">
-          <div className="grid gap-4 sm:grid-cols-3">
-            <StatCard
-              label={t('stat_areas')}
-              value={new Set(areas.map((area) => area.placeId)).size}
-              icon={<MapPin className="size-4" />}
-              description={t('stat_areas_hint', { terms: coverage.length })}
-            />
-            <StatCard
-              label={t('stat_completion')}
-              value={format.number(sumCompletion(areas), { style: 'percent' })}
-              icon={<Gauge className="size-4" />}
-              description={t('stat_completion_hint')}
-            />
-            <StatCard
-              label={t('stat_unused')}
-              value={format.number(unusedPlaces)}
-              icon={<Store className="size-4" />}
-              // Each email asked for takes more than one place, at the organization's usual yield
-              description={t('stat_unused_hint', {
-                months: estimateMonths({
-                  unusedPlaces,
-                  dailyPlaces: plan.dailyLeads / emailYield,
-                }),
-              })}
-            />
-          </div>
-
-          <div className="grid items-start gap-4 lg:grid-cols-2">
-            {coverage.map((item) => (
-              <CoverageTermCard
-                key={item.term}
-                term={item.term}
-                isActive={item.isActive}
-                areas={item.areas}
-              />
-            ))}
-          </div>
+        <TabsContent value="overview">
+          {/* Each email asked for takes more than one place, at the organization's usual yield */}
+          <CoverageOverview coverage={coverage} dailyPlaces={plan.dailyLeads / emailYield} />
         </TabsContent>
 
         <TabsContent value="settings" className="space-y-6">

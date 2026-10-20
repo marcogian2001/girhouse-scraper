@@ -3,6 +3,7 @@ import type { CoveragePair } from './Coverage';
 import {
   estimateMonths,
   estimatePlaces,
+  groupCoverage,
   planDailySearches,
   rankPairs,
   resolveArea,
@@ -154,6 +155,40 @@ describe('Coverage', () => {
         kind: 'place',
         region: null,
       });
+    });
+  });
+
+  describe('Grouping', () => {
+    const rows = [
+      { term: 'idraulico', region: 'Lombardia', completion: 0.2 },
+      { term: 'idraulico', region: null, completion: 0.5 },
+      { term: 'avvocato', region: 'Lazio', completion: 0.3 },
+      { term: 'idraulico', region: 'Lazio', completion: 0.9 },
+      { term: 'idraulico', region: 'Lazio', completion: 0.4 },
+    ];
+
+    it('groups by term then region, unknown regions last', () => {
+      const groups = groupCoverage({ rows, by: 'term' });
+
+      expect(groups.map((group) => group.key)).toStrictEqual(['avvocato', 'idraulico']);
+      expect(groups[1]?.groups.map((group) => group.key)).toStrictEqual([
+        'Lazio',
+        'Lombardia',
+        null,
+      ]);
+    });
+
+    it('groups by region then term', () => {
+      const groups = groupCoverage({ rows, by: 'region' });
+
+      expect(groups.map((group) => group.key)).toStrictEqual(['Lazio', 'Lombardia', null]);
+      expect(groups[0]?.groups.map((group) => group.key)).toStrictEqual(['avvocato', 'idraulico']);
+    });
+
+    it('lists the most complete areas first', () => {
+      const [, idraulico] = groupCoverage({ rows, by: 'term' });
+
+      expect(idraulico?.groups[0]?.rows.map((row) => row.completion)).toStrictEqual([0.9, 0.4]);
     });
   });
 });
