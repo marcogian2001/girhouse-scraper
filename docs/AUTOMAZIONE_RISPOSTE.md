@@ -295,13 +295,17 @@ Automatizzare tutto quello che succede dopo la risposta di un lead a una cold em
      - azione Webhook verso `/api/webhooks/ghl?secret=…` con Custom Data `event = whatsapp_inbound` e `message = {{message.body}}`.
   5. **Handover** del bot a una persona: webhook con `event = handover`, come in fase 4.
 
-### Fase 7: dashboard metriche [ ]
+### Fase 7: dashboard metriche [x] (20/10)
 
-- [ ] `/dashboard/replies/stats` con:
-  - risposte per categoria;
-  - demo aperte e demo viste fino alla fine;
-  - call prenotate;
-  - tassi per categoria e per obiezione.
+- [x] **Pagina `/dashboard/metrics`** ("Metriche" nella barra laterale), con il periodo scelto come in Utilizzo. Conta le conversazioni iniziate nel periodo e lascia fuori quelle di test.
+  - **Numeri:** lead che hanno risposto, demo inviate, call prenotate (con la percentuale su chi ha risposto), passati a WhatsApp.
+  - **Funnel:** hanno risposto → demo inviata → demo aperta → demo vista tutta → call prenotata, con la percentuale rispetto al passo prima.
+  - **Da dove arrivano le call:** dalla demo, rispondendo all'email, da GHL (setter o WhatsApp).
+  - **Per categoria della prima risposta:** lead, demo inviate, call prenotate e tasso.
+  - **Per obiezione:** lead che l'hanno sollevata, call prenotate e tasso.
+- [x] **Calcolo puro** in `src/utils/ReplyStats.ts`, con test; le query sono in `src/libs/ReplyStats.ts`.
+  - Una demo conta come "inviata" solo se un'email inviata contiene il suo link.
+- [x] **Verifica su PGlite** con 3 conversazioni (interessato con call dalla demo, obiezione con call da GHL, non interessato): numeri corretti.
 
 ---
 

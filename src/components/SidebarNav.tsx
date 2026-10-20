@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  BarChart3,
   BookOpen,
   Inbox,
   LayoutDashboard,
@@ -39,6 +40,7 @@ export const SidebarNav = (props: { pathname: string }) => {
     { href: '/dashboard/coverage/', label: t('nav_coverage'), icon: MapIcon, exact: false },
     { href: '/dashboard/campaigns/', label: t('nav_campaigns'), icon: Send, exact: false },
     { href: '/dashboard/replies/', label: t('nav_replies'), icon: Inbox, exact: false },
+    { href: '/dashboard/metrics/', label: t('nav_metrics'), icon: BarChart3, exact: false },
     {
       href: '/dashboard/objections/',
       label: t('nav_objections'),
