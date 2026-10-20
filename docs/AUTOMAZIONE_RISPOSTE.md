@@ -266,13 +266,34 @@ Automatizzare tutto quello che succede dopo la risposta di un lead a una cold em
 - [ ] Opzione "chiude la conversazione" sull'obiezione (per esempio "Tono non adatto").
 - [ ] Prenotazioni dei setter per lead che non hanno mai risposto: oggi restano nella sequenza Instantly (gap discusso il 20/10).
 
-### Fase 6: WhatsApp via GHL [ ]
+### Fase 6: WhatsApp via GHL [x] (20/10)
 
-- [ ] Parte solo se il lead aveva risposto positivamente, c'è un cellulare italiano valido (`isItalianMobile` in `src/utils/Phone.ts`) e non risponde alle email da 2 giorni lavorativi.
-- [ ] L'AI scrive `sintesi_email`, `obiezioni_emerse` e il primo messaggio, senza link.
-- [ ] `upsertContact` con i campi custom `nome_attivita`, `citta`, `servizi`, `link_demo`, `sintesi_email`, `obiezioni_emerse`, `comportamento_demo` e `wa_primo_messaggio`, più il tag `wa-outreach`.
-- [ ] Webhook GHL per i messaggi in entrata, salvati in sola lettura in una tabella `whatsapp_message`. La piattaforma non risponde mai su WhatsApp.
-- [ ] Checklist per il titolare: workflow GHL "WA Outreach", Drip Mode di GoGHL, invii solo in orario lavorativo.
+- [x] **Chi passa a WhatsApp:** dopo l'email di chiusura e altri `whatsappAfterBusinessDays` giorni lavorativi (Automazione, oggi 2), solo il lead che aveva risposto "interessato", ha ricevuto la demo, non ha prenotato e ha un cellulare italiano. Gli altri vanno in "Chiuso, senza risposta".
+- [x] **Testi scritti dall'AI** (`src/services/WhatsappWriter.ts`): sintesi delle email, obiezioni emerse e primo messaggio. Il primo messaggio ha 2-4 righe, nessun link e una sola domanda.
+  - `comportamento_demo` non è scritto dall'AI: "Non aperta", "Vista fino al passo N di 6" oppure "Vista tutta".
+- [x] **Passaggio** (`src/libs/WhatsappHandoff.ts`), secondo la modalità di Automazione: in bozza lo approvi dal dettaglio conversazione (riquadro "WhatsApp"), in automatico parte da solo.
+  - L'app crea su GHL i campi mancanti: `contact.nome_attivita`, `citta`, `servizi`, `link_demo`, `sintesi_email`, `obiezioni_emerse`, `comportamento_demo`, `wa_primo_messaggio`.
+  - Poi aggiorna il contatto e aggiunge il tag `wa-outreach`. Lo stato diventa `whatsapp`.
+  - Se GHL rifiuta, nel log compare "Passaggio a WhatsApp non riuscito" e la conversazione va in revisione.
+- [x] **Risposte WhatsApp** (evento `whatsapp_inbound` del webhook GHL): salvate in `whatsapp_message` e mostrate nel riquadro. La piattaforma non risponde mai su WhatsApp.
+- [x] **Interruzioni:** una risposta via email o una prenotazione annullano la bozza WhatsApp.
+- [x] **Correzione:** la prenotazione non sovrascrive più i tag del contatto GHL; i tag si aggiungono con `/contacts/{id}/tags`.
+- [x] **Correzione della fase 5:** il dettaglio conversazione ora mostra anche i follow-up, le chiusure e i nurturing, per approvarli in modalità bozza.
+- [x] **Migrazione 0021:** tabelle `whatsapp_handoff` e `whatsapp_message`.
+- [x] **Verifica su PGlite** con il lead Michienzi: dalla risposta con il cellulare fino a bozza, approvazione e stato `whatsapp`; risposta WhatsApp registrata.
+- [ ] **Checklist GHL per il titolare:**
+  1. Permessi del token: `contacts.write`, `opportunities.write` e `locations/customFields.readonly`.
+     - Gli 8 campi personalizzati sono stati creati su GHL il 20/10, quindi `locations/customFields.write` non serve più.
+  2. Workflow **"WA Outreach"**:
+     - trigger: tag aggiunto `wa-outreach`;
+     - azione: messaggio WhatsApp GoGHL (Drip Mode) con testo `{{contact.wa_primo_messaggio}}`, solo in orario lavorativo.
+  3. **Conversation AI** su WhatsApp:
+     - nel prompt `{{contact.sintesi_email}}`, `{{contact.obiezioni_emerse}}`, `{{contact.comportamento_demo}}` e `{{contact.link_demo}}`;
+     - il calendario "Call Demo - 30 min" per prenotare.
+  4. Workflow **"Risposta WhatsApp"**:
+     - trigger "Customer Replied", canale WhatsApp;
+     - azione Webhook verso `/api/webhooks/ghl?secret=…` con Custom Data `event = whatsapp_inbound` e `message = {{message.body}}`.
+  5. **Handover** del bot a una persona: webhook con `event = handover`, come in fase 4.
 
 ### Fase 7: dashboard metriche [ ]
 

@@ -10,6 +10,7 @@ const API_VERSIONS = {
   calendars: '2021-04-15',
   contacts: '2021-07-28',
   opportunities: '2021-07-28',
+  locations: '2021-07-28',
 } as const;
 
 const freeSlotsSchema = z.record(z.string(), z.unknown());
@@ -30,6 +31,15 @@ const appointmentSchema = z.object({ id: z.string() });
 const duplicateContactSchema = z.object({ contact: z.object({ id: z.string() }).nullish() });
 
 const opportunitySchema = z.object({ opportunity: z.object({ id: z.string() }) });
+
+const customFieldSchema = z.object({ id: z.string(), name: z.string(), fieldKey: z.string() });
+
+const customFieldListSchema = z.object({ customFields: z.array(customFieldSchema) });
+
+const customFieldCreatedSchema = z.object({ customField: customFieldSchema });
+
+/** The ids of the contact fields already found or created, by key, for this process. */
+const contactFieldIds = new Map<string, string>();
 
 /**
  * Tells whether the calendar booking is configured.
@@ -136,14 +146,18 @@ export const getSlotMinutes = async () => {
   return calendar.slotDurationUnit === 'hours' ? calendar.slotDuration * 60 : calendar.slotDuration;
 };
 
+/** A value for one of the contact's custom fields, by the field's GHL id. */
+export type CustomFieldValue = { id: string; value: string };
+
 /**
  * Creates the lead as a GHL contact, or updates the one with the same email or phone.
+ * Tags are added apart with `addContactTags`: here they would replace the contact's own.
  * @param options The contact.
  * @param options.phone The WhatsApp number in E.164, when the lead gave one.
  * @param options.email The email the lead replied from.
  * @param options.name Who the call is with, the business name when no person is known.
  * @param options.companyName The business name.
- * @param options.tags Tags that start GHL workflows.
+ * @param options.customFields Custom field values to set, when there are any.
  * @returns The GHL contact id.
  * @throws {Error} When GHL is not configured or rejects the request.
  */
@@ -152,7 +166,7 @@ export const upsertContact = async (options: {
   email: string;
   name: string;
   companyName: string;
-  tags: string[];
+  customFields?: CustomFieldValue[];
 }) => {
   const locationId = requireEnv('GHL_LOCATION_ID', Env.GHL_LOCATION_ID);
   const { contact } = upsertContactSchema.parse(
@@ -165,13 +179,30 @@ export const upsertContact = async (options: {
         email: options.email,
         name: options.name,
         companyName: options.companyName,
-        tags: options.tags,
         ...(options.phone ? { phone: options.phone } : {}),
+        ...(options.customFields
+          ? {
+              customFields: options.customFields.map((field) => ({
+                id: field.id,
+                field_value: field.value,
+              })),
+            }
+          : {}),
       },
     }),
   );
 
   return contact.id;
+};
+
+/**
+ * Adds tags to a contact, keeping the ones it has. A tag can start a GHL workflow.
+ * @param contactId The GHL contact.
+ * @param tags The tags to add.
+ * @throws {Error} When GHL is not configured or rejects the request.
+ */
+export const addContactTags = async (contactId: string, tags: string[]) => {
+  await request({ path: `/contacts/${contactId}/tags`, family: 'contacts', body: { tags } });
 };
 
 /**
@@ -270,3 +301,61 @@ export const upsertBookedOpportunity = async (options: { contactId: string; name
 
   return opportunity.id;
 };
+
+/** A custom field the platform writes on GHL contacts, by its key without the `contact.` prefix. */
+export type ContactFieldSpec = { key: string; name: string; dataType: 'TEXT' | 'LARGE_TEXT' };
+
+/**
+ * Makes sure the contact custom fields exist on the location, creating the missing ones,
+ * so GHL workflows can read them as `{{contact.<key>}}`.
+ * @param fields The fields the platform writes.
+ * @returns The GHL id of each field, by key.
+ * @throws {Error} When GHL is not configured or the token lacks the custom fields scopes.
+ */
+export const ensureContactFields = async (fields: ContactFieldSpec[]) => {
+  const missing = fields.filter((field) => !contactFieldIds.has(field.key));
+
+  if (missing.length > 0) {
+    const locationId = requireEnv('GHL_LOCATION_ID', Env.GHL_LOCATION_ID);
+    const { customFields } = customFieldListSchema.parse(
+      await request({
+        path: `/locations/${locationId}/customFields?model=contact`,
+        family: 'locations',
+      }),
+    );
+
+    for (const field of missing) {
+      const existing = customFields.find(
+        (candidate) =>
+          candidate.fieldKey === `contact.${field.key}` || candidate.name === field.name,
+      );
+      const id =
+        existing?.id ??
+        customFieldCreatedSchema.parse(
+          // oxlint-disable-next-line no-await-in-loop
+          await request({
+            path: `/locations/${locationId}/customFields`,
+            family: 'locations',
+            body: { name: field.name, dataType: field.dataType, model: 'contact' },
+          }),
+        ).customField.id;
+
+      contactFieldIds.set(field.key, id);
+    }
+  }
+
+  return new Map(fields.map((field) => [field.key, contactFieldIds.get(field.key) ?? '']));
+};
+
+/**
+ * Pairs the values to write with the GHL ids of their fields, skipping fields without an id.
+ * @param ids The GHL id of each field, by key.
+ * @param values The value of each field, by key.
+ * @returns The custom field values for `upsertContact`.
+ */
+export const toCustomFieldValues = (ids: Map<string, string>, values: Record<string, string>) =>
+  Object.entries(values).flatMap(([key, value]) => {
+    const id = ids.get(key);
+
+    return id ? [{ id, value }] : [];
+  });

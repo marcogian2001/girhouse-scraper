@@ -1081,3 +1081,54 @@ export const demoEventSchema = pgTable(
   },
   (table) => [index('demo_event_demo_id_created_at_idx').on(table.demoId, table.createdAt)],
 );
+
+export const whatsappHandoffStatusEnum = pgEnum('whatsapp_handoff_status', [
+  'draft',
+  'sent',
+  'cancelled',
+]);
+
+/**
+ * The hand-off of a silent lead to WhatsApp on GHL: the first message and the context
+ * GHL's Conversation AI reads. One per conversation; the platform never writes on WhatsApp itself.
+ */
+export const whatsappHandoffSchema = pgTable('whatsapp_handoff', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  conversationId: uuid('conversation_id')
+    .notNull()
+    .unique()
+    .references(() => conversationSchema.id, { onDelete: 'cascade' }),
+  firstMessage: text('first_message').notNull(),
+  emailSummary: text('email_summary').notNull(),
+  objections: text('objections').notNull(),
+  demoBehavior: text('demo_behavior').notNull(),
+  status: whatsappHandoffStatusEnum('status').notNull().default('draft'),
+  // Rules the first message breaks, so a person checks it before it goes
+  issues: jsonb('issues').$type<string[]>().notNull().default([]),
+  approvedByUserId: text('approved_by_user_id').references(() => userSchema.id, {
+    onDelete: 'set null',
+  }),
+  sentAt: timestamp('sent_at', { mode: 'date' }),
+  model: text('model'),
+  ...timestamps,
+});
+
+export const whatsappDirectionEnum = pgEnum('whatsapp_direction', ['outbound', 'inbound']);
+
+/** A WhatsApp message GHL exchanged with the lead, kept read-only for the dashboard. */
+export const whatsappMessageSchema = pgTable(
+  'whatsapp_message',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    conversationId: uuid('conversation_id')
+      .notNull()
+      .references(() => conversationSchema.id, { onDelete: 'cascade' }),
+    direction: whatsappDirectionEnum('direction').notNull(),
+    body: text('body').notNull(),
+    receivedAt: timestamp('received_at', { mode: 'date' }).defaultNow().notNull(),
+    raw: jsonb('raw').$type<Record<string, unknown>>(),
+  },
+  (table) => [
+    index('whatsapp_message_conversation_id_idx').on(table.conversationId, table.receivedAt),
+  ],
+);

@@ -7,6 +7,7 @@ import {
   objectionSchema,
   outboundEmailSchema,
   replyClassificationSchema,
+  whatsappHandoffSchema,
 } from '@/models/Schema';
 import type { InstantlyEmail } from '@/services/Instantly';
 import {
@@ -428,6 +429,17 @@ const routeClassification = async (options: {
           eq(outboundEmailSchema.conversationId, conversation.id),
           inArray(outboundEmailSchema.kind, ['follow_up', 'closing', 'nurturing']),
           inArray(outboundEmailSchema.status, ['draft', 'scheduled']),
+        ),
+      );
+
+    // A WhatsApp hand-off still waiting for approval no longer fits either
+    await tx
+      .update(whatsappHandoffSchema)
+      .set({ status: 'cancelled' })
+      .where(
+        and(
+          eq(whatsappHandoffSchema.conversationId, conversation.id),
+          eq(whatsappHandoffSchema.status, 'draft'),
         ),
       );
 

@@ -1,12 +1,13 @@
 import * as z from 'zod';
 
 /** What a GHL workflow tells the platform about a lead. */
-const GHL_EVENTS = ['appointment_booked', 'handover', 'dnd'] as const;
+const GHL_EVENTS = ['appointment_booked', 'handover', 'dnd', 'whatsapp_inbound'] as const;
 
 /**
  * A delivery from a GHL workflow's Webhook action. GHL sends the contact's standard
  * fields at the top level and the action's own fields under `customData`, where the
- * workflow sets `event` (and `start_time` for a booking). Loose, since GHL adds fields.
+ * workflow sets `event`, plus `start_time` for a booking and `message` for a WhatsApp reply.
+ * Loose, since GHL adds fields.
  */
 export const GhlWebhookValidation = z
   .looseObject({
@@ -15,6 +16,8 @@ export const GhlWebhookValidation = z
     customData: z.looseObject({
       event: z.enum(GHL_EVENTS),
       start_time: z.string().nullish(),
+      // The lead's WhatsApp message, for `whatsapp_inbound`
+      message: z.string().nullish(),
     }),
   })
   .refine((webhook) => Boolean(webhook.contact_id ?? webhook.email), {

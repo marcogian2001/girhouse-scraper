@@ -844,9 +844,19 @@
     "event_follow_up_scheduled": "Follow-up scheduled",
     "event_follow_up_drafted": "Follow-up drafted",
     "event_follow_up_held_kill_switch": "Follow-up held (automation off)",
-    "event_whatsapp_pending": "Waiting for WhatsApp (phase 6)",
+    "event_whatsapp_drafted": "WhatsApp drafted",
+    "event_whatsapp_started": "Handed to WhatsApp on GHL",
+    "event_whatsapp_failed": "WhatsApp hand-off failed",
+    "event_whatsapp_cancelled": "WhatsApp cancelled",
+    "event_whatsapp_reply": "WhatsApp reply",
+    "event_test_skipped_ghl_whatsapp": "WhatsApp hand-off skipped (test)",
     "run_next_action": "Run the next step now (test)",
-    "error_next_action": "No step is due"
+    "error_next_action": "No step is due",
+    "outbound_title_reply": "Reply",
+    "outbound_title_follow_up": "Follow-up",
+    "outbound_title_closing": "Closing email",
+    "outbound_title_nurturing": "Nurturing email",
+    "outbound_title_booking_confirmation": "Call confirmation"
   },
   "ObjectionsPage": {
     "title": "Objections",
@@ -1100,5 +1110,24 @@
     "fact_booked": "Call booked",
     "booked_value": "Yes",
     "not_booked": "No"
+  },
+  "WhatsappHandoffCard": {
+    "title": "WhatsApp",
+    "status_draft": "Ready to move to WhatsApp: check the first message",
+    "status_sent": "Handed to WhatsApp on GHL on {date}",
+    "status_cancelled": "WhatsApp hand-off cancelled",
+    "fact_summary": "Email summary",
+    "fact_objections": "Objections raised",
+    "fact_demo": "Demo behaviour",
+    "label_message": "First WhatsApp message",
+    "button_send": "Move to WhatsApp",
+    "button_cancel": "Cancel and close",
+    "issue_link": "Contains a link",
+    "issue_too_long": "Too long",
+    "issue_too_short": "Too short",
+    "error_blocked": "The message cannot contain links",
+    "error_disabled": "Automation is off",
+    "error_failed": "GHL refused the hand-off",
+    "error_generic": "Sending failed"
   }
 }

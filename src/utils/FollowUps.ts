@@ -20,7 +20,7 @@ export type FollowUpKind =
 /** What the next step for a silent lead is. */
 export type NextAction =
   | { type: 'email'; kind: FollowUpKind; step?: number }
-  | { type: 'whatsapp_pending' }
+  | { type: 'whatsapp' }
   | { type: 'close' }
   | { type: 'none' };
 
@@ -87,5 +87,5 @@ export const nextAction = (options: {
     return { type: 'email', kind: 'closing' };
   }
 
-  return options.whatsappEligible ? { type: 'whatsapp_pending' } : { type: 'close' };
+  return options.whatsappEligible ? { type: 'whatsapp' } : { type: 'close' };
 };

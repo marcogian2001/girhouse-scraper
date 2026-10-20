@@ -47,9 +47,9 @@ describe('Follow-ups', () => {
       });
     });
 
-    it('waits for WhatsApp when the lead said yes and has a mobile number', () => {
+    it('hands over to WhatsApp when the lead said yes and has a mobile number', () => {
       expect(nextAction({ ...base, state: 'follow_up', followUpCount: 4 })).toStrictEqual({
-        type: 'whatsapp_pending',
+        type: 'whatsapp',
       });
     });
 

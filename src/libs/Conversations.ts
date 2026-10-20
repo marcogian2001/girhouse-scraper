@@ -12,6 +12,8 @@ import {
   outboundEmailSchema,
   replyClassificationSchema,
   userSchema,
+  whatsappHandoffSchema,
+  whatsappMessageSchema,
 } from '@/models/Schema';
 import { findContactByEmail, isGhlConfigured, setContactDnd } from '@/services/GoHighLevel';
 import { addToBlocklist } from '@/services/Instantly';
@@ -69,7 +71,12 @@ export const EVENT_TYPES = [
   'follow_up_scheduled',
   'follow_up_drafted',
   'follow_up_held_kill_switch',
-  'whatsapp_pending',
+  'whatsapp_drafted',
+  'whatsapp_started',
+  'whatsapp_failed',
+  'whatsapp_cancelled',
+  'whatsapp_reply',
+  'test_skipped_ghl_whatsapp',
 ] as const;
 
 export type EventType = (typeof EVENT_TYPES)[number];
@@ -635,11 +642,23 @@ export const getConversationDetail = async (options: {
     .where(eq(outboundEmailSchema.conversationId, conversation.id))
     .orderBy(outboundEmailSchema.createdAt);
 
+  const whatsappHandoff = await db.query.whatsappHandoffSchema.findFirst({
+    where: eq(whatsappHandoffSchema.conversationId, conversation.id),
+  });
+
+  const whatsappMessages = await db
+    .select()
+    .from(whatsappMessageSchema)
+    .where(eq(whatsappMessageSchema.conversationId, conversation.id))
+    .orderBy(whatsappMessageSchema.receivedAt);
+
   return {
     conversation,
     messages,
     outbound,
     events,
+    whatsappHandoff: whatsappHandoff ?? null,
+    whatsappMessages,
     pendingJobs: await countPendingJobs(conversation.id),
   };
 };

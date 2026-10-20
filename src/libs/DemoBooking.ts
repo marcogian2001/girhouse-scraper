@@ -4,8 +4,10 @@ import {
   demoEventSchema,
   demoSchema,
   outboundEmailSchema,
+  whatsappHandoffSchema,
 } from '@/models/Schema';
 import {
+  addContactTags,
   createAppointment,
   getFreeSlots,
   getSlotMinutes,
@@ -72,6 +74,17 @@ export const markCallBooked = async (conversation: Conversation) => {
       and(
         eq(outboundEmailSchema.conversationId, conversation.id),
         eq(outboundEmailSchema.status, 'scheduled'),
+      ),
+    );
+
+  // A WhatsApp hand-off still waiting for approval has no reason to go any more
+  await db
+    .update(whatsappHandoffSchema)
+    .set({ status: 'cancelled' })
+    .where(
+      and(
+        eq(whatsappHandoffSchema.conversationId, conversation.id),
+        eq(whatsappHandoffSchema.status, 'draft'),
       ),
     );
 
@@ -165,8 +178,9 @@ export const bookCall = async (options: {
       email: conversation.leadEmail,
       name: options.company,
       companyName: options.company,
-      tags: ['demo-girhouse'],
     });
+
+    await addContactTags(contactId, ['demo-girhouse']);
 
     const appointmentId = await createAppointment({
       contactId,

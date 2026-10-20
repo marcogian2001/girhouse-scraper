@@ -695,7 +695,15 @@ const afterSend = async (options: {
       await setConversationState({ conversation, state: 'follow_up' });
     }
 
-    await scheduleNextAction(conversation.id, isNurturing ? nurturingAt : followUpAt);
+    // After the closing email the next step is WhatsApp, after its own wait
+    const whatsappAt = addBusinessDays({
+      from: options.sentAt,
+      days: settings.whatsappAfterBusinessDays,
+      hours,
+    });
+    const nextAt = email.kind === 'closing' ? whatsappAt : followUpAt;
+
+    await scheduleNextAction(conversation.id, isNurturing ? nurturingAt : nextAt);
 
     return;
   }

@@ -1,5 +1,5 @@
 import { and, desc, eq, sql } from 'drizzle-orm';
-import { conversationSchema } from '@/models/Schema';
+import { conversationSchema, whatsappMessageSchema } from '@/models/Schema';
 import { FINAL_STATES } from '@/utils/ReplyRouting';
 import type { GhlWebhook } from '@/validations/GhlWebhookValidation';
 import { applyStop, logEvent, setConversationState } from './Conversations';
@@ -46,8 +46,9 @@ const findConversation = async (webhook: GhlWebhook) => {
 
 /**
  * Applies what a GHL workflow reports about a lead: a call booked on GHL stops the
- * emails, a handover sends the conversation to a person, a Do Not Disturb stops it for good.
- * Safe to receive twice.
+ * emails, a handover sends the conversation to a person, a Do Not Disturb stops it for
+ * good, and a WhatsApp reply is recorded.
+ * Safe to receive twice, except a WhatsApp reply, which is simply recorded again.
  * @param webhook The GHL delivery.
  * @returns What happened to the delivery.
  */
@@ -65,6 +66,19 @@ export const receiveGhlEvent = async (webhook: GhlWebhook) => {
       .update(conversationSchema)
       .set({ ghlContactId: webhook.contact_id })
       .where(eq(conversationSchema.id, conversation.id));
+  }
+
+  // Recorded whatever the state: the platform only reads WhatsApp, it never answers there
+  if (event === 'whatsapp_inbound') {
+    await db.insert(whatsappMessageSchema).values({
+      conversationId: conversation.id,
+      direction: 'inbound',
+      body: webhook.customData.message ?? '',
+      raw: webhook,
+    });
+    await logEvent({ conversationId: conversation.id, type: 'whatsapp_reply' });
+
+    return { status: 'recorded' as const };
   }
 
   if (event === 'dnd') {

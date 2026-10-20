@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gt } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import * as z from 'zod';
 import type { jobSchema } from '@/models/Schema';
 import {
@@ -8,17 +8,16 @@ import {
   replyClassificationSchema,
 } from '@/models/Schema';
 import { isGhlConfigured } from '@/services/GoHighLevel';
-import type { ThreadMessage } from '@/services/ReplyPrompt';
 import { renderScarcity, replySubject } from '@/services/ReplyWriter';
 import { addBusinessDays } from '@/utils/BusinessHours';
 import type { FollowUpKind, NextAction } from '@/utils/FollowUps';
 import { FOLLOW_UP_STATES, nextAction } from '@/utils/FollowUps';
 import { buildOfferBrief } from '@/utils/Offer';
 import { isItalianMobile } from '@/utils/Phone';
-import { stripQuotedReply } from '@/utils/ReplyText';
 import { getAutomationSettings } from './AutomationSettings';
 import type { Conversation } from './Conversations';
 import { logEvent, setConversationState } from './Conversations';
+import { loadThread } from './ConversationThread';
 import { db } from './DB';
 import { getDemoSlots } from './DemoBooking';
 import { getConversationDemo } from './Demos';
@@ -26,6 +25,7 @@ import { completeJob } from './JobQueue';
 import { loadLeadContext } from './LeadContext';
 import { scheduleNextAction } from './NextAction';
 import { enqueueSend, sendTimeFor, writeCheckedReply } from './OutboundEmails';
+import { prepareWhatsapp } from './WhatsappHandoff';
 
 type Job = typeof jobSchema.$inferSelect;
 
@@ -42,53 +42,6 @@ const OUTBOUND_KIND: Record<FollowUpKind, 'follow_up' | 'closing' | 'nurturing'>
   demo_complete: 'follow_up',
   closing: 'closing',
   nurturing: 'nurturing',
-};
-
-/**
- * Rebuilds the thread a follow-up continues: what the lead's latest reply came after,
- * the reply itself, and every email the platform sent since.
- * @param conversationId The conversation.
- * @returns The latest reply and the thread around it, or null when the lead never replied.
- */
-const loadThread = async (conversationId: string) => {
-  const [latest] = await db
-    .select()
-    .from(inboundMessageSchema)
-    .where(eq(inboundMessageSchema.conversationId, conversationId))
-    .orderBy(desc(inboundMessageSchema.receivedAt))
-    .limit(1);
-
-  if (!latest) {
-    return null;
-  }
-
-  const sent = await db
-    .select({ body: outboundEmailSchema.body, sentAt: outboundEmailSchema.sentAt })
-    .from(outboundEmailSchema)
-    .where(
-      and(
-        eq(outboundEmailSchema.conversationId, conversationId),
-        eq(outboundEmailSchema.status, 'sent'),
-        gt(outboundEmailSchema.sentAt, latest.receivedAt),
-      ),
-    )
-    .orderBy(asc(outboundEmailSchema.sentAt));
-
-  const reply = stripQuotedReply(latest.bodyText) || latest.bodyText;
-  const thread: ThreadMessage[] = [
-    ...(latest.thread ?? []).map((item) => ({
-      ...item,
-      sentAt: item.sentAt ? new Date(item.sentAt) : null,
-    })),
-    { direction: 'inbound', sentAt: latest.receivedAt, text: reply },
-    ...sent.map((email) => ({
-      direction: 'outbound' as const,
-      sentAt: email.sentAt,
-      text: email.body,
-    })),
-  ];
-
-  return { latest, reply, thread };
 };
 
 /**
@@ -276,12 +229,13 @@ const runConversationTickJob = async (job: Job) => {
     whatsappEligible: await isWhatsappEligible({ conversation, demo }),
   });
 
-  await (action.type === 'email'
-    ? writeFollowUp({ conversation, settings, action, demo })
-    : scheduleNextAction(conversationId, null));
-
-  if (action.type === 'whatsapp_pending') {
-    await logEvent({ conversationId, type: 'whatsapp_pending' });
+  // Writers clear the due time only once their text is stored, so a failed attempt retries
+  if (action.type === 'email') {
+    await writeFollowUp({ conversation, settings, action, demo });
+  } else if (action.type === 'whatsapp') {
+    await prepareWhatsapp(conversation);
+  } else {
+    await scheduleNextAction(conversationId, null);
   }
 
   if (action.type === 'close') {

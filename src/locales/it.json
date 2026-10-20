@@ -844,9 +844,19 @@
     "event_follow_up_scheduled": "Follow-up programmato",
     "event_follow_up_drafted": "Follow-up in bozza",
     "event_follow_up_held_kill_switch": "Follow-up rimandato (automazione spenta)",
-    "event_whatsapp_pending": "In attesa di WhatsApp (fase 6)",
+    "event_whatsapp_drafted": "WhatsApp in bozza",
+    "event_whatsapp_started": "Passato a WhatsApp su GHL",
+    "event_whatsapp_failed": "Passaggio a WhatsApp non riuscito",
+    "event_whatsapp_cancelled": "WhatsApp annullato",
+    "event_whatsapp_reply": "Risposta su WhatsApp",
+    "event_test_skipped_ghl_whatsapp": "Passaggio a WhatsApp saltato (test)",
     "run_next_action": "Esegui ora il prossimo passo (test)",
-    "error_next_action": "Nessun passo in programma"
+    "error_next_action": "Nessun passo in programma",
+    "outbound_title_reply": "Risposta",
+    "outbound_title_follow_up": "Follow-up",
+    "outbound_title_closing": "Email di chiusura",
+    "outbound_title_nurturing": "Email di nurturing",
+    "outbound_title_booking_confirmation": "Conferma della call"
   },
   "ObjectionsPage": {
     "title": "Obiezioni",
@@ -1100,5 +1110,24 @@
     "fact_booked": "Call prenotata",
     "booked_value": "Sì",
     "not_booked": "No"
+  },
+  "WhatsappHandoffCard": {
+    "title": "WhatsApp",
+    "status_draft": "Pronto per passare a WhatsApp: controlla il primo messaggio",
+    "status_sent": "Passato a WhatsApp su GHL il {date}",
+    "status_cancelled": "Passaggio a WhatsApp annullato",
+    "fact_summary": "Sintesi delle email",
+    "fact_objections": "Obiezioni emerse",
+    "fact_demo": "Comportamento sulla demo",
+    "label_message": "Primo messaggio WhatsApp",
+    "button_send": "Passa a WhatsApp",
+    "button_cancel": "Annulla e chiudi",
+    "issue_link": "Contiene un link",
+    "issue_too_long": "Troppo lungo",
+    "issue_too_short": "Troppo corto",
+    "error_blocked": "Il messaggio non può contenere link",
+    "error_disabled": "Automazione spenta",
+    "error_failed": "GHL ha rifiutato il passaggio",
+    "error_generic": "Invio non riuscito"
   }
 }

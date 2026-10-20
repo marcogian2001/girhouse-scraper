@@ -10,6 +10,7 @@ import { RunNextActionButton } from '@/components/RunNextActionButton';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { WhatsappHandoffCard } from '@/components/WhatsappHandoffCard';
 import { getApiContext } from '@/libs/ApiAuth';
 import { EVENT_TYPES, getConversationDetail } from '@/libs/Conversations';
 import { getConversationDemo } from '@/libs/Demos';
@@ -233,10 +234,26 @@ export default async function ReplyDetailPage(props: {
                   ))}
               </article>
             ))}
+
+            {/* Follow-ups answer no reply in particular: they come after the thread */}
+            {outbound
+              .filter((email) => !email.inboundMessageId)
+              .map((email) => (
+                <article key={email.id} className="space-y-2 border-t pt-6">
+                  <h3 className="text-sm font-medium">{t(`outbound_title_${email.kind}`)}</h3>
+                  <OutboundEmailEditor email={email} />
+                </article>
+              ))}
           </CardContent>
         </Card>
 
         <div className="space-y-6">
+          <WhatsappHandoffCard
+            conversationId={conversation.id}
+            handoff={detail.whatsappHandoff}
+            messages={detail.whatsappMessages}
+          />
+
           <ConversationDemoCard conversationId={conversation.id} demo={demo} />
 
           <Card>

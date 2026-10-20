@@ -15,6 +15,15 @@ describe('GHL webhook delivery', () => {
     expect(parse.data?.customData.event).toBe('appointment_booked');
   });
 
+  it('reads the message of a WhatsApp reply', () => {
+    const parse = GhlWebhookValidation.safeParse({
+      contact_id: 'abc123',
+      customData: { event: 'whatsapp_inbound', message: 'Sì, sentiamoci domani' },
+    });
+
+    expect(parse.data?.customData.message).toBe('Sì, sentiamoci domani');
+  });
+
   it('rejects an unknown event', () => {
     expect(
       GhlWebhookValidation.safeParse({ contact_id: 'abc123', customData: { event: 'birthday' } })
