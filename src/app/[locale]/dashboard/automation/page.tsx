@@ -1,4 +1,4 @@
-import { and, asc, eq, isNotNull, isNull } from 'drizzle-orm';
+import { and, desc, eq, isNotNull, isNull } from 'drizzle-orm';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { AutomationSettingsForm } from '@/components/AutomationSettingsForm';
 import { BotCampaignsCard } from '@/components/BotCampaignsCard';
@@ -25,6 +25,7 @@ export default async function AutomationPage(props: { params: Promise<{ locale: 
           id: campaignSchema.id,
           name: campaignSchema.name,
           botManaged: campaignSchema.botManaged,
+          createdAt: campaignSchema.createdAt,
         })
         .from(campaignSchema)
         .where(
@@ -34,7 +35,7 @@ export default async function AutomationPage(props: { params: Promise<{ locale: 
             isNull(campaignSchema.archivedAt),
           ),
         )
-        .orderBy(asc(campaignSchema.name))
+        .orderBy(desc(campaignSchema.createdAt))
     : [];
 
   return (
