@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import * as z from 'zod';
 import type { jobSchema } from '@/models/Schema';
 import {
@@ -6,6 +6,7 @@ import {
   inboundMessageSchema,
   outboundEmailSchema,
   replyClassificationSchema,
+  whatsappHandoffSchema,
 } from '@/models/Schema';
 import { isGhlConfigured } from '@/services/GoHighLevel';
 import { ACTIVE_LEAD_STATUS, getCampaignLeadStatus } from '@/services/Instantly';
@@ -45,6 +46,13 @@ const OUTBOUND_KIND: Record<FollowUpKind, 'follow_up' | 'closing' | 'nurturing'>
   nurturing: 'nurturing',
   out_of_office_return: 'follow_up',
 };
+
+/** States a lead may skip to WhatsApp from: they got the demo and are being followed up. */
+const WHATSAPP_SKIP_STATES = new Set<Conversation['state']>([
+  'demo_sent',
+  'demo_viewed',
+  'follow_up',
+]);
 
 /**
  * Tells whether WhatsApp may take over after the closing email: the lead said yes,
@@ -308,16 +316,12 @@ export const markConversationTickAbandoned = async (job: Job, error: string) => 
 };
 
 /**
- * Tells whether a conversation's next step may be run ahead of time: always on a test
- * conversation, and on a real one only in draft mode, where the step waits for approval.
+ * Tells whether a person may move a conversation on ahead of time: always on a test
+ * conversation, and on a real one only in draft mode, where each step waits for approval.
  * @param conversation The conversation.
- * @returns True when the step may run now.
+ * @returns True when steps may run ahead of time.
  */
-export const canRunNextActionNow = async (conversation: Conversation) => {
-  if (!conversation.nextActionAt) {
-    return false;
-  }
-
+const mayRunAhead = async (conversation: Conversation) => {
   if (conversation.isTest) {
     return true;
   }
@@ -326,6 +330,54 @@ export const canRunNextActionNow = async (conversation: Conversation) => {
 
   return settings.mode === 'draft';
 };
+
+/**
+ * Tells whether a conversation's next step may be run now.
+ * @param conversation The conversation.
+ * @returns True when a step is due and may run ahead of time.
+ */
+export const canRunNextActionNow = async (conversation: Conversation) =>
+  Boolean(conversation.nextActionAt) && (await mayRunAhead(conversation));
+
+/**
+ * Tells whether a conversation may skip its remaining emails and go to WhatsApp now: the
+ * lead is in the demo follow-ups, qualifies for WhatsApp and has no hand-off yet.
+ * @param conversation The conversation.
+ * @returns True when the hand-off may be prepared now.
+ */
+export const canSkipToWhatsapp = async (conversation: Conversation) => {
+  if (!WHATSAPP_SKIP_STATES.has(conversation.state) || !(await mayRunAhead(conversation))) {
+    return false;
+  }
+
+  const [handoff] = await db
+    .select({ id: whatsappHandoffSchema.id })
+    .from(whatsappHandoffSchema)
+    .where(eq(whatsappHandoffSchema.conversationId, conversation.id));
+
+  if (handoff) {
+    return false;
+  }
+
+  const demo = await getConversationDemo(conversation.id);
+
+  return await isWhatsappEligible({ conversation, demo });
+};
+
+/**
+ * Finds a conversation of the organization.
+ * @param options The lookup.
+ * @param options.organizationId The organization it must belong to.
+ * @param options.conversationId The conversation.
+ * @returns The conversation, or undefined.
+ */
+const findConversation = (options: { organizationId: string; conversationId: string }) =>
+  db.query.conversationSchema.findFirst({
+    where: and(
+      eq(conversationSchema.id, options.conversationId),
+      eq(conversationSchema.organizationId, options.organizationId),
+    ),
+  });
 
 /**
  * Runs a conversation's next step now, so a simulation does not wait for days.
@@ -338,18 +390,47 @@ export const runNextActionNow = async (options: {
   organizationId: string;
   conversationId: string;
 }) => {
-  const conversation = await db.query.conversationSchema.findFirst({
-    where: and(
-      eq(conversationSchema.id, options.conversationId),
-      eq(conversationSchema.organizationId, options.organizationId),
-    ),
-  });
+  const conversation = await findConversation(options);
 
   if (!conversation || !(await canRunNextActionNow(conversation))) {
     return false;
   }
 
   await scheduleNextAction(conversation.id, new Date());
+
+  return true;
+};
+
+/**
+ * Skips the follow-ups still to come and prepares the WhatsApp hand-off now, cancelling
+ * the follow-up emails not yet sent.
+ * @param options The conversation.
+ * @param options.organizationId The organization it must belong to.
+ * @param options.conversationId The conversation.
+ * @returns Whether the hand-off was prepared.
+ */
+export const skipToWhatsapp = async (options: {
+  organizationId: string;
+  conversationId: string;
+}) => {
+  const conversation = await findConversation(options);
+
+  if (!conversation || !(await canSkipToWhatsapp(conversation))) {
+    return false;
+  }
+
+  await db
+    .update(outboundEmailSchema)
+    .set({ status: 'cancelled', errorMessage: 'skipped_to_whatsapp' })
+    .where(
+      and(
+        eq(outboundEmailSchema.conversationId, conversation.id),
+        inArray(outboundEmailSchema.kind, ['follow_up', 'closing']),
+        inArray(outboundEmailSchema.status, ['draft', 'scheduled']),
+      ),
+    );
+
+  await prepareWhatsapp(conversation);
 
   return true;
 };

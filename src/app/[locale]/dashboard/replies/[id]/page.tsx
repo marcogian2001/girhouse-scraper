@@ -14,7 +14,7 @@ import { WhatsappHandoffCard } from '@/components/WhatsappHandoffCard';
 import { getApiContext } from '@/libs/ApiAuth';
 import { EVENT_TYPES, getConversationDetail } from '@/libs/Conversations';
 import { getConversationDemo } from '@/libs/Demos';
-import { canRunNextActionNow } from '@/libs/FollowUps';
+import { canRunNextActionNow, canSkipToWhatsapp } from '@/libs/FollowUps';
 import { Link } from '@/libs/I18nNavigation';
 import { conversationStateEnum, replyCategoryEnum } from '@/models/Schema';
 
@@ -42,6 +42,7 @@ export default async function ReplyDetailPage(props: {
   const { conversation, messages, outbound, events } = detail;
   const demo = await getConversationDemo(conversation.id);
   const canRunNow = await canRunNextActionNow(conversation);
+  const canSkip = await canSkipToWhatsapp(conversation);
   const latestMessageId = messages.at(-1)?.message.id;
 
   const dateTime = (date: Date) =>
@@ -145,7 +146,12 @@ export default async function ReplyDetailPage(props: {
               </div>
             ))}
           </dl>
-          {canRunNow && <RunNextActionButton conversationId={conversation.id} />}
+          {(canRunNow || canSkip) && (
+            <div className="flex flex-wrap gap-2">
+              {canRunNow && <RunNextActionButton conversationId={conversation.id} />}
+              {canSkip && <RunNextActionButton conversationId={conversation.id} to="whatsapp" />}
+            </div>
+          )}
         </CardContent>
       </Card>
 

@@ -758,7 +758,7 @@ export const automationSettingsSchema = pgTable('automation_settings', {
   priceIncreaseDays: integer('price_increase_days').notNull().default(15),
   onboardingSlotsPerMonth: integer('onboarding_slots_per_month').notNull().default(10),
   demoNotOpenedBusinessDays: integer('demo_not_opened_business_days').notNull().default(1),
-  maxFollowUps: integer('max_follow_ups').notNull().default(3),
+  maxFollowUps: integer('max_follow_ups').notNull().default(2),
   whatsappAfterBusinessDays: integer('whatsapp_after_business_days').notNull().default(2),
   nurturingIntervalDays: integer('nurturing_interval_days').notNull().default(30),
   nurturingMaxCount: integer('nurturing_max_count').notNull().default(3),
