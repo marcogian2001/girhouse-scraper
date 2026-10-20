@@ -77,6 +77,10 @@ export const EVENT_TYPES = [
   'whatsapp_cancelled',
   'whatsapp_reply',
   'test_skipped_ghl_whatsapp',
+  'out_of_office_sequence_running',
+  'referral_contact_created',
+  'referral_contact_skipped',
+  'test_skipped_referral_contact',
 ] as const;
 
 export type EventType = (typeof EVENT_TYPES)[number];

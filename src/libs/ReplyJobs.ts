@@ -21,6 +21,7 @@ import {
 } from '@/services/Instantly';
 import { classifyReply } from '@/services/ReplyClassifier';
 import type { ThreadMessage } from '@/services/ReplyPrompt';
+import { addBusinessDays } from '@/utils/BusinessHours';
 import { buildOfferBrief } from '@/utils/Offer';
 import { toE164 } from '@/utils/Phone';
 import {
@@ -39,7 +40,9 @@ import { applyStop, logEvent, setConversationState } from './Conversations';
 import { db } from './DB';
 import { completeJob, enqueue } from './JobQueue';
 import { loadLeadContext } from './LeadContext';
+import { scheduleNextAction } from './NextAction';
 import { createObjection, listObjections } from './Objections';
+import { createReferralContact } from './Referrals';
 import { recordCopywritingUsage } from './Usage';
 
 type Job = typeof jobSchema.$inferSelect;
@@ -51,6 +54,9 @@ type Classification = typeof replyClassificationSchema.$inferSelect;
 type AutomationSettings = Awaited<ReturnType<typeof getAutomationSettings>>;
 
 const payloadSchema = z.object({ inboundMessageId: z.uuid() });
+
+/** Working days to wait for a lead out of office who gave no return date. */
+const OUT_OF_OFFICE_FALLBACK_DAYS = 5;
 
 const previousEmailSchema = z.object({ previous_email: z.string() });
 
@@ -300,6 +306,7 @@ const classifyWithAi = async (options: {
         examples: [options.reply.slice(0, 300)],
         responseAngle: output.nuova_obiezione.angolo_risposta,
         status: 'needs_review',
+        closesConversation: false,
       },
     });
 
@@ -446,6 +453,29 @@ const routeClassification = async (options: {
     await setConversationState({ conversation, state }, tx);
     await markProcessed(options.message.id, tx);
   });
+
+  // The colleague a wrong person points to joins the campaign, for a person to approve
+  if (classification.category === 'wrong_person' && classification.referral) {
+    await createReferralContact({ conversation, referral: classification.referral });
+  }
+
+  // Back from holiday on the stated day, or about a week out when the reply gave none
+  if (state === 'out_of_office') {
+    const hours = {
+      startHour: options.settings.businessHourStart,
+      endHour: options.settings.businessHourEnd,
+    };
+    const returnDate = parseReturnDate(classification.returnDate);
+
+    await scheduleNextAction(
+      conversation.id,
+      addBusinessDays({
+        from: returnDate ?? new Date(),
+        days: returnDate ? 1 : OUT_OF_OFFICE_FALLBACK_DAYS,
+        hours,
+      }),
+    );
+  }
 
   if (
     needsAnswer({

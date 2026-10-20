@@ -718,7 +718,9 @@
     "button_delete": "Elimina",
     "dialog_title": "Eliminare questa obiezione?",
     "dialog_description": "Le risposte passate mantengono la categoria. L'AI smette di usare questo angolo.",
-    "error_save": "Impossibile salvare l'obiezione"
+    "error_save": "Impossibile salvare l'obiezione",
+    "label_closes": "Dopo la risposta chiude la conversazione",
+    "hint_closes": "Il lead riceve la risposta a questa obiezione e poi più nulla: niente demo né follow-up. Utile, per esempio, quando il tono non è adatto."
   },
   "AutomationSettingsForm": {
     "legend_general": "Generale",
@@ -857,7 +859,11 @@
     "outbound_title_follow_up": "Follow-up",
     "outbound_title_closing": "Email di chiusura",
     "outbound_title_nurturing": "Email di nurturing",
-    "outbound_title_booking_confirmation": "Conferma della call"
+    "outbound_title_booking_confirmation": "Conferma della call",
+    "event_out_of_office_sequence_running": "Tornato dal fuori ufficio: la sequenza Instantly continua da sola",
+    "event_referral_contact_created": "Referente aggiunto alla campagna",
+    "event_referral_contact_skipped": "Referente non aggiunto (già presente o bloccato)",
+    "event_test_skipped_referral_contact": "Referente non aggiunto (test)"
   },
   "ObjectionsPage": {
     "title": "Obiezioni",

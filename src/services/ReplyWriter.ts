@@ -58,6 +58,8 @@ const FOLLOW_UP_GUIDANCE: Record<FollowUpKind, string> = {
   demo_complete:
     'The lead watched the whole page prepared for their business but did not book the call. Ask simply, without pressure, what held them back. That question is the only call to action: no link.',
   closing: `This is the last email of the sequence. Say you will not write again about this, recall the real scarcity below in one line, and propose a short call in one line ending with ${SLOTS_PLACEHOLDER}: ${SLOT_RULE}. No link.`,
+  out_of_office_return:
+    'The lead answered with an out-of-office message and should be back now. Welcome them back in a few words, recall in one line what the first Girhouse email proposed, and end with one light question. No link, no pressure.',
   nurturing:
     'The lead said "not now" a while ago and asked to be contacted later. Write a short, warm check-in: one line on what the system does for a business like theirs, the real scarcity, and one light question asking whether now is a better time. No link.',
 };

@@ -13,6 +13,7 @@ export const GhlWebhookValidation = z
   .looseObject({
     contact_id: z.string().min(1).nullish(),
     email: z.string().trim().toLowerCase().nullish(),
+    phone: z.string().trim().nullish(),
     customData: z.looseObject({
       event: z.enum(GHL_EVENTS),
       start_time: z.string().nullish(),
@@ -20,8 +21,8 @@ export const GhlWebhookValidation = z
       message: z.string().nullish(),
     }),
   })
-  .refine((webhook) => Boolean(webhook.contact_id ?? webhook.email), {
-    message: 'A contact id or an email is required',
+  .refine((webhook) => Boolean(webhook.contact_id ?? webhook.email ?? webhook.phone), {
+    message: 'A contact id, an email or a phone is required',
   });
 
 export type GhlWebhook = z.infer<typeof GhlWebhookValidation>;

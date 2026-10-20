@@ -14,6 +14,7 @@ const objection = (
   examples: ['abbiamo già il sito', 'il sito ce l’abbiamo'],
   responseAngle: 'Il punto non è il sito ma chi risponde ai contatti.',
   status: 'active',
+  closesConversation: false,
   sourceMessageId: null,
   updatedAt: new Date(),
   createdAt: new Date(),

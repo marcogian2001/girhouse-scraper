@@ -8,6 +8,7 @@ import {
   replyClassificationSchema,
 } from '@/models/Schema';
 import { isGhlConfigured } from '@/services/GoHighLevel';
+import { ACTIVE_LEAD_STATUS, getCampaignLeadStatus } from '@/services/Instantly';
 import { renderScarcity, replySubject } from '@/services/ReplyWriter';
 import { addBusinessDays } from '@/utils/BusinessHours';
 import type { FollowUpKind, NextAction } from '@/utils/FollowUps';
@@ -42,6 +43,7 @@ const OUTBOUND_KIND: Record<FollowUpKind, 'follow_up' | 'closing' | 'nurturing'>
   demo_complete: 'follow_up',
   closing: 'closing',
   nurturing: 'nurturing',
+  out_of_office_return: 'follow_up',
 };
 
 /**
@@ -179,6 +181,29 @@ const writeFollowUp = async (options: {
 };
 
 /**
+ * Tells whether Instantly is still sending its sequence to a lead back from holiday, in
+ * which case the sequence picks them up again and the platform writes nothing.
+ * @param conversation The conversation.
+ * @returns True when the lead is out of office and still active in their campaign.
+ */
+const isSequenceStillRunning = async (conversation: Conversation) => {
+  if (
+    conversation.state !== 'out_of_office' ||
+    conversation.isTest ||
+    !conversation.instantlyCampaignId
+  ) {
+    return false;
+  }
+
+  const status = await getCampaignLeadStatus({
+    email: conversation.leadEmail,
+    campaignId: conversation.instantlyCampaignId,
+  });
+
+  return status === ACTIVE_LEAD_STATUS;
+};
+
+/**
  * Runs the next step for a silent lead when it falls due: a follow-up tuned to the
  * demo, the closing email, a nurturing reminder, the hand-off to WhatsApp, or the end.
  * @param job The conversation_tick job being processed.
@@ -213,6 +238,15 @@ const runConversationTickJob = async (job: Job) => {
         hours: { startHour: settings.businessHourStart, endHour: settings.businessHourEnd },
       }),
     );
+    await completeJob(job.id);
+
+    return;
+  }
+
+  if (await isSequenceStillRunning(conversation)) {
+    await logEvent({ conversationId, type: 'out_of_office_sequence_running' });
+    await setConversationState({ conversation, state: 'replied' });
+    await scheduleNextAction(conversationId, null);
     await completeJob(job.id);
 
     return;

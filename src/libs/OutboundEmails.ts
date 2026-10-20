@@ -657,6 +657,7 @@ const findLatestInstantlyEmailId = async (conversationId: string) => {
  * @param options.email The email.
  * @param options.conversation Its conversation, as read before sending.
  * @param options.category The category of the reply it answers, if any.
+ * @param options.objectionId The objection of the reply it answers, if any.
  * @param options.settings The organization's automation settings.
  * @param options.sentAt When it left.
  */
@@ -664,6 +665,7 @@ const afterSend = async (options: {
   email: OutboundEmail;
   conversation: Conversation;
   category: ReplyCategory | null;
+  objectionId: string | null;
   settings: AutomationSettings;
   sentAt: Date;
 }) => {
@@ -678,6 +680,14 @@ const afterSend = async (options: {
     new Date(options.sentAt.getTime() + settings.nurturingIntervalDays * 86_400_000),
     hours,
   );
+
+  // The email to a lead back from holiday picks the thread up; their answer decides the rest
+  if (conversation.state === 'out_of_office') {
+    await setConversationState({ conversation, state: 'replied' });
+    await scheduleNextAction(conversation.id, null);
+
+    return;
+  }
 
   if (FOLLOW_UP_KINDS.has(email.kind)) {
     const isNurturing = email.kind === 'nurturing';
@@ -725,6 +735,17 @@ const afterSend = async (options: {
   if (options.category === 'wrong_person') {
     await setConversationState({ conversation, state: 'wrong_person' });
   }
+
+  // Some objections get one answer and nothing more, such as a tone that does not fit
+  const objection = options.objectionId
+    ? await db.query.objectionSchema.findFirst({
+        where: eq(objectionSchema.id, options.objectionId),
+      })
+    : undefined;
+
+  if (objection?.closesConversation) {
+    await setConversationState({ conversation, state: 'closed_not_interested' });
+  }
 };
 
 /**
@@ -740,6 +761,7 @@ const runReplySendJob = async (job: Job) => {
       conversation: conversationSchema,
       answered: inboundMessageSchema,
       category: replyClassificationSchema.category,
+      objectionId: replyClassificationSchema.objectionId,
     })
     .from(outboundEmailSchema)
     .innerJoin(conversationSchema, eq(conversationSchema.id, outboundEmailSchema.conversationId))
@@ -838,7 +860,14 @@ const runReplySendJob = async (job: Job) => {
     payload: { outboundEmailId: email.id, instantlyEmailId },
   });
 
-  await afterSend({ email, conversation, category: row.category, settings, sentAt });
+  await afterSend({
+    email,
+    conversation,
+    category: row.category,
+    objectionId: row.objectionId,
+    settings,
+    sentAt,
+  });
 
   await completeJob(job.id);
 };

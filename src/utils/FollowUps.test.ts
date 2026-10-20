@@ -76,6 +76,15 @@ describe('Follow-ups', () => {
     });
   });
 
+  describe('Out of office', () => {
+    it('picks the thread up again once the lead is back', () => {
+      expect(nextAction({ ...base, state: 'out_of_office', demo: null })).toStrictEqual({
+        type: 'email',
+        kind: 'out_of_office_return',
+      });
+    });
+  });
+
   describe('Nurturing', () => {
     it('sends a reminder until the limit', () => {
       expect(nextAction({ ...base, state: 'nurturing', nurturingCount: 2 })).toStrictEqual({

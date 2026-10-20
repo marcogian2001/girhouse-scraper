@@ -7,6 +7,7 @@ export const FOLLOW_UP_STATES = new Set<ConversationState>([
   'demo_viewed',
   'follow_up',
   'nurturing',
+  'out_of_office',
 ]);
 
 /** The emails a silent lead can get. */
@@ -15,7 +16,8 @@ export type FollowUpKind =
   | 'demo_partial'
   | 'demo_complete'
   | 'closing'
-  | 'nurturing';
+  | 'nurturing'
+  | 'out_of_office_return';
 
 /** What the next step for a silent lead is. */
 export type NextAction =
@@ -34,7 +36,8 @@ type DemoBehaviour = {
 /**
  * Picks the follow-up for a lead who went silent: one tuned to what they did on the
  * demo, then a closing email with the real scarcity, then WhatsApp for leads who said
- * yes, or the end. A "not now" gets a few spaced reminders instead.
+ * yes, or the end. A "not now" gets a few spaced reminders instead, and a lead back
+ * from holiday one email that picks the thread up again.
  * @param options What is known about the lead.
  * @param options.state The conversation state.
  * @param options.followUpCount Follow-up and closing emails already sent.
@@ -56,6 +59,11 @@ export const nextAction = (options: {
 }): NextAction => {
   if (!FOLLOW_UP_STATES.has(options.state)) {
     return { type: 'none' };
+  }
+
+  // Back from holiday: one email picks the thread up again
+  if (options.state === 'out_of_office') {
+    return { type: 'email', kind: 'out_of_office_return' };
   }
 
   if (options.state === 'nurturing') {

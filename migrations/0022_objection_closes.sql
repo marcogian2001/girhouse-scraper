@@ -1,0 +1,1 @@
+ALTER TABLE "objection" ADD COLUMN "closes_conversation" boolean DEFAULT false NOT NULL;

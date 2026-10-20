@@ -37,6 +37,7 @@ const toFormValues = (objection?: Objection) => ({
   examplesText: objection?.examples.join('\n') ?? '',
   responseAngle: objection?.responseAngle ?? '',
   status: objection?.status ?? 'active',
+  closesConversation: objection?.closesConversation ?? false,
 });
 
 const ObjectionKey = (props: { objection: Objection }) => {
@@ -82,6 +83,7 @@ export const ObjectionForm = (props: { objection?: Objection }) => {
     defaultValues: toFormValues(props.objection),
   });
   const status = useWatch({ control: form.control, name: 'status' });
+  const closesConversation = useWatch({ control: form.control, name: 'closesConversation' });
 
   const handleSave = form.handleSubmit(async (values) => {
     setHasError(false);
@@ -151,6 +153,20 @@ export const ObjectionForm = (props: { objection?: Objection }) => {
           <FieldContent>
             <FieldLabel htmlFor={`active-${id}`}>{t('label_active')}</FieldLabel>
             <FieldDescription>{t('hint_active')}</FieldDescription>
+          </FieldContent>
+        </Field>
+
+        <Field orientation="horizontal">
+          <Checkbox
+            id={`closes-${id}`}
+            checked={closesConversation}
+            onCheckedChange={(checked) => {
+              form.setValue('closesConversation', checked === true);
+            }}
+          />
+          <FieldContent>
+            <FieldLabel htmlFor={`closes-${id}`}>{t('label_closes')}</FieldLabel>
+            <FieldDescription>{t('hint_closes')}</FieldDescription>
           </FieldContent>
         </Field>
 

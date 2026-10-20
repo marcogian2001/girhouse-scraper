@@ -71,7 +71,18 @@ const INTEREST_LABELS: Record<number, string> = {
   [-1]: 'not_interested',
   [-2]: 'wrong_person',
   [-3]: 'lost',
+  [-4]: 'no_show',
 };
+
+/** Instantly's interest value for a lead who booked a meeting. */
+export const MEETING_BOOKED_INTEREST = 2;
+
+/** Instantly's lead status while the campaign is still sending to the lead. */
+export const ACTIVE_LEAD_STATUS = 1;
+
+const campaignLeadsSchema = z.object({
+  items: z.array(z.looseObject({ status: z.number().nullish() })),
+});
 
 /**
  * Calls the Instantly API and fails loudly on a non-2xx response.
@@ -317,6 +328,50 @@ export const listLeadEmails = async (leadEmail: string) => {
   const payload = listEmailsResponseSchema.parse(await request(`/emails?${query.toString()}`));
 
   return payload.items;
+};
+
+/**
+ * Sets a lead's interest status in one campaign. A positive status such as "meeting
+ * booked" marks the campaign lead completed, which stops its sequence.
+ * @param options The update.
+ * @param options.email The lead's email.
+ * @param options.campaignId The Instantly campaign.
+ * @param options.value The interest value, such as `MEETING_BOOKED_INTEREST`.
+ * @throws {Error} When the API key is missing or Instantly rejects the request.
+ */
+export const updateLeadInterest = async (options: {
+  email: string;
+  campaignId: string;
+  value: number;
+}) => {
+  await request('/leads/update-interest-status', {
+    method: 'POST',
+    body: JSON.stringify({
+      lead_email: options.email,
+      interest_value: options.value,
+      campaign_id: options.campaignId,
+    }),
+  });
+};
+
+/**
+ * Reads a lead's status in one campaign: 1 while the campaign still sends to them,
+ * 3 once their sequence is completed or stopped.
+ * @param options The lookup.
+ * @param options.email The lead's email.
+ * @param options.campaignId The Instantly campaign.
+ * @returns The status, or null when the lead is not in the campaign.
+ * @throws {Error} When the API key is missing or Instantly rejects the request.
+ */
+export const getCampaignLeadStatus = async (options: { email: string; campaignId: string }) => {
+  const payload = campaignLeadsSchema.parse(
+    await request('/leads/list', {
+      method: 'POST',
+      body: JSON.stringify({ campaign: options.campaignId, contacts: [options.email], limit: 1 }),
+    }),
+  );
+
+  return payload.items[0]?.status ?? null;
 };
 
 /**

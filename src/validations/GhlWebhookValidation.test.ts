@@ -31,7 +31,16 @@ describe('GHL webhook delivery', () => {
     ).toBeFalsy();
   });
 
-  it('rejects a delivery with neither contact id nor email', () => {
+  it('accepts a contact a setter created with only a phone number', () => {
+    expect(
+      GhlWebhookValidation.safeParse({
+        phone: '+39 333 123 4567',
+        customData: { event: 'appointment_booked' },
+      }).success,
+    ).toBeTruthy();
+  });
+
+  it('rejects a delivery with no contact id, email or phone', () => {
     expect(GhlWebhookValidation.safeParse({ customData: { event: 'dnd' } }).success).toBeFalsy();
   });
 });

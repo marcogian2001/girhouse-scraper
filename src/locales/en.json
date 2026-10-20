@@ -718,7 +718,9 @@
     "button_delete": "Delete",
     "dialog_title": "Delete this objection?",
     "dialog_description": "Past replies keep their category. The AI stops using this angle.",
-    "error_save": "Could not save the objection"
+    "error_save": "Could not save the objection",
+    "label_closes": "Closes the conversation after the answer",
+    "hint_closes": "The lead gets the answer to this objection and nothing more: no demo, no follow-ups. Useful, for example, when the tone does not fit."
   },
   "AutomationSettingsForm": {
     "legend_general": "General",
@@ -857,7 +859,11 @@
     "outbound_title_follow_up": "Follow-up",
     "outbound_title_closing": "Closing email",
     "outbound_title_nurturing": "Nurturing email",
-    "outbound_title_booking_confirmation": "Call confirmation"
+    "outbound_title_booking_confirmation": "Call confirmation",
+    "event_out_of_office_sequence_running": "Back from out of office: the Instantly sequence carries on",
+    "event_referral_contact_created": "Referral added to the campaign",
+    "event_referral_contact_skipped": "Referral not added (already there or blocked)",
+    "event_test_skipped_referral_contact": "Referral not added (test)"
   },
   "ObjectionsPage": {
     "title": "Objections",

@@ -866,6 +866,8 @@ export const objectionSchema = pgTable(
     responseAngle: text('response_angle').notNull(),
     // Objections the AI added wait for a person to review the angle
     status: objectionStatusEnum('status').notNull().default('active'),
+    // After the answer to this objection nothing more goes out, as for a tone that does not fit
+    closesConversation: boolean('closes_conversation').notNull().default(false),
     sourceMessageId: uuid('source_message_id').references(() => inboundMessageSchema.id, {
       onDelete: 'set null',
     }),

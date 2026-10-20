@@ -364,6 +364,7 @@ describe('Instantly threads', () => {
     it('maps known statuses and keeps unknown ones visible', () => {
       expect(toInterestLabel(1)).toBe('interested');
       expect(toInterestLabel(-1)).toBe('not_interested');
+      expect(toInterestLabel(-4)).toBe('no_show');
       expect(toInterestLabel(9)).toBe('status_9');
       expect(toInterestLabel(null)).toBeNull();
     });

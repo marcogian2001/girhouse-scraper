@@ -52,6 +52,7 @@ export const ObjectionValidation = z.object({
   examples: z.array(z.string().trim().min(1).max(300)).max(20),
   responseAngle: z.string().trim().min(1).max(2000),
   status: z.enum(['active', 'needs_review']),
+  closesConversation: z.boolean().default(false),
 });
 
 export type ObjectionInput = z.infer<typeof ObjectionValidation>;

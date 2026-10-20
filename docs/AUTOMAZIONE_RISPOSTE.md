@@ -57,20 +57,51 @@ Automatizzare tutto quello che succede dopo la risposta di un lead a una cold em
 
 ---
 
-## 3. Azioni manuali, a carico del titolare
+## 3. Azioni manuali, a carico del titolare (aggiornate al 20/10)
 
-- [ ] **Riavviare `bun run dev`.** Applica le migrazioni dalla `0015` alla `0018` su **Neon**: aggiungono solo tabelle e colonne, senza toccare i dati esistenti.
-- [ ] **Inserire il numero WhatsApp aziendale** `+393516930869` in **Dashboard → Automazione**.
-- [?] **Caricare le 9 obiezioni** da `docs/obiezioni.json` (vedi la sezione 6). Va fatto a mano o con uno script lanciato dal titolare, perché l'AI non ha il permesso di scrivere su Neon.
-- [ ] **Commit del lavoro.** Niente è ancora committato: circa 90 file modificati o nuovi sul branch `main`.
-  - Attenzione: in `src/components/ui/input.tsx`, `ui/select.tsx`, `ui/textarea.tsx` e `src/components/KnowledgeMentionTextarea.tsx` c'è una modifica `bg-white` **non fatta dall'AI**. Decidi tu se includerla.
-- [ ] **Variabili d'ambiente su Vercel:**
-  - `INSTANTLY_WEBHOOK_SECRET`, lo stesso valore del `.env` locale;
-  - `NEXT_PUBLIC_APP_URL`, il dominio vero: da qui nasce il link della demo.
-- [ ] **Deploy.** Le migrazioni partono da sole con `npm run build`.
-- [ ] **Webhook su Instantly** per gli eventi `reply_received` e `auto_reply_received`, con URL `https://<dominio>/api/webhooks/instantly?secret=<INSTANTLY_WEBHOOK_SECRET>`. Il testo pronto è nella pagina Automazione.
-- [ ] **Qualche giorno in modalità bozza** con risposte vere, poi passare ad **automatica**.
-- [ ] **Per la fase 4**, mettere nel `.env` (non in chat): token GHL (private integration), location id, calendar id, pipeline id e stage id.
+Tutto il codice è committato su `main`. Restano fuori solo le modifiche `bg-white` del titolare in `src/components/ui/input.tsx`, `ui/select.tsx`, `ui/textarea.tsx` e `src/components/KnowledgeMentionTextarea.tsx`.
+
+**1. Database e deploy**
+- [ ] **Riavviare `bun run dev`.** Applica su Neon le migrazioni fino alla `0022`. Aggiungono tabelle e colonne, senza toccare i dati.
+- [ ] **Deploy su Vercel.** Le migrazioni partono da sole con la build.
+
+**2. Variabili d'ambiente su Vercel**, gli stessi valori del `.env` locale:
+- [ ] `NEXT_PUBLIC_APP_URL`: il dominio vero, da cui nascono i link delle demo.
+- [ ] `INSTANTLY_WEBHOOK_SECRET`.
+- [ ] `GHL_API_TOKEN`, `GHL_LOCATION_ID`, `GHL_CALENDAR_ID`, `GHL_PIPELINE_ID`, `GHL_PIPELINE_STAGE_ID`, `GHL_WEBHOOK_SECRET`.
+- [ ] Controllare che ci siano anche `ANTHROPIC_API_KEY`, `GOOGLE_MAPS_API_KEY`, `INSTANTLY_API_KEY` e `CRON_SECRET` (il cron ogni minuto fa girare risposte, follow-up e WhatsApp).
+
+**3. Instantly**
+- [ ] **Webhook** per `reply_received` e `auto_reply_received` verso `https://<dominio>/api/webhooks/instantly?secret=<INSTANTLY_WEBHOOK_SECRET>`. Il testo pronto è nella pagina Automazione.
+- [ ] **Permessi della chiave API:** anche `leads:update`, che serve a fermare la sequenza dei lead prenotati da un setter.
+
+**4. Go High Level**
+- [ ] **Permessi del token:** `calendars.readonly`, `calendars/events.write`, `contacts.write`, `opportunities.write`, `locations/customFields.readonly`.
+- [x] **Campi personalizzati WhatsApp:** creati il 20/10.
+- [x] **Workflow "call prenotata"** con webhook `event = appointment_booked`: fatto dal titolare. Va bene anche per le call prenotate dai setter.
+- [ ] **Workflow "DND attivato"**: webhook con `event = dnd`.
+- [ ] **Workflow "WA Outreach"**:
+  - trigger: tag `wa-outreach`;
+  - azione: messaggio WhatsApp GoGHL (Drip Mode) con `{{contact.wa_primo_messaggio}}`, solo in orario lavorativo.
+- [ ] **Conversation AI su WhatsApp:**
+  - nel prompt `{{contact.sintesi_email}}`, `{{contact.obiezioni_emerse}}`, `{{contact.comportamento_demo}}` e `{{contact.link_demo}}`;
+  - il calendario "Call Demo - 30 min" per prenotare.
+- [ ] **Workflow "Risposta WhatsApp"**:
+  - trigger "Customer Replied", canale WhatsApp;
+  - webhook con `event = whatsapp_inbound` e `message = {{message.body}}`.
+- [ ] **Workflow "Handover"**: quando il bot passa a una persona, webhook con `event = handover`.
+- [ ] **Notifica al venditore:** trigger "Opportunity Stage Changed" → "Trial Schedulata" nella pipeline "4. Cold Email | Instantly".
+- [ ] **Facoltativo:** chiudere il sabato nel calendario "Call Demo - 30 min" se non volete call il sabato. Oggi è aperto.
+- Tutti i webhook vanno a `https://<dominio>/api/webhooks/ghl?secret=<GHL_WEBHOOK_SECRET>`, con metodo POST e il campo `event` nei Custom Data.
+
+**5. Dashboard dell'app**
+- [ ] **Automazione:** numero WhatsApp aziendale `+393516930869`.
+- [ ] **Obiezioni:** segnare "Dopo la risposta chiude la conversazione" su quelle che devono chiudere, per esempio "Tono non adatto".
+- [ ] **Qualche giorno in modalità bozza** con risposte vere, rileggendo le bozze; poi passare ad **automatica**.
+
+**6. Prime prove vere**
+- [ ] **Una prenotazione con un lead vero**, non di test, per confermare i permessi GHL in scrittura: contatto, appuntamento, opportunità.
+- [ ] **Un referente aggiunto** a una campagna: approvarlo e inviarlo dalla scheda "Invia" della campagna. Il push salta i lead già presenti su Instantly.
 
 ---
 
@@ -112,8 +143,11 @@ Automatizzare tutto quello che succede dopo la risposta di un lead a una cold em
 - [x] Invio nello stesso thread e dalla stessa casella, via `POST /emails/reply` di Instantly.
 - [x] Campagne nuove create con `stop_on_auto_reply: false`.
 - [x] L'angolo dell'obiezione ha la precedenza sulla call to action: se dice di non proporre nulla, l'AI non propone nulla.
-- [ ] **Persona sbagliata con referente:** la bozza di ringraziamento c'è; manca la creazione automatica del nuovo contatto in campagna.
-- [ ] **Fuori ufficio sulle campagne vecchie:** manca la ripresa alla data di rientro. Va fatta nella fase 5.
+- [x] **Persona sbagliata con referente:** oltre al ringraziamento, l'email del referente diventa un nuovo contatto della stessa campagna (`src/libs/Referrals.ts`).
+  - Prende categoria e città di chi ha risposto, e parte la solita pipeline di ricerca e scrittura.
+  - Si salta se l'indirizzo è bloccato o è già in campagna.
+  - Va approvato e inviato dalla campagna.
+- [x] **Fuori ufficio:** ripresa il giorno lavorativo dopo il rientro (vedi fase 5).
 
 ### Fase 3: demo personalizzata [x]
 
@@ -141,7 +175,7 @@ Automatizzare tutto quello che succede dopo la risposta di un lead a una cold em
 - [x] La bozza per un lead "interessato" contiene il link vero alla demo.
 - [x] Riquadro **Demo** nel dettaglio conversazione: stato, passo raggiunto, tempo sulla pagina, pulsante "Genera demo".
 - [x] Simulando con l'email di un lead vero, la conversazione di test usa i dati veri di quel lead.
-- [?] **Verifica visiva della pagina nel browser**, non ancora fatta dall'AI. Prova: simula "mi interessa" con `michienzistudio@gmail.com`, poi "Apri anteprima".
+- [x] **Verifica visiva della pagina nel browser**, fatta con Playwright su desktop e mobile.
 - [ ] **Colore dalle foto Maps:** non fatto, perché richiede la dipendenza `sharp` e l'installazione è fallita. Oggi il colore viene dal `theme-color` del sito, altrimenti è il blu della giacca della giraffa.
 
 ### Fase 3b: demo come tour guidato [x] (rifacimento del 18/10, su richiesta del titolare)
@@ -157,7 +191,7 @@ Automatizzare tutto quello che succede dopo la risposta di un lead a una cold em
 - [x] Snapshot v2 (landing più chat). Le demo vecchie si ricostruiscono da sole alla prima apertura, mantenendo il link.
 - [x] Sistema recensioni con il filtro 4-5 stelle, scelto dal titolare. ⚠️ Google vieta il "review gating".
 - [ ] **Token GHL** nel `.env`: `GHL_API_TOKEN` (private integration della location Girhouse con permessi calendars.readonly, calendars/events.write e contacts.write), `GHL_LOCATION_ID=bupvNmqh3Ng9opZrbF48`, `GHL_CALENDAR_ID=V8lrPKIjN2AJ5RxHrOYN` ("Call Demo - 30 min"). Senza token lo step 6 mostra solo il link WhatsApp.
-- [?] **Verifica visiva** del tour nel browser, su desktop e su mobile.
+- [x] **Verifica visiva** del tour nel browser, su desktop e su mobile (Playwright).
 - [ ] Facoltativo: altre pose della giraffa (che indica, che saluta, che festeggia).
 
 ### Fase 3c: rifiniture del tour [x] (18/10, su richiesta del titolare)
@@ -262,9 +296,12 @@ Automatizzare tutto quello che succede dopo la risposta di un lead a una cold em
   - solo sulle conversazioni di test: "Esegui ora il prossimo passo (test)".
 - [x] **Migrazione 0020:** stato `closed_no_reply`, job `conversation_tick`.
 - [x] **Verifica su PGlite** con il lead Michienzi: l'intera sequenza (non aperta, a metà con `?passo=4`, completa, chiusura con orari, chiusura senza risposta), la risposta a metà sequenza e il nurturing.
-- [ ] Ripresa dopo il fuori ufficio alla data di rientro (`outOfOfficeUntil`).
-- [ ] Opzione "chiude la conversazione" sull'obiezione (per esempio "Tono non adatto").
-- [ ] Prenotazioni dei setter per lead che non hanno mai risposto: oggi restano nella sequenza Instantly (gap discusso il 20/10).
+- [x] **Ripresa dopo il fuori ufficio:** il giorno lavorativo dopo la data di rientro (o dopo 5 giorni lavorativi se la data manca) l'app legge il lead su Instantly.
+  - Se la sequenza è ancora attiva non fa nulla.
+  - Se Instantly l'ha fermata (succede: sui dati veri le risposte automatiche fermano i lead), scrive un'email "bentornato" nel thread. Poi lo stato torna "Risposto".
+- [x] **Obiezione che chiude la conversazione:** casella "Dopo la risposta chiude la conversazione" nella libreria (migrazione 0022). Dopo l'invio della risposta lo stato diventa "Chiuso, non interessato".
+- [x] **Prenotazioni dei setter per lead che non hanno mai risposto:** il webhook `appointment_booked` cerca l'email tra i contatti delle campagne e su Instantly imposta "meeting booked", che chiude il lead e ferma la sequenza.
+  - Le conversazioni si trovano anche per telefono.
 
 ### Fase 6: WhatsApp via GHL [x] (20/10)
 
@@ -311,11 +348,13 @@ Automatizzare tutto quello che succede dopo la risposta di un lead a una cold em
 
 ## 5. Punti da verificare
 
-- [?] **Blocklist Instantly:** endpoint `POST /block-lists-entries` con `bl_value`, preso dalla documentazione e non ancora provato su un lead vero.
-- [?] **Etichette di interesse Instantly:** la mappatura dei valori numerici `i_status` (in `src/services/Instantly.ts`) è dedotta.
-- [?] **`stop_on_auto_reply`:** il campo esiste nella v2 delle campagne Instantly? Da controllare alla prima campagna nuova.
+- [x] **Blocklist Instantly:** `POST /block-lists-entries` con `bl_value`, confermato dallo schema dell'API il 20/10.
+- [x] **Etichette di interesse Instantly:** mappa confermata (1 interessato, 2 meeting booked, 0 fuori ufficio, -1 non interessato, -2 persona sbagliata, -3 perso, -4 no show).
+- [x] **`stop_on_auto_reply`:** esiste ed è `false` sulle campagne. Però, sui dati veri, lead con risposte automatiche risultano comunque fermi (`status: 3`): da qui la ripresa dopo il fuori ufficio.
+- [x] **Obiezioni:** importate dal titolare.
 - [?] **Instantly lento:** se una risposta non è ancora visibile nell'API quando arriva il webhook, il job ritenta 5 volte e poi la manda in revisione.
 - [?] **Tono delle prime bozze vere:** rileggerle prima di passare ad automatica.
+- [?] **Stop della sequenza con "meeting booked":** Instantly documenta che il lead "può" essere segnato come completato. Controllare sul primo lead prenotato da un setter.
 
 ---
 
