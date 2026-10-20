@@ -2,7 +2,6 @@
 
 import { useFormatter, useTranslations } from 'next-intl';
 import { useState } from 'react';
-import { StatusBadge } from '@/components/StatusBadge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -44,7 +43,6 @@ const EmailMeta = (props: { email: OutboundEmail }) => {
 
   return (
     <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-      <StatusBadge kind="outbound" status={props.email.status} />
       {props.email.status === 'scheduled' && props.email.scheduledFor && (
         <span>{t('scheduled_for', { date: when(props.email.scheduledFor) })}</span>
       )}
@@ -89,7 +87,7 @@ export const OutboundEmailEditor = (props: { email: OutboundEmail }) => {
   };
 
   return (
-    <div className="space-y-3 rounded-lg border p-3">
+    <div className="space-y-3">
       <EmailMeta email={props.email} />
       <IssueBadges issues={props.email.issues} />
 

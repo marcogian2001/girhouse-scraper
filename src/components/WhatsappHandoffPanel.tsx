@@ -5,7 +5,6 @@ import { useState } from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Field, FieldLabel } from '@/components/ui/field';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
@@ -77,25 +76,21 @@ const MessageThread = (props: { messages: WhatsappMessage[] }) => {
  * messages GHL reports. The platform never writes on WhatsApp itself.
  * @param props Component props.
  * @param props.conversationId The conversation.
- * @param props.handoff The hand-off, if one was prepared.
+ * @param props.handoff The hand-off.
  * @param props.messages The WhatsApp messages, oldest first.
- * @returns The card, or nothing when the lead never reached WhatsApp.
+ * @returns The panel.
  */
-export const WhatsappHandoffCard = (props: {
+export const WhatsappHandoffPanel = (props: {
   conversationId: string;
-  handoff: Handoff | null;
+  handoff: Handoff;
   messages: WhatsappMessage[];
 }) => {
   const t = useTranslations('WhatsappHandoffCard');
   const format = useFormatter();
   const router = useRouter();
-  const [message, setMessage] = useState(props.handoff?.firstMessage ?? '');
+  const [message, setMessage] = useState(props.handoff.firstMessage);
   const [failure, setFailure] = useState<Failure | null>(null);
   const [isBusy, setIsBusy] = useState(false);
-
-  if (!props.handoff) {
-    return null;
-  }
 
   const { handoff } = props;
   const isDraft = handoff.status === 'draft';
@@ -128,78 +123,73 @@ export const WhatsappHandoffCard = (props: {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t('title')}</CardTitle>
-        <CardDescription>
-          {handoff.sentAt
-            ? t(`status_${handoff.status}`, {
-                date: format.dateTime(handoff.sentAt, { dateStyle: 'medium', timeStyle: 'short' }),
-              })
-            : t(`status_${handoff.status}`, { date: '' })}
-        </CardDescription>
-      </CardHeader>
+    <div className="space-y-4">
+      <p className="text-sm text-muted-foreground">
+        {t(`status_${handoff.status}`, {
+          date: handoff.sentAt
+            ? format.dateTime(handoff.sentAt, { dateStyle: 'medium', timeStyle: 'short' })
+            : '',
+        })}
+      </p>
 
-      <CardContent className="space-y-4">
-        <HandoffContext handoff={handoff} />
+      <HandoffContext handoff={handoff} />
 
-        {issues.length > 0 && isDraft && (
-          <div className="flex flex-wrap gap-1.5">
-            {issues.map((issue) => (
-              <Badge key={issue} variant="ghost" className="bg-warning/10 text-warning">
-                {t(`issue_${issue}`)}
-              </Badge>
-            ))}
-          </div>
-        )}
+      {issues.length > 0 && isDraft && (
+        <div className="flex flex-wrap gap-1.5">
+          {issues.map((issue) => (
+            <Badge key={issue} variant="ghost" className="bg-warning/10 text-warning">
+              {t(`issue_${issue}`)}
+            </Badge>
+          ))}
+        </div>
+      )}
 
-        {isDraft ? (
-          <Field>
-            <FieldLabel htmlFor={`whatsapp-${handoff.id}`}>{t('label_message')}</FieldLabel>
-            <Textarea
-              id={`whatsapp-${handoff.id}`}
-              rows={6}
-              value={message}
-              onChange={(event) => {
-                setMessage(event.target.value);
-              }}
-            />
-          </Field>
-        ) : (
-          <MessageThread messages={props.messages} />
-        )}
+      {isDraft ? (
+        <Field>
+          <FieldLabel htmlFor={`whatsapp-${handoff.id}`}>{t('label_message')}</FieldLabel>
+          <Textarea
+            id={`whatsapp-${handoff.id}`}
+            rows={6}
+            value={message}
+            onChange={(event) => {
+              setMessage(event.target.value);
+            }}
+          />
+        </Field>
+      ) : (
+        <MessageThread messages={props.messages} />
+      )}
 
-        {isDraft && (
-          <div className="flex flex-wrap gap-2">
-            <Button
-              type="button"
-              disabled={isBusy || !message.trim()}
-              onClick={async () => {
-                await send('POST');
-              }}
-            >
-              {isBusy && <Spinner />}
-              {t('button_send')}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              disabled={isBusy}
-              onClick={async () => {
-                await send('DELETE');
-              }}
-            >
-              {t('button_cancel')}
-            </Button>
-          </div>
-        )}
+      {isDraft && (
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            disabled={isBusy || !message.trim()}
+            onClick={async () => {
+              await send('POST');
+            }}
+          >
+            {isBusy && <Spinner />}
+            {t('button_send')}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={isBusy}
+            onClick={async () => {
+              await send('DELETE');
+            }}
+          >
+            {t('button_cancel')}
+          </Button>
+        </div>
+      )}
 
-        {failure && (
-          <Alert variant="destructive">
-            <AlertDescription>{t(`error_${failure}`)}</AlertDescription>
-          </Alert>
-        )}
-      </CardContent>
-    </Card>
+      {failure && (
+        <Alert variant="destructive">
+          <AlertDescription>{t(`error_${failure}`)}</AlertDescription>
+        </Alert>
+      )}
+    </div>
   );
 };

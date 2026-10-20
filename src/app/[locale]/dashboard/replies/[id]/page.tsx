@@ -2,15 +2,13 @@ import { ArrowLeft } from 'lucide-react';
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import * as z from 'zod';
-import { ClassificationEditor } from '@/components/ClassificationEditor';
 import { ConversationDemoCard } from '@/components/ConversationDemoCard';
 import { ConversationProgress } from '@/components/ConversationProgress';
-import { OutboundEmailEditor } from '@/components/OutboundEmailEditor';
+import { ConversationThread } from '@/components/ConversationThread';
+import { ConversationTimeline } from '@/components/ConversationTimeline';
 import { RunNextActionButton } from '@/components/RunNextActionButton';
-import { StatusBadge } from '@/components/StatusBadge';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { WhatsappHandoffCard } from '@/components/WhatsappHandoffCard';
 import { getApiContext } from '@/libs/ApiAuth';
 import { EVENT_TYPES, getConversationDetail } from '@/libs/Conversations';
 import { getConversationDemo } from '@/libs/Demos';
@@ -39,14 +37,10 @@ export default async function ReplyDetailPage(props: {
     notFound();
   }
 
-  const { conversation, messages, outbound, events } = detail;
+  const { conversation, events } = detail;
   const demo = await getConversationDemo(conversation.id);
   const canRunNow = await canRunNextActionNow(conversation);
   const canSkip = await canSkipToWhatsapp(conversation);
-  const latestMessageId = messages.at(-1)?.message.id;
-
-  const dateTime = (date: Date) =>
-    format.dateTime(date, { dateStyle: 'medium', timeStyle: 'short' });
 
   const stateLabel = (value: unknown) => {
     const state = conversationStateEnum.enumValues.find((option) => option === value);
@@ -161,105 +155,12 @@ export default async function ReplyDetailPage(props: {
             <CardTitle>{t('replies_title')}</CardTitle>
           </CardHeader>
 
-          <CardContent className="space-y-6">
-            {messages.map(({ message, classification, objection }) => (
-              <article
-                key={message.id}
-                className="space-y-3 border-b pb-6 last:border-b-0 last:pb-0"
-              >
-                <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                  <span>{dateTime(message.receivedAt)}</span>
-                  {message.subject && <span>· {message.subject}</span>}
-                  {message.isAutoReply && <Badge variant="outline">{t('badge_auto_reply')}</Badge>}
-                  {message.instantlyInterestLabel && (
-                    <Badge variant="outline">
-                      {t('instantly_label', { label: message.instantlyInterestLabel })}
-                    </Badge>
-                  )}
-                </div>
-
-                <p className="text-sm whitespace-pre-wrap">{message.bodyText}</p>
-
-                {classification ? (
-                  <div className="space-y-3 rounded-lg bg-muted/50 p-3">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <StatusBadge kind="replyCategory" status={classification.category} />
-                      <span className="text-xs text-muted-foreground">
-                        {t('classification_meta', {
-                          confidence: Math.round(classification.confidence * 100),
-                          source: t(`source_${classification.source}`),
-                        })}
-                      </span>
-                    </div>
-
-                    <p className="text-sm">{classification.reasoning}</p>
-
-                    <ul className="space-y-1 text-xs text-muted-foreground">
-                      {objection && (
-                        <li>
-                          {t('detail_objection')}{' '}
-                          <Link href="/dashboard/objections/" className="underline">
-                            {objection.title}
-                          </Link>
-                        </li>
-                      )}
-                      {classification.referral && (
-                        <li>{t('detail_referral', { referral: classification.referral })}</li>
-                      )}
-                      {classification.chosenSlot && (
-                        <li>{t('detail_slot', { slot: classification.chosenSlot })}</li>
-                      )}
-                      {classification.phoneE164 && (
-                        <li>{t('detail_phone', { phone: classification.phoneE164 })}</li>
-                      )}
-                      {classification.returnDate && (
-                        <li>{t('detail_return', { date: classification.returnDate })}</li>
-                      )}
-                    </ul>
-
-                    {message.id === latestMessageId && (
-                      <ClassificationEditor
-                        classificationId={classification.id}
-                        category={classification.category}
-                      />
-                    )}
-                  </div>
-                ) : (
-                  <p className="text-xs text-muted-foreground">
-                    {message.processedAt ? t('not_classified') : t('pending')}
-                  </p>
-                )}
-
-                {outbound
-                  .filter((email) => email.inboundMessageId === message.id)
-                  .map((email) => (
-                    <div key={email.id} className="space-y-2">
-                      <h3 className="text-sm font-medium">{t('answer_title')}</h3>
-                      <OutboundEmailEditor email={email} />
-                    </div>
-                  ))}
-              </article>
-            ))}
-
-            {/* Follow-ups answer no reply in particular: they come after the thread */}
-            {outbound
-              .filter((email) => !email.inboundMessageId)
-              .map((email) => (
-                <article key={email.id} className="space-y-2 border-t pt-6">
-                  <h3 className="text-sm font-medium">{t(`outbound_title_${email.kind}`)}</h3>
-                  <OutboundEmailEditor email={email} />
-                </article>
-              ))}
+          <CardContent>
+            <ConversationThread detail={detail} />
           </CardContent>
         </Card>
 
         <div className="space-y-6">
-          <WhatsappHandoffCard
-            conversationId={conversation.id}
-            handoff={detail.whatsappHandoff}
-            messages={detail.whatsappMessages}
-          />
-
           <ConversationDemoCard conversationId={conversation.id} demo={demo} />
 
           <Card>
@@ -268,24 +169,16 @@ export default async function ReplyDetailPage(props: {
             </CardHeader>
 
             <CardContent>
-              <ol className="space-y-3">
-                {events.map(({ event, actorName }) => {
-                  const description = eventDetail(event.type, event.payload);
-
-                  return (
-                    <li key={event.id} className="space-y-0.5 text-sm">
-                      <div className="font-medium">{eventLabel(event.type)}</div>
-                      {description && (
-                        <div className="break-words text-muted-foreground">{description}</div>
-                      )}
-                      <div className="text-xs text-muted-foreground">
-                        {dateTime(event.createdAt)}
-                        {actorName && ` · ${t('by_person', { name: actorName })}`}
-                      </div>
-                    </li>
-                  );
-                })}
-              </ol>
+              <ConversationTimeline
+                entries={events.map(({ event, actorName }) => ({
+                  id: event.id,
+                  type: event.type,
+                  label: eventLabel(event.type),
+                  detail: eventDetail(event.type, event.payload),
+                  actor: actorName ? t('by_person', { name: actorName }) : null,
+                  createdAt: event.createdAt,
+                }))}
+              />
             </CardContent>
           </Card>
         </div>
