@@ -1,4 +1,4 @@
-import { and, count, eq, exists, gt, inArray, isNull, sql } from 'drizzle-orm';
+import { and, count, desc, eq, exists, gt, inArray, isNotNull, isNull, sql } from 'drizzle-orm';
 import {
   coveragePlanSchema,
   coverageTermSchema,
@@ -10,7 +10,15 @@ import {
   searchCellSchema,
 } from '@/models/Schema';
 import type { CoveragePair } from '@/utils/Coverage';
-import { planDailySearches, QUOTA_WINDOW_MS, rankPairs, toPairStatus } from '@/utils/Coverage';
+import {
+  estimatePlaces,
+  planDailySearches,
+  QUOTA_WINDOW_MS,
+  rankPairs,
+  resolveArea,
+  toCompletion,
+  toPairStatus,
+} from '@/utils/Coverage';
 import { ITALIAN_PROVINCES } from '@/utils/ItalianProvinces';
 import { RESERVE_LEAD_STATUSES } from '@/utils/Leads';
 import { db } from './DB';
@@ -27,6 +35,17 @@ export type CoveragePairStatus = CoveragePair & {
   unusedPlaces: number;
 };
 
+/** One area searched for a term, as the coverage page shows it. */
+export type CoverageArea = ReturnType<typeof resolveArea> & {
+  placeId: string;
+  // Places scraped or already leads
+  usedPlaces: number;
+  unusedPlaces: number;
+  estimatedPlaces: number;
+  // Share of the estimated places already used, between 0 and 1
+  completion: number;
+};
+
 /**
  * Builds the lookup key of a pair.
  * @param locationPlaceId The Google place id of the province.
@@ -39,18 +58,29 @@ const toPairKey = (locationPlaceId: string, term: string) => `${locationPlaceId}
  * Counts, for each search area of a plan, the cells left to scan and the places found.
  * @param options The call options.
  * @param options.plan The coverage plan.
- * @param options.terms The active terms of the plan.
+ * @param options.terms The terms of the plan to count.
+ * @param options.placeIds The places to keep, every searched place when missing.
  * @returns One row per existing area.
  */
-const loadAreaCounts = async (options: { plan: CoveragePlan; terms: string[] }) => {
+const loadAreaCounts = async (options: {
+  plan: CoveragePlan;
+  terms: string[];
+  placeIds?: string[];
+}) => {
   const { organizationId, websiteFilter } = options.plan;
   const isOwnArea = eq(searchAreaSchema.organizationId, organizationId);
 
   const cells = db
-    .select({ areaId: searchCellSchema.searchAreaId, pending: count().as('pending') })
+    .select({
+      areaId: searchCellSchema.searchAreaId,
+      total: count().as('total'),
+      pending: sql<number>`count(*) filter (where ${isNull(searchCellSchema.scannedAt)})`.as(
+        'pending',
+      ),
+    })
     .from(searchCellSchema)
     .innerJoin(searchAreaSchema, eq(searchAreaSchema.id, searchCellSchema.searchAreaId))
-    .where(and(isOwnArea, isNull(searchCellSchema.scannedAt)))
+    .where(isOwnArea)
     .groupBy(searchCellSchema.searchAreaId)
     .as('cells');
 
@@ -86,6 +116,7 @@ const loadAreaCounts = async (options: { plan: CoveragePlan; terms: string[] }) 
     .select({
       locationPlaceId: searchAreaSchema.locationPlaceId,
       searchTerm: searchAreaSchema.searchTerm,
+      totalCells: sql<number>`coalesce(${cells.total}, 0)`.mapWith(Number),
       pendingCells: sql<number>`coalesce(${cells.pending}, 0)`.mapWith(Number),
       knownPlaces: sql<number>`coalesce(${places.known}, 0)`.mapWith(Number),
       unusedPlaces: sql<number>`coalesce(${places.unused}, 0)`.mapWith(Number),
@@ -97,10 +128,7 @@ const loadAreaCounts = async (options: { plan: CoveragePlan; terms: string[] }) 
     .where(
       and(
         isOwnArea,
-        inArray(
-          searchAreaSchema.locationPlaceId,
-          ITALIAN_PROVINCES.map((province) => province.placeId),
-        ),
+        options.placeIds ? inArray(searchAreaSchema.locationPlaceId, options.placeIds) : undefined,
         inArray(searchAreaSchema.searchTerm, options.terms),
       ),
     );
@@ -135,7 +163,7 @@ const loadPasses = async (planId: string) => {
  * @param plan The coverage plan.
  * @returns One entry per province and active term.
  */
-export const loadPairStatuses = async (plan: CoveragePlan): Promise<CoveragePairStatus[]> => {
+const loadPairStatuses = async (plan: CoveragePlan): Promise<CoveragePairStatus[]> => {
   const terms = await db
     .select({ term: coverageTermSchema.term, tier: coverageTermSchema.tier })
     .from(coverageTermSchema)
@@ -146,7 +174,11 @@ export const loadPairStatuses = async (plan: CoveragePlan): Promise<CoveragePair
   }
 
   const [areas, passes] = await Promise.all([
-    loadAreaCounts({ plan, terms: terms.map((item) => item.term) }),
+    loadAreaCounts({
+      plan,
+      terms: terms.map((item) => item.term),
+      placeIds: ITALIAN_PROVINCES.map((province) => province.placeId),
+    }),
     loadPasses(plan.id),
   ]);
   const areaByKey = new Map(
@@ -179,6 +211,75 @@ export const loadPairStatuses = async (plan: CoveragePlan): Promise<CoveragePair
       };
     }),
   );
+};
+
+/**
+ * Loads the latest location label typed for each place the organization searched.
+ * @param organizationId The organization searching.
+ * @returns The label of each place id.
+ */
+const loadAreaLabels = async (organizationId: string) => {
+  const rows = await db
+    .selectDistinctOn([leadSearchSchema.locationPlaceId], {
+      placeId: leadSearchSchema.locationPlaceId,
+      label: leadSearchSchema.location,
+    })
+    .from(leadSearchSchema)
+    .where(
+      and(
+        eq(leadSearchSchema.organizationId, organizationId),
+        isNotNull(leadSearchSchema.locationPlaceId),
+      ),
+    )
+    .orderBy(leadSearchSchema.locationPlaceId, desc(leadSearchSchema.createdAt));
+
+  return new Map(rows.map((row) => [row.placeId, row.label]));
+};
+
+/**
+ * Lists, for every term of a plan, the areas searched for it and how far each one got.
+ * Areas of manual searches count too, since they share the plan's census.
+ * @param plan The coverage plan.
+ * @returns One entry per term, in alphabetical order.
+ */
+export const loadCoverageAreas = async (plan: CoveragePlan) => {
+  const terms = await db
+    .select({ term: coverageTermSchema.term, isActive: coverageTermSchema.isActive })
+    .from(coverageTermSchema)
+    .where(eq(coverageTermSchema.planId, plan.id))
+    .orderBy(coverageTermSchema.term);
+
+  if (terms.length === 0) {
+    return [];
+  }
+
+  const [areas, labels] = await Promise.all([
+    loadAreaCounts({ plan, terms: terms.map((item) => item.term) }),
+    loadAreaLabels(plan.organizationId),
+  ]);
+
+  return terms.map((item) => ({
+    term: item.term,
+    isActive: item.isActive,
+    areas: areas
+      .filter((area) => area.searchTerm === item.term)
+      .map((area): CoverageArea => {
+        const usedPlaces = area.knownPlaces - area.unusedPlaces;
+        const estimatedPlaces = estimatePlaces(area);
+
+        return {
+          placeId: area.locationPlaceId,
+          ...resolveArea({
+            placeId: area.locationPlaceId,
+            label: labels.get(area.locationPlaceId) ?? null,
+          }),
+          usedPlaces,
+          unusedPlaces: area.unusedPlaces,
+          estimatedPlaces,
+          completion: toCompletion({ usedPlaces, estimatedPlaces }),
+        };
+      }),
+  }));
 };
 
 /**

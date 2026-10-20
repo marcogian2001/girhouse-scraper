@@ -224,10 +224,20 @@
     "short_alert": "Trovate {found} email valide su {max}: nella zona non ci sono altre attività nuove. Per averne altre prova una zona più ampia o altri termini."
   },
   "CoveragePage": {
-    "title": "Copertura Italia",
-    "subtitle": "Ogni giorno cerca la prossima provincia per ogni professione, finché non resta nulla da trovare.",
+    "title": "Copertura",
+    "subtitle": "Per ogni professione, le zone già cercate e quanto resta da trovare.",
+    "status_active": "Attivo",
+    "status_paused": "In pausa",
     "empty_title": "Nessun piano di copertura",
-    "empty_description": "Crea il piano con le 107 province e un catalogo di professioni da modificare. Parte in pausa.",
+    "empty_description": "Crea il piano per cercare ogni giorno nuove attività per le tue professioni. Parte in pausa.",
+    "tab_overview": "Copertura",
+    "tab_settings": "Impostazioni",
+    "stat_areas": "Zone cercate",
+    "stat_areas_hint": "{terms, plural, one {Per # professione} other {Per # professioni}}",
+    "stat_completion": "Completamento stimato",
+    "stat_completion_hint": "Attività già prese sul totale stimato",
+    "stat_unused": "Attività da contattare",
+    "stat_unused_hint": "Circa {months, number} mesi al ritmo attuale",
     "title_settings": "Impostazioni",
     "title_terms": "Professioni"
   },
@@ -258,24 +268,15 @@
     "error_duplicate": "Questa professione è già nel catalogo.",
     "error_save": "La modifica non è stata salvata."
   },
-  "CoverageSummary": {
-    "stat_exhausted": "Coppie esaurite",
-    "stat_exhausted_hint": "{exhausted} di {total} province × professioni",
-    "stat_census": "Censimento",
-    "stat_census_hint": "Coppie scansionate per intero su Google",
-    "stat_unused": "Attività da contattare",
-    "stat_unused_hint": "Su {known} attività censite",
-    "stat_months": "Mesi stimati",
-    "stat_months_hint": "Al ritmo attuale, sulle attività già censite",
-    "title_terms": "Per professione",
-    "title_regions": "Per regione",
-    "column_term": "Professione",
-    "column_region": "Regione",
-    "column_exhausted": "Esaurite",
-    "column_in_progress": "In corso",
-    "column_not_started": "Da iniziare",
-    "column_known": "Censite",
-    "column_unused": "Da contattare"
+  "CoverageTermCard": {
+    "badge_paused": "In pausa",
+    "empty": "Nessuna ricerca ancora",
+    "areas_summary": "{areas, plural, one {# zona} other {# zone}} in {regions, plural, one {# regione} other {# regioni}}",
+    "region_other": "Altre zone",
+    "area_unnamed": "Zona senza nome",
+    "kind_province": "Provincia",
+    "kind_place": "Comune",
+    "places_progress": "{used, number} di circa {estimated, number} attività"
   },
   "DeleteLeadSearchButton": {
     "button": "Elimina ricerca",

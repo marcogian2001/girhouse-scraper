@@ -224,10 +224,20 @@
     "short_alert": "Found {found} valid emails out of {max}: the area has no other new businesses. For more, try a wider area or other terms."
   },
   "CoveragePage": {
-    "title": "Italy coverage",
-    "subtitle": "Every day it searches the next province for each profession, until nothing is left to find.",
+    "title": "Coverage",
+    "subtitle": "For each profession, the areas already searched and how much is left to find.",
+    "status_active": "Active",
+    "status_paused": "Paused",
     "empty_title": "No coverage plan",
-    "empty_description": "Create the plan with the 107 provinces and an editable catalog of professions. It starts paused.",
+    "empty_description": "Create the plan to search new businesses for your professions every day. It starts paused.",
+    "tab_overview": "Coverage",
+    "tab_settings": "Settings",
+    "stat_areas": "Areas searched",
+    "stat_areas_hint": "{terms, plural, one {For # profession} other {For # professions}}",
+    "stat_completion": "Estimated completion",
+    "stat_completion_hint": "Businesses already taken out of the estimated total",
+    "stat_unused": "Businesses to contact",
+    "stat_unused_hint": "About {months, number} months at the current pace",
     "title_settings": "Settings",
     "title_terms": "Professions"
   },
@@ -258,24 +268,15 @@
     "error_duplicate": "This profession is already in the catalog.",
     "error_save": "The change was not saved."
   },
-  "CoverageSummary": {
-    "stat_exhausted": "Exhausted pairs",
-    "stat_exhausted_hint": "{exhausted} of {total} provinces × professions",
-    "stat_census": "Survey",
-    "stat_census_hint": "Pairs fully scanned on Google",
-    "stat_unused": "Businesses to contact",
-    "stat_unused_hint": "Out of {known} businesses surveyed",
-    "stat_months": "Estimated months",
-    "stat_months_hint": "At the current pace, on the businesses already surveyed",
-    "title_terms": "By profession",
-    "title_regions": "By region",
-    "column_term": "Profession",
-    "column_region": "Region",
-    "column_exhausted": "Exhausted",
-    "column_in_progress": "In progress",
-    "column_not_started": "Not started",
-    "column_known": "Surveyed",
-    "column_unused": "To contact"
+  "CoverageTermCard": {
+    "badge_paused": "Paused",
+    "empty": "No searches yet",
+    "areas_summary": "{areas, plural, one {# area} other {# areas}} in {regions, plural, one {# region} other {# regions}}",
+    "region_other": "Other areas",
+    "area_unnamed": "Unnamed area",
+    "kind_province": "Province",
+    "kind_place": "Town",
+    "places_progress": "{used, number} of about {estimated, number} businesses"
   },
   "DeleteLeadSearchButton": {
     "button": "Delete search",
