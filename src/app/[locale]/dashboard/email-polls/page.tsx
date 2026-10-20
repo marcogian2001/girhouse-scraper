@@ -20,6 +20,7 @@ import {
 import { getApiContext } from '@/libs/ApiAuth';
 import { listEmailPolls } from '@/libs/EmailPoll';
 import { Link } from '@/libs/I18nNavigation';
+import { AppConfig } from '@/utils/AppConfig';
 
 export default async function EmailPollsPage(props: { params: Promise<{ locale: string }> }) {
   const { locale } = await props.params;
@@ -84,7 +85,7 @@ export default async function EmailPollsPage(props: { params: Promise<{ locale: 
                   <TableCell className="text-right tabular-nums">{poll.sequences}</TableCell>
                   <TableCell className="text-right tabular-nums">{poll.voters}</TableCell>
                   <TableCell className="hidden text-muted-foreground md:table-cell">
-                    {poll.createdAt.toLocaleDateString(locale)}
+                    {poll.createdAt.toLocaleDateString(locale, { timeZone: AppConfig.timeZone })}
                   </TableCell>
                 </TableRow>
               ))}

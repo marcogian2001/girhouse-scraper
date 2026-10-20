@@ -26,6 +26,7 @@ import {
   emailDraftSchema,
   knowledgeAssetSchema,
 } from '@/models/Schema';
+import { AppConfig } from '@/utils/AppConfig';
 
 const RECENT_CAMPAIGN_LIMIT = 5;
 
@@ -178,7 +179,9 @@ export default async function DashboardHomePage(props: { params: Promise<{ local
                       <ItemDescription>
                         {t('recent_meta', {
                           contacts: campaign.contacts,
-                          date: campaign.createdAt.toLocaleDateString(locale),
+                          date: campaign.createdAt.toLocaleDateString(locale, {
+                            timeZone: AppConfig.timeZone,
+                          }),
                         })}
                       </ItemDescription>
                     </ItemContent>

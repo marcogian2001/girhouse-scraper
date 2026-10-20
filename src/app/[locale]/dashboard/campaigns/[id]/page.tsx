@@ -21,6 +21,7 @@ import { db } from '@/libs/DB';
 import { Link } from '@/libs/I18nNavigation';
 import { getUsageTotals } from '@/libs/Usage';
 import { campaignSchema, contactSchema, emailDraftSchema, enrichmentSchema } from '@/models/Schema';
+import { AppConfig } from '@/utils/AppConfig';
 import { COMPACT_FORMAT, microsToUsd, USD_FORMAT } from '@/utils/UsageFormat';
 import {
   EnrichmentBasisValidation,
@@ -157,7 +158,7 @@ export default async function CampaignDetailPage(props: {
           {t('meta_line', {
             contacts: contacts.length,
             emails: campaign.emailCount,
-            date: campaign.createdAt.toLocaleDateString(locale),
+            date: campaign.createdAt.toLocaleDateString(locale, { timeZone: AppConfig.timeZone }),
           })}
         </p>
 

@@ -28,6 +28,7 @@ import { db } from '@/libs/DB';
 import { Link } from '@/libs/I18nNavigation';
 import { campaignCostMicros } from '@/libs/Usage';
 import { campaignSchema, contactSchema } from '@/models/Schema';
+import { AppConfig } from '@/utils/AppConfig';
 import { microsToUsd, USD_FORMAT } from '@/utils/UsageFormat';
 
 export default async function CampaignsPage(props: {
@@ -165,7 +166,9 @@ export default async function CampaignsPage(props: {
                     </TableCell>
 
                     <TableCell className="text-muted-foreground">
-                      {campaign.createdAt.toLocaleDateString(locale)}
+                      {campaign.createdAt.toLocaleDateString(locale, {
+                        timeZone: AppConfig.timeZone,
+                      })}
                     </TableCell>
 
                     <TableCell className="text-right">
@@ -205,7 +208,9 @@ export default async function CampaignsPage(props: {
                         {t('row_meta', {
                           contacts: campaign.contacts,
                           cost: usd(campaign.costMicros),
-                          date: campaign.createdAt.toLocaleDateString(locale),
+                          date: campaign.createdAt.toLocaleDateString(locale, {
+                            timeZone: AppConfig.timeZone,
+                          }),
                         })}
                       </ItemDescription>
                     </ItemContent>

@@ -33,6 +33,7 @@ import { getApiContext } from '@/libs/ApiAuth';
 import { db } from '@/libs/DB';
 import { Link } from '@/libs/I18nNavigation';
 import { leadSchema, leadSearchSchema } from '@/models/Schema';
+import { AppConfig } from '@/utils/AppConfig';
 import { RESERVE_LEAD_STATUSES } from '@/utils/Leads';
 
 export default async function LeadSearchesPage(props: { params: Promise<{ locale: string }> }) {
@@ -143,7 +144,9 @@ export default async function LeadSearchesPage(props: { params: Promise<{ locale
                     <TableCell className="text-right tabular-nums">{search.ready}</TableCell>
 
                     <TableCell className="text-muted-foreground">
-                      {search.createdAt.toLocaleDateString(locale)}
+                      {search.createdAt.toLocaleDateString(locale, {
+                        timeZone: AppConfig.timeZone,
+                      })}
                     </TableCell>
                   </TableRow>
                 ))}

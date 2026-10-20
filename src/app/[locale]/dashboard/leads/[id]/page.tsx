@@ -14,6 +14,7 @@ import { db } from '@/libs/DB';
 import { Link } from '@/libs/I18nNavigation';
 import { getUsageTotals } from '@/libs/Usage';
 import { leadSchema, leadSearchSchema } from '@/models/Schema';
+import { AppConfig } from '@/utils/AppConfig';
 import { RESERVE_LEAD_STATUSES } from '@/utils/Leads';
 import { microsToUsd, USD_FORMAT } from '@/utils/UsageFormat';
 
@@ -83,7 +84,7 @@ export default async function LeadSearchPage(props: {
             terms: search.searchTerms.join(', '),
             location: search.location,
             filter: formT(`website_${search.websiteFilter}`),
-            date: search.createdAt.toLocaleDateString(locale),
+            date: search.createdAt.toLocaleDateString(locale, { timeZone: AppConfig.timeZone }),
           })}
         </p>
 
