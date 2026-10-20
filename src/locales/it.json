@@ -59,7 +59,10 @@
     "meta_description": "Gestisci le tue campagne cold email."
   },
   "AppSidebar": {
-    "group_workspace": "Area di lavoro",
+    "group_prospecting": "Ricerca",
+    "group_outreach": "Outreach",
+    "group_conversations": "Conversazioni",
+    "group_ai_setup": "Configurazione AI",
     "nav_home": "Home",
     "nav_leads": "Ricerca lead",
     "nav_campaigns": "Campagne",
@@ -876,7 +879,7 @@
     "title": "Automazione",
     "subtitle": "Come vengono classificate e gestite le risposte.",
     "webhook_title": "Webhook Instantly",
-    "webhook_ready": "Aggiungi questo URL su Instantly per gli eventi reply_received e auto_reply_received, con il segreto vero.",
+    "webhook_ready": "Aggiungi questo URL su Instantly per l'evento reply_received (arrivano anche le risposte automatiche), con il segreto vero.",
     "webhook_missing_secret": "Imposta INSTANTLY_WEBHOOK_SECRET (almeno 16 caratteri) prima di aggiungere il webhook."
   },
   "OutboundStatus": {

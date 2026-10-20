@@ -216,7 +216,7 @@ export const KnowledgeMentionTextarea = (props: {
         <div
           ref={backdropRef}
           aria-hidden
-          className="pointer-events-none absolute inset-0 overflow-hidden rounded-lg border border-transparent px-2.5 py-2 text-base wrap-break-word whitespace-pre-wrap md:text-sm dark:bg-input/30"
+          className="pointer-events-none absolute inset-0 overflow-hidden rounded-lg border border-transparent bg-white px-2.5 py-2 text-base wrap-break-word whitespace-pre-wrap md:text-sm dark:bg-input/30"
         >
           {splitMentions(props.value).map((segment) =>
             segment.type === 'mention' && documentNames.has(segment.name) ? (
@@ -242,7 +242,7 @@ export const KnowledgeMentionTextarea = (props: {
           id={props.id}
           rows={props.rows}
           className={cn(
-            'relative text-transparent caret-foreground selection:bg-primary/25 dark:bg-transparent',
+            'relative bg-transparent text-transparent caret-foreground selection:bg-primary/25 dark:bg-transparent',
             props.className,
           )}
           aria-autocomplete="list"

@@ -33,39 +33,105 @@ const stripTrailingSlash = (path: string) => path.replace(/\/+$/u, '') || '/';
 export const SidebarNav = (props: { pathname: string }) => {
   const t = useTranslations('AppSidebar');
 
-  // Icons are component values and the labels need `t`, so the list is built here
-  const items = [
-    { href: '/dashboard/', label: t('nav_home'), icon: LayoutDashboard, exact: true },
-    { href: '/dashboard/leads/', label: t('nav_leads'), icon: Search, exact: false },
-    { href: '/dashboard/coverage/', label: t('nav_coverage'), icon: MapIcon, exact: false },
-    { href: '/dashboard/campaigns/', label: t('nav_campaigns'), icon: Send, exact: false },
-    { href: '/dashboard/replies/', label: t('nav_replies'), icon: Inbox, exact: false },
-    { href: '/dashboard/metrics/', label: t('nav_metrics'), icon: BarChart3, exact: false },
+  // Icons are component values and the labels need `t`, so the sections are built here.
+  // Home has no label: it sits above the sections as the entry point
+  const sections = [
     {
-      href: '/dashboard/objections/',
-      label: t('nav_objections'),
-      icon: MessageSquareWarning,
-      exact: false,
+      label: null,
+      items: [
+        {
+          href: '/dashboard/',
+          label: t('nav_home'),
+          icon: LayoutDashboard,
+          exact: true,
+        },
+      ],
     },
     {
-      href: '/dashboard/automation/',
-      label: t('nav_automation'),
-      icon: SlidersHorizontal,
-      exact: false,
+      label: t('group_prospecting'),
+      items: [
+        {
+          href: '/dashboard/leads/',
+          label: t('nav_leads'),
+          icon: Search,
+          exact: false,
+        },
+        {
+          href: '/dashboard/coverage/',
+          label: t('nav_coverage'),
+          icon: MapIcon,
+          exact: false,
+        },
+      ],
     },
-    { href: '/dashboard/knowledge/', label: t('nav_knowledge'), icon: BookOpen, exact: false },
-    { href: '/dashboard/email-polls/', label: t('nav_email_polls'), icon: Vote, exact: false },
+    {
+      label: t('group_outreach'),
+      items: [
+        {
+          href: '/dashboard/campaigns/',
+          label: t('nav_campaigns'),
+          icon: Send,
+          exact: false,
+        },
+        {
+          href: '/dashboard/email-polls/',
+          label: t('nav_email_polls'),
+          icon: Vote,
+          exact: false,
+        },
+      ],
+    },
+    {
+      label: t('group_conversations'),
+      items: [
+        {
+          href: '/dashboard/replies/',
+          label: t('nav_replies'),
+          icon: Inbox,
+          exact: false,
+        },
+        {
+          href: '/dashboard/metrics/',
+          label: t('nav_metrics'),
+          icon: BarChart3,
+          exact: false,
+        },
+      ],
+    },
+    {
+      label: t('group_ai_setup'),
+      items: [
+        {
+          href: '/dashboard/automation/',
+          label: t('nav_automation'),
+          icon: SlidersHorizontal,
+          exact: false,
+        },
+        {
+          href: '/dashboard/objections/',
+          label: t('nav_objections'),
+          icon: MessageSquareWarning,
+          exact: false,
+        },
+        {
+          href: '/dashboard/knowledge/',
+          label: t('nav_knowledge'),
+          icon: BookOpen,
+          exact: false,
+        },
+      ],
+    },
   ];
 
   const current = stripTrailingSlash(props.pathname);
 
-  return (
-    <SidebarGroup>
-      <SidebarGroupLabel>{t('group_workspace')}</SidebarGroupLabel>
+  return sections.map((section) => (
+    <SidebarGroup key={section.items[0]?.href}>
+      {section.label && <SidebarGroupLabel>{section.label}</SidebarGroupLabel>}
 
       <SidebarGroupContent>
         <SidebarMenu>
-          {items.map((item) => {
+          {section.items.map((item) => {
             const target = stripTrailingSlash(item.href);
             // Home would otherwise light up on every nested dashboard route
             const isActive = item.exact
@@ -86,5 +152,5 @@ export const SidebarNav = (props: { pathname: string }) => {
         </SidebarMenu>
       </SidebarGroupContent>
     </SidebarGroup>
-  );
+  ));
 };

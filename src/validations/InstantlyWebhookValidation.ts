@@ -1,7 +1,7 @@
 import * as z from 'zod';
 
-/** Webhook events that carry a lead's reply. */
-export const REPLY_EVENTS = new Set(['reply_received', 'auto_reply_received']);
+/** Webhook events that carry a lead's reply; automatic replies come with it too. */
+export const REPLY_EVENTS = new Set(['reply_received']);
 
 /**
  * An Instantly webhook delivery. Loose, since Instantly merges the lead's own

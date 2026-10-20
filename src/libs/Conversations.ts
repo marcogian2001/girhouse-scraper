@@ -339,7 +339,6 @@ export const receiveInstantlyReply = async (webhook: InstantlyWebhook) => {
       subject: webhook.reply_subject,
       bodyText,
       receivedAt,
-      isAutoReply: webhook.event_type === 'auto_reply_received',
       raw: webhook,
     })
     .onConflictDoNothing()
