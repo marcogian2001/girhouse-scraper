@@ -1,0 +1,2 @@
+ALTER TABLE "automation_settings" ALTER COLUMN "reply_delay_min_minutes" SET DEFAULT 15;--> statement-breakpoint
+ALTER TABLE "automation_settings" ALTER COLUMN "reply_delay_max_minutes" SET DEFAULT 20;

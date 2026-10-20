@@ -14,7 +14,7 @@ import { isGhlConfigured } from '@/services/GoHighLevel';
 import { replyToEmail } from '@/services/Instantly';
 import type { CallPlan, WriteReplyOptions } from '@/services/ReplyWriter';
 import { renderScarcity, replySubject, writeReply } from '@/services/ReplyWriter';
-import { addBusinessDays, scheduleSend, toBusinessTime } from '@/utils/BusinessHours';
+import { addBusinessDays, scheduleReplySend, toBusinessTime } from '@/utils/BusinessHours';
 import { DEMO_STEPS } from '@/utils/DemoStats';
 import { FOLLOW_UP_STATES } from '@/utils/FollowUps';
 import { buildOfferBrief } from '@/utils/Offer';
@@ -61,21 +61,37 @@ const BOOKING_CATEGORIES = new Set<ReplyCategory>(['interested', 'question']);
 const bookedPayloadSchema = z.object({ startTime: z.string() });
 
 /**
- * Picks when an email leaves. Test conversations send at once, so a simulation
- * does not wait for business hours.
- * @param conversation The conversation the email belongs to.
- * @param settings The organization's automation settings.
+ * Picks when an email leaves. An answer leaves the configured delay after the lead's
+ * reply, at once if that time has passed; other emails count the delay from now. Test
+ * conversations send at once, so a simulation does not wait for business hours.
+ * @param options The email.
+ * @param options.conversation The conversation the email belongs to.
+ * @param options.settings The organization's automation settings.
+ * @param options.repliedAt When the reply it answers arrived, for an answer.
  * @returns The send time.
  */
-export const sendTimeFor = (conversation: Conversation, settings: AutomationSettings) =>
-  conversation.isTest
-    ? new Date()
-    : scheduleSend({
-        now: new Date(),
-        hours: { startHour: settings.businessHourStart, endHour: settings.businessHourEnd },
-        minDelayMinutes: settings.replyDelayMinMinutes,
-        maxDelayMinutes: settings.replyDelayMaxMinutes,
-      });
+export const sendTimeFor = (options: {
+  conversation: Conversation;
+  settings: AutomationSettings;
+  repliedAt?: Date;
+}) => {
+  const now = new Date();
+
+  if (options.conversation.isTest) {
+    return now;
+  }
+
+  return scheduleReplySend({
+    repliedAt: options.repliedAt ?? now,
+    now,
+    hours: {
+      startHour: options.settings.businessHourStart,
+      endHour: options.settings.businessHourEnd,
+    },
+    minDelayMinutes: options.settings.replyDelayMinMinutes,
+    maxDelayMinutes: options.settings.replyDelayMaxMinutes,
+  });
+};
 
 /**
  * Queues the send of a scheduled email at its send time.
@@ -320,7 +336,9 @@ const saveWrittenReply = async (options: {
       issues: written.issues,
       offeredSlots: options.offeredSlots,
       status: sendsItself ? 'scheduled' : 'draft',
-      scheduledFor: sendsItself ? sendTimeFor(conversation, settings) : null,
+      scheduledFor: sendsItself
+        ? sendTimeFor({ conversation, settings, repliedAt: options.message.receivedAt })
+        : null,
       model: written.model,
     })
     .onConflictDoNothing()
@@ -490,6 +508,13 @@ export const approveOutbound = async (options: {
     return { status: 'disabled' as const };
   }
 
+  // The delay runs from the lead's reply, so an answer approved late leaves at once
+  const answered = row.email.inboundMessageId
+    ? await db.query.inboundMessageSchema.findFirst({
+        where: eq(inboundMessageSchema.id, row.email.inboundMessageId),
+      })
+    : undefined;
+
   // Drafts written before the demo existed get its link now
   const demo = await getConversationDemo(row.conversation.id);
   const cleaned = cleanReply(options.body);
@@ -521,7 +546,11 @@ export const approveOutbound = async (options: {
       // A person approved past the remaining issues; they stay on record
       issues,
       status: 'scheduled',
-      scheduledFor: sendTimeFor(row.conversation, settings),
+      scheduledFor: sendTimeFor({
+        conversation: row.conversation,
+        settings,
+        repliedAt: answered?.receivedAt,
+      }),
       approvedByUserId: options.userId,
       errorMessage: null,
     })

@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { addBusinessDays, isBusinessTime, scheduleSend, toBusinessTime } from './BusinessHours';
+import {
+  addBusinessDays,
+  isBusinessTime,
+  scheduleReplySend,
+  scheduleSend,
+  toBusinessTime,
+} from './BusinessHours';
 
 const hours = { startHour: 9, endHour: 18 };
 
@@ -89,6 +95,39 @@ describe('BusinessHours', () => {
       const tuesday = new Date('2026-10-20T08:30:00Z');
 
       expect(toBusinessTime(tuesday, hours)).toBe(tuesday);
+    });
+  });
+
+  describe('Reply send time', () => {
+    const reply = (repliedAt: string, now: string) =>
+      scheduleReplySend({
+        repliedAt: new Date(repliedAt),
+        now: new Date(now),
+        hours,
+        minDelayMinutes: 15,
+        maxDelayMinutes: 20,
+        random: 0,
+      }).toISOString();
+
+    it('waits 15 to 20 minutes after the reply', () => {
+      // Reply on Tuesday at 11:00 in Rome, approved at once
+      expect(reply('2026-10-20T09:00:00Z', '2026-10-20T09:01:00Z')).toBe(
+        '2026-10-20T09:15:00.000Z',
+      );
+    });
+
+    it('leaves at once when it was approved after the delay', () => {
+      // Reply at 11:00, approved at 11:27
+      expect(reply('2026-10-20T09:00:00Z', '2026-10-20T09:27:00Z')).toBe(
+        '2026-10-20T09:27:00.000Z',
+      );
+    });
+
+    it('waits for the next opening when approved after hours', () => {
+      // Reply at 17:00, approved at 19:00: Wednesday at 9:00
+      expect(reply('2026-10-20T15:00:00Z', '2026-10-20T17:00:00Z')).toBe(
+        '2026-10-21T07:00:00.000Z',
+      );
     });
   });
 });

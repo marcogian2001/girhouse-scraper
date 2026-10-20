@@ -746,8 +746,8 @@ export const automationSettingsSchema = pgTable('automation_settings', {
   mode: automationModeEnum('mode').notNull().default('draft'),
   // Below this the reply goes to manual review, whatever its category
   confidenceThreshold: real('confidence_threshold').notNull().default(0.75),
-  replyDelayMinMinutes: integer('reply_delay_min_minutes').notNull().default(4),
-  replyDelayMaxMinutes: integer('reply_delay_max_minutes').notNull().default(15),
+  replyDelayMinMinutes: integer('reply_delay_min_minutes').notNull().default(15),
+  replyDelayMaxMinutes: integer('reply_delay_max_minutes').notNull().default(20),
   // Italian business hours, in `AppConfig.timeZone`
   businessHourStart: integer('business_hour_start').notNull().default(9),
   businessHourEnd: integer('business_hour_end').notNull().default(18),

@@ -157,7 +157,7 @@ const writeFollowUp = async (options: {
       issues: written.issues,
       offeredSlots,
       status: sendsItself ? 'scheduled' : 'draft',
-      scheduledFor: sendsItself ? sendTimeFor(conversation, settings) : null,
+      scheduledFor: sendsItself ? sendTimeFor({ conversation, settings }) : null,
       model: written.model,
     })
     .returning();

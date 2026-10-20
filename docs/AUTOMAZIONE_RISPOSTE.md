@@ -139,7 +139,10 @@ Tutto il codice è committato su `main`. Restano fuori solo le modifiche `bg-whi
   - Se un controllo fallisce l'AI riscrive una volta, poi la risposta resta in bozza.
 - [x] Modalità **bozza**: approvi, modifichi o scarti dalla dashboard.
 - [x] Modalità **automatica**: parte da sola solo con classificazione sicura e nessun problema rilevato.
-- [x] Invio (job `reply_send`) con ritardo casuale di 4-15 minuti, solo in orario lavorativo italiano (lun-ven 9-18, festivi e Pasquetta esclusi).
+- [x] **Invio** (job `reply_send`), solo in orario lavorativo italiano (lun-ven 9-18, festivi e Pasquetta esclusi).
+  - Dal 20/10 la risposta parte **15-20 minuti dopo la risposta del lead** (campi in Automazione, default 15 e 20, migrazione 0023).
+  - Una bozza approvata più tardi parte subito, o alla prossima apertura se l'ufficio è chiuso.
+  - Gli orari nella dashboard sono in ora italiana: prima erano mostrati in UTC.
   - Prima di partire ricontrolla kill switch, stop e nuove risposte del lead.
 - [x] Invio nello stesso thread e dalla stessa casella, via `POST /emails/reply` di Instantly.
 - [x] Campagne nuove create con `stop_on_auto_reply: false`.
