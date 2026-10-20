@@ -93,6 +93,7 @@ export const GigiVideoScene = (props: {
 
       <div className="relative">
         {hasVideo ? (
+          // oxlint-disable-next-line jsx-a11y/media-has-caption -- The same line is typed below the video; a captions track also showed on phones with captions turned on
           <video
             ref={(video) => {
               // startPlayback never rejects, so there is nothing to catch
@@ -117,15 +118,7 @@ export const GigiVideoScene = (props: {
                 run: 0,
               });
             }}
-          >
-            {/* Off by default: the same line is typed below the video */}
-            <track
-              kind="captions"
-              src={`/demo/gigi-${props.video}.vtt`}
-              srcLang="it"
-              label="Italiano"
-            />
-          </video>
+          />
         ) : (
           <Image
             src="/demo/giraffe.jpg"
@@ -189,25 +182,28 @@ export const GigiVideoScene = (props: {
 
       {props.children}
 
-      <div className="flex w-full max-w-xs gap-2">
-        {props.onBack && (
+      {/* Kept in reach at the bottom while the line and the video fill the screen */}
+      <div className="sticky bottom-0 -mx-4 -mb-10 flex w-[calc(100%+2rem)] justify-center bg-white/80 px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur">
+        <div className="flex w-full max-w-xs gap-2">
+          {props.onBack && (
+            <button
+              type="button"
+              aria-label={t('back')}
+              onClick={props.onBack}
+              className="flex size-14 shrink-0 items-center justify-center rounded-full border border-neutral-300 bg-white text-neutral-700"
+            >
+              <ArrowLeft className="size-5" />
+            </button>
+          )}
           <button
             type="button"
-            aria-label={t('back')}
-            onClick={props.onBack}
-            className="flex size-14 shrink-0 items-center justify-center rounded-full border border-neutral-300 bg-white text-neutral-700"
+            onClick={props.onContinue}
+            className="flex h-14 flex-1 items-center justify-center gap-2 rounded-full bg-(--demo-primary) text-lg font-semibold text-(--demo-on-primary) shadow-xl"
           >
-            <ArrowLeft className="size-5" />
+            {props.ctaLabel}
+            <ArrowRight className="size-5" />
           </button>
-        )}
-        <button
-          type="button"
-          onClick={props.onContinue}
-          className="flex h-14 flex-1 items-center justify-center gap-2 rounded-full bg-(--demo-primary) text-lg font-semibold text-(--demo-on-primary) shadow-xl"
-        >
-          {props.ctaLabel}
-          <ArrowRight className="size-5" />
-        </button>
+        </div>
       </div>
     </div>
   );

@@ -80,7 +80,7 @@ const SceneVisual = (options: {
   }
 
   if (scene.kind === 'followup') {
-    return <FollowUpStep part={scene.part} />;
+    return <FollowUpStep />;
   }
 
   if (scene.kind === 'pricing') {
@@ -187,15 +187,21 @@ export const DemoTour = (props: DemoTourProps) => {
 
     setIndex(next);
 
-    // Within a step the scene's own anchors scroll to what it reveals
-    if (target.step !== scene?.step) {
+    // Within a step the scene's own anchors scroll to what it reveals; from the price
+    // video to the price the page changes altogether, so it starts from the top too
+    if (target.step !== scene?.step || target.kind !== scene.kind) {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
   const handleNext = () => {
-    // On the price there is no line on screen to finish first
-    if (scene?.kind !== 'pricing' && nextTapAction({ typed, total }) === 'finish') {
+    // On the price there is no line on screen to finish first, and the automation
+    // plays on its own, so Next moves on straight away
+    if (
+      scene?.kind !== 'pricing' &&
+      scene?.kind !== 'followup' &&
+      nextTapAction({ typed, total }) === 'finish'
+    ) {
       setFinishedLine(`${index}-${lineKey}`);
 
       return;
@@ -227,7 +233,7 @@ export const DemoTour = (props: DemoTourProps) => {
           key={scene.line}
           video="intro"
           header={
-            <h1 className="pt-10 text-3xl leading-tight font-bold tracking-tight text-neutral-950 md:text-4xl">
+            <h1 className="pt-10 text-3xl leading-tight font-bold tracking-tight text-balance wrap-anywhere text-neutral-950 md:text-4xl">
               {t.rich('intro_headline', {
                 company,
                 b: (chunks) => <span className="text-(--demo-primary)">{chunks}</span>,
@@ -287,7 +293,8 @@ export const DemoTour = (props: DemoTourProps) => {
     >
       {tracking}
 
-      <header className="sticky top-0 z-10 border-b border-neutral-100 bg-white/90 backdrop-blur">
+      {/* Above the mockups, whose own layers stay inside `main` */}
+      <header className="sticky top-0 z-20 border-b border-neutral-100 bg-white/90 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-2 text-xs font-medium text-neutral-500">
           <span className="flex min-w-0 items-center gap-2">
             <GirhouseLogo tone="black" className="h-5 shrink-0" />
@@ -310,7 +317,7 @@ export const DemoTour = (props: DemoTourProps) => {
 
       <main
         key={scene.step}
-        className={`mx-auto max-w-7xl animate-in px-4 duration-500 fade-in ${isPricing ? 'py-4 md:py-6' : 'py-6 md:py-10'}`}
+        className={`isolate mx-auto max-w-7xl animate-in px-4 duration-500 fade-in ${isPricing ? 'py-4 md:py-6' : 'py-6 md:py-10'}`}
       >
         <SceneVisual
           scene={scene}

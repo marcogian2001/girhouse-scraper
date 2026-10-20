@@ -26,28 +26,28 @@ export const UsageSummary = (props: { period: DateRange; totals: UsageTotals }) 
     <SidebarMenu>
       <SidebarMenuItem>
         <UsageSummaryLink tooltip={t('tooltip', { month, total })}>
-          <div className="grid flex-1 gap-0.5 text-xs group-data-[collapsible=icon]:hidden">
+          <div className="grid min-w-0 flex-1 gap-0.5 text-xs group-data-[collapsible=icon]:hidden">
             <span className="flex justify-between gap-2 font-medium">
-              <span className="truncate">{t('title', { month })}</span>
-              <span className="tabular-nums">{total}</span>
+              <span className="min-w-0 truncate">{t('title', { month })}</span>
+              <span className="shrink-0 tabular-nums">{total}</span>
             </span>
 
             <span className="flex justify-between gap-2 text-muted-foreground">
-              <span className="truncate">
+              <span className="min-w-0 truncate">
                 {t('copywriting_line', {
                   tokens: format.number(props.totals.copywritingTokens, COMPACT_FORMAT),
                 })}
               </span>
-              <span className="tabular-nums">
+              <span className="shrink-0 tabular-nums">
                 {format.number(microsToUsd(props.totals.copywritingCostMicros), USD_FORMAT)}
               </span>
             </span>
 
             <span className="flex justify-between gap-2 text-muted-foreground">
-              <span className="truncate">
+              <span className="min-w-0 truncate">
                 {t('parallel_line', { runs: props.totals.parallelRuns })}
               </span>
-              <span className="tabular-nums">
+              <span className="shrink-0 tabular-nums">
                 {t('parallel_cost', {
                   cost: format.number(microsToUsd(props.totals.parallelCostMicros), USD_FORMAT),
                 })}
@@ -56,8 +56,8 @@ export const UsageSummary = (props: { period: DateRange; totals: UsageTotals }) 
 
             {props.totals.leadsCostMicros > 0 && (
               <span className="flex justify-between gap-2 text-muted-foreground">
-                <span className="truncate">{t('leads_line')}</span>
-                <span className="tabular-nums">
+                <span className="min-w-0 truncate">{t('leads_line')}</span>
+                <span className="shrink-0 tabular-nums">
                   {format.number(microsToUsd(props.totals.leadsCostMicros), USD_FORMAT)}
                 </span>
               </span>

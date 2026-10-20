@@ -18,7 +18,7 @@ import { buildOfferBrief } from '@/utils/Offer';
 import { isItalianMobile } from '@/utils/Phone';
 import { getAutomationSettings } from './AutomationSettings';
 import type { Conversation } from './Conversations';
-import { logEvent, setConversationState } from './Conversations';
+import { isBotManaged, logEvent, setConversationState } from './Conversations';
 import { loadThread } from './ConversationThread';
 import { db } from './DB';
 import { getDemoSlots } from './DemoBooking';
@@ -125,20 +125,11 @@ const writeFollowUp = async (options: {
       : null;
   const slots = action.kind === 'closing' && isGhlConfigured() ? await getDemoSlots() : null;
   const offeredSlots = slots?.suggested ?? [];
-  const increaseOn = conversation.firstEmailSentAt
-    ? new Date(conversation.firstEmailSentAt.getTime() + settings.priceIncreaseDays * 86_400_000)
-    : null;
-
   const written = await writeCheckedReply(
     {
       model: settings.writingModel,
       offer: buildOfferBrief(settings),
-      scarcity: renderScarcity({
-        slots: settings.onboardingSlotsPerMonth,
-        newPrice: settings.newMonthlyPrice,
-        increaseOn,
-        now: new Date(),
-      }),
+      scarcity: renderScarcity(settings.onboardingSlotsPerMonth),
       category: 'interested',
       objection: null,
       lead: await loadLeadContext(conversation),
@@ -146,7 +137,7 @@ const writeFollowUp = async (options: {
       reply: context.reply,
       call: null,
       followUp: action.kind,
-      prices: [settings.monthlyPrice, settings.newMonthlyPrice],
+      prices: [settings.monthlyPrice],
       demoUrl: link,
       offeredSlots,
     },
@@ -229,6 +220,20 @@ const runConversationTickJob = async (job: Job) => {
     conversation.nextActionAt?.toISOString() !== dueAt ||
     !FOLLOW_UP_STATES.has(conversation.state)
   ) {
+    await completeJob(job.id);
+
+    return;
+  }
+
+  // The campaign was handed to the sales reps while the lead was in the sequence
+  if (!(await isBotManaged(conversation))) {
+    await db
+      .update(conversationSchema)
+      .set({ pausedReason: 'unmanaged_campaign' })
+      .where(eq(conversationSchema.id, conversationId));
+    await setConversationState({ conversation, state: 'paused' });
+    await scheduleNextAction(conversationId, null);
+    await logEvent({ conversationId, type: 'campaign_unmanaged' });
     await completeJob(job.id);
 
     return;

@@ -42,12 +42,14 @@ export const POST = async (request: Request, props: { params: Promise<{ id: stri
     return NextResponse.json({ error: 'No approved contacts' }, { status: 409 });
   }
 
+  const { botManaged, ...payload } = parse.data;
+
   await db
     .update(campaignSchema)
-    .set({ status: 'pushing', errorMessage: null })
+    .set({ status: 'pushing', errorMessage: null, botManaged })
     .where(eq(campaignSchema.id, campaign.id));
 
-  await enqueue([{ campaignId: campaign.id, type: 'push', payload: parse.data }]);
+  await enqueue([{ campaignId: campaign.id, type: 'push', payload }]);
 
   return NextResponse.json({ queued: approved.total });
 };

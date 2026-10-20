@@ -21,6 +21,7 @@ import {
 } from './CampaignWriting';
 import { db } from './DB';
 import { followUpJobHandlers, markConversationTickAbandoned } from './FollowUps';
+import { ghlBotJobHandlers, markGhlBotAssignAbandoned } from './GhlBotAssign';
 import {
   claimJobs,
   completeJob,
@@ -299,6 +300,12 @@ const markAbandoned = async (job: Job, message: string) => {
     return;
   }
 
+  if (job.type === 'ghl_bot_assign') {
+    await markGhlBotAssignAbandoned(job, message);
+
+    return;
+  }
+
   if (!job.campaignId) {
     await markLeadJobAbandoned(job, message);
 
@@ -332,6 +339,7 @@ const handlers = {
   ...replyJobHandlers,
   ...outboundJobHandlers,
   ...followUpJobHandlers,
+  ...ghlBotJobHandlers,
 };
 
 /**

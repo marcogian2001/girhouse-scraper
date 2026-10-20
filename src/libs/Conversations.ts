@@ -23,6 +23,7 @@ import { sha256Hex } from '@/utils/Secrets';
 import type { InstantlyWebhook } from '@/validations/InstantlyWebhookValidation';
 import { REPLY_EVENTS } from '@/validations/InstantlyWebhookValidation';
 import { db } from './DB';
+import { Env } from './Env';
 import { enqueue } from './JobQueue';
 import { logger } from './Logger';
 import { scheduleNextAction } from './NextAction';
@@ -48,6 +49,7 @@ export const EVENT_TYPES = [
   'reply_drafted',
   'reply_scheduled',
   'reply_approved',
+  'reply_rewritten',
   'reply_discarded',
   'reply_held_kill_switch',
   'reply_cancelled',
@@ -81,6 +83,9 @@ export const EVENT_TYPES = [
   'referral_contact_created',
   'referral_contact_skipped',
   'test_skipped_referral_contact',
+  'campaign_unmanaged',
+  'ghl_bot_assigned',
+  'ghl_bot_assign_failed',
 ] as const;
 
 export type EventType = (typeof EVENT_TYPES)[number];
@@ -109,6 +114,27 @@ export const logEvent = async (
     payload: options.payload ?? {},
     actorUserId: options.actorUserId ?? null,
   });
+};
+
+/**
+ * Tells whether the reply bot handles a conversation: always for a simulated one, otherwise
+ * only when its campaign was marked as handled by the bot.
+ * @param conversation The conversation.
+ * @returns True when the bot may classify, answer and follow up.
+ */
+export const isBotManaged = async (conversation: Conversation) => {
+  if (conversation.isTest) {
+    return true;
+  }
+
+  const campaign = conversation.campaignId
+    ? await db.query.campaignSchema.findFirst({
+        where: eq(campaignSchema.id, conversation.campaignId),
+        columns: { botManaged: true },
+      })
+    : undefined;
+
+  return campaign?.botManaged ?? false;
 };
 
 /**
@@ -354,7 +380,15 @@ export const receiveInstantlyReply = async (webhook: InstantlyWebhook) => {
     payload: { inboundMessageId: message.id, eventType: webhook.event_type },
   });
 
-  await enqueue([{ type: 'reply_process', payload: { inboundMessageId: message.id } }]);
+  // A bot-managed lead goes to the bot user on GHL, before the GHL workflows assign a rep
+  const handToBot = campaign.botManaged && isGhlConfigured() && Boolean(Env.GHL_BOT_USER_ID);
+
+  await enqueue([
+    { type: 'reply_process', payload: { inboundMessageId: message.id } },
+    ...(handToBot
+      ? [{ type: 'ghl_bot_assign' as const, payload: { conversationId: conversation.id } }]
+      : []),
+  ]);
 
   return { status: 'queued' as const, conversationId: conversation.id };
 };

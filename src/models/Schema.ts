@@ -189,6 +189,8 @@ export const jobTypeEnum = pgEnum('job_type', [
   'reply_send',
   // The next follow-up of a silent lead, due at `conversation.next_action_at`
   'conversation_tick',
+  // Hands a bot-managed lead's GHL contact and opportunity to the "Bot AI" user
+  'ghl_bot_assign',
 ]);
 
 export const jobStatusEnum = pgEnum('job_status', ['queued', 'running', 'done', 'failed']);
@@ -279,6 +281,8 @@ export const campaignSchema = pgTable(
     knowledgeAssetIds: jsonb('knowledge_asset_ids').$type<string[]>().notNull().default([]),
     extraPrompt: text('extra_prompt'),
     instantlyCampaignId: text('instantly_campaign_id'),
+    // Whether the reply bot answers this campaign's leads; when off they go to the sales reps
+    botManaged: boolean('bot_managed').notNull().default(false),
     errorMessage: text('error_message'),
     // Set while the campaign is hidden from the active list; null when active
     archivedAt: timestamp('archived_at', { mode: 'date' }),

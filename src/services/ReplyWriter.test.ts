@@ -40,30 +40,8 @@ describe('ReplyWriter', () => {
   });
 
   describe('Scarcity', () => {
-    const now = new Date('2026-10-17T10:00:00Z');
-
-    it('states the price increase while it is ahead', () => {
-      expect(
-        renderScarcity({
-          slots: 10,
-          newPrice: 197,
-          increaseOn: new Date('2026-10-30T10:00:00Z'),
-          now,
-        }),
-      ).toBe(
-        'Prendiamo solo 10 nuove attività al mese. Dal 30 ottobre il prezzo per questa attività sale a 197€/mese.',
-      );
-    });
-
-    it('drops a price increase that has passed', () => {
-      expect(
-        renderScarcity({
-          slots: 10,
-          newPrice: 197,
-          increaseOn: new Date('2026-10-01T10:00:00Z'),
-          now,
-        }),
-      ).toBe('Prendiamo solo 10 nuove attività al mese.');
+    it('states only the monthly limit, with no deadline', () => {
+      expect(renderScarcity(10)).toBe('Prendiamo solo 10 nuove attività al mese.');
     });
   });
 

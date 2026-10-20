@@ -1,7 +1,6 @@
 import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';
 import * as z from 'zod';
 import { logger } from '@/libs/Logger';
-import { AppConfig } from '@/utils/AppConfig';
 import { requireCopywritingModel } from '@/utils/CopywritingModels';
 import type { FollowUpKind } from '@/utils/FollowUps';
 import { DEMO_LINK_PLACEHOLDER, SLOTS_PLACEHOLDER } from '@/utils/ReplyGuard';
@@ -23,8 +22,7 @@ const REPLY_GUIDANCE: Partial<Record<ReplyCategory, string>> = {
     'Answer the objection following the angle from the objection library entry below, in your own words. The angle wins over everything else here: end with the call to action it gives, make no proposal when it says to make none, and only when it gives no call to action ask whether they want to see the page prepared for their business.',
   not_now:
     'Accept the timing. Explain the offer a little better in one or two lines and mention the real scarcity below. End with one light question, such as whether you can write again in a few weeks.',
-  not_interested:
-    'This is the only email after a no. Re-explain the offer clearly: a new landing page plus the complete Go High Level setup at the monthly price, with the first week free and no card. End with a low-pressure line saying a reply is enough if they change their mind.',
+  not_interested: `The lead said no. This is the only email after a no, so be careful: a no that gets a sales pitch annoys. Be kind and helpful, never pushy. Thank them for answering and respect the no in a few words. Then, in one or two lines, present the offer as almost a gift: it is only the monthly price of the offer below, and it includes the new landing page plus phone, WhatsApp and email in one place, with automatic replies and follow-ups; the first week is free, with no card. Then offer the demo lightly, asking permission: you already prepared a short page showing how it would work for their business, you can send it over if they want, and if it does not interest them you will simply delete it. No link, no deadline, no scarcity, nothing else to ask.`,
   wrong_person:
     'Thank them for pointing you to the right person and say you will write to them directly. Ask nothing else.',
 };
@@ -115,34 +113,12 @@ export const replySubject = (subject: string | null, fallback: string) => {
 };
 
 /**
- * Renders the scarcity a reply may use for this lead.
- * @param options The scarcity inputs.
- * @param options.slots How many new businesses are taken each month.
- * @param options.newPrice The monthly price after the increase.
- * @param options.increaseOn When the price goes up for this lead, if known.
- * @param options.now The current time.
- * @returns The scarcity, without the price increase once its date has passed.
+ * Renders the scarcity a reply may use. Emails never quote a deadline or a price increase,
+ * which reads as a sales push: only the limited number of new businesses each month.
+ * @param slots How many new businesses are taken each month.
+ * @returns The scarcity.
  */
-export const renderScarcity = (options: {
-  slots: number;
-  newPrice: number;
-  increaseOn: Date | null;
-  now: Date;
-}) => {
-  const lines = [`Prendiamo solo ${options.slots} nuove attività al mese.`];
-
-  if (options.increaseOn && options.increaseOn > options.now) {
-    const date = options.increaseOn.toLocaleDateString('it-IT', {
-      timeZone: AppConfig.timeZone,
-      day: 'numeric',
-      month: 'long',
-    });
-
-    lines.push(`Dal ${date} il prezzo per questa attività sale a ${options.newPrice}€/mese.`);
-  }
-
-  return lines.join(' ');
-};
+export const renderScarcity = (slots: number) => `Prendiamo solo ${slots} nuove attività al mese.`;
 
 /** What the writer needs to answer one reply. */
 export type WriteReplyOptions = {

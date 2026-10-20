@@ -82,6 +82,12 @@ describe('TourScenes', () => {
       expect(landing).toStrictEqual([1, 2, 3, 4, 5]);
     });
 
+    it('plays the automation in a single scene', () => {
+      const followUp = scenes.filter((scene) => scene.step === 4).map((scene) => scene.kind);
+
+      expect(followUp).toStrictEqual(['followup']);
+    });
+
     it('plays the pricing video before the price', () => {
       const pricing = scenes.filter((scene) => scene.step === 5).map((scene) => scene.kind);
 

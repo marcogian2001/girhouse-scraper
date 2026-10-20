@@ -192,7 +192,7 @@ export const ConversationThread = (props: { detail: Detail }) => {
     <Accordion type="multiple" defaultValue={open}>
       {thread.map((item) => (
         <AccordionItem key={item.id} value={item.id}>
-          <AccordionTrigger className="py-4 hover:no-underline">
+          <AccordionTrigger className="min-w-0 items-center py-4 hover:no-underline">
             <ItemHeader item={item} detail={props.detail} />
           </AccordionTrigger>
 

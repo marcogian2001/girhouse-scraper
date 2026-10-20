@@ -49,6 +49,7 @@ const SUCCESS_EVENTS = new Set([
   'ghl_appointment_booked',
   'whatsapp_started',
   'referral_contact_created',
+  'ghl_bot_assigned',
 ]);
 
 /** Events where something was held back or stopped. */
@@ -150,13 +151,16 @@ export const ConversationTimeline = (props: { entries: TimelineEntry[] }) => {
 
               return (
                 <li key={entry.id} className="relative flex gap-3">
-                  <span
-                    className={cn(
-                      'relative flex size-7 shrink-0 items-center justify-center rounded-full ring-4 ring-card',
-                      TONE_CLASS[style.tone],
-                    )}
-                  >
-                    <Icon className="size-3.5" />
+                  {/* A solid disc under the tinted one, so the line never shows through */}
+                  <span className="relative z-10 size-7 shrink-0 rounded-full bg-card ring-4 ring-card">
+                    <span
+                      className={cn(
+                        'flex size-full items-center justify-center rounded-full',
+                        TONE_CLASS[style.tone],
+                      )}
+                    >
+                      <Icon className="size-3.5" />
+                    </span>
                   </span>
 
                   <div className="min-w-0 flex-1 space-y-0.5 pt-1">

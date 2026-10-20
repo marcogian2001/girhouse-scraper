@@ -1,5 +1,6 @@
 'use client';
 
+import { Sparkles } from 'lucide-react';
 import { useFormatter, useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -15,7 +16,7 @@ import { REPLY_ISSUES } from '@/utils/ReplyGuard';
 
 type OutboundEmail = typeof outboundEmailSchema.$inferSelect;
 
-type Failure = 'approve' | 'blocked' | 'disabled';
+type Failure = 'approve' | 'blocked' | 'disabled' | 'rewrite';
 
 const IssueBadges = (props: { issues: string[] }) => {
   const t = useTranslations('OutboundEmailEditor');
@@ -60,6 +61,29 @@ export const OutboundEmailEditor = (props: { email: OutboundEmail }) => {
   const [failure, setFailure] = useState<Failure | null>(null);
   const [isBusy, setIsBusy] = useState(false);
   const isEditable = props.email.status === 'draft' || props.email.status === 'failed';
+  const canRewrite = props.email.status === 'draft' && props.email.kind === 'reply';
+
+  const rewrite = async () => {
+    setIsBusy(true);
+    setFailure(null);
+
+    const response = await fetch(`/api/replies/outbound/${props.email.id}/rewrite`, {
+      method: 'POST',
+    });
+
+    setIsBusy(false);
+
+    if (!response.ok) {
+      setFailure('rewrite');
+
+      return;
+    }
+
+    const rewritten: { email: { body: string } } = await response.json();
+
+    setBody(rewritten.email.body);
+    router.refresh();
+  };
 
   const post = async (action: 'approve' | 'discard') => {
     setIsBusy(true);
@@ -147,6 +171,19 @@ export const OutboundEmailEditor = (props: { email: OutboundEmail }) => {
           >
             {isEditable ? t('button_discard') : t('button_cancel_send')}
           </Button>
+          {canRewrite && (
+            <Button
+              type="button"
+              variant="ghost"
+              disabled={isBusy}
+              onClick={async () => {
+                await rewrite();
+              }}
+            >
+              <Sparkles />
+              {t('button_rewrite')}
+            </Button>
+          )}
         </div>
       )}
 

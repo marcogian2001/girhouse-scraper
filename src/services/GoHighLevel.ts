@@ -32,6 +32,10 @@ const duplicateContactSchema = z.object({ contact: z.object({ id: z.string() }).
 
 const opportunitySchema = z.object({ opportunity: z.object({ id: z.string() }) });
 
+const opportunitySearchSchema = z.object({
+  opportunities: z.array(z.object({ id: z.string(), assignedTo: z.string().nullish() })),
+});
+
 const customFieldSchema = z.object({ id: z.string(), name: z.string(), fieldKey: z.string() });
 
 const customFieldListSchema = z.object({ customFields: z.array(customFieldSchema) });
@@ -300,6 +304,66 @@ export const upsertBookedOpportunity = async (options: { contactId: string; name
   );
 
   return opportunity.id;
+};
+
+/**
+ * Assigns a contact to a GHL user, creating the contact from its email when GHL has none.
+ * Only the email and the owner are sent, so the name and tags GHL holds stay as they are.
+ * @param options The contact.
+ * @param options.email The email the lead replied from.
+ * @param options.userId The GHL user who owns the contact.
+ * @returns The GHL contact id.
+ * @throws {Error} When GHL is not configured or rejects the request.
+ */
+export const assignContact = async (options: { email: string; userId: string }) => {
+  const { contact } = upsertContactSchema.parse(
+    await request({
+      path: '/contacts/upsert',
+      family: 'contacts',
+      body: {
+        locationId: requireEnv('GHL_LOCATION_ID', Env.GHL_LOCATION_ID),
+        email: options.email,
+        assignedTo: options.userId,
+      },
+    }),
+  );
+
+  return contact.id;
+};
+
+/**
+ * Finds a contact's opportunity in the sales pipeline.
+ * @param contactId The GHL contact.
+ * @returns The opportunity and who it is assigned to, or undefined when it has none there.
+ * @throws {Error} When GHL or the pipeline is not configured, or GHL rejects the request.
+ */
+export const findPipelineOpportunity = async (contactId: string) => {
+  const query = new URLSearchParams({
+    location_id: requireEnv('GHL_LOCATION_ID', Env.GHL_LOCATION_ID),
+    pipeline_id: requireEnv('GHL_PIPELINE_ID', Env.GHL_PIPELINE_ID),
+    contact_id: contactId,
+  });
+  const { opportunities } = opportunitySearchSchema.parse(
+    await request({ path: `/opportunities/search?${query.toString()}`, family: 'opportunities' }),
+  );
+
+  return opportunities[0];
+};
+
+/**
+ * Assigns an opportunity to a GHL user.
+ * @param options The assignment.
+ * @param options.opportunityId The GHL opportunity.
+ * @param options.userId The GHL user who owns it.
+ * @throws {Error} When GHL is not configured or rejects the request.
+ */
+export const assignOpportunity = async (options: { opportunityId: string; userId: string }) => {
+  await request({
+    path: `/opportunities/${options.opportunityId}`,
+    family: 'opportunities',
+    method: 'PUT',
+    body: { assignedTo: options.userId },
+  });
 };
 
 /** A custom field the platform writes on GHL contacts, by its key without the `contact.` prefix. */

@@ -69,3 +69,5 @@ export const CampaignValidation = campaignSettingsShape
   });
 
 export type CampaignInput = z.output<typeof CampaignValidation>;
+
+export const CampaignBotValidation = z.object({ botManaged: z.boolean() });

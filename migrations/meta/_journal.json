@@ -183,6 +183,13 @@
       "when": 1792490135819,
       "tag": "0025_two_follow_ups",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1792493152499,
+      "tag": "0026_bot_managed_campaigns",
+      "breakpoints": true
     }
   ]
 }

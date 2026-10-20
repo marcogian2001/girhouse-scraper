@@ -1,9 +1,13 @@
+import { and, asc, eq, isNotNull, isNull } from 'drizzle-orm';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { AutomationSettingsForm } from '@/components/AutomationSettingsForm';
+import { BotCampaignsCard } from '@/components/BotCampaignsCard';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getApiContext } from '@/libs/ApiAuth';
 import { getAutomationSettings } from '@/libs/AutomationSettings';
+import { db } from '@/libs/DB';
 import { Env } from '@/libs/Env';
+import { campaignSchema } from '@/models/Schema';
 import { getBaseUrl } from '@/utils/Helpers';
 
 export default async function AutomationPage(props: { params: Promise<{ locale: string }> }) {
@@ -13,6 +17,25 @@ export default async function AutomationPage(props: { params: Promise<{ locale: 
   const t = await getTranslations({ locale, namespace: 'AutomationPage' });
   const context = await getApiContext();
   const settings = context ? await getAutomationSettings(context.organizationId) : null;
+
+  // Only campaigns already on Instantly can receive replies
+  const campaigns = context
+    ? await db
+        .select({
+          id: campaignSchema.id,
+          name: campaignSchema.name,
+          botManaged: campaignSchema.botManaged,
+        })
+        .from(campaignSchema)
+        .where(
+          and(
+            eq(campaignSchema.organizationId, context.organizationId),
+            isNotNull(campaignSchema.instantlyCampaignId),
+            isNull(campaignSchema.archivedAt),
+          ),
+        )
+        .orderBy(asc(campaignSchema.name))
+    : [];
 
   return (
     <div className="space-y-6">
@@ -34,6 +57,8 @@ export default async function AutomationPage(props: { params: Promise<{ locale: 
           </code>
         </CardContent>
       </Card>
+
+      <BotCampaignsCard campaigns={campaigns} />
 
       {settings && (
         <AutomationSettingsForm

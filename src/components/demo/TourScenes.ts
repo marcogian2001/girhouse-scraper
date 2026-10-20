@@ -13,12 +13,7 @@ export type TourScene =
       part: number;
       line: 'crm_contact' | 'crm_timeline' | 'crm_pipeline' | 'crm_inbox';
     }
-  | {
-      step: 4;
-      kind: 'followup';
-      part: number;
-      line: 'followup_trigger' | 'followup_run' | 'followup_stop';
-    }
+  | { step: 4; kind: 'followup'; line: 'followup' }
   | { step: 5; kind: 'video'; line: 'pricing_video' }
   | {
       step: 5;
@@ -96,9 +91,8 @@ export const buildTourScenes = (options: { data: DemoSnapshot; hasReviews: boole
     { step: 3, kind: 'crm', part: 2, line: 'crm_timeline' },
     { step: 3, kind: 'crm', part: 3, line: 'crm_pipeline' },
     { step: 3, kind: 'crm', part: 4, line: 'crm_inbox' },
-    { step: 4, kind: 'followup', part: 1, line: 'followup_trigger' },
-    { step: 4, kind: 'followup', part: 2, line: 'followup_run' },
-    { step: 4, kind: 'followup', part: 3, line: 'followup_stop' },
+    // The automation plays through on its own, from the trigger to the stop
+    { step: 4, kind: 'followup', line: 'followup' },
     { step: 5, kind: 'video', line: 'pricing_video' },
     { step: 5, kind: 'pricing', part: 1, line: 'pricing_price' },
     { step: 5, kind: 'pricing', part: 2, line: 'pricing_included' },

@@ -36,7 +36,7 @@ import { slotKey, slotLabel } from '@/utils/Slots';
 import { isStopRequest } from '@/utils/StopGuard';
 import { getAutomationSettings } from './AutomationSettings';
 import type { Conversation, EventType } from './Conversations';
-import { applyStop, logEvent, setConversationState } from './Conversations';
+import { applyStop, isBotManaged, logEvent, setConversationState } from './Conversations';
 import { db } from './DB';
 import { completeJob, enqueue } from './JobQueue';
 import { loadLeadContext } from './LeadContext';
@@ -581,6 +581,35 @@ const handleWithoutAi = async (options: {
 };
 
 /**
+ * Leaves a reply to the sales reps when its campaign is not handled by the bot: the
+ * conversation is paused and nothing is read or written. A stop request is not left
+ * here, since it is blocked whoever handles the campaign.
+ * @param options The reply.
+ * @param options.conversation The conversation.
+ * @param options.message The reply.
+ * @returns Whether the reply was left to the sales reps.
+ */
+const leaveToSalesReps = async (options: {
+  conversation: Conversation;
+  message: InboundMessage;
+}) => {
+  const { conversation, message } = options;
+
+  if (conversation.state === 'paused' || (await isBotManaged(conversation))) {
+    return false;
+  }
+
+  await db
+    .update(conversationSchema)
+    .set({ pausedReason: 'unmanaged_campaign' })
+    .where(eq(conversationSchema.id, conversation.id));
+  await setConversationState({ conversation, state: 'paused' });
+  await closeUnclassified({ conversation, message, type: 'campaign_unmanaged' });
+
+  return true;
+};
+
+/**
  * Loads a reply job's reply and conversation.
  * @param job The reply job.
  * @returns Both, or null when the reply is gone or already handled.
@@ -623,6 +652,14 @@ const runReplyProcessJob = async (job: Job) => {
   }
 
   const { message, conversation } = loaded;
+  const reply = stripQuotedReply(message.bodyText) || message.bodyText;
+
+  if (!isStopRequest(reply) && (await leaveToSalesReps({ conversation, message }))) {
+    await completeJob(job.id);
+
+    return;
+  }
+
   const settings = await getAutomationSettings(conversation.organizationId);
 
   const context = conversation.isTest
@@ -645,8 +682,6 @@ const runReplyProcessJob = async (job: Job) => {
       })),
     })
     .where(eq(inboundMessageSchema.id, message.id));
-
-  const reply = stripQuotedReply(message.bodyText) || message.bodyText;
 
   // A retry resumes from a classification an earlier attempt already stored
   const existing = await db.query.replyClassificationSchema.findFirst({

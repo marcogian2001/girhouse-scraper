@@ -28,7 +28,8 @@ Automatizzare tutto quello che succede dopo la risposta di un lead a una cold em
 - **Prova:** prima settimana gratis, senza carta né contratto.
 - **Scarcity reale:**
   - 10 nuove attività al mese, una cifra fissa e non un conteggio dei posti rimasti;
-  - 15 giorni dopo la prima email il prezzo sale a 197€.
+  - 15 giorni dopo la prima email il prezzo sale a 197€: questo compare **solo nella demo**, mai nelle email (decisione del 20/10, sembrava una spinta commerciale).
+- **Come si presenta il prezzo nelle email:** quasi un regalo per quello che include, mai una promozione a tempo.
 
 ### Regole di scrittura
 
@@ -47,7 +48,7 @@ Automatizzare tutto quello che succede dopo la risposta di un lead a una cold em
 | Dominio della demo | Percorso sul dominio principale: `{NEXT_PUBLIC_APP_URL}/it/demo/{slug}`. Il sottodominio `demo.girhouse.com` è rimandato |
 | Scarcity | Cifra fissa, "prendiamo solo 10 nuove attività al mese" |
 | Nurturing per `non_ora` | Fino a 3 richiami, uno ogni 30 giorni, poi chiuso. Il testo della risposta segue la regola attuale (offerta spiegata meglio più scarcity) |
-| `non_interessato` | Una sola email di rilancio, come da brief. Al secondo no la conversazione si chiude |
+| `non_interessato` | Una sola email, cauta e servizievole: ringrazia e rispetta il no, presenta il prezzo come quasi un regalo con cosa include, poi chiede se può mandare la demo già preparata ("se non ti interessa la elimino"). Niente link, scadenze o scarcity. Al secondo no la conversazione si chiude |
 | `stop` / "cancellatemi" | **Nessuna risposta**: blocklist Instantly e soppressione permanente nel DB, immediate anche in modalità bozza |
 | Obiezione nuova | La risposta va **sempre** in revisione manuale, anche in modalità automatica |
 | Stop corretto a mano | Lo stop resta permanente anche se si cambia la categoria |
@@ -69,6 +70,7 @@ Tutto il codice è committato su `main`. Restano fuori solo le modifiche `bg-whi
 - [ ] `NEXT_PUBLIC_APP_URL`: il dominio vero, da cui nascono i link delle demo.
 - [ ] `INSTANTLY_WEBHOOK_SECRET`.
 - [ ] `GHL_API_TOKEN`, `GHL_LOCATION_ID`, `GHL_CALENDAR_ID`, `GHL_PIPELINE_ID`, `GHL_PIPELINE_STAGE_ID`, `GHL_WEBHOOK_SECRET`.
+- [ ] `GHL_BOT_USER_ID=QO51qnqUW9vkBaEyKdNj`, l'utente "Bot AI" a cui vanno i lead delle campagne gestite dal bot. Senza, l'assegnazione non parte.
 - [ ] Controllare che ci siano anche `ANTHROPIC_API_KEY`, `GOOGLE_MAPS_API_KEY`, `INSTANTLY_API_KEY` e `CRON_SECRET` (il cron ogni minuto fa girare risposte, follow-up e WhatsApp).
 
 **3. Instantly**
@@ -77,7 +79,11 @@ Tutto il codice è committato su `main`. Restano fuori solo le modifiche `bg-whi
 - [ ] **Permessi della chiave API:** anche `leads:update`, che serve a fermare la sequenza dei lead prenotati da un setter.
 
 **4. Go High Level**
-- [ ] **Permessi del token:** `calendars.readonly`, `calendars/events.write`, `contacts.write`, `opportunities.write`, `locations/customFields.readonly`.
+- [ ] **Permessi del token:** `calendars.readonly`, `calendars/events.write`, `contacts.write`, `opportunities.readonly`, `opportunities.write`, `locations/customFields.readonly`. `opportunities.readonly` serve a trovare l'opportunità da passare a Bot AI.
+- [ ] **Workflow "Go High Level" e "Risposta Positiva"** (partono dai webhook di Instantly e creano o spostano l'opportunità): prima dell'assegnazione aggiungere "Wait 3 minuti" e un If/Else "il contatto ha il tag `bot-ai`":
+  - sì: assegna a Bot AI;
+  - no: la rotazione di oggi tra i venditori.
+- [ ] **Workflow "Trial Schedulata":** se l'opportunità è di Bot AI, riassegnarla a rotazione a un venditore, che fa la call.
 - [x] **Campi personalizzati WhatsApp:** creati il 20/10.
 - [x] **Workflow "call prenotata"** con webhook `event = appointment_booked`: fatto dal titolare. Va bene anche per le call prenotate dai setter.
 - [ ] **Workflow "DND attivato"**: webhook con `event = dnd`.
@@ -96,6 +102,7 @@ Tutto il codice è committato su `main`. Restano fuori solo le modifiche `bg-whi
 - Tutti i webhook vanno a `https://<dominio>/api/webhooks/ghl?secret=<GHL_WEBHOOK_SECRET>`, con metodo POST e il campo `event` nei Custom Data.
 
 **5. Dashboard dell'app**
+- [ ] **Automazione → Campagne gestite dal bot:** attivare il bot sulle campagne che deve seguire, per esempio "ottico - Roma - #1". Dopo il deploy della migrazione `0026` tutte partono gestite dai venditori.
 - [ ] **Automazione:** numero WhatsApp aziendale `+393516930869`.
 - [ ] **Obiezioni:** segnare "Dopo la risposta chiude la conversazione" su quelle che devono chiudere, per esempio "Tono non adatto".
 - [ ] **Qualche giorno in modalità bozza** con risposte vere, rileggendo le bozze; poi passare ad **automatica**.
@@ -299,6 +306,7 @@ Tutto il codice è committato su `main`. Restano fuori solo le modifiche `bg-whi
   - nel dettaglio conversazione: prossimo follow-up, follow-up inviati e nurturing inviati;
   - "Esegui ora il prossimo passo": sulle conversazioni di test sempre, su quelle vere solo in modalità bozza (il passo diventa una bozza da approvare).
   - "Passa subito a WhatsApp", con le stesse regole: annulla i follow-up non ancora inviati e prepara il messaggio WhatsApp, se il lead ha i requisiti (ha detto sì, ha avuto la demo, non ha prenotato, ha un cellulare italiano).
+  - "Riscrivi con l'AI" sulle bozze di risposta: rigenera il testo con le istruzioni attuali e lo lascia in bozza. Esclusa la risposta a chi ha scelto un orario, perché riscriverla prenoterebbe di nuovo.
 - [x] **Migrazione 0020:** stato `closed_no_reply`, job `conversation_tick`.
 - [x] **Verifica su PGlite** con il lead Michienzi: l'intera sequenza (non aperta, a metà con `?passo=4`, completa, chiusura con orari, chiusura senza risposta), la risposta a metà sequenza e il nurturing.
 - [x] **Ripresa dopo il fuori ufficio:** il giorno lavorativo dopo la data di rientro (o dopo 5 giorni lavorativi se la data manca) l'app legge il lead su Instantly.
@@ -348,6 +356,21 @@ Tutto il codice è committato su `main`. Restano fuori solo le modifiche `bg-whi
 - [x] **Calcolo puro** in `src/utils/ReplyStats.ts`, con test; le query sono in `src/libs/ReplyStats.ts`.
   - Una demo conta come "inviata" solo se un'email inviata contiene il suo link.
 - [x] **Verifica su PGlite** con 3 conversazioni (interessato con call dalla demo, obiezione con call da GHL, non interessato): numeri corretti.
+
+### Campagne gestite dal bot [x] (20/10)
+
+- [x] **Scelta per campagna:** colonna `campaign.bot_managed` (migrazione `0026`, default no).
+  - Si sceglie al lancio, con la casella "Gestisci le risposte con il bot" nella scheda "Invia".
+  - Si cambia in Automazione, nella scheda "Campagne gestite dal bot".
+- [x] **Campagna dei venditori:** alla risposta la conversazione va in pausa (`paused_reason = unmanaged_campaign`, evento "Campagna gestita dai venditori"). Il bot non classifica, non risponde e non fa follow-up.
+  - Le richieste di stop vengono bloccate lo stesso: blocklist Instantly e DND su GHL.
+  - Se la campagna passa ai venditori a sequenza in corso, il prossimo follow-up mette in pausa la conversazione e gli invii programmati vengono annullati.
+  - Riattivando il bot, le conversazioni già in pausa restano dei venditori.
+- [x] **Campagna del bot:** insieme alla risposta parte il job `ghl_bot_assign` (`src/libs/GhlBotAssign.ts`). Il job:
+  - assegna il contatto GHL a Bot AI e gli mette il tag `bot-ai`;
+  - aspetta l'opportunità creata dal workflow, riprovando con attese crescenti, e la passa a Bot AI;
+  - non tocca le conversazioni con la call già prenotata.
+- [x] **Verifica su PGlite:** la campagna del bot accoda la risposta e l'assegnazione; quella dei venditori va in pausa senza chiamate AI e annulla gli invii programmati.
 
 ---
 

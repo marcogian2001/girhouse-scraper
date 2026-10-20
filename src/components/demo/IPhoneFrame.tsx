@@ -15,7 +15,8 @@ export const IPhoneFrame = (props: { children: React.ReactNode; statusBarClassNa
 
     <div className="rounded-[3.4rem] bg-gradient-to-br from-neutral-300 via-neutral-100 to-neutral-400 p-[3px] shadow-2xl">
       <div className="rounded-[3.3rem] bg-neutral-950 p-[9px]">
-        <div className="relative flex aspect-[9/19.5] flex-col overflow-hidden rounded-[2.75rem] bg-white">
+        {/* On a short screen the phone gets shorter, so it fits whole between the tour's header and Gigi's bar */}
+        <div className="relative flex aspect-[9/19.5] max-h-[max(26rem,calc(100svh-var(--demo-bar-h,12rem)-7rem))] w-full flex-col overflow-hidden rounded-[2.75rem] bg-white">
           <div
             className={`relative z-10 flex h-12 shrink-0 items-center justify-between px-7 pt-1 text-[13px] font-semibold ${props.statusBarClassName ?? 'bg-white text-neutral-900'}`}
           >

@@ -25,6 +25,7 @@ const campaign = (
   knowledgeAssetIds: [],
   extraPrompt: null,
   instantlyCampaignId: null,
+  botManaged: false,
   errorMessage: null,
   archivedAt: null,
   updatedAt: new Date(),

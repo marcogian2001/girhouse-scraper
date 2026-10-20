@@ -87,7 +87,7 @@ export const PricingStep = (props: {
           <br />
           {t('pricing_headline_bottom')}
         </h2>
-        <p className="mx-auto w-fit rounded-full bg-white px-4 py-1.5 text-sm font-extrabold text-[#06287f] shadow-lg ring-4 ring-[#10BADE]/40 md:text-base">
+        <p className="mx-auto w-fit max-w-full rounded-full bg-white px-4 py-1.5 text-sm font-extrabold wrap-anywhere text-[#06287f] shadow-lg ring-4 ring-[#10BADE]/40 md:text-base">
           {props.company}
         </p>
       </header>
@@ -106,7 +106,6 @@ export const PricingStep = (props: {
         </div>
 
         <div className="relative space-y-2.5 rounded-3xl border-2 border-white/70 bg-white/10 p-3.5 shadow-2xl backdrop-blur-sm md:space-y-3 md:p-6">
-          {props.part === 1 && <ScrollAnchor className="absolute inset-0" />}
           <p className="text-center text-base font-bold tracking-wide uppercase md:text-lg">
             {t('pricing_card_label')}
           </p>
@@ -136,14 +135,15 @@ export const PricingStep = (props: {
 
       {props.part >= 2 && (
         <div className="relative mt-6 rounded-3xl bg-white/10 p-5 ring-1 ring-white/25 md:p-6">
-          <ScrollAnchor className="absolute inset-0" />
           <p className="mb-3 font-bold">{t('pricing_included_title')}</p>
           <ul className="grid gap-2.5 sm:grid-cols-2">
-            {INCLUDED.slice(0, included).map((item) => (
+            {INCLUDED.slice(0, included).map((item, index) => (
               <li
                 key={item}
-                className="flex animate-in items-start gap-2.5 text-sm fade-in slide-in-from-bottom-2"
+                className="relative flex animate-in items-start gap-2.5 text-sm fade-in slide-in-from-bottom-2"
               >
+                {/* Follows the list down as it grows, so each point is read as it appears */}
+                {index === included - 1 && <ScrollAnchor className="absolute inset-0" />}
                 <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-[#10BADE]">
                   <Check className="size-3 text-[#06287f]" />
                 </span>

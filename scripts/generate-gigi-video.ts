@@ -5,7 +5,7 @@
  *   bun scripts/generate-gigi-video.ts intro
  *   bun scripts/generate-gigi-video.ts pricing --slots=10
  *
- * Writes `public/demo/gigi-{video}.mp4`, its poster and its captions. Kie deletes
+ * Writes `public/demo/gigi-{video}.mp4` and its poster. Kie deletes
  * generated files after 14 days, which is why the videos are kept in the project.
  */
 import { execFileSync } from 'node:child_process';
@@ -125,7 +125,7 @@ execFileSync('ffmpeg', [
 ]);
 await rm(`${output}.raw.mp4`);
 
-// The poster is the first frame; the captions span the whole video
+// The poster is the first frame
 execFileSync('ffmpeg', [
   '-y',
   '-loglevel',
@@ -149,7 +149,5 @@ const seconds = Number(
     `${output}.mp4`,
   ]).toString(),
 );
-const end = new Date(Math.ceil(seconds * 1000)).toISOString().slice(11, 23);
-await writeFile(`${output}.vtt`, `WEBVTT\n\n00:00:00.000 --> ${end}\n${text}\n`);
 
-logger.info(`Saved ${output}.mp4 (${seconds.toFixed(1)}s), its poster and captions`);
+logger.info(`Saved ${output}.mp4 (${seconds.toFixed(1)}s) and its poster`);

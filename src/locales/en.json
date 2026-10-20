@@ -490,7 +490,9 @@
     "error_accounts": "Instantly mailboxes could not be loaded.",
     "error_push": "The campaign could not be sent to Instantly.",
     "button_select_all": "Select all",
-    "button_clear": "Clear"
+    "button_clear": "Clear",
+    "label_bot": "Handle replies with the bot",
+    "hint_bot": "The bot answers the leads, sends the demo and follows up, and on GHL the lead goes to the Bot AI user. When unselected, leads reach the sales reps as always. You can change it later on the Automation page."
   },
   "KnowledgeManager": {
     "prompt_description": "Positioning, tone, offer, anything the AI should know for every campaign.",
@@ -725,6 +727,14 @@
     "label_closes": "Closes the conversation after the answer",
     "hint_closes": "The lead gets the answer to this objection and nothing more: no demo, no follow-ups. Useful, for example, when the tone does not fit."
   },
+  "BotCampaignsCard": {
+    "title": "Campaigns handled by the bot",
+    "description": "On the selected campaigns the bot answers, sends the demo and follows up, and on GHL the lead goes to the Bot AI user. The others work as always: the lead reaches the sales reps and the bot does not answer. Stop requests are blocked either way.",
+    "empty": "No campaign launched on Instantly",
+    "managed": "Bot",
+    "reps": "Sales reps",
+    "error_save": "Could not save the choice"
+  },
   "AutomationSettingsForm": {
     "label_enabled": "Automation on",
     "hint_enabled": "Main switch. When off nothing is sent, though replies are still read and classified and stop requests blocked.",
@@ -768,7 +778,7 @@
     "section_nurturing_title": "\"Not now\" leads",
     "section_nurturing_description": "The periodic emails to leads who said now is not the right time.",
     "section_offer_title": "Offer",
-    "section_offer_description": "Prices and open slots the AI quotes in emails. They must be true.",
+    "section_offer_description": "The price and open slots the AI quotes in emails. They must be true.",
     "section_demo_title": "Demo",
     "section_demo_description": "The WhatsApp contact the lead sees in the demo.",
     "section_ai_title": "Artificial intelligence",
@@ -778,9 +788,9 @@
     "hint_replyDelayMaxMinutes": "Equal to or above the minimum.",
     "hint_businessHourStart": "Italian time, from 0 to 23. Outside hours, at weekends and on holidays sends wait for opening.",
     "hint_businessHourEnd": "Italian time, from 1 to 24.",
-    "hint_monthlyPrice": "The price the lead locks in by starting now.",
-    "hint_newMonthlyPrice": "The price after the increase, quoted as a reason to decide now.",
-    "hint_priceIncreaseDays": "Counted from the first cold email sent to that lead.",
+    "hint_monthlyPrice": "The only price emails quote, presented as almost a gift for what it includes.",
+    "hint_newMonthlyPrice": "Shown in the demo only: emails never quote the increase.",
+    "hint_priceIncreaseDays": "Counted from the first cold email to that lead. This too shows in the demo only.",
     "hint_onboardingSlotsPerMonth": "How many new businesses you take each month, quoted in the closing email.",
     "hint_demoNotOpenedBusinessDays": "Wait after the demo and between follow-ups, not counting weekends and holidays.",
     "hint_maxFollowUps": "Emails after the demo before the closing one. With 0 the closing email goes first.",
@@ -855,6 +865,7 @@
     "event_reply_drafted": "Reply drafted",
     "event_reply_scheduled": "Reply scheduled",
     "event_reply_approved": "Reply approved",
+    "event_reply_rewritten": "Draft rewritten with AI",
     "event_reply_discarded": "Reply discarded",
     "event_reply_held_kill_switch": "Reply held: automation off",
     "event_reply_cancelled": "Reply cancelled before sending",
@@ -901,7 +912,10 @@
     "thread_follow_up": "Follow-up {number}",
     "thread_whatsapp": "WhatsApp message",
     "thread_whatsapp_sender": "WhatsApp through GHL",
-    "badge_whatsapp": "WhatsApp"
+    "badge_whatsapp": "WhatsApp",
+    "event_campaign_unmanaged": "Campaign handled by the sales reps: the bot does not answer",
+    "event_ghl_bot_assigned": "Lead assigned to Bot AI on GHL",
+    "event_ghl_bot_assign_failed": "Could not assign the lead to Bot AI on GHL"
   },
   "ObjectionsPage": {
     "title": "Objections",
@@ -940,7 +954,9 @@
     "issue_unknown_price": "Price not in the offer",
     "error_approve": "Could not approve the reply",
     "error_blocked": "Replace the demo link placeholder and remove links before sending",
-    "error_disabled": "The automation is off"
+    "error_disabled": "The automation is off",
+    "button_rewrite": "Rewrite with AI",
+    "error_rewrite": "Could not rewrite the draft"
   },
   "DemoPage": {
     "meta_title": "The demo for {company}",
@@ -962,9 +978,7 @@
     "line_crm_timeline": "Here is their <b>timeline</b>: every step stays tracked, from the missed call to the reminder. <hl>You always know where each customer stands.</hl>",
     "line_crm_pipeline": "In the <b>pipeline</b> you see them move from new contact to appointment set. One click opens the <hl>note</hl> the system wrote from the chat.",
     "line_crm_inbox": "It all lands in <b>one inbox</b>: {customer}'s calls, WhatsApp and emails <hl>in a single conversation</hl>, and you reply from here.",
-    "line_followup_trigger": "And those who <b>don't answer</b>? An <hl>automation</hl> starts on its own.",
-    "line_followup_run": "Look: it waits, sends a <b>WhatsApp</b>, then an <b>email</b>, then starts the <b>call</b>. <hl>All politely, without you thinking about it.</hl>",
-    "line_followup_stop": "As soon as the customer answers, <hl>the automation stops on its own</hl>. No message too many.",
+    "line_followup": "And those who <b>don't answer</b>? An <hl>automation</hl> starts on its own: it waits, sends a <b>WhatsApp</b>, then an <b>email</b>, then starts the <b>call</b>. As soon as the customer answers, <hl>it stops on its own</hl>.",
     "line_pricing_video": "So, did you like all this? Now I imagine you want to know <b>how much it costs</b>. Maybe you are already thinking of huge numbers, like 2,000 or 3,000 euros… but no! Thanks to our <b>structured system</b>, we can offer you all of this <hl>at a price that will surprise you</hl>, only for the next few days. And that price will stay locked <hl>forever</hl>. Just remember we can only set up <b>{slots} businesses a month</b>, so hurry! Press «See the price».",
     "line_pricing_price": "Here is the <b>price reserved for {company}</b>, locked until the date you see. And the <hl>first week is free</hl>, to try the whole platform.",
     "line_pricing_included": "It includes <b>everything you have seen</b>, plus a <hl>WhatsApp group</hl> where our Italian team looks after you.",

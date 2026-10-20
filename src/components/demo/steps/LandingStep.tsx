@@ -286,7 +286,8 @@ export const LandingStep = (props: {
         </span>
       </div>
 
-      <div className="relative h-[70svh] min-h-[460px] overflow-y-auto scroll-smooth md:h-[calc(100svh-9rem)]">
+      {/* Fits between the tour's header and Gigi's bar, so the site scrolls inside the frame */}
+      <div className="relative h-[calc(100svh-var(--demo-bar-h,12rem)-8rem)] min-h-80 overflow-y-auto scroll-smooth md:h-[calc(100svh-9rem)]">
         <nav className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-neutral-100 bg-white/95 px-5 py-3 backdrop-blur">
           <div className="flex min-w-0 items-center gap-2.5">
             {data.logoUrl ? (

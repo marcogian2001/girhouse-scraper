@@ -25,7 +25,7 @@ import { stripQuotedReply } from '@/utils/ReplyText';
 import { joinSlotLabels, matchSlot, slotLabel } from '@/utils/Slots';
 import { getAutomationSettings } from './AutomationSettings';
 import type { Conversation } from './Conversations';
-import { logEvent, setConversationState } from './Conversations';
+import { isBotManaged, logEvent, setConversationState } from './Conversations';
 import { db } from './DB';
 import { bookCall, earliestBookable, getDemoSlots } from './DemoBooking';
 import { demoUrl, ensureDemo, getConversationDemo } from './Demos';
@@ -300,6 +300,53 @@ const planCall = async (options: {
 };
 
 /**
+ * Gathers what the writer needs to answer a classified reply.
+ * @param options The reply.
+ * @param options.conversation The conversation.
+ * @param options.message The reply being answered.
+ * @param options.classification The reply's classification.
+ * @param options.settings The organization's automation settings.
+ * @param options.call What the answer does about the call.
+ * @param options.offeredSlots The call times the answer offers.
+ * @param options.demoUrl The demo link the answer carries, if any.
+ * @returns The writer inputs.
+ */
+const replyWriterInput = async (options: {
+  conversation: Conversation;
+  message: typeof inboundMessageSchema.$inferSelect;
+  classification: Classification;
+  settings: AutomationSettings;
+  call: CallPlan | null;
+  offeredSlots: string[];
+  demoUrl: string | null;
+}) => {
+  const { message, settings, classification } = options;
+  const objection = classification.objectionId
+    ? await db.query.objectionSchema.findFirst({
+        where: eq(objectionSchema.id, classification.objectionId),
+      })
+    : undefined;
+
+  return {
+    model: settings.writingModel,
+    offer: buildOfferBrief(settings),
+    scarcity: renderScarcity(settings.onboardingSlotsPerMonth),
+    category: classification.category,
+    objection: objection ?? null,
+    lead: await loadLeadContext(options.conversation),
+    thread: (message.thread ?? []).map((item) => ({
+      ...item,
+      sentAt: item.sentAt ? new Date(item.sentAt) : null,
+    })),
+    reply: stripQuotedReply(message.bodyText) || message.bodyText,
+    call: options.call,
+    prices: [settings.monthlyPrice],
+    demoUrl: options.demoUrl,
+    offeredSlots: options.offeredSlots,
+  };
+};
+
+/**
  * Stores a written reply: scheduled when it may go out on its own, a draft otherwise.
  * A booking confirmation may go out on its own even though the conversation moved on.
  * @param options The reply.
@@ -394,17 +441,6 @@ const runReplyWriteJob = async (job: Job) => {
 
   const { message, conversation, classification } = row;
   const settings = await getAutomationSettings(conversation.organizationId);
-
-  const objection = classification.objectionId
-    ? await db.query.objectionSchema.findFirst({
-        where: eq(objectionSchema.id, classification.objectionId),
-      })
-    : undefined;
-
-  const increaseOn = conversation.firstEmailSentAt
-    ? new Date(conversation.firstEmailSentAt.getTime() + settings.priceIncreaseDays * 86_400_000)
-    : null;
-
   const { call, offeredSlots } = await planCall({ conversation, classification });
   const isBooked = call?.kind === 'booked';
 
@@ -416,28 +452,15 @@ const runReplyWriteJob = async (job: Job) => {
       : null;
 
   const written = await writeCheckedReply(
-    {
-      model: settings.writingModel,
-      offer: buildOfferBrief(settings),
-      scarcity: renderScarcity({
-        slots: settings.onboardingSlotsPerMonth,
-        newPrice: settings.newMonthlyPrice,
-        increaseOn,
-        now: new Date(),
-      }),
-      category: classification.category,
-      objection: objection ?? null,
-      lead: await loadLeadContext(conversation),
-      thread: (message.thread ?? []).map((item) => ({
-        ...item,
-        sentAt: item.sentAt ? new Date(item.sentAt) : null,
-      })),
-      reply: stripQuotedReply(message.bodyText) || message.bodyText,
+    await replyWriterInput({
+      conversation,
+      message,
+      classification,
+      settings,
       call,
-      prices: [settings.monthlyPrice, settings.newMonthlyPrice],
-      demoUrl: demo ? demoUrl(demo.slug) : null,
       offeredSlots,
-    },
+      demoUrl: demo ? demoUrl(demo.slug) : null,
+    }),
     conversation,
   );
 
@@ -473,6 +496,84 @@ const findOutbound = async (options: { organizationId: string; outboundEmailId: 
     );
 
   return row;
+};
+
+/**
+ * Writes a draft answer again with the current instructions, keeping it a draft. A reply
+ * that picked a call time is left alone, since writing it again would book again.
+ * @param options The call options.
+ * @param options.organizationId The organization the draft must belong to.
+ * @param options.userId The person asking, recorded in the log.
+ * @param options.outboundEmailId The draft.
+ * @returns The rewritten draft, or null when it is not a draft answer that can be rewritten.
+ * @throws {Error} When the writer returns nothing usable.
+ */
+export const rewriteOutbound = async (options: {
+  organizationId: string;
+  userId: string;
+  outboundEmailId: string;
+}) => {
+  const row = await findOutbound(options);
+  const message = row?.email.inboundMessageId
+    ? await db.query.inboundMessageSchema.findFirst({
+        where: eq(inboundMessageSchema.id, row.email.inboundMessageId),
+      })
+    : undefined;
+  const classification = message
+    ? await db.query.replyClassificationSchema.findFirst({
+        where: eq(replyClassificationSchema.inboundMessageId, message.id),
+      })
+    : undefined;
+
+  if (
+    !row ||
+    !message ||
+    !classification ||
+    classification.chosenSlot ||
+    row.email.kind !== 'reply' ||
+    row.email.status !== 'draft'
+  ) {
+    return null;
+  }
+
+  const { conversation } = row;
+  const settings = await getAutomationSettings(conversation.organizationId);
+  const isInterested = classification.category === 'interested';
+  const demo = isInterested ? await getConversationDemo(conversation.id) : null;
+
+  // Fresh times, since the ones offered at first may have gone; reading them books nothing
+  const slots = isInterested && isGhlConfigured() ? await getDemoSlots() : null;
+  const offeredSlots = slots?.suggested ?? [];
+
+  const written = await writeCheckedReply(
+    await replyWriterInput({
+      conversation,
+      message,
+      classification,
+      settings,
+      call: offeredSlots.length > 0 ? { kind: 'offer' } : null,
+      offeredSlots,
+      demoUrl: demo?.url ?? null,
+    }),
+    conversation,
+  );
+
+  const [updated] = await db
+    .update(outboundEmailSchema)
+    .set({ body: written.body, issues: written.issues, offeredSlots, model: written.model })
+    .where(and(eq(outboundEmailSchema.id, row.email.id), eq(outboundEmailSchema.status, 'draft')))
+    .returning();
+
+  if (updated) {
+    await logEvent({
+      conversationId: conversation.id,
+      type: 'reply_rewritten',
+      actorUserId: options.userId,
+      payload: { outboundEmailId: updated.id, issues: updated.issues },
+    });
+  }
+
+  return updated ?? null;
 };
 
 /**
@@ -521,7 +622,7 @@ export const approveOutbound = async (options: {
   const body = demo ? fillDemoLink(cleaned, demo.url) : cleaned;
   const issues = checkReply({
     body,
-    prices: [settings.monthlyPrice, settings.newMonthlyPrice],
+    prices: [settings.monthlyPrice],
     // A follow-up may point to the step the lead stopped at
     allowedLinks: demo
       ? [
@@ -622,6 +723,11 @@ const findCancelReason = async (options: { email: OutboundEmail; conversation: C
     (conversation.state === 'call_booked' && options.email.kind !== 'booking_confirmation')
   ) {
     return conversation.state;
+  }
+
+  // The campaign was handed to the sales reps after this email was written
+  if (!(await isBotManaged(conversation))) {
+    return 'campaign_unmanaged';
   }
 
   // A follow-up only makes sense while the lead is still in the sequence

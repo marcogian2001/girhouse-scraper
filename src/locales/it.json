@@ -490,7 +490,9 @@
     "error_accounts": "Non è stato possibile caricare le caselle di Instantly.",
     "error_push": "Non è stato possibile inviare la campagna a Instantly.",
     "button_select_all": "Seleziona tutte",
-    "button_clear": "Deseleziona"
+    "button_clear": "Deseleziona",
+    "label_bot": "Gestisci le risposte con il bot",
+    "hint_bot": "Il bot risponde ai lead, manda la demo e fa i follow-up, e su GHL il lead va all'utente Bot AI. Se non la selezioni, i lead arrivano ai venditori come sempre. Puoi cambiarlo dopo dalla pagina Automazione."
   },
   "KnowledgeManager": {
     "prompt_description": "Posizionamento, tono, offerta: tutto ciò che l'AI deve sapere per ogni campagna.",
@@ -725,6 +727,14 @@
     "label_closes": "Dopo la risposta chiude la conversazione",
     "hint_closes": "Il lead riceve la risposta a questa obiezione e poi più nulla: niente demo né follow-up. Utile, per esempio, quando il tono non è adatto."
   },
+  "BotCampaignsCard": {
+    "title": "Campagne gestite dal bot",
+    "description": "Sulle campagne selezionate il bot risponde, manda la demo e fa i follow-up, e su GHL il lead va all'utente Bot AI. Le altre funzionano come sempre: il lead arriva ai venditori e il bot non risponde. Le richieste di stop vengono bloccate in entrambi i casi.",
+    "empty": "Nessuna campagna lanciata su Instantly",
+    "managed": "Bot",
+    "reps": "Venditori",
+    "error_save": "Impossibile salvare la scelta"
+  },
   "AutomationSettingsForm": {
     "label_enabled": "Automazione attiva",
     "hint_enabled": "Interruttore generale. Se è spento non parte nessun invio, ma le risposte vengono comunque lette e classificate e le richieste di stop bloccate.",
@@ -768,7 +778,7 @@
     "section_nurturing_title": "Lead \"non ora\"",
     "section_nurturing_description": "Le email periodiche a chi ha risposto che adesso non è il momento.",
     "section_offer_title": "Offerta",
-    "section_offer_description": "Prezzi e posti disponibili che l'AI cita nelle email. Devono essere veri.",
+    "section_offer_description": "Il prezzo e i posti disponibili che l'AI cita nelle email. Devono essere veri.",
     "section_demo_title": "Demo",
     "section_demo_description": "Il contatto WhatsApp che il lead vede nella demo.",
     "section_ai_title": "Intelligenza artificiale",
@@ -778,9 +788,9 @@
     "hint_replyDelayMaxMinutes": "Uguale o maggiore del minimo.",
     "hint_businessHourStart": "Ora italiana, da 0 a 23. Fuori orario, nel weekend e nei festivi gli invii aspettano l'apertura.",
     "hint_businessHourEnd": "Ora italiana, da 1 a 24.",
-    "hint_monthlyPrice": "Il prezzo che il lead blocca se parte adesso.",
-    "hint_newMonthlyPrice": "Il prezzo dopo l'aumento, citato come motivo per decidere ora.",
-    "hint_priceIncreaseDays": "Contati dalla prima email fredda inviata a quel lead.",
+    "hint_monthlyPrice": "L'unico prezzo che le email citano, presentato come quasi un regalo per quello che include.",
+    "hint_newMonthlyPrice": "Mostrato solo nella demo: le email non citano mai l'aumento.",
+    "hint_priceIncreaseDays": "Contati dalla prima email fredda a quel lead. Anche questo compare solo nella demo.",
     "hint_onboardingSlotsPerMonth": "Quante nuove attività prendi al mese, citato nell'email di chiusura.",
     "hint_demoNotOpenedBusinessDays": "Attesa dopo la demo e tra un follow-up e l'altro, senza contare weekend e festivi.",
     "hint_maxFollowUps": "Email dopo la demo prima di quella di chiusura. Con 0 parte subito la chiusura.",
@@ -855,6 +865,7 @@
     "event_reply_drafted": "Bozza di risposta scritta",
     "event_reply_scheduled": "Risposta programmata",
     "event_reply_approved": "Risposta approvata",
+    "event_reply_rewritten": "Bozza riscritta con l'AI",
     "event_reply_discarded": "Risposta scartata",
     "event_reply_held_kill_switch": "Risposta trattenuta: automazione spenta",
     "event_reply_cancelled": "Risposta annullata prima dell'invio",
@@ -901,7 +912,10 @@
     "thread_follow_up": "Follow-up {number}",
     "thread_whatsapp": "Messaggio WhatsApp",
     "thread_whatsapp_sender": "WhatsApp tramite GHL",
-    "badge_whatsapp": "WhatsApp"
+    "badge_whatsapp": "WhatsApp",
+    "event_campaign_unmanaged": "Campagna gestita dai venditori: il bot non risponde",
+    "event_ghl_bot_assigned": "Lead assegnato a Bot AI su GHL",
+    "event_ghl_bot_assign_failed": "Assegnazione a Bot AI su GHL non riuscita"
   },
   "ObjectionsPage": {
     "title": "Obiezioni",
@@ -940,7 +954,9 @@
     "issue_unknown_price": "Prezzo non presente nell'offerta",
     "error_approve": "Impossibile approvare la risposta",
     "error_blocked": "Sostituisci il segnaposto del link alla demo e togli i link prima dell'invio",
-    "error_disabled": "L'automazione è spenta"
+    "error_disabled": "L'automazione è spenta",
+    "button_rewrite": "Riscrivi con l'AI",
+    "error_rewrite": "Impossibile riscrivere la bozza"
   },
   "DemoPage": {
     "meta_title": "La demo per {company}",
@@ -962,9 +978,7 @@
     "line_crm_timeline": "Ecco la sua <b>timeline</b>: ogni passo resta tracciato, dalla chiamata persa al promemoria. <hl>Sai sempre a che punto è ogni cliente.</hl>",
     "line_crm_pipeline": "Nella <b>pipeline</b> la vedi avanzare da nuovo contatto ad appuntamento fissato. Con un clic apri la <hl>nota</hl> che il sistema ha scritto dalla chat.",
     "line_crm_inbox": "Tutto finisce in <b>un'unica inbox</b>: chiamate, WhatsApp ed email di {customer} <hl>in una sola conversazione</hl>, e rispondi da qui.",
-    "line_followup_trigger": "E chi <b>non risponde</b>? Qui parte <hl>un'automazione</hl>, da sola.",
-    "line_followup_run": "Guarda: aspetta, manda un <b>WhatsApp</b>, poi <b>un'email</b>, poi fa partire la <b>chiamata</b>. <hl>Tutto con garbo, senza che tu ci pensi.</hl>",
-    "line_followup_stop": "Appena il cliente risponde, <hl>l'automazione si ferma da sola</hl>. Nessun messaggio di troppo.",
+    "line_followup": "E chi <b>non risponde</b>? Parte <hl>un'automazione</hl>, da sola: aspetta, manda un <b>WhatsApp</b>, poi <b>un'email</b>, poi fa partire la <b>chiamata</b>. Appena il cliente risponde, <hl>si ferma da sola</hl>.",
     "line_pricing_video": "Ok, ti è piaciuto tutto questo? Ora immagino vorrai sapere <b>quanto costa</b>. Forse stai già pensando a cifre astronomiche, come 2.000 o 3.000 euro… e invece no! Grazie al nostro <b>sistema strutturato</b>, riusciamo a offrirti tutto questo <hl>a un prezzo che ti sorprenderà</hl>, solo per i prossimi giorni. E quel prezzo resterà bloccato <hl>per sempre</hl>. Ti ricordo però che possiamo fare il setup <b>solo a {slots} aziende ogni mese</b>, quindi affrettati! Premi «Scopri il prezzo».",
     "line_pricing_price": "Ecco il <b>prezzo riservato a {company}</b>, bloccato fino alla data che vedi. E la <hl>prima settimana è gratis</hl>, per provare tutta la piattaforma.",
     "line_pricing_included": "Dentro c'è <b>tutto quello che hai visto</b>, più un <hl>gruppo WhatsApp</hl> dove il nostro team italiano ti segue.",

@@ -64,8 +64,8 @@ const ActionStage = (props: { node: NodeKey }) => {
 
   if (props.node === 'call') {
     return (
-      <div className="mx-auto flex w-64 flex-col items-center gap-4 rounded-[2rem] bg-neutral-900 px-6 py-10 text-white shadow-2xl">
-        <span className="relative flex size-20 items-center justify-center rounded-full bg-violet-500">
+      <div className="mx-auto flex w-64 flex-col items-center gap-3 rounded-[2rem] bg-neutral-900 px-6 py-6 text-white shadow-2xl md:gap-4 md:py-10">
+        <span className="relative flex size-16 items-center justify-center rounded-full bg-violet-500 md:size-20">
           <span className="absolute inset-0 animate-ping rounded-full bg-violet-400/60" />
           <PhoneCall className="relative size-8" />
         </span>
@@ -84,10 +84,11 @@ const ActionStage = (props: { node: NodeKey }) => {
     );
   }
 
+  // Side by side on a phone, so the wait takes little height above the workflow
   return (
-    <div className="mx-auto flex max-w-xs flex-col items-center gap-3 text-center">
-      <span className="flex size-20 items-center justify-center rounded-full bg-white shadow-xl ring-1 ring-neutral-200">
-        <Hourglass className="size-9 animate-spin text-neutral-500 [animation-duration:2s]" />
+    <div className="mx-auto flex max-w-xs items-center gap-3 md:flex-col md:text-center">
+      <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-white shadow-xl ring-1 ring-neutral-200 md:size-20">
+        <Hourglass className="size-6 animate-spin text-neutral-500 [animation-duration:2s] md:size-9" />
       </span>
       <p className="font-semibold text-neutral-700">{t(`followup_stage_${props.node}`)}</p>
     </div>
@@ -97,17 +98,19 @@ const ActionStage = (props: { node: NodeKey }) => {
 /**
  * An automation run as the workflow builder shows it: the nodes light up one after
  * another while the stage beside them plays each action, until the customer answers.
- * @param props Component props.
- * @param props.part How far this scene goes, from 1 to 3.
+ * It plays through on its own, with no press of "Next".
  * @returns The workflow mockup.
  */
-export const FollowUpStep = (props: { part: number }) => {
+export const FollowUpStep = () => {
   const t = useTranslations('DemoPage');
-  const active = useTimedSequence({ target: props.part >= 2 ? NODES.length : 1, intervalMs: 1800 });
-  const current: NodeKey = props.part >= 3 ? 'stop' : (NODES[active - 1]?.key ?? 'trigger');
+  // One tick per node, then one more for the customer's answer that stops it
+  const tick = useTimedSequence({ target: NODES.length + 1, intervalMs: 1800 });
+  const active = Math.max(Math.min(tick, NODES.length), 1);
+  const isStopped = tick > NODES.length;
+  const current: NodeKey = isStopped ? 'stop' : (NODES[active - 1]?.key ?? 'trigger');
 
   return (
-    <div className="grid items-center gap-8 lg:grid-cols-[minmax(0,420px)_1fr]">
+    <div className="grid items-center gap-4 md:gap-8 lg:grid-cols-[minmax(0,420px)_1fr]">
       <div className="rounded-2xl border border-neutral-200 bg-[radial-gradient(circle,_#e5e5e5_1px,_transparent_1px)] bg-[size:18px_18px] p-4 shadow-2xl md:p-6">
         <ol className="mx-auto flex max-w-sm flex-col items-center">
           {NODES.map((node, index) => {
@@ -140,7 +143,7 @@ export const FollowUpStep = (props: { part: number }) => {
               </li>
             );
           })}
-          {props.part >= 3 && (
+          {isStopped && (
             <li className="relative flex w-full flex-col items-center">
               <ScrollAnchor className="absolute inset-0" />
               <span className="h-6 w-0.5 bg-green-500" />
@@ -158,7 +161,7 @@ export const FollowUpStep = (props: { part: number }) => {
       {/* On a phone the action plays above the workflow, so both fit on screen */}
       <div
         key={current}
-        className="-order-1 min-h-56 animate-in content-center duration-500 zoom-in-95 fade-in md:min-h-80 lg:order-none"
+        className="-order-1 min-h-28 animate-in content-center duration-500 zoom-in-95 fade-in md:min-h-80 lg:order-none"
       >
         <ActionStage node={current} />
       </div>
