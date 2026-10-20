@@ -258,7 +258,7 @@ export const DemoTour = (props: DemoTourProps) => {
           key={scene.line}
           video="pricing"
           header={
-            <h1 className="text-4xl leading-tight font-black tracking-tight text-neutral-950 md:text-5xl">
+            <h1 className="text-3xl leading-tight font-black tracking-tight text-neutral-950 md:text-5xl">
               {t('pricing_video_headline')}
             </h1>
           }

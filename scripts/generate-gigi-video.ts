@@ -5,13 +5,15 @@
  *   bun scripts/generate-gigi-video.ts intro
  *   bun scripts/generate-gigi-video.ts pricing --slots=10
  *
- * Writes `public/demo/gigi-{video}.mp4` and its poster. Kie deletes
+ * Writes `public/demo/gigi-{video}.mp4`, its poster and the pauses in its voice, which the
+ * demo uses to show each sentence while Gigi says it. Kie deletes
  * generated files after 14 days, which is why the videos are kept in the project.
  */
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { readFile, rm, writeFile } from 'node:fs/promises';
 import { parseArgs } from 'node:util';
 import * as z from 'zod';
+import gigiPauses from '@/components/demo/gigi-pauses.json';
 import { stripHighlights } from '@/components/demo/Highlights';
 import { logger } from '@/libs/Logger';
 import messages from '@/locales/it.json';
@@ -28,6 +30,12 @@ const AVATAR_PROMPT =
 
 /** Gemini has no speed setting, so the voice is sped up with ffmpeg before Kling lip-syncs it. */
 const VOICE_TEMPO = 1.15;
+
+/** Quieter than this counts as a pause in the voice. */
+const PAUSE_NOISE = '-35dB';
+
+/** Shorter gaps are breaths between words, not breaks between sentences. */
+const PAUSE_SECONDS = 0.3;
 
 /** Kling's background is off-white (about #fcfcfc): lifting the levels makes it match the white page. */
 const WHITE_LEVEL = 0.96;
@@ -150,4 +158,25 @@ const seconds = Number(
   ]).toString(),
 );
 
-logger.info(`Saved ${output}.mp4 (${seconds.toFixed(1)}s) and its poster`);
+// Where the voice starts again after each pause: sentences break there. ffmpeg logs
+// them on stderr; the silence that ends the video is left out
+const silences = spawnSync('ffmpeg', [
+  '-hide_banner',
+  '-nostats',
+  '-i',
+  `${output}.mp4`,
+  '-af',
+  `silencedetect=noise=${PAUSE_NOISE}:d=${PAUSE_SECONDS}`,
+  '-f',
+  'null',
+  '-',
+]).stderr.toString();
+const pauses = [...silences.matchAll(/silence_end: ([\d.]+)/gu)]
+  .map((match) => Math.round(Number(match[1]) * 100) / 100)
+  .filter((time) => time < seconds - 0.1);
+await writeFile(
+  'src/components/demo/gigi-pauses.json',
+  `${JSON.stringify({ ...gigiPauses, [args.video]: pauses }, null, 2)}\n`,
+);
+
+logger.info(`Saved ${output}.mp4 (${seconds.toFixed(1)}s), its poster and ${pauses.length} pauses`);

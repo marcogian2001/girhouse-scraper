@@ -17,6 +17,9 @@ const NODES = [
 
 type NodeKey = (typeof NODES)[number]['key'] | 'stop';
 
+/** How many steps of the workflow show at once on a phone. */
+const MOBILE_STEPS = 2;
+
 /**
  * Plays what one node of the automation does, so each action is seen happening.
  * @param props Component props.
@@ -28,7 +31,7 @@ const ActionStage = (props: { node: NodeKey }) => {
 
   if (props.node === 'whatsapp') {
     return (
-      <div className="mx-auto w-64 space-y-3 rounded-[2rem] border-[6px] border-neutral-900 bg-[#efeae2] p-3 pt-6 shadow-2xl">
+      <div className="mx-auto w-64 space-y-3 rounded-[2rem] border-[6px] border-neutral-900 bg-[#efeae2] p-3 pt-4 shadow-2xl md:pt-6">
         <div className="flex animate-in items-center gap-2 rounded-2xl bg-white/95 p-2.5 shadow-lg duration-500 slide-in-from-top-6">
           <span className="flex size-8 items-center justify-center rounded-lg bg-[#25d366] text-white">
             <WhatsAppIcon className="size-5" />
@@ -64,8 +67,8 @@ const ActionStage = (props: { node: NodeKey }) => {
 
   if (props.node === 'call') {
     return (
-      <div className="mx-auto flex w-64 flex-col items-center gap-3 rounded-[2rem] bg-neutral-900 px-6 py-6 text-white shadow-2xl md:gap-4 md:py-10">
-        <span className="relative flex size-16 items-center justify-center rounded-full bg-violet-500 md:size-20">
+      <div className="mx-auto flex w-64 flex-col items-center gap-3 rounded-[2rem] bg-neutral-900 px-6 py-5 text-white shadow-2xl md:gap-4 md:py-10">
+        <span className="relative flex size-14 items-center justify-center rounded-full bg-violet-500 md:size-20">
           <span className="absolute inset-0 animate-ping rounded-full bg-violet-400/60" />
           <PhoneCall className="relative size-8" />
         </span>
@@ -77,9 +80,9 @@ const ActionStage = (props: { node: NodeKey }) => {
 
   if (props.node === 'stop') {
     return (
-      <div className="mx-auto flex max-w-sm animate-pop flex-col items-center gap-3 rounded-3xl bg-green-50 p-8 ring-2 ring-green-300">
-        <CheckCircle2 className="size-12 text-green-600" />
-        <p className="text-center font-semibold text-green-800">{t('followup_stage_stop')}</p>
+      <div className="mx-auto flex max-w-sm animate-pop items-center gap-3 rounded-3xl bg-green-50 p-4 ring-2 ring-green-300 md:flex-col md:p-8">
+        <CheckCircle2 className="size-8 shrink-0 text-green-600 md:size-12" />
+        <p className="font-semibold text-green-800 md:text-center">{t('followup_stage_stop')}</p>
       </div>
     );
   }
@@ -108,6 +111,13 @@ export const FollowUpStep = () => {
   const active = Math.max(Math.min(tick, NODES.length), 1);
   const isStopped = tick > NODES.length;
   const current: NodeKey = isStopped ? 'stop' : (NODES[active - 1]?.key ?? 'trigger');
+  // On a phone only the step just done and the one running show, so they fit
+  // on screen with the action above them; the stop counts as one more step
+  const focus = isStopped ? NODES.length : active - 1;
+  const lastStep = isStopped ? NODES.length : NODES.length - 1;
+  const firstShown = Math.max(Math.min(focus - 1, lastStep - (MOBILE_STEPS - 1)), 0);
+  const isShownOnPhone = (index: number) =>
+    index >= firstShown && index < firstShown + MOBILE_STEPS;
 
   return (
     <div className="grid items-center gap-4 md:gap-8 lg:grid-cols-[minmax(0,420px)_1fr]">
@@ -118,7 +128,10 @@ export const FollowUpStep = () => {
             const isCurrent = node.key === current;
 
             return (
-              <li key={node.key} className="relative flex w-full flex-col items-center">
+              <li
+                key={node.key}
+                className={`relative flex w-full flex-col items-center ${isShownOnPhone(index) ? '' : 'max-md:hidden'}`}
+              >
                 {index > 0 && (
                   <span
                     className={`h-6 w-0.5 transition-colors ${isOn ? 'bg-(--demo-primary)' : 'bg-neutral-300'}`}
