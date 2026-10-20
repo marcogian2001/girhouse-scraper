@@ -35,7 +35,7 @@ let client: Anthropic | undefined;
  * @returns The configured Anthropic client.
  * @throws {Error} When `ANTHROPIC_API_KEY` is not configured.
  */
-const getClient = () => {
+export const getClient = () => {
   client ??= new Anthropic({
     apiKey: requireEnv('ANTHROPIC_API_KEY', Env.ANTHROPIC_API_KEY),
   });
@@ -43,7 +43,7 @@ const getClient = () => {
   return client;
 };
 
-type ClaudeModel = ReturnType<typeof requireCopywritingModel<'anthropic'>>;
+export type ClaudeModel = ReturnType<typeof requireCopywritingModel<'anthropic'>>;
 
 /**
  * Prices one copywriting call at list rates, halved for batch calls.
@@ -84,7 +84,7 @@ export const estimateCostMicros = (options: {
  * @param effort The effort the campaign asked for.
  * @returns The `thinking` and `effort` request fields.
  */
-const reasoningFor = (model: ClaudeModel['id'], effort: CopywritingEffort) =>
+export const reasoningFor = (model: ClaudeModel['id'], effort: CopywritingEffort) =>
   model === 'claude-haiku-4-5'
     ? { thinking: { type: 'enabled', budget_tokens: 4000 } as const, effort: undefined }
     : { thinking: { type: 'adaptive' } as const, effort };

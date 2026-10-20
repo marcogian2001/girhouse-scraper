@@ -20,6 +20,7 @@ import {
   syncCampaignStatus,
 } from './CampaignWriting';
 import { db } from './DB';
+import { followUpJobHandlers, markConversationTickAbandoned } from './FollowUps';
 import {
   claimJobs,
   completeJob,
@@ -30,6 +31,8 @@ import {
 } from './JobQueue';
 import { leadJobHandlers, markLeadJobAbandoned } from './LeadJobs';
 import { logger } from './Logger';
+import { markReplySendAbandoned, outboundJobHandlers } from './OutboundEmails';
+import { markReplyJobAbandoned, replyJobHandlers } from './ReplyJobs';
 import { recordParallelUsage } from './Usage';
 import { markWriteBatchAbandoned, writeBatchJobHandlers } from './WriteBatchJobs';
 
@@ -278,6 +281,24 @@ const markAbandoned = async (job: Job, message: string) => {
     return;
   }
 
+  if (job.type === 'reply_process' || job.type === 'reply_write') {
+    await markReplyJobAbandoned(job, message);
+
+    return;
+  }
+
+  if (job.type === 'reply_send') {
+    await markReplySendAbandoned(job, message);
+
+    return;
+  }
+
+  if (job.type === 'conversation_tick') {
+    await markConversationTickAbandoned(job, message);
+
+    return;
+  }
+
   if (!job.campaignId) {
     await markLeadJobAbandoned(job, message);
 
@@ -308,6 +329,9 @@ const handlers = {
   push: runPushJob,
   ...writeBatchJobHandlers,
   ...leadJobHandlers,
+  ...replyJobHandlers,
+  ...outboundJobHandlers,
+  ...followUpJobHandlers,
 };
 
 /**

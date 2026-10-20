@@ -8,11 +8,13 @@ import {
   isNotNull,
   isNull,
   notExists,
+  sql,
 } from 'drizzle-orm';
 import {
   campaignSchema,
   contactSchema,
   emailDraftSchema,
+  emailSuppressionSchema,
   enrichmentSchema,
   knowledgeAssetSchema,
   leadSchema,
@@ -66,6 +68,18 @@ export const loadLeadSearchCsv = async (options: {
               and(
                 eq(campaignSchema.organizationId, options.organizationId),
                 eq(contactSchema.email, leadSchema.email),
+              ),
+            ),
+        ),
+        // Whoever asked to stop is never written to again
+        notExists(
+          db
+            .select({ id: emailSuppressionSchema.id })
+            .from(emailSuppressionSchema)
+            .where(
+              and(
+                eq(emailSuppressionSchema.organizationId, options.organizationId),
+                eq(emailSuppressionSchema.email, sql`lower(${leadSchema.email})`),
               ),
             ),
         ),

@@ -1,0 +1,93 @@
+[
+  {
+    "title": "Ho già la segretaria",
+    "description": "Ha una o più segretarie che gestiscono richieste e appuntamenti e non vede a cosa serva altro",
+    "examples": [
+      "ho una segretaria che lavora per me proprio per risolvere tutte queste problematiche",
+      "ho già le mie segretarie che organizzano i miei appuntamenti",
+      "I miei studi hanno una importante mole di lavoro e non sono piccoli infatti mi contrallano già tutte le mie segretarie"
+    ],
+    "responseAngle": "Non sostituiamo la segretaria: copriamo le ore in cui non c'è (sera, weekend, pausa pranzo) con una risposta immediata su WhatsApp ed email, così la mattina trova le richieste già raccolte. Numeri e account restano dello studio. Settimana gratis, senza carta e senza contratto, per vedere quante richieste arrivano fuori orario."
+  },
+  {
+    "title": "Ho già un gestionale o un sistema",
+    "description": "Usa già un software, un chatbot o un servizio che secondo lui fa la stessa cosa",
+    "examples": [
+      "ho già un gestionale che si occupa di tutta la parte organizzativa",
+      "Ho un software chiamato winfood che fa esattamente quello da lei descritto",
+      "è un servizio compreso nel nostro servizio",
+      "il mio servizio fa i colloqui sia tramite wa che vocale ai candidati"
+    ],
+    "responseAngle": "Non chiediamo di cambiare il gestionale che usa: quello organizza chi è già cliente o paziente, noi rispondiamo subito a chi scrive per la prima volta, anche fuori orario, e raccogliamo i suoi dati. Numeri e account restano suoi. Settimana gratis, senza carta e senza contratto, per confrontare."
+  },
+  {
+    "title": "Ho già chi mi segue",
+    "description": "Ha già un'agenzia o un fornitore per il sito e il digitale",
+    "examples": [
+      "Grazie ho gia' chi mi segue",
+      "Sono già seguita dal punto di vista web.",
+      "Io ho già un sito e chi mi cura il tutto.",
+      "già siamo seguiti da un'agenzia per queste cose."
+    ],
+    "responseAngle": "Non tocchiamo il sito né il lavoro dell'agenzia: il punto è chi risponde quando un cliente scrive o chiama mentre lei è occupato. Ce ne occupiamo noi, con un team italiano, e numeri e account restano suoi. Settimana gratis, senza carta e senza contratto."
+  },
+  {
+    "title": "Rispondo già subito",
+    "description": "Dice di riuscire già a rispondere in tempo, da solo o con il personale presente",
+    "examples": [
+      "In realtà la chiamata mi arriva subito.",
+      "non essendo solo al negozio non mi serve"
+    ],
+    "responseAngle": "Bene, allora il tema sono solo i momenti in cui non può rispondere: sera, weekend, quando è con un cliente. In quei casi parte una risposta automatica immediata, e numeri e account restano suoi. Una settimana gratis, senza carta e senza contratto, per vedere se quei momenti ci sono."
+  },
+  {
+    "title": "Ho poche richieste",
+    "description": "È a inizio attività o sta riducendo i nuovi clienti, quindi non sente il problema",
+    "examples": [
+      "sono ancora all'inizio della mia attività e non ho difficoltà di gestione dell'affluenza di pazienti",
+      "riesco tranquillamente a gestire il flusso",
+      "sto gradualmente restringendo le disponibilità di visita per nuovi pazienti"
+    ],
+    "responseAngle": "Nessuna insistenza: con poche richieste oggi non serve. Ringraziare e lasciare la porta aperta, ricordando che quando le richieste aumentano può provarlo una settimana gratis, senza carta e senza contratto."
+  },
+  {
+    "title": "Non ho budget",
+    "description": "Riconosce che il servizio può servire ma dice di non poter spendere ora",
+    "examples": [
+      "al momento non avrei modo di investire economicamente in altri servizi, seppur ne riconosca la validità e l'efficacia",
+      "al momento non riesco ad investire su un aiuto del genere"
+    ],
+    "responseAngle": "Il costo è 97€ al mese, senza attivazione e senza vincoli: si disdice quando vuole. Prima c'è una settimana gratis senza carta, quindi può vedere se recupera anche solo una richiesta prima di spendere qualcosa."
+  },
+  {
+    "title": "Non ho ricevuto la prima email",
+    "description": "Riceve il follow-up senza aver visto il primo messaggio e non capisce a cosa si riferisca",
+    "examples": [
+      "mi dispiace non ho ricevuto nessun messaggio precedente non so di cosa parla",
+      "questa email è in risposta a cosa? Perché non riesco a vedere la cronologia dei messaggi...",
+      "Non so di che richieste stia parlando",
+      "Scusi io non ho letto nulla Prima di questa mail non ho capito."
+    ],
+    "responseAngle": "Scusarsi e ripartire da zero in due righe: chi siamo (Girhouse, team italiano) e cosa facciamo (una risposta immediata su WhatsApp ed email a chi scrive mentre lei è occupata). Poi chiedere solo se vuole vedere un esempio, senza altre proposte."
+  },
+  {
+    "title": "Non ho capito cosa offrite",
+    "description": "Ha letto l'email ma non ha capito chi scrive o cosa viene proposto",
+    "examples": [
+      "Questa imail non l'ho capita",
+      "posso dire senza dubbio di non aver capito né chi sei né cosa stai offrendo",
+      "Chi sei e perché mi scrivi?",
+      "in realtà non ho capito. Se mi manda un esempio forse è meglio"
+    ],
+    "responseAngle": "Rispiegare in una frase semplice: quando qualcuno scrive o chiama e lei non può rispondere, parte subito una risposta su WhatsApp ed email che raccoglie la richiesta, e lo gestiamo noi. Offrire un esempio concreto per il suo studio e la settimana gratis, senza carta e senza contratto."
+  },
+  {
+    "title": "Tono non adatto",
+    "description": "Si sente trattato con troppa confidenza o in modo poco professionale",
+    "examples": [
+      "le consiglio di non contattare professionisti con \"ciao Claudia\"...",
+      "ho deciso di procedere in maniera più empatica"
+    ],
+    "responseAngle": "Scusarsi per il tono in modo semplice e formale, dando del Lei. Nessuna nuova proposta e nessun follow-up."
+  }
+]

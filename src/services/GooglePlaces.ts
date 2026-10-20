@@ -41,6 +41,65 @@ const autocompleteResponseSchema = z.object({
 
 export type PlaceSuggestion = { placeId: string; label: string };
 
+const placeDetailsSchema = z.object({
+  rating: z.number().optional(),
+  userRatingCount: z.number().optional(),
+  reviews: z
+    .array(
+      z.object({
+        rating: z.number().optional(),
+        text: z.object({ text: z.string() }).optional(),
+        relativePublishTimeDescription: z.string().optional(),
+        authorAttribution: z.object({ displayName: z.string().optional() }).optional(),
+      }),
+    )
+    .default([]),
+  photos: z
+    .array(
+      z.object({
+        name: z.string(),
+        authorAttributions: z.array(z.object({ displayName: z.string().optional() })).default([]),
+      }),
+    )
+    .default([]),
+});
+
+type PlaceReview = z.infer<typeof placeDetailsSchema>['reviews'][number];
+
+/** Google's terms forbid storing reviews and photos, so they are read live and cached for a day. */
+const DETAILS_CACHE_SECONDS = 86_400;
+
+const REVIEW_MAX_LENGTH = 320;
+
+/**
+ * Picks the reviews a demo shows: real, positive and with something to read.
+ * @param reviews The reviews Google returned.
+ * @param limit How many to keep.
+ * @returns The best reviews, trimmed to a readable length.
+ */
+export const pickReviews = (reviews: PlaceReview[], limit = 3) =>
+  reviews
+    .filter((review) => (review.rating ?? 0) >= 4 && (review.text?.text.trim().length ?? 0) >= 40)
+    .toSorted(
+      (a, b) =>
+        (b.rating ?? 0) - (a.rating ?? 0) ||
+        (b.text?.text.length ?? 0) - (a.text?.text.length ?? 0),
+    )
+    .slice(0, limit)
+    .map((review) => {
+      const text = review.text?.text.trim() ?? '';
+
+      return {
+        author: review.authorAttribution?.displayName ?? null,
+        rating: review.rating ?? 0,
+        when: review.relativePublishTimeDescription ?? null,
+        text:
+          text.length > REVIEW_MAX_LENGTH
+            ? `${text.slice(0, text.lastIndexOf(' ', REVIEW_MAX_LENGTH))}…`
+            : text,
+      };
+    });
+
 /**
  * Reads the place suggestions out of an autocomplete response.
  * @param body The parsed JSON response.
@@ -64,6 +123,7 @@ export const parseAutocompleteResponse = (body: unknown): PlaceSuggestion[] =>
  * @param options.path The API path, relative to the v1 base URL.
  * @param options.fieldMask The fields to return, which also decide the billed SKU.
  * @param options.body The JSON body, sent as a POST when present.
+ * @param options.cacheSeconds How long Next may serve the response from its cache.
  * @returns The parsed JSON response.
  * @throws {Error} When the key is missing or Google rejects the request.
  */
@@ -71,6 +131,7 @@ const request = async (options: {
   path: string;
   fieldMask?: string;
   body?: Record<string, unknown>;
+  cacheSeconds?: number;
 }): Promise<unknown> => {
   const key = requireEnv('GOOGLE_MAPS_API_KEY', Env.GOOGLE_MAPS_API_KEY);
 
@@ -82,6 +143,7 @@ const request = async (options: {
       ...(options.fieldMask && { 'X-Goog-FieldMask': options.fieldMask }),
     },
     body: options.body && JSON.stringify(options.body),
+    ...(options.cacheSeconds && { next: { revalidate: options.cacheSeconds } }),
   });
 
   if (!response.ok) {
@@ -177,4 +239,45 @@ export const scanRectangle = async (options: { query: string; rectangle: Rectang
   } while (pageToken);
 
   return { placeIds, isFull: placeIds.length >= TEXT_SEARCH_MAX_RESULTS };
+};
+
+/**
+ * Reads a business's reviews and photos, in Italian, from a one-day cache.
+ * Reviews and photos are billed as Place Details Enterprise and Atmosphere.
+ * @param placeId The Google place id of the business.
+ * @returns Its rating, reviews and photo references.
+ * @throws {Error} When the key is missing or Google rejects the request.
+ */
+export const getPlaceDetails = async (placeId: string) =>
+  placeDetailsSchema.parse(
+    await request({
+      path: `/places/${encodeURIComponent(placeId)}?languageCode=it`,
+      fieldMask: 'rating,userRatingCount,reviews,photos',
+      cacheSeconds: DETAILS_CACHE_SECONDS,
+    }),
+  );
+
+const photoUriSchema = z.object({ photoUri: z.string() });
+
+/**
+ * Finds where Google's CDN serves one photo of a business, from a one-day cache. The URL
+ * carries no API key, so the browser can load it directly.
+ * @param options The call options.
+ * @param options.name The photo reference returned by `getPlaceDetails`.
+ * @param options.maxWidthPx The widest the image may be.
+ * @returns The image URL, or null when Google has no such photo.
+ * @throws {Error} When the key is missing.
+ */
+export const getPlacePhotoUri = async (options: { name: string; maxWidthPx: number }) => {
+  const key = requireEnv('GOOGLE_MAPS_API_KEY', Env.GOOGLE_MAPS_API_KEY);
+
+  const response = await fetch(
+    `${PLACES_API_URL}/${options.name}/media?maxWidthPx=${options.maxWidthPx}&skipHttpRedirect=true`,
+    {
+      headers: { 'X-Goog-Api-Key': key },
+      next: { revalidate: DETAILS_CACHE_SECONDS },
+    },
+  );
+
+  return response.ok ? photoUriSchema.parse(await response.json()).photoUri : null;
 };

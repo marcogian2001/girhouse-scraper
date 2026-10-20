@@ -26,7 +26,14 @@ const sentryOptions: Sentry.NodeOptions | Sentry.EdgeOptions = {
   debug: false,
 };
 
-export function register() {
+export async function register() {
+  if (process.env.NEXT_RUNTIME === 'nodejs') {
+    // Node races IPv6 and IPv4 giving each address 250ms: on a network without IPv6 a slow
+    // IPv4 handshake runs out too, and GHL, Google and database calls fail with ETIMEDOUT
+    const net = await import('node:net');
+    net.setDefaultAutoSelectFamilyAttemptTimeout(1000);
+  }
+
   if (!process.env.NEXT_PUBLIC_SENTRY_DISABLED) {
     if (process.env.NEXT_RUNTIME === 'nodejs') {
       // Node.js Sentry configuration

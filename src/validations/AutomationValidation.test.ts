@@ -1,0 +1,50 @@
+import { describe, expect, it } from 'vitest';
+import { AutomationSettingsValidation } from './AutomationValidation';
+
+const settings = {
+  enabled: true,
+  mode: 'draft',
+  confidenceThreshold: 0.75,
+  replyDelayMinMinutes: 4,
+  replyDelayMaxMinutes: 15,
+  businessHourStart: 9,
+  businessHourEnd: 18,
+  monthlyPrice: 97,
+  newMonthlyPrice: 197,
+  priceIncreaseDays: 15,
+  onboardingSlotsPerMonth: 10,
+  demoNotOpenedBusinessDays: 2,
+  maxFollowUps: 3,
+  whatsappAfterBusinessDays: 2,
+  nurturingIntervalDays: 30,
+  nurturingMaxCount: 3,
+  classificationModel: 'claude-sonnet-5-5',
+  writingModel: 'claude-opus-5-5',
+  whatsappBusinessNumber: '+393331234567',
+};
+
+describe('Automation settings validation', () => {
+  it('accepts the defaults', () => {
+    expect(AutomationSettingsValidation.safeParse(settings).success).toBeTruthy();
+  });
+
+  it('rejects a minimum delay above the maximum', () => {
+    expect(
+      AutomationSettingsValidation.safeParse({ ...settings, replyDelayMinMinutes: 20 }).success,
+    ).toBeFalsy();
+  });
+
+  it('rejects a model that is not Claude', () => {
+    expect(
+      AutomationSettingsValidation.safeParse({ ...settings, classificationModel: 'gpt-6-sol' })
+        .success,
+    ).toBeFalsy();
+  });
+
+  it('rejects a WhatsApp number not in E.164', () => {
+    expect(
+      AutomationSettingsValidation.safeParse({ ...settings, whatsappBusinessNumber: '333 123' })
+        .success,
+    ).toBeFalsy();
+  });
+});

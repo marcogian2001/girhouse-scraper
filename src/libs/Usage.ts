@@ -127,14 +127,14 @@ type UsageOwner = {
  * @param options The call options.
  * @param options.userId The owner of the campaign the call was made for.
  * @param options.organizationId The organization the campaign belongs to.
- * @param options.campaignId The campaign the call was made for.
+ * @param options.campaignId The campaign the call was made for, null for a simulated reply.
  * @param options.sequence The call result, with its provider, model, tokens and cost.
  */
 export const recordCopywritingUsage = async (options: {
   userId: string;
   organizationId: string;
-  campaignId: string;
-  sequence: WrittenSequence;
+  campaignId: string | null;
+  sequence: Omit<WrittenSequence, 'emails'>;
 }) => {
   await db
     .insert(apiUsageSchema)

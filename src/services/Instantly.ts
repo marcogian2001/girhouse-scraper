@@ -39,6 +39,40 @@ const addLeadsResponseSchema = z.object({
   duplicate_email_count: z.number().nullish(),
 });
 
+const emailSchema = z.object({
+  id: z.string(),
+  thread_id: z.string().nullish(),
+  // 1 sent by a campaign step, 2 received, 3 sent by hand or through the API, 4 scheduled
+  ue_type: z.number().nullish(),
+  eaccount: z.string().nullish(),
+  subject: z.string().nullish(),
+  timestamp_email: z.string().nullish(),
+  timestamp_created: z.string().nullish(),
+  is_auto_reply: z.number().nullish(),
+  i_status: z.number().nullish(),
+  body: z.object({ text: z.string().nullish(), html: z.string().nullish() }).nullish(),
+});
+
+const sentEmailResponseSchema = z.object({ id: z.string() });
+
+const listEmailsResponseSchema = z.object({
+  items: z.array(emailSchema),
+});
+
+export type InstantlyEmail = z.infer<typeof emailSchema>;
+
+/** Instantly's lead interest statuses, as the labels the classifier reads. */
+const INTEREST_LABELS: Record<number, string> = {
+  0: 'out_of_office',
+  1: 'interested',
+  2: 'meeting_booked',
+  3: 'meeting_completed',
+  4: 'won',
+  [-1]: 'not_interested',
+  [-2]: 'wrong_person',
+  [-3]: 'lost',
+};
+
 /**
  * Calls the Instantly API and fails loudly on a non-2xx response.
  * @param path The API path, relative to the v2 base URL.
@@ -128,6 +162,8 @@ export const buildCampaignPayload = (options: {
   ],
   email_list: options.emailList,
   stop_on_reply: true,
+  // An out-of-office reply must not end the sequence; the automation waits for the return date
+  stop_on_auto_reply: false,
   link_tracking: false,
   open_tracking: false,
 });
@@ -267,4 +303,148 @@ export const addLeads = async (options: {
   });
 
   return addLeadsResponseSchema.parse(payload);
+};
+
+/**
+ * Lists every email exchanged with a lead, across campaigns and manual sends.
+ * Filtering by campaign would hide replies a salesperson sent by hand, which carry none.
+ * @param leadEmail The lead's email address.
+ * @returns Up to 100 emails, oldest first.
+ * @throws {Error} When the API key is missing or Instantly rejects the request.
+ */
+export const listLeadEmails = async (leadEmail: string) => {
+  const query = new URLSearchParams({ lead: leadEmail, limit: '100', sort_order: 'asc' });
+  const payload = listEmailsResponseSchema.parse(await request(`/emails?${query.toString()}`));
+
+  return payload.items;
+};
+
+/**
+ * Adds an address to the workspace blocklist, so no campaign ever emails it again.
+ * @param email The address to block.
+ * @throws {Error} When the API key is missing or Instantly rejects the request.
+ */
+export const addToBlocklist = async (email: string) => {
+  await request('/block-lists-entries', {
+    method: 'POST',
+    body: JSON.stringify({ bl_value: email }),
+  });
+};
+
+/**
+ * Reads when an email was sent or received.
+ * @param email The Instantly email.
+ * @returns The mail server timestamp, falling back to when Instantly stored it.
+ */
+export const emailTimestamp = (email: InstantlyEmail) => {
+  const value = email.timestamp_email ?? email.timestamp_created;
+
+  return value ? new Date(value) : null;
+};
+
+/**
+ * Turns an email body into plain text.
+ * @param email The Instantly email.
+ * @returns The text body, or the HTML body stripped of its tags.
+ */
+export const emailText = (email: InstantlyEmail) => {
+  if (email.body?.text) {
+    return email.body.text;
+  }
+
+  return (email.body?.html ?? '')
+    .replaceAll(/<br\s*\/?>/giu, '\n')
+    .replaceAll(/<\/(?:p|div)>/giu, '\n')
+    .replaceAll(/<[^>]+>/gu, '')
+    .replaceAll('&nbsp;', ' ')
+    .replaceAll('&lt;', '<')
+    .replaceAll('&gt;', '>')
+    .replaceAll('&amp;', '&')
+    .trim();
+};
+
+/**
+ * Maps Instantly's numeric interest status to a label.
+ * @param status The `i_status` of an email.
+ * @returns The label, or null when Instantly set none.
+ */
+export const toInterestLabel = (status: number | null | undefined) =>
+  status === null || status === undefined ? null : (INTEREST_LABELS[status] ?? `status_${status}`);
+
+/**
+ * Finds the thread a reply belongs to: the latest received email not already stored.
+ * @param options The lookup options.
+ * @param options.emails Every email with the lead, oldest first.
+ * @param options.knownEmailIds Received emails already matched to a stored reply.
+ * @returns The received email and the emails of its thread, oldest first.
+ */
+export const findReplyThread = (options: {
+  emails: InstantlyEmail[];
+  knownEmailIds: Set<string>;
+}) => {
+  const reply = options.emails.findLast(
+    (email) => email.ue_type === 2 && !options.knownEmailIds.has(email.id),
+  );
+
+  if (!reply) {
+    return null;
+  }
+
+  const thread = reply.thread_id
+    ? options.emails.filter((email) => email.thread_id === reply.thread_id)
+    : [reply];
+
+  return { reply, thread };
+};
+
+/**
+ * Finds an email a salesperson sent by hand, which hands the lead back to them.
+ * @param options The lookup options.
+ * @param options.thread The thread, oldest first.
+ * @param options.ownEmailIds Emails the automation sent through the API itself.
+ * @returns The latest manual email, or undefined when there is none.
+ */
+export const findManualReply = (options: { thread: InstantlyEmail[]; ownEmailIds: Set<string> }) =>
+  options.thread.findLast((email) => email.ue_type === 3 && !options.ownEmailIds.has(email.id));
+
+/**
+ * Finds when the first cold email of a thread went out.
+ * @param thread The thread, oldest first.
+ * @returns The send time of the first campaign step, or null when none is in the thread.
+ */
+export const firstCampaignEmailAt = (thread: InstantlyEmail[]) => {
+  const first = thread.find((email) => email.ue_type === 1);
+
+  return first ? emailTimestamp(first) : null;
+};
+
+/**
+ * Replies to an email in its own thread, from the mailbox the thread runs on.
+ * @param options The reply.
+ * @param options.eaccount The connected mailbox the cold email went out from.
+ * @param options.replyToEmailId The Instantly id of the email being answered.
+ * @param options.subject The subject, as a reply.
+ * @param options.body The plain-text body.
+ * @returns The Instantly id of the sent email.
+ * @throws {Error} When the API key is missing or Instantly rejects the request.
+ */
+export const replyToEmail = async (options: {
+  eaccount: string;
+  replyToEmailId: string;
+  subject: string;
+  body: string;
+}) => {
+  const sent = sentEmailResponseSchema.parse(
+    await request('/emails/reply', {
+      method: 'POST',
+      body: JSON.stringify({
+        eaccount: options.eaccount,
+        reply_to_uuid: options.replyToEmailId,
+        subject: options.subject,
+        body: { text: options.body, html: toHtmlBody(options.body) },
+      }),
+    }),
+  );
+
+  return sent.id;
 };

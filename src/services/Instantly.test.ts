@@ -1,12 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import type { campaignSchema, contactSchema, emailDraftSchema } from '@/models/Schema';
 import type { EnrichmentContent } from '@/validations/EnrichmentValidation';
+import type { InstantlyEmail } from './Instantly';
 import {
   buildCampaignPayload,
   buildLeadPayload,
   buildResearchVariables,
   chunkLeads,
+  emailText,
+  findManualReply,
+  findReplyThread,
+  firstCampaignEmailAt,
   toHtmlBody,
+  toInterestLabel,
 } from './Instantly';
 
 const campaign = (
@@ -266,6 +272,100 @@ describe('Instantly', () => {
 
     it('returns nothing for an empty list', () => {
       expect(chunkLeads([], 2)).toStrictEqual([]);
+    });
+  });
+});
+
+const email = (overrides: Partial<InstantlyEmail> & { id: string }): InstantlyEmail => ({
+  thread_id: 'thread-1',
+  ue_type: 1,
+  timestamp_email: '2026-10-01T09:00:00.000Z',
+  body: { text: 'Ciao' },
+  ...overrides,
+});
+
+describe('Instantly threads', () => {
+  const thread = [
+    email({ id: 'step-1', ue_type: 1, timestamp_email: '2026-10-01T09:00:00.000Z' }),
+    email({ id: 'step-2', ue_type: 1, timestamp_email: '2026-10-03T09:00:00.000Z' }),
+    email({ id: 'reply-1', ue_type: 2, timestamp_email: '2026-10-04T09:00:00.000Z' }),
+    email({ id: 'other-thread', thread_id: 'thread-2', ue_type: 2 }),
+  ];
+
+  describe('Reply thread', () => {
+    it('returns the latest unknown reply with its own thread only', () => {
+      const found = findReplyThread({
+        emails: [...thread.slice(0, 3), email({ id: 'reply-2', ue_type: 2 })],
+        knownEmailIds: new Set(),
+      });
+
+      expect(found?.reply.id).toBe('reply-2');
+      expect(found?.thread.map((item) => item.id)).toStrictEqual([
+        'step-1',
+        'step-2',
+        'reply-1',
+        'reply-2',
+      ]);
+    });
+
+    it('skips replies already stored', () => {
+      const found = findReplyThread({
+        emails: thread,
+        knownEmailIds: new Set(['other-thread']),
+      });
+
+      expect(found?.reply.id).toBe('reply-1');
+    });
+
+    it('returns null when every reply is known', () => {
+      expect(
+        findReplyThread({ emails: thread, knownEmailIds: new Set(['reply-1', 'other-thread']) }),
+      ).toBeNull();
+    });
+  });
+
+  describe('Manual reply', () => {
+    it('finds an email a salesperson sent by hand', () => {
+      const manual = email({ id: 'manual', ue_type: 3 });
+
+      expect(findManualReply({ thread: [...thread, manual], ownEmailIds: new Set() })?.id).toBe(
+        'manual',
+      );
+    });
+
+    it('ignores emails the automation sent', () => {
+      const own = email({ id: 'own', ue_type: 3 });
+
+      expect(
+        findManualReply({ thread: [...thread, own], ownEmailIds: new Set(['own']) }),
+      ).toBeUndefined();
+    });
+  });
+
+  describe('First campaign email', () => {
+    it('reads the first campaign step', () => {
+      expect(firstCampaignEmailAt(thread)?.toISOString()).toBe('2026-10-01T09:00:00.000Z');
+    });
+
+    it('returns null without a campaign step', () => {
+      expect(firstCampaignEmailAt([email({ id: 'reply', ue_type: 2 })])).toBeNull();
+    });
+  });
+
+  describe('Email text', () => {
+    it('falls back to the HTML body without tags', () => {
+      expect(
+        emailText(email({ id: 'html', body: { html: '<p>Ciao&nbsp;Luca</p><br/>Grazie' } })),
+      ).toBe('Ciao Luca\n\nGrazie');
+    });
+  });
+
+  describe('Interest label', () => {
+    it('maps known statuses and keeps unknown ones visible', () => {
+      expect(toInterestLabel(1)).toBe('interested');
+      expect(toInterestLabel(-1)).toBe('not_interested');
+      expect(toInterestLabel(9)).toBe('status_9');
+      expect(toInterestLabel(null)).toBeNull();
     });
   });
 });

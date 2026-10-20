@@ -184,6 +184,11 @@ export const jobTypeEnum = pgEnum('job_type', [
   'lead_search',
   'lead_research',
   'lead_email',
+  'reply_process',
+  'reply_write',
+  'reply_send',
+  // The next follow-up of a silent lead, due at `conversation.next_action_at`
+  'conversation_tick',
 ]);
 
 export const jobStatusEnum = pgEnum('job_status', ['queued', 'running', 'done', 'failed']);
@@ -674,4 +679,405 @@ export const emailPollVoteSchema = pgTable(
     index('email_poll_vote_poll_id_idx').on(table.pollId),
     check('email_poll_vote_score_check', sql`${table.score} between 1 and 10`),
   ],
+);
+
+// ---------------------------------------------------------------------------
+// Reply automation
+// ---------------------------------------------------------------------------
+
+/** One earlier email of a thread, as stored with a reply. */
+export type ThreadSnapshot = {
+  direction: 'outbound' | 'inbound';
+  sentAt: string | null;
+  text: string;
+};
+
+/** Where a lead stands between their first reply and the booked call. */
+export const conversationStateEnum = pgEnum('conversation_state', [
+  'replied',
+  'classified',
+  'demo_sent',
+  'demo_viewed',
+  'follow_up',
+  'whatsapp',
+  'call_booked',
+  'nurturing',
+  'out_of_office',
+  // A salesperson answered by hand, so the automation steps aside
+  'paused',
+  'manual_review',
+  'closed_not_interested',
+  // The follow-ups ran out without an answer; a later reply reopens it
+  'closed_no_reply',
+  'stop',
+  'wrong_person',
+]);
+
+export const replyCategoryEnum = pgEnum('reply_category', [
+  'interested',
+  'question',
+  'objection',
+  'not_now',
+  'not_interested',
+  'stop',
+  'out_of_office',
+  'wrong_person',
+  'other',
+]);
+
+/** Who decided a reply's category. */
+export const classificationSourceEnum = pgEnum('classification_source', [
+  'ai',
+  'stop_guard',
+  'manual',
+]);
+
+export const automationModeEnum = pgEnum('automation_mode', ['draft', 'auto']);
+
+export const objectionStatusEnum = pgEnum('objection_status', ['active', 'needs_review']);
+
+/** How an organization's reply automation behaves, editable from the dashboard. */
+export const automationSettingsSchema = pgTable('automation_settings', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  organizationId: organizationId().unique('automation_settings_organization_id_unique'),
+  // Kill switch: when off nothing is sent, though replies are still read and classified
+  enabled: boolean('enabled').notNull().default(true),
+  // Drafts wait for a person to approve them; auto sends them after a random delay
+  mode: automationModeEnum('mode').notNull().default('draft'),
+  // Below this the reply goes to manual review, whatever its category
+  confidenceThreshold: real('confidence_threshold').notNull().default(0.75),
+  replyDelayMinMinutes: integer('reply_delay_min_minutes').notNull().default(4),
+  replyDelayMaxMinutes: integer('reply_delay_max_minutes').notNull().default(15),
+  // Italian business hours, in `AppConfig.timeZone`
+  businessHourStart: integer('business_hour_start').notNull().default(9),
+  businessHourEnd: integer('business_hour_end').notNull().default(18),
+  // The offer every generated text is grounded in
+  monthlyPrice: integer('monthly_price').notNull().default(97),
+  newMonthlyPrice: integer('new_monthly_price').notNull().default(197),
+  // Days after the first cold email when the price goes up for that lead
+  priceIncreaseDays: integer('price_increase_days').notNull().default(15),
+  onboardingSlotsPerMonth: integer('onboarding_slots_per_month').notNull().default(10),
+  demoNotOpenedBusinessDays: integer('demo_not_opened_business_days').notNull().default(2),
+  maxFollowUps: integer('max_follow_ups').notNull().default(3),
+  whatsappAfterBusinessDays: integer('whatsapp_after_business_days').notNull().default(2),
+  nurturingIntervalDays: integer('nurturing_interval_days').notNull().default(30),
+  nurturingMaxCount: integer('nurturing_max_count').notNull().default(3),
+  // Plain text like `campaign.copywritingModel`, so a new model needs no migration
+  classificationModel: text('classification_model').notNull().default('claude-sonnet-5-5'),
+  writingModel: text('writing_model').notNull().default('claude-opus-5-5'),
+  // Where "no time works? write to me" sends the lead, in E.164
+  whatsappBusinessNumber: text('whatsapp_business_number'),
+  ...timestamps,
+});
+
+/** One email thread with a lead who replied to a cold email. */
+export const conversationSchema = pgTable(
+  'conversation',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    organizationId: organizationId(),
+    // Who the AI calls are billed to: the campaign owner, or whoever simulated the reply
+    userId: text('user_id')
+      .notNull()
+      .references(() => userSchema.id, { onDelete: 'cascade' }),
+    // Null on simulated conversations and on Instantly leads the platform did not upload
+    campaignId: uuid('campaign_id').references(() => campaignSchema.id, { onDelete: 'set null' }),
+    contactId: uuid('contact_id').references(() => contactSchema.id, { onDelete: 'set null' }),
+    // Matched by email, since contacts carry no reference to the lead they came from
+    leadId: uuid('lead_id').references(() => leadSchema.id, { onDelete: 'set null' }),
+    instantlyCampaignId: text('instantly_campaign_id'),
+    // Lower-cased
+    leadEmail: text('lead_email').notNull(),
+    company: text('company'),
+    // The mailbox the cold email went out from; every reply must leave from it too
+    eaccount: text('eaccount'),
+    threadId: text('thread_id'),
+    state: conversationStateEnum('state').notNull().default('replied'),
+    followUpCount: integer('follow_up_count').notNull().default(0),
+    nurturingCount: integer('nurturing_count').notNull().default(0),
+    // A second negative reply closes the lead for good
+    negativeReplyCount: integer('negative_reply_count').notNull().default(0),
+    pausedReason: text('paused_reason'),
+    outOfOfficeUntil: timestamp('out_of_office_until', { mode: 'date' }),
+    // The first cold email, which the price increase date counts from
+    firstEmailSentAt: timestamp('first_email_sent_at', { mode: 'date' }),
+    nextActionAt: timestamp('next_action_at', { mode: 'date' }),
+    lastInboundAt: timestamp('last_inbound_at', { mode: 'date' }),
+    lastOutboundAt: timestamp('last_outbound_at', { mode: 'date' }),
+    phoneE164: text('phone_e164'),
+    // The lead as a GHL contact, once the call is booked
+    ghlContactId: text('ghl_contact_id'),
+    // Created from the dashboard: Instantly and GHL are never called for it
+    isTest: boolean('is_test').notNull().default(false),
+    ...timestamps,
+  },
+  (table) => [
+    // Nulls are distinct, so simulated conversations never collide
+    unique('conversation_organization_id_instantly_campaign_id_lead_email_unique').on(
+      table.organizationId,
+      table.instantlyCampaignId,
+      table.leadEmail,
+    ),
+    index('conversation_organization_id_state_idx').on(table.organizationId, table.state),
+  ],
+);
+
+/** One reply received from a lead. */
+export const inboundMessageSchema = pgTable(
+  'inbound_message',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    conversationId: uuid('conversation_id')
+      .notNull()
+      .references(() => conversationSchema.id, { onDelete: 'cascade' }),
+    // Derived from the webhook payload, which carries no email id, so a redelivery is ignored
+    dedupeKey: text('dedupe_key').notNull().unique(),
+    // Resolved from the Instantly thread; unique, so two deliveries of one email are caught too
+    instantlyEmailId: text('instantly_email_id').unique(),
+    eventType: text('event_type').notNull(),
+    subject: text('subject'),
+    bodyText: text('body_text').notNull(),
+    receivedAt: timestamp('received_at', { mode: 'date' }).notNull(),
+    // The interest label Instantly gave the reply: a hint, not the decision
+    instantlyInterestLabel: text('instantly_interest_label'),
+    isAutoReply: boolean('is_auto_reply').notNull().default(false),
+    raw: jsonb('raw').$type<Record<string, unknown>>(),
+    // The earlier emails as they were when the reply arrived, so writing the answer needs no new call
+    thread: jsonb('thread').$type<ThreadSnapshot[]>(),
+    processedAt: timestamp('processed_at', { mode: 'date' }),
+    ...timestamps,
+  },
+  (table) => [index('inbound_message_conversation_id_idx').on(table.conversationId)],
+);
+
+/** A reusable answer to an objection leads raise. The AI picks from these, never invents one. */
+export const objectionSchema = pgTable(
+  'objection',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    organizationId: organizationId(),
+    // Short slug the classifier answers with
+    key: text('key').notNull(),
+    title: text('title').notNull(),
+    description: text('description').notNull(),
+    // Phrases leads used, so the classifier recognises the objection
+    examples: jsonb('examples').$type<string[]>().notNull().default([]),
+    // The angle replies take, in plain words
+    responseAngle: text('response_angle').notNull(),
+    // Objections the AI added wait for a person to review the angle
+    status: objectionStatusEnum('status').notNull().default('active'),
+    sourceMessageId: uuid('source_message_id').references(() => inboundMessageSchema.id, {
+      onDelete: 'set null',
+    }),
+    ...timestamps,
+  },
+  (table) => [unique('objection_organization_id_key_unique').on(table.organizationId, table.key)],
+);
+
+/** What a reply means, as decided by the AI, the stop guard or a person. */
+export const replyClassificationSchema = pgTable('reply_classification', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  inboundMessageId: uuid('inbound_message_id')
+    .notNull()
+    .unique()
+    .references(() => inboundMessageSchema.id, { onDelete: 'cascade' }),
+  category: replyCategoryEnum('category').notNull(),
+  objectionId: uuid('objection_id').references(() => objectionSchema.id, { onDelete: 'set null' }),
+  phoneE164: text('phone_e164'),
+  // Name or email of the person the lead pointed to
+  referral: text('referral'),
+  // Which proposed time the lead picked, or the time they asked for
+  chosenSlot: text('chosen_slot'),
+  // ISO date an out-of-office reply says they are back
+  returnDate: text('return_date'),
+  confidence: real('confidence').notNull(),
+  reasoning: text('reasoning').notNull(),
+  source: classificationSourceEnum('source').notNull(),
+  model: text('model'),
+  ...timestamps,
+});
+
+/** Everything that happened to a conversation, and who did it. */
+export const conversationEventSchema = pgTable(
+  'conversation_event',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    conversationId: uuid('conversation_id')
+      .notNull()
+      .references(() => conversationSchema.id, { onDelete: 'cascade' }),
+    type: text('type').notNull(),
+    payload: jsonb('payload').$type<Record<string, unknown>>().notNull().default({}),
+    // Null when the automation acted on its own
+    actorUserId: text('actor_user_id').references(() => userSchema.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
+  },
+  (table) => [
+    index('conversation_event_conversation_id_created_at_idx').on(
+      table.conversationId,
+      table.createdAt,
+    ),
+  ],
+);
+
+/** Addresses that asked never to be contacted again. Permanent. */
+export const emailSuppressionSchema = pgTable(
+  'email_suppression',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    organizationId: organizationId(),
+    // Lower-cased
+    email: text('email').notNull(),
+    reason: text('reason').notNull(),
+    conversationId: uuid('conversation_id').references(() => conversationSchema.id, {
+      onDelete: 'set null',
+    }),
+    createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
+  },
+  (table) => [
+    unique('email_suppression_organization_id_email_unique').on(table.organizationId, table.email),
+  ],
+);
+
+export const outboundKindEnum = pgEnum('outbound_kind', [
+  'reply',
+  'follow_up',
+  'nurturing',
+  'closing',
+  // Answers a reply that picked a call time, once the call is on the calendar
+  'booking_confirmation',
+]);
+
+export const outboundStatusEnum = pgEnum('outbound_status', [
+  'draft',
+  'scheduled',
+  'sent',
+  'cancelled',
+  'failed',
+]);
+
+/** An email the automation wrote to a lead, from draft to sent in the Instantly thread. */
+export const outboundEmailSchema = pgTable(
+  'outbound_email',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    conversationId: uuid('conversation_id')
+      .notNull()
+      .references(() => conversationSchema.id, { onDelete: 'cascade' }),
+    // The reply this answers; unique, so one reply never gets two answers
+    inboundMessageId: uuid('inbound_message_id')
+      .unique()
+      .references(() => inboundMessageSchema.id, { onDelete: 'cascade' }),
+    kind: outboundKindEnum('kind').notNull(),
+    subject: text('subject').notNull(),
+    body: text('body').notNull(),
+    status: outboundStatusEnum('status').notNull().default('draft'),
+    // Why the email waits for a person: writing rules it broke, or a missing demo link
+    issues: jsonb('issues').$type<string[]>().notNull().default([]),
+    // The call times the email offers, ISO, so the lead's pick can be read back
+    offeredSlots: jsonb('offered_slots').$type<string[]>().notNull().default([]),
+    scheduledFor: timestamp('scheduled_for', { mode: 'date' }),
+    sentAt: timestamp('sent_at', { mode: 'date' }),
+    // Set once sent, so the thread can tell the automation's emails from a salesperson's
+    instantlyEmailId: text('instantly_email_id'),
+    approvedByUserId: text('approved_by_user_id').references(() => userSchema.id, {
+      onDelete: 'set null',
+    }),
+    model: text('model'),
+    errorMessage: text('error_message'),
+    ...timestamps,
+  },
+  (table) => [index('outbound_email_conversation_id_idx').on(table.conversationId)],
+);
+
+/** One message of the example WhatsApp chat a demo plays. */
+export type DemoChatMessage = {
+  from: 'customer' | 'business';
+  text: string;
+  // Quick-reply buttons the business offers, such as two appointment times
+  options: string[];
+};
+
+/** What a demo page shows, built once from the lead. Google reviews and photos are read live, never stored. */
+export type DemoSnapshot = {
+  // Bumped when the snapshot shape changes, so older demos are rebuilt on their next use
+  version: number;
+  company: string;
+  city: string | null;
+  address: string | null;
+  phone: string | null;
+  category: string | null;
+  categories: string[];
+  openingHours: { day: string; hours: string }[];
+  website: string | null;
+  placeId: string | null;
+  rating: number | null;
+  reviewsCount: number | null;
+  logoUrl: string | null;
+  // Hex colour the page is tinted with
+  primaryColor: string;
+  landing: {
+    headline: string;
+    subheadline: string;
+    about: string | null;
+    ctaLabel: string;
+    services: { name: string; description: string | null }[];
+  };
+  // An invented customer and conversation, always labelled as an example
+  chat: {
+    customerName: string;
+    service: string | null;
+    // What the CRM would note about the customer, from what they said in the chat
+    note: string | null;
+    messages: DemoChatMessage[];
+  };
+};
+
+export const demoEventTypeEnum = pgEnum('demo_event_type', [
+  'open',
+  'step',
+  'heartbeat',
+  'whatsapp_click',
+  'phone_submitted',
+  'booked',
+]);
+
+/** The personalised page a lead is sent to, one per conversation. */
+export const demoSchema = pgTable(
+  'demo',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    organizationId: organizationId(),
+    conversationId: uuid('conversation_id')
+      .notNull()
+      .unique()
+      .references(() => conversationSchema.id, { onDelete: 'cascade' }),
+    leadId: uuid('lead_id').references(() => leadSchema.id, { onDelete: 'set null' }),
+    // The public URL segment, with a random suffix so it cannot be guessed
+    slug: text('slug').notNull().unique(),
+    data: jsonb('data').$type<DemoSnapshot>().notNull(),
+    firstOpenedAt: timestamp('first_opened_at', { mode: 'date' }),
+    // Set once the lead reaches the last step
+    completedAt: timestamp('completed_at', { mode: 'date' }),
+    // Set once the lead books the call from the demo
+    bookedAt: timestamp('booked_at', { mode: 'date' }),
+    ...timestamps,
+  },
+  (table) => [index('demo_organization_id_idx').on(table.organizationId)],
+);
+
+/** One thing a visitor did on a demo page. */
+export const demoEventSchema = pgTable(
+  'demo_event',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    demoId: uuid('demo_id')
+      .notNull()
+      .references(() => demoSchema.id, { onDelete: 'cascade' }),
+    // Random per browser tab, so two visits are told apart without storing who visited
+    sessionId: text('session_id').notNull(),
+    type: demoEventTypeEnum('type').notNull(),
+    step: integer('step'),
+    createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
+  },
+  (table) => [index('demo_event_demo_id_created_at_idx').on(table.demoId, table.createdAt)],
 );
