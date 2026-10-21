@@ -7,6 +7,7 @@ import { VERIFICATION_COST_MICROS } from '@/services/MillionVerifier';
 import type { ParallelProcessor } from '@/services/Parallel';
 import { PROCESSOR_RUN_COST_MICROS } from '@/services/Parallel';
 import { EMAIL_COST_MICROS } from '@/services/Prospeo';
+import { VERIFICATION_COST_MICROS as REOON_VERIFICATION_COST_MICROS } from '@/services/Reoon';
 import { AppConfig } from '@/utils/AppConfig';
 import type { DateRange } from '@/utils/DateRange';
 import { db } from './DB';
@@ -31,7 +32,7 @@ const sumFor = (provider: UsageProvider, column: AnyPgColumn) =>
     Number,
   );
 
-const LEAD_PROVIDERS: UsageProvider[] = ['apify', 'prospeo', 'millionverifier'];
+const LEAD_PROVIDERS: UsageProvider[] = ['apify', 'prospeo', 'millionverifier', 'reoon'];
 
 const COPYWRITING_PROVIDERS: UsageProvider[] = ['anthropic', 'openai'];
 
@@ -231,15 +232,22 @@ export const recordProspeoUsage = async (
 };
 
 /**
- * Records one email verification. Safe to repeat: a lead is only counted once.
+ * Records one email verification. Safe to repeat: each address of a lead is only counted once.
  * @param options The call options.
  * @param options.userId The owner of the lead search.
  * @param options.organizationId The organization the lead search belongs to.
  * @param options.leadSearchId The lead search the verification was made for.
  * @param options.leadId The lead whose email was verified.
+ * @param options.email The verified address.
+ * @param options.provider The verifier that checked it.
  */
-export const recordMillionVerifierUsage = async (
-  options: UsageOwner & { leadSearchId: string; leadId: string },
+export const recordVerificationUsage = async (
+  options: UsageOwner & {
+    leadSearchId: string;
+    leadId: string;
+    email: string;
+    provider: Extract<UsageProvider, 'millionverifier' | 'reoon'>;
+  },
 ) => {
   await db
     .insert(apiUsageSchema)
@@ -247,10 +255,11 @@ export const recordMillionVerifierUsage = async (
       userId: options.userId,
       organizationId: options.organizationId,
       leadSearchId: options.leadSearchId,
-      provider: 'millionverifier',
-      externalId: options.leadId,
+      provider: options.provider,
+      externalId: `${options.leadId}:${options.email}`,
       model: 'verify',
-      costMicros: VERIFICATION_COST_MICROS,
+      costMicros:
+        options.provider === 'reoon' ? REOON_VERIFICATION_COST_MICROS : VERIFICATION_COST_MICROS,
     })
     .onConflictDoNothing();
 };

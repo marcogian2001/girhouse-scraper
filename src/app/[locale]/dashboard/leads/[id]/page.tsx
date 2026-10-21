@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 import { DeleteLeadSearchButton } from '@/components/DeleteLeadSearchButton';
 import { LeadSearchProgress } from '@/components/LeadSearchProgress';
 import { LeadTable } from '@/components/LeadTable';
+import { RetryNoEmailLeadsButton } from '@/components/RetryNoEmailLeadsButton';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -59,6 +60,10 @@ export default async function LeadSearchPage(props: {
     .orderBy(asc(leadSchema.createdAt), asc(leadSchema.company));
 
   const readyCount = leads.filter((lead) => lead.status === 'ready').length;
+  // Leads settled before the website and info@ routes existed have no attempts on record
+  const retryableCount = leads.filter(
+    (lead) => lead.status === 'no_email' && lead.emailAttempts === null,
+  ).length;
   // Only searches that scan their area know when it has run out of new businesses
   const isShort =
     search.locationPlaceId !== null && search.status === 'done' && readyCount < search.maxResults;
@@ -124,6 +129,10 @@ export default async function LeadSearchPage(props: {
               {t('button_campaign', { count: readyCount })}
             </Link>
           </Button>
+        )}
+
+        {retryableCount > 0 && (
+          <RetryNoEmailLeadsButton leadSearchId={search.id} count={retryableCount} />
         )}
 
         <DeleteLeadSearchButton leadSearchId={search.id} />

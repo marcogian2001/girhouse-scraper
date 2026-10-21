@@ -30,6 +30,8 @@ export const Env = createEnv({
     APIFY_API_TOKEN: z.string().min(1).optional(),
     PROSPEO_API_KEY: z.string().min(1).optional(),
     MILLIONVERIFIER_API_KEY: z.string().min(1).optional(),
+    // Second opinion on addresses MillionVerifier cannot settle; skipped when unset
+    REOON_API_KEY: z.string().min(1).optional(),
     GOOGLE_MAPS_API_KEY: z.string().min(1).optional(),
     JOBS_SECRET: z.string().min(16).optional(),
     // Set on Vercel, which sends it as a bearer token on every cron call
@@ -70,6 +72,7 @@ export const Env = createEnv({
     APIFY_API_TOKEN: process.env.APIFY_API_TOKEN,
     PROSPEO_API_KEY: process.env.PROSPEO_API_KEY,
     MILLIONVERIFIER_API_KEY: process.env.MILLIONVERIFIER_API_KEY,
+    REOON_API_KEY: process.env.REOON_API_KEY,
     GOOGLE_MAPS_API_KEY: process.env.GOOGLE_MAPS_API_KEY,
     JOBS_SECRET: process.env.JOBS_SECRET,
     CRON_SECRET: process.env.CRON_SECRET,

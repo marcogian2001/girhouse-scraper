@@ -22,7 +22,7 @@ export type WebsiteBrand = {
  * @param name The attribute name.
  * @returns The attribute value, or undefined when it is missing.
  */
-const readAttribute = (tag: string, name: string) =>
+export const readAttribute = (tag: string, name: string) =>
   tag.match(new RegExp(`\\s${name}\\s*=\\s*["']([^"']*)["']`, 'iu'))?.[1]?.trim();
 
 /**
@@ -30,7 +30,7 @@ const readAttribute = (tag: string, name: string) =>
  * @param text The raw text.
  * @returns The text with entities decoded.
  */
-const decodeEntities = (text: string) =>
+export const decodeEntities = (text: string) =>
   text
     .replaceAll('&nbsp;', ' ')
     .replaceAll('&amp;', '&')
@@ -46,7 +46,7 @@ const decodeEntities = (text: string) =>
  * @param baseUrl The page it was found on.
  * @returns The absolute https or http URL, or null when it cannot be one.
  */
-const resolveUrl = (href: string | undefined, baseUrl: string) => {
+export const resolveUrl = (href: string | undefined, baseUrl: string) => {
   if (!href || !URL.canParse(href, baseUrl)) {
     return null;
   }
@@ -145,12 +145,12 @@ export const parseBrandHtml = (html: string, baseUrl: string): WebsiteBrand => {
 };
 
 /**
- * Downloads a business's homepage and reads its brand.
+ * Downloads one page of a business's website.
  * A site that is down, slow or not HTML is simply skipped.
- * @param url The website URL.
- * @returns The brand, or null when the page could not be read.
+ * @param url The page URL.
+ * @returns The page source and the URL it ended up at after redirects, or null when it could not be read.
  */
-export const fetchWebsiteBrand = async (url: string) => {
+export const fetchHtml = async (url: string) => {
   const response = await fetch(url, {
     redirect: 'follow',
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
@@ -168,5 +168,16 @@ export const fetchWebsiteBrand = async (url: string) => {
   const text = await response.text().catch(() => '');
   const html = text.slice(0, MAX_HTML_BYTES);
 
-  return html ? parseBrandHtml(html, response.url === '' ? url : response.url) : null;
+  return html ? { html, url: response.url === '' ? url : response.url } : null;
+};
+
+/**
+ * Downloads a business's homepage and reads its brand.
+ * @param url The website URL.
+ * @returns The brand, or null when the page could not be read.
+ */
+export const fetchWebsiteBrand = async (url: string) => {
+  const page = await fetchHtml(url);
+
+  return page ? parseBrandHtml(page.html, page.url) : null;
 };

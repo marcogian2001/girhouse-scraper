@@ -122,6 +122,25 @@ export const extractDomain = (website: string) => {
 const isSocialDomain = (domain: string) =>
   SOCIAL_HOSTS.some((host) => domain === host || domain.endsWith(`.${host}`));
 
+/** Platforms listed above whose public pages show their contacts without a login. */
+const READABLE_SOCIAL_HOSTS = ['linktr.ee', 'business.site', 'sites.google.com'];
+
+/**
+ * Checks whether the page a business lists as its website can be read for contacts.
+ * Its own site can, and so can a few page builders; Facebook and Instagram need a login.
+ * @param website The website as listed on Google Maps.
+ * @returns Whether the page is worth downloading.
+ */
+export const isReadableWebsite = (website: string) => {
+  const host = extractDomain(website);
+
+  return (
+    host !== null &&
+    (!isSocialDomain(host) ||
+      READABLE_SOCIAL_HOSTS.some((social) => host === social || host.endsWith(`.${social}`)))
+  );
+};
+
 /**
  * Turns a scraped place into lead columns.
  * A Facebook page or similar listed as the website does not count as one.

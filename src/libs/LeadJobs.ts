@@ -1,5 +1,6 @@
 import { and, asc, countDistinct, eq, inArray, isNull, notExists, sql } from 'drizzle-orm';
 import type { SQL } from 'drizzle-orm';
+import type { EmailAttempt } from '@/models/Schema';
 import {
   discoveredPlaceSchema,
   jobSchema,
@@ -9,16 +10,19 @@ import {
   searchCellSchema,
 } from '@/models/Schema';
 import type { MapsPlace } from '@/services/Apify';
-import { fetchMapsRun, startMapsRun, toLeadRow } from '@/services/Apify';
+import { fetchMapsRun, isReadableWebsite, startMapsRun, toLeadRow } from '@/services/Apify';
 import type { Rectangle } from '@/services/GooglePlaces';
 import { fetchAreaViewport, scanRectangle } from '@/services/GooglePlaces';
 import { verifyEmail } from '@/services/MillionVerifier';
 import { createDecisionMakerRun, fetchTaskRunResult } from '@/services/Parallel';
 import { findEmail } from '@/services/Prospeo';
+import { hasReoon, verifyEmailPower } from '@/services/Reoon';
+import { findWebsiteEmails } from '@/services/WebsiteContacts';
 import {
   countLeadsToTake,
   estimateEmailYield,
   isPecEmail,
+  nextEmailRoute,
   OPEN_LEAD_STATUSES,
   pickEmailRoutes,
   readPublicEmail,
@@ -36,9 +40,9 @@ import { db } from './DB';
 import { completeJob, pollDelaySeconds, rescheduleJob } from './JobQueue';
 import {
   recordApifyUsage,
-  recordMillionVerifierUsage,
   recordParallelUsage,
   recordProspeoUsage,
+  recordVerificationUsage,
 } from './Usage';
 
 /** How long Parallel may hold a poll open. Short, so the worker stays snappy. */
@@ -55,6 +59,9 @@ const SETTLED_LEAD_STATUSES = ['ready', 'no_email', 'failed'] as const;
 
 /** How long a lead waits for Prospeo after hitting its rate limit. */
 const PROSPEO_RATE_LIMIT_DELAY_SECONDS = 60;
+
+/** Addresses one route verifies at most, best first; only a website turns up more than one. */
+const MAX_WEBSITE_CANDIDATES = 2;
 
 /** Cells scanned with Google in one round at most, so a job stays well under its lock. */
 const MAX_CELLS_PER_ROUND = 30;
@@ -929,6 +936,23 @@ const runLeadSearchJob = async (job: Job) => {
 };
 
 /**
+ * Picks the email routes of a lead.
+ * @param options The call options.
+ * @param options.lead The lead, with its decision maker once known.
+ * @param options.publicEmail The address the business publishes, if any.
+ * @returns Which routes can be tried.
+ */
+const readEmailRoutes = (options: {
+  lead: Pick<Lead, 'domain' | 'firstName' | 'lastName' | 'website'>;
+  publicEmail: string | null;
+}) =>
+  pickEmailRoutes({
+    lead: options.lead,
+    publicEmail: options.publicEmail,
+    readableWebsite: options.lead.website !== null && isReadableWebsite(options.lead.website),
+  });
+
+/**
  * Starts or polls the Parallel research that finds a lead's decision maker.
  * @param job The lead research job being processed.
  */
@@ -979,12 +1003,12 @@ const runLeadResearchJob = async (job: Job) => {
   const research = parsed.success ? parsed.data : null;
   const contact = toContactFields(research);
 
-  const routes = pickEmailRoutes({
-    lead: { domain: lead.domain, ...contact },
+  const routes = readEmailRoutes({
+    lead: { ...lead, ...contact },
     publicEmail: readPublicEmail(research?.public_email),
   });
 
-  const hasRoute = routes.prospeo || routes.publicEmail;
+  const hasRoute = Object.values(routes).some(Boolean);
 
   await db
     .update(leadSchema)
@@ -995,6 +1019,7 @@ const runLeadResearchJob = async (job: Job) => {
       description: readResearchField(research?.business_description),
       research: research ?? { raw: outcome.content },
       status: hasRoute ? 'finding_email' : 'no_email',
+      emailAttempts: [],
     })
     .where(eq(leadSchema.id, lead.id));
 
@@ -1008,93 +1033,266 @@ const runLeadResearchJob = async (job: Job) => {
   await completeJob(job.id);
 };
 
+/** Who the billed calls of an email lookup are made for. */
+type EmailLookupOwner = {
+  userId: string;
+  organizationId: string;
+  leadSearchId: string;
+  leadId: string;
+};
+
+/** The email columns stored once a deliverable address is found. */
+type FoundEmail = Pick<Lead, 'email' | 'emailSource' | 'emailVerification'>;
+
+/** What trying one email route turned up, or `rate_limited` when Prospeo asked to slow down. */
+type EmailRouteOutcome = 'rate_limited' | { attempts: EmailAttempt[]; found: FoundEmail | null };
+
 /**
- * Looks up a deliverable email for a lead: Prospeo first, then the address the
- * business publishes, checked with MillionVerifier.
+ * Checks whether an address can receive mail, asking Reoon when MillionVerifier cannot tell.
  * @param options The call options.
- * @param options.lead The lead to find an email for.
- * @param options.search The lead search the lead belongs to, billed for the calls.
- * @returns The email columns to store, null when no deliverable address was found,
- * or `rate_limited` when Prospeo asked to slow down.
+ * @param options.email The address to check.
+ * @param options.owner Who the verifications are billed to.
+ * @returns The verdict.
  */
-const findLeadEmail = async (options: {
+const verifyAddress = async (options: { email: string; owner: EmailLookupOwner }) => {
+  const verdict = await verifyEmail(options.email);
+
+  await recordVerificationUsage({
+    ...options.owner,
+    email: options.email,
+    provider: 'millionverifier',
+  });
+
+  if (verdict !== 'unknown' || !hasReoon()) {
+    return verdict;
+  }
+
+  const second = await verifyEmailPower(options.email);
+
+  await recordVerificationUsage({ ...options.owner, email: options.email, provider: 'reoon' });
+
+  return second;
+};
+
+/**
+ * Asks Prospeo for the decision maker's work email.
+ * @param options The call options.
+ * @param options.lead The lead, with a domain and a named decision maker.
+ * @param options.owner Who the lookup is billed to.
+ * @returns What was tried and the email found, or `rate_limited` when Prospeo asked to slow down.
+ */
+const tryProspeo = async (options: {
   lead: Lead;
-  search: typeof leadSearchSchema.$inferSelect;
-}) => {
-  const { lead, search } = options;
-  const research = DecisionMakerValidation.safeParse(lead.research);
-  const publicEmail = readPublicEmail(research.success ? research.data.public_email : undefined);
-  const routes = pickEmailRoutes({ lead, publicEmail });
-  const owner = {
-    userId: search.userId,
-    organizationId: search.organizationId,
-    leadSearchId: search.id,
-    leadId: lead.id,
+  owner: EmailLookupOwner;
+}): Promise<EmailRouteOutcome> => {
+  const { lead } = options;
+  const match = await findEmail({
+    firstName: lead.firstName ?? '',
+    lastName: lead.lastName ?? '',
+    domain: lead.domain ?? '',
+  });
+
+  if (match === 'rate_limited') {
+    return match;
+  }
+
+  if (match?.charged) {
+    await recordProspeoUsage(options.owner);
+  }
+
+  if (!match) {
+    return { attempts: [{ source: 'prospeo', email: null, verdict: 'not_found' }], found: null };
+  }
+
+  // A PEC rejects ordinary mail, so the next route gets its turn
+  if (isPecEmail(match.email)) {
+    return {
+      attempts: [{ source: 'prospeo', email: match.email, verdict: 'invalid' }],
+      found: null,
+    };
+  }
+
+  return {
+    attempts: [{ source: 'prospeo', email: match.email, verdict: 'valid' }],
+    found: { email: match.email, emailSource: 'prospeo', emailVerification: 'valid' },
   };
+};
 
-  if (routes.prospeo && lead.domain && lead.firstName && lead.lastName) {
-    const match = await findEmail({
-      firstName: lead.firstName,
-      lastName: lead.lastName,
-      domain: lead.domain,
-    });
+/**
+ * Verifies candidate addresses one at a time until one can receive mail.
+ * @param options The call options.
+ * @param options.source The route the candidates come from.
+ * @param options.candidates The addresses to check, best first.
+ * @param options.owner Who the verifications are billed to.
+ * @returns What was tried and the first deliverable address.
+ */
+const verifyCandidates = async (options: {
+  source: Exclude<EmailAttempt['source'], 'prospeo'>;
+  candidates: string[];
+  owner: EmailLookupOwner;
+}) => {
+  const attempts: EmailAttempt[] = [];
 
-    if (match === 'rate_limited') {
-      return match;
-    }
+  // Sequential on purpose: each verification is billed, so it stops at the first good address
+  for (const email of options.candidates) {
+    // oxlint-disable-next-line no-await-in-loop
+    const verdict = await verifyAddress({ email, owner: options.owner });
 
-    if (match?.charged) {
-      await recordProspeoUsage(owner);
-    }
+    attempts.push({ source: options.source, email, verdict });
 
-    // A PEC rejects ordinary mail, so the published address gets its turn
-    if (match && !isPecEmail(match.email)) {
+    // A guessed address on a domain that accepts everything may well not exist
+    const isAccepted =
+      verdict === 'valid' || (verdict === 'catch_all' && options.source !== 'guessed');
+
+    if (isAccepted) {
       return {
-        email: match.email,
-        emailSource: 'prospeo' as const,
-        emailVerification: 'valid' as const,
+        attempts,
+        found: { email, emailSource: options.source, emailVerification: verdict },
       };
     }
   }
 
-  if (!publicEmail) {
-    return null;
-  }
-
-  const verdict = await verifyEmail(publicEmail);
-
-  await recordMillionVerifierUsage(owner);
-
-  return verdict === 'valid' || verdict === 'catch_all'
-    ? { email: publicEmail, emailSource: 'public' as const, emailVerification: verdict }
-    : null;
+  return {
+    attempts:
+      attempts.length > 0
+        ? attempts
+        : [{ source: options.source, email: null, verdict: 'not_found' as const }],
+    found: null,
+  };
 };
 
 /**
- * Finds and verifies the email of a lead.
+ * Tries one route to a lead's email.
+ * @param options The call options.
+ * @param options.route The route to try.
+ * @param options.lead The lead.
+ * @param options.publicEmail The address the business publishes, if any.
+ * @param options.attempts What was tried before, so no address is verified twice.
+ * @param options.owner Who the calls are billed to.
+ * @returns What was tried and the email found, or `rate_limited` when Prospeo asked to slow down.
+ */
+const tryEmailRoute = async (options: {
+  route: NonNullable<ReturnType<typeof nextEmailRoute>>;
+  lead: Lead;
+  publicEmail: string | null;
+  attempts: EmailAttempt[];
+  owner: EmailLookupOwner;
+}): Promise<EmailRouteOutcome> => {
+  const { route, lead } = options;
+
+  if (route === 'prospeo') {
+    return await tryProspeo({ lead, owner: options.owner });
+  }
+
+  const tried = new Set(options.attempts.map((attempt) => attempt.email));
+
+  let candidates: string[] = [];
+
+  if (route === 'public' && options.publicEmail) {
+    candidates = [options.publicEmail];
+  } else if (route === 'website' && lead.website) {
+    candidates = await findWebsiteEmails({ website: lead.website, domain: lead.domain });
+  } else if (route === 'guessed' && lead.domain) {
+    candidates = [`info@${lead.domain}`];
+  }
+
+  return await verifyCandidates({
+    source: route,
+    candidates: candidates.filter((email) => !tried.has(email)).slice(0, MAX_WEBSITE_CANDIDATES),
+    owner: options.owner,
+  });
+};
+
+/**
+ * Finds and verifies the email of a lead, one route per run: Prospeo, the
+ * address the business publishes, its website, then info@ at its domain.
+ * Each run stays short, and what was tried is kept on the lead.
  * @param job The lead email job being processed.
  */
 const runLeadEmailJob = async (job: Job) => {
   const lead = await requireLead(job.leadId);
   const search = await requireLeadSearch(lead.leadSearchId);
+  const research = DecisionMakerValidation.safeParse(lead.research);
+  const publicEmail = readPublicEmail(research.success ? research.data.public_email : undefined);
+  const attempts = lead.emailAttempts ?? [];
+  const route = nextEmailRoute({ routes: readEmailRoutes({ lead, publicEmail }), attempts });
 
-  const found = await findLeadEmail({ lead, search });
+  const outcome = route
+    ? await tryEmailRoute({
+        route,
+        lead,
+        publicEmail,
+        attempts,
+        owner: {
+          userId: search.userId,
+          organizationId: search.organizationId,
+          leadSearchId: search.id,
+          leadId: lead.id,
+        },
+      })
+    : null;
 
   // Prospeo's rate limit is not the lead's fault, so the job waits without spending an attempt
-  if (found === 'rate_limited') {
+  if (outcome === 'rate_limited') {
     await rescheduleJob({ jobId: job.id, delaySeconds: PROSPEO_RATE_LIMIT_DELAY_SECONDS });
+
+    return;
+  }
+
+  const emailAttempts = [...attempts, ...(outcome?.attempts ?? [])];
+
+  if (outcome && !outcome.found) {
+    // The next route is tried straight away, in a run of its own
+    await db.update(leadSchema).set({ emailAttempts }).where(eq(leadSchema.id, lead.id));
+    await rescheduleJob({ jobId: job.id, delaySeconds: 0 });
 
     return;
   }
 
   await db
     .update(leadSchema)
-    .set(found ? { ...found, status: 'ready' } : { status: 'no_email' })
+    .set(
+      outcome?.found
+        ? { ...outcome.found, emailAttempts, status: 'ready' }
+        : { emailAttempts, status: 'no_email' },
+    )
     .where(eq(leadSchema.id, lead.id));
 
   await syncLeadSearchStatus(search.id);
   await completeJob(job.id);
 };
+
+/**
+ * Sends a search's leads that ended without an email before the website and
+ * info@ routes existed through the email lookup again. Their research is
+ * reused, so only the verifications are paid for.
+ * @param leadSearchId The lead search.
+ * @returns How many leads were queued.
+ */
+export const retryNoEmailLeads = async (leadSearchId: string) =>
+  await db.transaction(async (tx) => {
+    const leads = await tx
+      .update(leadSchema)
+      .set({ status: 'finding_email' })
+      .where(
+        and(
+          eq(leadSchema.leadSearchId, leadSearchId),
+          eq(leadSchema.status, 'no_email'),
+          isNull(leadSchema.emailAttempts),
+        ),
+      )
+      .returning({ id: leadSchema.id });
+
+    if (leads.length > 0) {
+      await tx
+        .insert(jobSchema)
+        .values(
+          leads.map((lead) => ({ leadSearchId, leadId: lead.id, type: 'lead_email' as const })),
+        );
+    }
+
+    return leads.length;
+  });
 
 /**
  * Records the user-visible outcome of a lead search job that ran out of attempts.

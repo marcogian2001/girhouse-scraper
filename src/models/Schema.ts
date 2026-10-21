@@ -208,6 +208,7 @@ export const usageProviderEnum = pgEnum('usage_provider', [
   'apify',
   'prospeo',
   'millionverifier',
+  'reoon',
 ]);
 
 export const leadSearchStatusEnum = pgEnum('lead_search_status', [
@@ -230,7 +231,22 @@ export const leadStatusEnum = pgEnum('lead_status', [
   'failed',
 ]);
 
-export const leadEmailSourceEnum = pgEnum('lead_email_source', ['prospeo', 'public']);
+export const leadEmailSourceEnum = pgEnum('lead_email_source', [
+  'prospeo',
+  'public',
+  // Read off the business's website or the page it lists as one
+  'website',
+  // info@ at the business's domain, kept only when the mailbox is confirmed to exist
+  'guessed',
+]);
+
+/** One way of finding a lead's email that was tried, and what came of it. */
+export type EmailAttempt = {
+  source: (typeof leadEmailSourceEnum.enumValues)[number];
+  // Null when the route turned up no address to check
+  email: string | null;
+  verdict: 'valid' | 'catch_all' | 'invalid' | 'unknown' | 'not_found';
+};
 
 export const emailVerificationEnum = pgEnum('email_verification', ['valid', 'catch_all']);
 
@@ -537,6 +553,8 @@ export const leadSchema = pgTable(
     researchStartedAt: timestamp('research_started_at', { mode: 'date' }),
     // Decision maker research returned by Parallel, shaped by its output schema
     research: jsonb('research').$type<Record<string, unknown>>(),
+    // Every email route tried so far, so a lead without one shows why and a retry skips what failed
+    emailAttempts: jsonb('email_attempts').$type<EmailAttempt[]>(),
     // The place as Apify returned it, kept for fields not promoted to columns
     raw: jsonb('raw').$type<Record<string, unknown>>(),
     errorMessage: text('error_message'),

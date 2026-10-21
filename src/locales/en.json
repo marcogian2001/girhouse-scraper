@@ -203,6 +203,8 @@
     "badge_no_website": "No website",
     "source_prospeo": "Work email",
     "source_public": "Published email",
+    "source_website": "Email from website",
+    "source_guessed": "info@ address, mailbox confirmed",
     "note_catch_all": "{source}, domain accepts all mail",
     "count": "{shown} of {total} businesses",
     "filter_label": "Filter by website",
@@ -221,6 +223,8 @@
     "spend_line": "Estimated spend {total}",
     "button_campaign": "Create a campaign with {count, plural, one {# lead} other {# leads}}",
     "reserve_line": "{count, plural, one {# lead} other {# leads}} taken from earlier searches, already paid for",
+    "button_retry_emails": "Look again for the email of {count, plural, one {# lead} other {# leads}}",
+    "error_retry_emails": "Could not start the new lookup.",
     "short_alert": "Found {found} valid emails out of {max}: the area has no other new businesses. For more, try a wider area or other terms."
   },
   "CoveragePage": {

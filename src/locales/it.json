@@ -203,6 +203,8 @@
     "badge_no_website": "Senza sito",
     "source_prospeo": "Email aziendale",
     "source_public": "Email pubblica",
+    "source_website": "Email dal sito",
+    "source_guessed": "Indirizzo info@, casella confermata",
     "note_catch_all": "{source}, il dominio accetta tutta la posta",
     "count": "{shown} attività su {total}",
     "filter_label": "Filtra per sito web",
@@ -221,6 +223,8 @@
     "spend_line": "Spesa stimata {total}",
     "button_campaign": "Crea una campagna con {count, plural, one {# lead} other {# lead}}",
     "reserve_line": "{count, plural, one {# lead preso} other {# lead presi}} da ricerche precedenti, già pagati",
+    "button_retry_emails": "Cerca di nuovo l’email di {count, plural, one {# lead} other {# lead}}",
+    "error_retry_emails": "Impossibile avviare la nuova ricerca.",
     "short_alert": "Trovate {found} email valide su {max}: nella zona non ci sono altre attività nuove. Per averne altre prova una zona più ampia o altri termini."
   },
   "CoveragePage": {

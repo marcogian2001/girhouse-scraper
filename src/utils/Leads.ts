@@ -1,5 +1,5 @@
 import * as z from 'zod';
-import type { leadSchema, leadSearchSchema } from '@/models/Schema';
+import type { EmailAttempt, leadSchema, leadSearchSchema } from '@/models/Schema';
 import type { Rectangle } from '@/services/GooglePlaces';
 import type { EnrichmentContent } from '@/validations/EnrichmentValidation';
 import { DecisionMakerValidation } from '@/validations/LeadSearchValidation';
@@ -175,7 +175,7 @@ export const isPecEmail = (email: string) =>
     );
 
 /** Booking platforms that host the profile pages of professionals, whose addresses reach the platform. */
-const DIRECTORY_DOMAINS = new Set(['miodottore.it']);
+const DIRECTORY_DOMAINS = new Set(['miodottore.it', 'dottori.it', 'doctolib.it']);
 
 /**
  * Tells whether a domain belongs to a booking platform rather than the business itself.
@@ -203,26 +203,49 @@ export const readPublicEmail = (value?: string) =>
 /**
  * Picks how the email of a lead will be looked up.
  * A named decision maker at a company with its own domain goes to Prospeo
- * first; an address the business publishes is the fallback, and the only
- * route for businesses without a website.
+ * first; then the address the business publishes, the addresses on its
+ * website and, last, info@ at its domain. Businesses without a website still
+ * have their published address and any page builder they list.
  * @param options The call options.
  * @param options.lead The name and domain known for the lead.
  * @param options.publicEmail The address the business publishes, if any.
- * @returns Whether to try Prospeo and whether a public address can be verified.
+ * @param options.readableWebsite Whether the page the business lists as its website can be read.
+ * @returns Which routes can be tried, keyed by the email source each one gives.
  */
 export const pickEmailRoutes = (options: {
   lead: Pick<Lead, 'domain' | 'firstName' | 'lastName'>;
   publicEmail: string | null;
-}) => ({
+  readableWebsite: boolean;
+}) => {
   // A platform domain would make Prospeo look up someone who works for the platform
-  prospeo: Boolean(
-    options.lead.domain &&
-    !isDirectoryDomain(options.lead.domain) &&
-    options.lead.firstName &&
-    options.lead.lastName,
-  ),
-  publicEmail: options.publicEmail !== null,
-});
+  const ownDomain = Boolean(options.lead.domain && !isDirectoryDomain(options.lead.domain));
+
+  return {
+    prospeo: ownDomain && Boolean(options.lead.firstName && options.lead.lastName),
+    public: options.publicEmail !== null,
+    // A profile on a booking platform shows no address of its own
+    website: options.readableWebsite && !isDirectoryDomain(options.lead.domain ?? ''),
+    guessed: ownDomain,
+  };
+};
+
+export type EmailRoutes = ReturnType<typeof pickEmailRoutes>;
+
+/** The order the routes are tried in, most personal first. */
+const EMAIL_ROUTE_ORDER = ['prospeo', 'public', 'website', 'guessed'] as const;
+
+/**
+ * Picks the next route to try for a lead's email, skipping those already tried.
+ * @param options The call options.
+ * @param options.routes The routes the lead has.
+ * @param options.attempts What was tried so far.
+ * @returns The next route, or null when every route has been tried.
+ */
+export const nextEmailRoute = (options: { routes: EmailRoutes; attempts: EmailAttempt[] }) =>
+  EMAIL_ROUTE_ORDER.find(
+    (route) =>
+      options.routes[route] && !options.attempts.some((attempt) => attempt.source === route),
+  ) ?? null;
 
 /**
  * Keeps the first occurrence of each place, since a place can match several search terms.

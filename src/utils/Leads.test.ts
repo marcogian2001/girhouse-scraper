@@ -6,6 +6,7 @@ import {
   estimateEmailYield,
   isPecEmail,
   matchesWebsiteFilter,
+  nextEmailRoute,
   pickEmailRoutes,
   readPublicEmail,
   scrapeBudget,
@@ -81,38 +82,89 @@ describe('Leads', () => {
   describe('Email routes', () => {
     const named = { domain: 'studiorossi.it', firstName: 'Mario', lastName: 'Rossi' };
 
-    it('tries Prospeo for a named person at a domain', () => {
-      expect(pickEmailRoutes({ lead: named, publicEmail: null })).toStrictEqual({
-        prospeo: true,
-        publicEmail: false,
-      });
+    it('tries every route for a named person at a readable domain', () => {
+      expect(
+        pickEmailRoutes({ lead: named, publicEmail: 'info@studiorossi.it', readableWebsite: true }),
+      ).toStrictEqual({ prospeo: true, public: true, website: true, guessed: true });
     });
 
-    it('skips Prospeo for a business without a website', () => {
+    it('skips Prospeo and guessing for a business without a website', () => {
       const routes = pickEmailRoutes({
         lead: { ...named, domain: null },
         publicEmail: 'mario.rossi@gmail.com',
+        readableWebsite: false,
       });
 
-      expect(routes).toStrictEqual({ prospeo: false, publicEmail: true });
+      expect(routes).toStrictEqual({
+        prospeo: false,
+        public: true,
+        website: false,
+        guessed: false,
+      });
     });
 
-    it('skips Prospeo for a profile on a booking platform', () => {
+    it('reads a page builder listed by a business without a domain', () => {
+      const routes = pickEmailRoutes({
+        lead: { ...named, domain: null },
+        publicEmail: null,
+        readableWebsite: true,
+      });
+
+      expect(routes.website).toBeTruthy();
+      expect(routes.guessed).toBeFalsy();
+    });
+
+    it('skips every domain route for a profile on a booking platform', () => {
       const routes = pickEmailRoutes({
         lead: { ...named, domain: 'miodottore.it' },
         publicEmail: null,
+        readableWebsite: true,
       });
 
-      expect(routes).toStrictEqual({ prospeo: false, publicEmail: false });
+      expect(routes).toStrictEqual({
+        prospeo: false,
+        public: false,
+        website: false,
+        guessed: false,
+      });
     });
 
     it('skips Prospeo without a decision maker name', () => {
       const routes = pickEmailRoutes({
         lead: { ...named, lastName: null },
         publicEmail: null,
+        readableWebsite: true,
       });
 
-      expect(routes).toStrictEqual({ prospeo: false, publicEmail: false });
+      expect(routes.prospeo).toBeFalsy();
+      expect(routes.guessed).toBeTruthy();
+    });
+  });
+
+  describe('Next email route', () => {
+    const routes = { prospeo: false, public: true, website: true, guessed: true };
+
+    it('starts with the first available route', () => {
+      expect(nextEmailRoute({ routes, attempts: [] })).toBe('public');
+    });
+
+    it('skips routes already tried', () => {
+      const attempts = [
+        { source: 'public' as const, email: 'a@gmail.com', verdict: 'unknown' as const },
+        { source: 'website' as const, email: null, verdict: 'not_found' as const },
+      ];
+
+      expect(nextEmailRoute({ routes, attempts })).toBe('guessed');
+    });
+
+    it('returns null once every route was tried', () => {
+      const attempts = [
+        { source: 'public' as const, email: 'a@gmail.com', verdict: 'invalid' as const },
+        { source: 'website' as const, email: null, verdict: 'not_found' as const },
+        { source: 'guessed' as const, email: 'info@rossi.it', verdict: 'invalid' as const },
+      ];
+
+      expect(nextEmailRoute({ routes, attempts })).toBeNull();
     });
   });
 
