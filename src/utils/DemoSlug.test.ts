@@ -12,7 +12,19 @@ describe('DemoSlug', () => {
     });
 
     it('keeps long names short', () => {
-      expect(createDemoSlug('A'.repeat(100)).length).toBeLessThanOrEqual(40);
+      expect(createDemoSlug('A'.repeat(100))).toHaveLength(60);
+    });
+
+    it('cuts a long name between words', () => {
+      expect(createDemoSlug(`Studio ${'Nutrizionista '.repeat(5)}Roma`)).toBe(
+        'studio-nutrizionista-nutrizionista-nutrizionista',
+      );
+    });
+
+    it('keeps a name of a few words whole', () => {
+      expect(createDemoSlug('Dott.ssa Anastasia Mulè - Nutrizionista Roma')).toBe(
+        'dott-ssa-anastasia-mule-nutrizionista-roma',
+      );
     });
   });
 
