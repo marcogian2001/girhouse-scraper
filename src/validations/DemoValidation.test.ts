@@ -21,6 +21,7 @@ describe('DemoValidation', () => {
   });
 
   it('rejects a slug with path characters', () => {
+    expect(DemoSlugValidation.safeParse('pizzeria-da-mario').success).toBeTruthy();
     expect(DemoSlugValidation.safeParse('pizzeria-da-mario-a1B2c3D4e5').success).toBeTruthy();
     expect(DemoSlugValidation.safeParse('../../etc/passwd-a1B2c3').success).toBeFalsy();
   });

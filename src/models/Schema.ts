@@ -1076,7 +1076,7 @@ export const demoSchema = pgTable(
       .unique()
       .references(() => conversationSchema.id, { onDelete: 'cascade' }),
     leadId: uuid('lead_id').references(() => leadSchema.id, { onDelete: 'set null' }),
-    // The public URL segment, with a random suffix so it cannot be guessed
+    // The public URL segment: the business name, numbered when another demo has it
     slug: text('slug').notNull().unique(),
     data: jsonb('data').$type<DemoSnapshot>().notNull(),
     firstOpenedAt: timestamp('first_opened_at', { mode: 'date' }),

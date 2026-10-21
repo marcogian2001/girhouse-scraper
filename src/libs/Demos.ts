@@ -1,4 +1,4 @@
-import { and, count, eq, gte, isNull } from 'drizzle-orm';
+import { and, count, eq, gte, isNull, like } from 'drizzle-orm';
 import * as z from 'zod';
 import type { DemoSnapshot } from '@/models/Schema';
 import {
@@ -12,7 +12,7 @@ import type { DemoSources } from '@/services/DemoWriter';
 import { toDemoContent, writeDemoTexts } from '@/services/DemoWriter';
 import { fetchWebsiteBrand } from '@/services/WebsiteBrand';
 import { DEFAULT_BRAND_COLOR, isUsableBrandColor } from '@/utils/Colors';
-import { createDemoSlug } from '@/utils/DemoSlug';
+import { createDemoSlug, pickFreeDemoSlug } from '@/utils/DemoSlug';
 import { DEMO_STEPS, summarizeDemo } from '@/utils/DemoStats';
 import { getBaseUrl } from '@/utils/Helpers';
 import { normalizeOpeningHours } from '@/utils/OpeningHours';
@@ -21,12 +21,16 @@ import { getAutomationSettings } from './AutomationSettings';
 import type { Conversation } from './Conversations';
 import { logEvent, setConversationState } from './Conversations';
 import { db } from './DB';
+import { Env } from './Env';
 import { recordCopywritingUsage } from './Usage';
 
 type DemoEventType = (typeof demoEventSchema.$inferSelect)['type'];
 
 /** Beyond this many events an hour a demo is being hammered, not watched. */
 const EVENTS_PER_HOUR = 500;
+
+/** Demos stored at the same moment for namesake businesses can race for one slug. */
+const SLUG_ATTEMPTS = 5;
 
 /** Snapshots built with an older shape are rebuilt, keeping their slug. */
 const DEMO_SNAPSHOT_VERSION = 3;
@@ -40,11 +44,12 @@ const leadRawSchema = z.looseObject({
 const leadResearchSchema = z.looseObject({ business_description: z.string().nullish() });
 
 /**
- * Builds the public link of a demo.
+ * Builds the public link of a demo, on the demo domain when there is one.
  * @param slug The demo slug.
  * @returns The absolute URL of the Italian demo page.
  */
-export const demoUrl = (slug: string) => `${getBaseUrl()}/it/demo/${slug}`;
+export const demoUrl = (slug: string) =>
+  Env.DEMO_URL ? `${Env.DEMO_URL}/${slug}` : `${getBaseUrl()}/it/demo/${slug}`;
 
 /**
  * Reads the lead and campaign contact behind a conversation.
@@ -183,6 +188,21 @@ const buildSnapshot = async (conversation: Conversation): Promise<DemoSnapshot> 
 };
 
 /**
+ * Finds the slug of a new demo, numbered when another business has the same name.
+ * @param company The business name.
+ * @returns A slug no demo has yet.
+ */
+const findFreeSlug = async (company: string) => {
+  const base = createDemoSlug(company);
+  const rows = await db
+    .select({ slug: demoSchema.slug })
+    .from(demoSchema)
+    .where(like(demoSchema.slug, `${base}%`));
+
+  return pickFreeDemoSlug(base, new Set(rows.map((row) => row.slug)));
+};
+
+/**
  * Returns the demo of a conversation, building it on first use.
  * @param conversation The conversation the demo is for.
  * @returns The demo row.
@@ -209,38 +229,46 @@ export const ensureDemo = async (conversation: Conversation) => {
     return rebuilt ?? existing;
   }
 
-  const [created] = await db
-    .insert(demoSchema)
-    .values({
-      organizationId: conversation.organizationId,
-      conversationId: conversation.id,
-      leadId: conversation.leadId,
-      slug: createDemoSlug(data.company),
-      data,
-    })
-    .onConflictDoNothing()
-    .returning();
+  for (let attempt = 0; attempt < SLUG_ATTEMPTS; attempt += 1) {
+    // oxlint-disable-next-line no-await-in-loop
+    const slug = await findFreeSlug(data.company);
+    // oxlint-disable-next-line no-await-in-loop
+    const [created] = await db
+      .insert(demoSchema)
+      .values({
+        organizationId: conversation.organizationId,
+        conversationId: conversation.id,
+        leadId: conversation.leadId,
+        slug,
+        data,
+      })
+      .onConflictDoNothing()
+      .returning();
 
-  // A build running at the same time for the same conversation may have stored it first
-  const demo =
-    created ??
-    (await db.query.demoSchema.findFirst({
+    if (created) {
+      // oxlint-disable-next-line no-await-in-loop
+      await logEvent({
+        conversationId: conversation.id,
+        type: 'demo_created',
+        payload: { demoId: created.id, slug: created.slug },
+      });
+
+      return created;
+    }
+
+    // A build running at the same time for the same conversation may have stored it first;
+    // otherwise another demo took the slug in the meantime, and the next attempt numbers past it
+    // oxlint-disable-next-line no-await-in-loop
+    const stored = await db.query.demoSchema.findFirst({
       where: eq(demoSchema.conversationId, conversation.id),
-    }));
-
-  if (!demo) {
-    throw new Error(`Demo for conversation ${conversation.id} could not be stored`);
-  }
-
-  if (created) {
-    await logEvent({
-      conversationId: conversation.id,
-      type: 'demo_created',
-      payload: { demoId: created.id, slug: created.slug },
     });
+
+    if (stored) {
+      return stored;
+    }
   }
 
-  return demo;
+  throw new Error(`Demo for conversation ${conversation.id} could not be stored`);
 };
 
 /**

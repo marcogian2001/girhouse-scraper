@@ -1,20 +1,34 @@
 import { describe, expect, it } from 'vitest';
-import { createDemoSlug } from './DemoSlug';
+import { createDemoSlug, pickFreeDemoSlug } from './DemoSlug';
 
 describe('DemoSlug', () => {
-  it('starts with the business name and ends with a random suffix', () => {
-    expect(createDemoSlug('Pizzeria Da Mario')).toMatch(/^pizzeria-da-mario-[0-9a-zA-Z]{10}$/u);
+  describe(createDemoSlug, () => {
+    it('turns the business name into a slug', () => {
+      expect(createDemoSlug('Pizzeria Da Mario')).toBe('pizzeria-da-mario');
+    });
+
+    it('falls back to a fixed slug for a name with no letters', () => {
+      expect(createDemoSlug('***')).toBe('demo');
+    });
+
+    it('keeps long names short', () => {
+      expect(createDemoSlug('A'.repeat(100)).length).toBeLessThanOrEqual(40);
+    });
   });
 
-  it('gives two demos of the same business different slugs', () => {
-    expect(createDemoSlug('Bar Roma')).not.toBe(createDemoSlug('Bar Roma'));
-  });
+  describe(pickFreeDemoSlug, () => {
+    it('keeps the base when no demo has it', () => {
+      expect(pickFreeDemoSlug('bar-roma', new Set(['bar-roma-centro']))).toBe('bar-roma');
+    });
 
-  it('falls back to the suffix alone for a name with no letters', () => {
-    expect(createDemoSlug('***')).toMatch(/^[0-9a-zA-Z]{10}$/u);
-  });
+    it('numbers a business with the same name as another', () => {
+      expect(pickFreeDemoSlug('bar-roma', new Set(['bar-roma']))).toBe('bar-roma-2');
+    });
 
-  it('keeps long names short', () => {
-    expect(createDemoSlug('A'.repeat(100)).length).toBeLessThanOrEqual(51);
+    it('skips the numbers already taken', () => {
+      expect(pickFreeDemoSlug('bar-roma', new Set(['bar-roma', 'bar-roma-2', 'bar-roma-3']))).toBe(
+        'bar-roma-4',
+      );
+    });
   });
 });

@@ -10,6 +10,11 @@ const handleI18nRouting = createMiddleware(routing);
 
 const PROTECTED_PATH = /^\/(?:[a-z]{2}\/)?dashboard(?:\/|$)/u;
 
+// The demo domain serves `/<slug>` and nothing else.
+// Use `process.env` instead of Env to reduce bundle size in middleware
+const DEMO_HOST = process.env.DEMO_URL ? new URL(process.env.DEMO_URL).host : undefined;
+const DEMO_PATH = /^\/([\w-]+)$/u;
+
 // Improve security with Arcjet
 const aj = arcjet.withRule(
   detectBot({
@@ -33,6 +38,14 @@ export default async function proxy(request: NextRequest) {
     if (decision.isDenied()) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
+  }
+
+  if (DEMO_HOST && request.nextUrl.host === DEMO_HOST) {
+    const slug = request.nextUrl.pathname.match(DEMO_PATH)?.at(1);
+
+    return slug
+      ? NextResponse.rewrite(new URL(`/it/demo/${slug}`, request.url))
+      : new NextResponse(null, { status: 404 });
   }
 
   // A cookie check, not a session validation: it keeps anonymous visitors off

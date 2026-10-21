@@ -1,10 +1,10 @@
 import * as z from 'zod';
 import { DEMO_STEPS } from '@/utils/DemoStats';
 
-/** A demo slug: a business name as a slug and a random suffix. */
+/** A demo slug: a business name as a slug, numbered when taken (older ones end in a random suffix). */
 export const DemoSlugValidation = z
   .string()
-  .min(10)
+  .min(1)
   .max(80)
   .regex(/^[0-9A-Za-z-]+$/u);
 
