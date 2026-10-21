@@ -75,7 +75,6 @@ export const SYSTEM_INSTRUCTIONS = [
   '- Email 1 earns attention with the most specific true detail available.',
   '- Every follow-up adds a new angle. Never send "just bumping this to the top of your inbox" with nothing else.',
   '- The last email is a short, graceful close that makes it easy to say no.',
-  '- Follow-ups are replies in the same thread: do not reintroduce yourself from scratch.',
 ].join('\n');
 
 /**
