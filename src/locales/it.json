@@ -846,7 +846,18 @@
     "column_state": "Stato",
     "column_category": "Ultima risposta",
     "column_last_reply": "Ricevuta",
-    "badge_test": "Test"
+    "badge_test": "Test",
+    "search_placeholder": "Cerca per email, nome o cognome",
+    "button_search": "Cerca",
+    "button_clear_search": "Azzera",
+    "empty_search_title": "Nessun risultato",
+    "empty_search_description": "Nessun lead corrisponde a “{search}”.",
+    "column_answered": "Risposta inviata",
+    "answered_yes": "Sì",
+    "answered_no": "No",
+    "pagination_summary": "Pagina {page} di {pageCount} · {count} risposte",
+    "button_previous": "Precedente",
+    "button_next": "Successiva"
   },
   "NewReplySimulationPage": {
     "back_link": "Risposte",

@@ -846,7 +846,18 @@
     "column_state": "State",
     "column_category": "Last reply",
     "column_last_reply": "Received",
-    "badge_test": "Test"
+    "badge_test": "Test",
+    "search_placeholder": "Search by email, first or last name",
+    "button_search": "Search",
+    "button_clear_search": "Clear",
+    "empty_search_title": "No results",
+    "empty_search_description": "No lead matches “{search}”.",
+    "column_answered": "Reply sent",
+    "answered_yes": "Yes",
+    "answered_no": "No",
+    "pagination_summary": "Page {page} of {pageCount} · {count} replies",
+    "button_previous": "Previous",
+    "button_next": "Next"
   },
   "NewReplySimulationPage": {
     "back_link": "Replies",

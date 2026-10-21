@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, lte, or, sql } from 'drizzle-orm';
+import { and, desc, eq, ilike, inArray, lte, or, sql } from 'drizzle-orm';
 import {
   campaignSchema,
   contactSchema,
@@ -483,31 +483,62 @@ export const simulateReply = async (options: {
 /** States a person has to look at, shown first in the dashboard. */
 export const REVIEW_STATES: ConversationState[] = ['manual_review'];
 
+/** How many conversations a page of the dashboard list shows. */
+export const CONVERSATIONS_PAGE_SIZE = 25;
+
 /**
- * Lists an organization's conversations, latest reply first, with the category of that reply.
+ * Lists a page of an organization's conversations, latest reply first, with the lead's name
+ * and the category of their latest reply.
  * @param options The call options.
  * @param options.organizationId The organization to list.
  * @param options.states Only these states, when given.
- * @returns At most 200 conversations.
+ * @param options.search Text the lead's email, company, first or last name must contain.
+ * @param options.page The 1-based page to read.
+ * @returns The page of conversations and how many match in all.
  */
 export const listConversations = async (options: {
   organizationId: string;
   states?: ConversationState[];
+  search?: string;
+  page: number;
 }) => {
-  const conversations = await db
-    .select()
-    .from(conversationSchema)
-    .where(
-      and(
-        eq(conversationSchema.organizationId, options.organizationId),
-        options.states ? inArray(conversationSchema.state, options.states) : undefined,
-      ),
-    )
-    .orderBy(desc(conversationSchema.lastInboundAt))
-    .limit(200);
+  const pattern = options.search ? `%${options.search.replaceAll(/[\\%_]/gu, '\\$&')}%` : undefined;
+  const firstName = sql<
+    string | null
+  >`coalesce(${contactSchema.firstName}, ${leadSchema.firstName})`;
+  const lastName = sql<string | null>`coalesce(${contactSchema.lastName}, ${leadSchema.lastName})`;
 
-  if (conversations.length === 0) {
-    return [];
+  const where = and(
+    eq(conversationSchema.organizationId, options.organizationId),
+    options.states ? inArray(conversationSchema.state, options.states) : undefined,
+    pattern
+      ? or(
+          ilike(conversationSchema.leadEmail, pattern),
+          ilike(conversationSchema.company, pattern),
+          // Lets "Mario Rossi" match as well as "Mario" or "Rossi" alone
+          sql`concat_ws(' ', ${firstName}, ${lastName}) ilike ${pattern}`,
+          sql`concat_ws(' ', ${lastName}, ${firstName}) ilike ${pattern}`,
+        )
+      : undefined,
+  );
+
+  const rows = await db
+    .select({
+      conversation: conversationSchema,
+      firstName,
+      lastName,
+      total: sql<number>`count(*) over ()`.mapWith(Number),
+    })
+    .from(conversationSchema)
+    .leftJoin(contactSchema, eq(contactSchema.id, conversationSchema.contactId))
+    .leftJoin(leadSchema, eq(leadSchema.id, conversationSchema.leadId))
+    .where(where)
+    .orderBy(desc(conversationSchema.lastInboundAt), desc(conversationSchema.id))
+    .limit(CONVERSATIONS_PAGE_SIZE)
+    .offset((options.page - 1) * CONVERSATIONS_PAGE_SIZE);
+
+  if (rows.length === 0) {
+    return { conversations: [], total: 0 };
   }
 
   const latest = await db
@@ -523,17 +554,21 @@ export const listConversations = async (options: {
     .where(
       inArray(
         inboundMessageSchema.conversationId,
-        conversations.map((conversation) => conversation.id),
+        rows.map((row) => row.conversation.id),
       ),
     )
     .orderBy(inboundMessageSchema.conversationId, desc(inboundMessageSchema.receivedAt));
 
   const categories = new Map(latest.map((row) => [row.conversationId, row.category]));
 
-  return conversations.map((conversation) => ({
-    ...conversation,
-    category: categories.get(conversation.id) ?? null,
-  }));
+  return {
+    conversations: rows.map((row) => ({
+      ...row.conversation,
+      leadName: [row.firstName, row.lastName].filter(Boolean).join(' ') || null,
+      category: categories.get(row.conversation.id) ?? null,
+    })),
+    total: rows[0]?.total ?? 0,
+  };
 };
 
 /**
