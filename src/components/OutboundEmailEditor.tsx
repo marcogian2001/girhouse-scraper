@@ -1,8 +1,9 @@
 'use client';
 
-import { Sparkles } from 'lucide-react';
+import { Sparkles, X } from 'lucide-react';
 import { useFormatter, useTranslations } from 'next-intl';
 import { useState } from 'react';
+import { DatePicker } from '@/components/DatePicker';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -18,6 +19,9 @@ import { slotKey } from '@/utils/Slots';
 type OutboundEmail = typeof outboundEmailSchema.$inferSelect;
 
 type Failure = 'approve' | 'blocked' | 'disabled' | 'rewrite';
+
+/** The time a send date starts with when none was proposed, in Italian time. */
+const DEFAULT_SEND_TIME = '09:30';
 
 const IssueBadges = (props: { issues: string[] }) => {
   const t = useTranslations('OutboundEmailEditor');
@@ -63,7 +67,9 @@ export const OutboundEmailEditor = (props: { email: OutboundEmail }) => {
     : '';
   const [subject, setSubject] = useState(props.email.subject);
   const [body, setBody] = useState(props.email.body);
-  const [sendAt, setSendAt] = useState(proposedAt);
+  const [sendDate, setSendDate] = useState(proposedAt.slice(0, 10));
+  const [sendTime, setSendTime] = useState(proposedAt.slice(11, 16) || DEFAULT_SEND_TIME);
+  const sendAt = sendDate ? `${sendDate}T${sendTime || DEFAULT_SEND_TIME}` : '';
   const [failure, setFailure] = useState<Failure | null>(null);
   const [isBusy, setIsBusy] = useState(false);
   const isScheduled = props.email.status === 'scheduled';
@@ -172,15 +178,37 @@ export const OutboundEmailEditor = (props: { email: OutboundEmail }) => {
 
           <Field>
             <FieldLabel htmlFor={`send-at-${props.email.id}`}>{t('label_send_at')}</FieldLabel>
-            <Input
-              id={`send-at-${props.email.id}`}
-              type="datetime-local"
-              className="sm:max-w-60"
-              value={sendAt}
-              onChange={(event) => {
-                setSendAt(event.target.value);
-              }}
-            />
+            <div className="flex flex-wrap items-center gap-2">
+              <DatePicker
+                id={`send-at-${props.email.id}`}
+                value={sendDate}
+                onValueChange={setSendDate}
+                disablePast
+              />
+              <Input
+                type="time"
+                aria-label={t('label_send_time')}
+                className="w-28"
+                value={sendTime}
+                disabled={!sendDate}
+                onChange={(event) => {
+                  setSendTime(event.target.value);
+                }}
+              />
+              {sendDate && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  aria-label={t('button_clear_send_at')}
+                  onClick={() => {
+                    setSendDate('');
+                  }}
+                >
+                  <X />
+                </Button>
+              )}
+            </div>
             {sendAtHint() && <FieldDescription>{sendAtHint()}</FieldDescription>}
           </Field>
         </FieldGroup>

@@ -1,5 +1,6 @@
 import { Coins, Hash, MapPin, Receipt, Search, Sparkles } from 'lucide-react';
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
+import { DatePicker } from '@/components/DatePicker';
 import { StatCard } from '@/components/StatCard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -11,7 +12,6 @@ import {
   EmptyTitle,
 } from '@/components/ui/empty';
 import { Field, FieldLabel } from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
 import { UsageTable } from '@/components/UsageTable';
 import { getApiContext } from '@/libs/ApiAuth';
 import { Link } from '@/libs/I18nNavigation';
@@ -124,12 +124,12 @@ export default async function UsagePage(props: {
           <form key={`${range.from}:${range.to}`} className="flex flex-wrap items-end gap-3">
             <Field className="w-auto">
               <FieldLabel htmlFor="usage-from">{t('label_from')}</FieldLabel>
-              <Input id="usage-from" type="date" name="from" defaultValue={range.from} />
+              <DatePicker id="usage-from" name="from" defaultValue={range.from} />
             </Field>
 
             <Field className="w-auto">
               <FieldLabel htmlFor="usage-to">{t('label_to')}</FieldLabel>
-              <Input id="usage-to" type="date" name="to" defaultValue={range.to} />
+              <DatePicker id="usage-to" name="to" defaultValue={range.to} />
             </Field>
 
             <Button type="submit">{t('button_filter')}</Button>

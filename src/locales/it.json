@@ -990,6 +990,9 @@
     "status_cancelled": "Annullata",
     "status_failed": "Fallita"
   },
+  "DatePicker": {
+    "placeholder": "Scegli una data"
+  },
   "OutboundEmailEditor": {
     "label_subject": "Oggetto",
     "label_body": "Testo",
@@ -1013,7 +1016,9 @@
     "send_at_hint_proposed": "Data proposta in base alla risposta del lead: confermala o cambiala",
     "send_at_hint_empty": "Vuoto: parte appena possibile, in orario lavorativo",
     "button_approve_schedule": "Approva e programma",
-    "button_update_schedule": "Aggiorna programmazione"
+    "button_update_schedule": "Aggiorna programmazione",
+    "label_send_time": "Ora di invio",
+    "button_clear_send_at": "Togli la data"
   },
   "DemoPage": {
     "meta_title": "La demo per {company}",

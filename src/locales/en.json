@@ -990,6 +990,9 @@
     "status_cancelled": "Cancelled",
     "status_failed": "Failed"
   },
+  "DatePicker": {
+    "placeholder": "Pick a date"
+  },
   "OutboundEmailEditor": {
     "label_subject": "Subject",
     "label_body": "Body",
@@ -1013,7 +1016,9 @@
     "send_at_hint_proposed": "Date proposed from the lead's reply: confirm or change it",
     "send_at_hint_empty": "Empty: it leaves as soon as possible, in business hours",
     "button_approve_schedule": "Approve and schedule",
-    "button_update_schedule": "Update schedule"
+    "button_update_schedule": "Update schedule",
+    "label_send_time": "Send time",
+    "button_clear_send_at": "Remove the date"
   },
   "DemoPage": {
     "meta_title": "The demo for {company}",

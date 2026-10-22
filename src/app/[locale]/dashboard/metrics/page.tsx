@@ -1,5 +1,6 @@
 import { BarChart3, CalendarCheck, Inbox, MessageCircle, MonitorPlay } from 'lucide-react';
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
+import { DatePicker } from '@/components/DatePicker';
 import {
   CategoryStatsTable,
   ObjectionStatsTable,
@@ -16,7 +17,6 @@ import {
   EmptyTitle,
 } from '@/components/ui/empty';
 import { Field, FieldLabel } from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
 import { getApiContext } from '@/libs/ApiAuth';
 import { Link } from '@/libs/I18nNavigation';
 import { getReplyStats } from '@/libs/ReplyStats';
@@ -87,12 +87,12 @@ export default async function MetricsPage(props: {
           <form key={`${range.from}:${range.to}`} className="flex flex-wrap items-end gap-3">
             <Field className="w-auto">
               <FieldLabel htmlFor="metrics-from">{t('label_from')}</FieldLabel>
-              <Input id="metrics-from" type="date" name="from" defaultValue={range.from} />
+              <DatePicker id="metrics-from" name="from" defaultValue={range.from} />
             </Field>
 
             <Field className="w-auto">
               <FieldLabel htmlFor="metrics-to">{t('label_to')}</FieldLabel>
-              <Input id="metrics-to" type="date" name="to" defaultValue={range.to} />
+              <DatePicker id="metrics-to" name="to" defaultValue={range.to} />
             </Field>
 
             <Button type="submit">{t('button_filter')}</Button>
