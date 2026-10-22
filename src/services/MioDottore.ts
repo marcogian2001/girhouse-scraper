@@ -138,6 +138,30 @@ const findServices = (html: string) => {
 };
 
 /**
+ * Reads the studio addresses, each once in its fullest form.
+ * The header repeats them without the postal code and outside any heading,
+ * so each one ends where its wrapping element closes.
+ * @param html The page source.
+ * @returns The addresses as one line each, in page order.
+ */
+const findAddresses = (html: string) => {
+  const addresses = new Map<string, string>();
+
+  for (const match of html.matchAll(
+    /<span data-test-id="address-info-street">([^<]*)<\/span>([\s\S]*?)<\/(?:span|h4)>/giu,
+  )) {
+    const street = toText(match[1] ?? '');
+    const address = toText(`${match[1]} ${match[2]}`).replaceAll('\n', ' ');
+
+    if (street && address.length > (addresses.get(street)?.length ?? 0)) {
+      addresses.set(street, address);
+    }
+  }
+
+  return [...addresses.values()];
+};
+
+/**
  * Shortens a review to what a card has room for.
  * @param text The review.
  * @returns The review, cut at a word when too long.
@@ -161,9 +185,6 @@ export const parseMioDottoreProfile = (html: string, url: string): MioDottorePro
   }
 
   const about = html.match(/data-test-id="about-description"[^>]*>([\s\S]*?)<\/div>/iu)?.[1];
-  const addresses = [
-    ...html.matchAll(/<span data-test-id="address-info-street">([\s\S]*?)<\/h4>/giu),
-  ].map((match) => toText(match[1] ?? '').replaceAll('\n', ' '));
 
   return {
     url,
@@ -188,7 +209,7 @@ export const parseMioDottoreProfile = (html: string, url: string): MioDottorePro
       })),
     about: about ? toText(about).slice(0, MAX_ABOUT_LENGTH) || null : null,
     services: findServices(html),
-    addresses: [...new Set(addresses)],
+    addresses: findAddresses(html),
   };
 };
 

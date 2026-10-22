@@ -36,6 +36,9 @@ const html = `<html><head>
 <div class="about-description" data-test-id="about-description">
 <p>Sono <strong>Giada Todisco</strong>, biologa nutrizionista.</p><ul><li><p>Dieta Mediterranea</p></li></ul>
 </div>
+<span class="text-body"><span data-test-id="address-info-street">Via Giovanni Gastaldi 42,</span>
+  piano -1, <a href="/nutrizionista/roma" title="Roma">Roma</a></span>
+<h2>Esperienze</h2>
 <h4><span data-test-id="address-info-street">Via Giovanni Gastaldi 42,</span>
   piano -1, <a href="/nutrizionista/roma" title="Roma">Roma</a> 00144</h4>
 <ul>
@@ -89,7 +92,7 @@ describe('MioDottore', () => {
     ]);
   });
 
-  it('reads the addresses as one line each', () => {
+  it('reads each address once as one line with its postal code', () => {
     expect(profile?.addresses).toStrictEqual(['Via Giovanni Gastaldi 42, piano -1, Roma 00144']);
   });
 
