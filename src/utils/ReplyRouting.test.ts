@@ -44,6 +44,10 @@ describe('ReplyRouting', () => {
       expect(decision({ category: 'out_of_office' })).toBe('out_of_office');
     });
 
+    it('marks an automatic reply without sending it to review', () => {
+      expect(decision({ category: 'auto_reply' })).toBe('auto_reply');
+    });
+
     it('closes a wrong person without a referral', () => {
       expect(decision({ category: 'wrong_person' })).toBe('wrong_person');
     });
@@ -70,10 +74,13 @@ describe('ReplyRouting', () => {
       ).toBeTruthy();
     });
 
-    it('never answers a stop or an out-of-office reply', () => {
+    it('never answers a stop, an out-of-office or an automatic reply', () => {
       expect(needsAnswer({ category: 'stop', state: 'stop', hasReferral: false })).toBeFalsy();
       expect(
         needsAnswer({ category: 'out_of_office', state: 'out_of_office', hasReferral: false }),
+      ).toBeFalsy();
+      expect(
+        needsAnswer({ category: 'auto_reply', state: 'auto_reply', hasReferral: false }),
       ).toBeFalsy();
     });
 

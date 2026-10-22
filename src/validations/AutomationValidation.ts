@@ -72,6 +72,7 @@ export const CATEGORY_VALUES = [
   'not_interested',
   'stop',
   'out_of_office',
+  'auto_reply',
   'wrong_person',
   'other',
 ] as const;

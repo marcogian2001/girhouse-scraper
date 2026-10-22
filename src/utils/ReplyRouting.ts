@@ -13,6 +13,7 @@ export const CATEGORY_FROM_CLASSIFIER = {
   non_interessato: 'not_interested',
   stop: 'stop',
   fuori_ufficio: 'out_of_office',
+  risposta_automatica: 'auto_reply',
   persona_sbagliata: 'wrong_person',
   altro: 'other',
 } as const satisfies Record<string, ReplyCategory>;
@@ -61,6 +62,10 @@ export const decideState = (options: {
     return 'out_of_office';
   }
 
+  if (options.category === 'auto_reply') {
+    return 'auto_reply';
+  }
+
   if (options.category === 'wrong_person') {
     // The referral becomes a new contact, which a person approves
     return options.hasReferral ? 'manual_review' : 'wrong_person';
@@ -69,7 +74,7 @@ export const decideState = (options: {
   return 'classified';
 };
 
-/** Categories that get an answer. Stops, out-of-office replies and unknowns never do. */
+/** Categories that get an answer. Stops, automatic replies and unknowns never do. */
 const ANSWERED_CATEGORIES = new Set<ReplyCategory>([
   'interested',
   'question',

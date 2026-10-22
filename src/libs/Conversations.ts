@@ -1,4 +1,4 @@
-import { and, desc, eq, ilike, inArray, lte, or, sql } from 'drizzle-orm';
+import { and, desc, eq, ilike, inArray, isNotNull, isNull, lte, not, or, sql } from 'drizzle-orm';
 import {
   campaignSchema,
   contactSchema,
@@ -480,9 +480,6 @@ export const simulateReply = async (options: {
   return conversation.id;
 };
 
-/** States a person has to look at, shown first in the dashboard. */
-export const REVIEW_STATES: ConversationState[] = ['manual_review'];
-
 /** How many conversations a page of the dashboard list shows. */
 export const CONVERSATIONS_PAGE_SIZE = 25;
 
@@ -493,6 +490,8 @@ export const CONVERSATIONS_PAGE_SIZE = 25;
  * @param options.organizationId The organization to list.
  * @param options.states Only these states, when given.
  * @param options.search Text the lead's email, company, first or last name must contain.
+ * @param options.answered Only conversations we did (true) or did not (false) reply to, when given.
+ * @param options.botManaged Only conversations the bot does (true) or does not (false) handle, when given.
  * @param options.page The 1-based page to read.
  * @returns The page of conversations and how many match in all.
  */
@@ -500,6 +499,8 @@ export const listConversations = async (options: {
   organizationId: string;
   states?: ConversationState[];
   search?: string;
+  answered?: boolean;
+  botManaged?: boolean;
   page: number;
 }) => {
   const pattern = options.search ? `%${options.search.replaceAll(/[\\%_]/gu, '\\$&')}%` : undefined;
@@ -507,10 +508,16 @@ export const listConversations = async (options: {
     string | null
   >`coalesce(${contactSchema.firstName}, ${leadSchema.firstName})`;
   const lastName = sql<string | null>`coalesce(${contactSchema.lastName}, ${leadSchema.lastName})`;
+  // Same rule as `isBotManaged`: simulated conversations always belong to the bot
+  const isBotManagedSql = sql`(${conversationSchema.isTest} or coalesce(${campaignSchema.botManaged}, false))`;
 
   const where = and(
     eq(conversationSchema.organizationId, options.organizationId),
     options.states ? inArray(conversationSchema.state, options.states) : undefined,
+    options.answered === true ? isNotNull(conversationSchema.lastOutboundAt) : undefined,
+    options.answered === false ? isNull(conversationSchema.lastOutboundAt) : undefined,
+    options.botManaged === true ? isBotManagedSql : undefined,
+    options.botManaged === false ? not(isBotManagedSql) : undefined,
     pattern
       ? or(
           ilike(conversationSchema.leadEmail, pattern),
@@ -532,6 +539,7 @@ export const listConversations = async (options: {
     .from(conversationSchema)
     .leftJoin(contactSchema, eq(contactSchema.id, conversationSchema.contactId))
     .leftJoin(leadSchema, eq(leadSchema.id, conversationSchema.leadId))
+    .leftJoin(campaignSchema, eq(campaignSchema.id, conversationSchema.campaignId))
     .where(where)
     .orderBy(desc(conversationSchema.lastInboundAt), desc(conversationSchema.id))
     .limit(CONVERSATIONS_PAGE_SIZE)
@@ -569,24 +577,6 @@ export const listConversations = async (options: {
     })),
     total: rows[0]?.total ?? 0,
   };
-};
-
-/**
- * Counts an organization's conversations per state.
- * @param organizationId The organization to count.
- * @returns The count of each state that has any conversation.
- */
-export const countConversationsByState = async (organizationId: string) => {
-  const rows = await db
-    .select({
-      state: conversationSchema.state,
-      count: sql<number>`count(*)`.mapWith(Number),
-    })
-    .from(conversationSchema)
-    .where(eq(conversationSchema.organizationId, organizationId))
-    .groupBy(conversationSchema.state);
-
-  return new Map(rows.map((row) => [row.state, row.count]));
 };
 
 /**

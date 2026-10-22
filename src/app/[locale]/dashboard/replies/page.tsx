@@ -1,5 +1,6 @@
-import { ChevronLeft, ChevronRight, FlaskConical, Inbox, Search } from 'lucide-react';
+import { ChevronLeft, ChevronRight, FlaskConical, Inbox } from 'lucide-react';
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
+import { RepliesFilters } from '@/components/RepliesFilters';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -11,7 +12,6 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from '@/components/ui/empty';
-import { Input } from '@/components/ui/input';
 import {
   Table,
   TableBody,
@@ -20,16 +20,11 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getApiContext } from '@/libs/ApiAuth';
-import {
-  CONVERSATIONS_PAGE_SIZE,
-  countConversationsByState,
-  listConversations,
-  REVIEW_STATES,
-} from '@/libs/Conversations';
+import { CONVERSATIONS_PAGE_SIZE, listConversations } from '@/libs/Conversations';
 import { Link } from '@/libs/I18nNavigation';
-import type { ConversationState } from '@/utils/ReplyRouting';
+import { conversationStateEnum } from '@/models/Schema';
+import { hasRepliesFilters, parseRepliesQuery, repliesHref } from '@/utils/RepliesQuery';
 
 export default async function RepliesPage(props: {
   params: Promise<{ locale: string }>;
@@ -39,8 +34,8 @@ export default async function RepliesPage(props: {
   setRequestLocale(locale);
 
   const searchParams = await props.searchParams;
-  const isReviewView = searchParams.view === 'review';
-  const search = typeof searchParams.q === 'string' ? searchParams.q.trim() : '';
+  const query = parseRepliesQuery(searchParams, conversationStateEnum.enumValues);
+  const isFiltered = hasRepliesFilters(query);
   const page =
     typeof searchParams.page === 'string'
       ? Math.max(1, Math.trunc(Number(searchParams.page)) || 1)
@@ -50,42 +45,17 @@ export default async function RepliesPage(props: {
   const format = await getFormatter({ locale });
   const context = await getApiContext();
 
-  const counts = context
-    ? await countConversationsByState(context.organizationId)
-    : new Map<ConversationState, number>();
-  const total = [...counts.values()].reduce((sum, count) => sum + count, 0);
-  const reviewCount = REVIEW_STATES.reduce((sum, state) => sum + (counts.get(state) ?? 0), 0);
-
   const { conversations, total: matching } = context
     ? await listConversations({
         organizationId: context.organizationId,
-        states: isReviewView ? REVIEW_STATES : undefined,
-        search: search || undefined,
+        states: query.state ? [query.state] : undefined,
+        search: query.search || undefined,
+        answered: query.answered ? query.answered === 'yes' : undefined,
+        botManaged: query.bot ? query.bot === 'yes' : undefined,
         page,
       })
     : { conversations: [], total: 0 };
   const pageCount = Math.ceil(matching / CONVERSATIONS_PAGE_SIZE);
-
-  // Keeps the tab and the search across links, starting from the first page unless told otherwise
-  const repliesHref = (options: { review: boolean; page?: number }) => {
-    const query = new URLSearchParams();
-
-    if (options.review) {
-      query.set('view', 'review');
-    }
-
-    if (search) {
-      query.set('q', search);
-    }
-
-    if (options.page && options.page > 1) {
-      query.set('page', String(options.page));
-    }
-
-    const queryString = query.toString();
-
-    return `/dashboard/replies/${queryString ? `?${queryString}` : ''}`;
-  };
 
   return (
     <div className="space-y-6">
@@ -103,45 +73,7 @@ export default async function RepliesPage(props: {
         </Button>
       </div>
 
-      <Tabs value={isReviewView ? 'review' : 'all'}>
-        <TabsList>
-          <TabsTrigger value="all" asChild>
-            <Link href={repliesHref({ review: false })}>{t('tab_all', { count: total })}</Link>
-          </TabsTrigger>
-
-          <TabsTrigger value="review" asChild>
-            <Link href={repliesHref({ review: true })}>
-              {t('tab_review', { count: reviewCount })}
-            </Link>
-          </TabsTrigger>
-        </TabsList>
-      </Tabs>
-
-      <form className="flex flex-wrap items-center gap-2">
-        {isReviewView && <input type="hidden" name="view" value="review" />}
-
-        <div className="relative w-full max-w-sm">
-          <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            type="search"
-            name="q"
-            defaultValue={search}
-            placeholder={t('search_placeholder')}
-            aria-label={t('search_placeholder')}
-            className="h-10 pl-9"
-          />
-        </div>
-
-        <Button type="submit" variant="outline" className="h-10 px-4">
-          {t('button_search')}
-        </Button>
-
-        {search && (
-          <Button asChild variant="ghost" className="h-10 px-4">
-            <Link href={repliesHref({ review: isReviewView })}>{t('button_clear_search')}</Link>
-          </Button>
-        )}
-      </form>
+      <RepliesFilters query={query} states={conversationStateEnum.enumValues} />
 
       {conversations.length === 0 ? (
         <Empty className="rounded-xl border border-dashed">
@@ -152,17 +84,15 @@ export default async function RepliesPage(props: {
               </span>
             </EmptyMedia>
 
-            {search ? (
+            {isFiltered ? (
               <>
-                <EmptyTitle>{t('empty_search_title')}</EmptyTitle>
-                <EmptyDescription>{t('empty_search_description', { search })}</EmptyDescription>
+                <EmptyTitle>{t('empty_filtered_title')}</EmptyTitle>
+                <EmptyDescription>{t('empty_filtered_description')}</EmptyDescription>
               </>
             ) : (
               <>
-                <EmptyTitle>{isReviewView ? t('empty_review_title') : t('empty_title')}</EmptyTitle>
-                <EmptyDescription>
-                  {isReviewView ? t('empty_review_description') : t('empty_description')}
-                </EmptyDescription>
+                <EmptyTitle>{t('empty_title')}</EmptyTitle>
+                <EmptyDescription>{t('empty_description')}</EmptyDescription>
               </>
             )}
           </EmptyHeader>
@@ -242,7 +172,7 @@ export default async function RepliesPage(props: {
           <div className="flex items-center gap-2">
             {page > 1 ? (
               <Button asChild variant="outline" className="h-10 px-4">
-                <Link href={repliesHref({ review: isReviewView, page: page - 1 })}>
+                <Link href={repliesHref(query, page - 1)}>
                   <ChevronLeft />
                   {t('button_previous')}
                 </Link>
@@ -256,7 +186,7 @@ export default async function RepliesPage(props: {
 
             {page < pageCount ? (
               <Button asChild variant="outline" className="h-10 px-4">
-                <Link href={repliesHref({ review: isReviewView, page: page + 1 })}>
+                <Link href={repliesHref(query, page + 1)}>
                   {t('button_next')}
                   <ChevronRight />
                 </Link>

@@ -66,6 +66,7 @@ const CONVERSATION_TONE: Record<ConversationState, Tone> = {
   call_booked: 'success',
   nurturing: 'neutral',
   out_of_office: 'neutral',
+  auto_reply: 'neutral',
   paused: 'warning',
   manual_review: 'warning',
   closed_not_interested: 'neutral',
@@ -82,6 +83,7 @@ const REPLY_CATEGORY_TONE: Record<ReplyCategory, Tone> = {
   not_interested: 'neutral',
   stop: 'danger',
   out_of_office: 'neutral',
+  auto_reply: 'neutral',
   wrong_person: 'neutral',
   other: 'warning',
 };

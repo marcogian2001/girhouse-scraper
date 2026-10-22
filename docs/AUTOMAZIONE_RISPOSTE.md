@@ -128,7 +128,7 @@ Tutto il codice è committato su `main`. Restano fuori solo le modifiche `bg-whi
   - decide lo stato successivo.
 - [x] Obiezioni nuove create automaticamente come "da revisionare", con un angolo proposto dall'AI.
 - [x] Dashboard:
-  - **Risposte**, con il tab "Da revisionare";
+  - **Risposte**, con ricerca e filtri (vedi "Pagina Risposte e risposte automatiche");
   - **dettaglio conversazione**, con thread, classificazione, correzione della categoria e log con chi ha agito;
   - **Obiezioni**;
   - **Automazione**, con kill switch, modalità, soglie, offerta e modelli.
@@ -371,6 +371,15 @@ Tutto il codice è committato su `main`. Restano fuori solo le modifiche `bg-whi
   - aspetta l'opportunità creata dal workflow, riprovando con attese crescenti, e la passa a Bot AI;
   - non tocca le conversazioni con la call già prenotata.
 - [x] **Verifica su PGlite:** la campagna del bot accoda la risposta e l'assegnazione; quella dei venditori va in pausa senza chiamate AI e annulla gli invii programmati.
+
+### Pagina Risposte e risposte automatiche [x] (22/10)
+
+- [x] **Ricerca live:** per email, azienda, nome o cognome, filtra mentre si scrive (senza tasto "Cerca").
+- [x] **Filtri** al posto delle tab "Tutte / Da revisionare": stato, risposta inviata (sì/no), gestione (bot o venditori, con la stessa regola di `isBotManaged`). "Da revisionare" è il filtro stato "Revisione manuale". I filtri restano nell'URL (`q`, `state`, `answered`, `bot`).
+- [x] **Risposta automatica:** nuova categoria e nuovo stato `auto_reply` (migrazione `0029`), categoria `risposta_automatica` del classificatore.
+  - Copre conferme di ricezione, ticket e autoresponder che non sono un'assenza; il fuori ufficio resta a parte.
+  - Il bot non risponde, non fa follow-up e non la manda in revisione. Lo stato non è finale: se poi il lead risponde davvero, la conversazione riparte.
+- [x] **Verifica su PGlite:** migrazione applicata, filtri combinati corretti.
 
 ---
 

@@ -725,6 +725,8 @@ export const conversationStateEnum = pgEnum('conversation_state', [
   'call_booked',
   'nurturing',
   'out_of_office',
+  // An autoresponder answered, not the lead; a later real reply moves it on
+  'auto_reply',
   // A salesperson answered by hand, so the automation steps aside
   'paused',
   'manual_review',
@@ -743,6 +745,7 @@ export const replyCategoryEnum = pgEnum('reply_category', [
   'not_interested',
   'stop',
   'out_of_office',
+  'auto_reply',
   'wrong_person',
   'other',
 ]);
