@@ -917,6 +917,8 @@ export const replyClassificationSchema = pgTable('reply_classification', {
   chosenSlot: text('chosen_slot'),
   // ISO date an out-of-office reply says they are back
   returnDate: text('return_date'),
+  // When the lead asked to be contacted again, in Italian time: a date, or a date and time
+  recontactAt: text('recontact_at'),
   confidence: real('confidence').notNull(),
   reasoning: text('reasoning').notNull(),
   source: classificationSourceEnum('source').notNull(),

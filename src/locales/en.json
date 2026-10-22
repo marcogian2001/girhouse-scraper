@@ -897,6 +897,7 @@
     "detail_slot": "Chosen time: {slot}",
     "detail_phone": "Phone: {phone}",
     "detail_return": "Back on: {date}",
+    "detail_recontact": "Contact again on: {date}",
     "not_classified": "Not classified",
     "pending": "Waiting to be processed",
     "log_title": "Timeline",
@@ -1007,7 +1008,12 @@
     "error_blocked": "Replace the demo link placeholder and remove links before sending",
     "error_disabled": "The automation is off",
     "button_rewrite": "Rewrite with AI",
-    "error_rewrite": "Could not rewrite the draft"
+    "error_rewrite": "Could not rewrite the draft",
+    "label_send_at": "Send on (Italian time)",
+    "send_at_hint_proposed": "Date proposed from the lead's reply: confirm or change it",
+    "send_at_hint_empty": "Empty: it leaves as soon as possible, in business hours",
+    "button_approve_schedule": "Approve and schedule",
+    "button_update_schedule": "Update schedule"
   },
   "DemoPage": {
     "meta_title": "The demo for {company}",

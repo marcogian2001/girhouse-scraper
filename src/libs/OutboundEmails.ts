@@ -14,7 +14,13 @@ import { isGhlConfigured } from '@/services/GoHighLevel';
 import { replyToEmail } from '@/services/Instantly';
 import type { CallPlan, WriteReplyOptions } from '@/services/ReplyWriter';
 import { renderScarcity, replySubject, writeReply } from '@/services/ReplyWriter';
-import { addBusinessDays, scheduleReplySend, toBusinessTime } from '@/utils/BusinessHours';
+import {
+  addBusinessDays,
+  fromItalianTime,
+  scheduleRecontact,
+  scheduleReplySend,
+  toBusinessTime,
+} from '@/utils/BusinessHours';
 import { DEMO_STEPS } from '@/utils/DemoStats';
 import { FOLLOW_UP_STATES } from '@/utils/FollowUps';
 import { buildOfferBrief } from '@/utils/Offer';
@@ -22,7 +28,7 @@ import { checkReply, cleanReply, fillDemoLink, fillSlots } from '@/utils/ReplyGu
 import type { ReplyCategory } from '@/utils/ReplyRouting';
 import { FINAL_STATES } from '@/utils/ReplyRouting';
 import { stripQuotedReply } from '@/utils/ReplyText';
-import { joinSlotLabels, matchSlot, slotLabel } from '@/utils/Slots';
+import { dayLabel, joinSlotLabels, matchSlot, slotKey, slotLabel } from '@/utils/Slots';
 import { getAutomationSettings } from './AutomationSettings';
 import type { Conversation } from './Conversations';
 import { isBotManaged, logEvent, setConversationState } from './Conversations';
@@ -44,7 +50,11 @@ type Classification = typeof replyClassificationSchema.$inferSelect;
 
 const writePayloadSchema = z.object({ inboundMessageId: z.uuid() });
 
-const sendPayloadSchema = z.object({ outboundEmailId: z.uuid() });
+// `scheduledFor` is the send time the job was queued for; older jobs have none
+const sendPayloadSchema = z.object({
+  outboundEmailId: z.uuid(),
+  scheduledFor: z.string().optional(),
+});
 
 /** States a conversation leaves for `demo_sent` once its demo link is out. */
 const DEMO_SENT_FROM = new Set<Conversation['state']>(['replied', 'classified', 'manual_review']);
@@ -101,10 +111,40 @@ export const enqueueSend = async (email: OutboundEmail) => {
   await enqueue([
     {
       type: 'reply_send',
-      payload: { outboundEmailId: email.id },
+      payload: { outboundEmailId: email.id, scheduledFor: email.scheduledFor?.toISOString() },
       runAfter: email.scheduledFor ?? new Date(),
     },
   ]);
+};
+
+/**
+ * Reads the Italian calendar day of an instant.
+ * @param date The instant.
+ * @returns The day, such as 2026-10-26.
+ */
+const italianDay = (date: Date) => slotKey(date.toISOString()).slice(0, 10);
+
+/**
+ * Names the day an answer leaves when that is after today: the lead asked to be
+ * contacted again then, so the answer is written as that contact.
+ * @param sendAt When the answer leaves, if known.
+ * @returns A label such as "lunedì 26 ottobre", or undefined for an answer leaving today.
+ */
+const recontactDay = (sendAt: Date | null) =>
+  sendAt && italianDay(sendAt) > italianDay(new Date()) ? dayLabel(sendAt) : undefined;
+
+/**
+ * Reads the send time a person chose in the dashboard.
+ * @param value The time in Italian time, null to send as soon as possible, undefined when not given.
+ * @param current The email's own send time, kept when nothing was given.
+ * @returns The send time, or null for as soon as possible.
+ */
+const chosenSendTime = (value: string | null | undefined, current: Date | null) => {
+  if (value === undefined) {
+    return current;
+  }
+
+  return value ? fromItalianTime(value) : null;
 };
 
 /**
@@ -309,6 +349,7 @@ const planCall = async (options: {
  * @param options.call What the answer does about the call.
  * @param options.offeredSlots The call times the answer offers.
  * @param options.demoUrl The demo link the answer carries, if any.
+ * @param options.recontactOn The later day the answer leaves, when the lead asked for it.
  * @returns The writer inputs.
  */
 const replyWriterInput = async (options: {
@@ -319,6 +360,7 @@ const replyWriterInput = async (options: {
   call: CallPlan | null;
   offeredSlots: string[];
   demoUrl: string | null;
+  recontactOn?: string;
 }) => {
   const { message, settings, classification } = options;
   const objection = classification.objectionId
@@ -343,6 +385,7 @@ const replyWriterInput = async (options: {
     prices: [settings.monthlyPrice],
     demoUrl: options.demoUrl,
     offeredSlots: options.offeredSlots,
+    recontactOn: options.recontactOn,
   };
 };
 
@@ -356,6 +399,8 @@ const replyWriterInput = async (options: {
  * @param options.written The checked body, its issues and model.
  * @param options.offeredSlots The call times the email offers.
  * @param options.isBooked Whether the email confirms a booked call.
+ * @param options.sendAt When the lead asked to be contacted again, if they did: the send
+ * time in automatic mode, the proposed one on a draft.
  */
 const saveWrittenReply = async (options: {
   conversation: Conversation;
@@ -364,6 +409,7 @@ const saveWrittenReply = async (options: {
   written: Awaited<ReturnType<typeof writeCheckedReply>>;
   offeredSlots: string[];
   isBooked: boolean;
+  sendAt: Date | null;
 }) => {
   const { conversation, settings, written } = options;
   const sendsItself =
@@ -384,8 +430,9 @@ const saveWrittenReply = async (options: {
       offeredSlots: options.offeredSlots,
       status: sendsItself ? 'scheduled' : 'draft',
       scheduledFor: sendsItself
-        ? sendTimeFor({ conversation, settings, repliedAt: options.message.receivedAt })
-        : null,
+        ? (options.sendAt ??
+          sendTimeFor({ conversation, settings, repliedAt: options.message.receivedAt }))
+        : options.sendAt,
       model: written.model,
     })
     .onConflictDoNothing()
@@ -398,7 +445,11 @@ const saveWrittenReply = async (options: {
   await logEvent({
     conversationId: conversation.id,
     type: sendsItself ? 'reply_scheduled' : 'reply_drafted',
-    payload: { outboundEmailId: created.id, issues: created.issues },
+    payload: {
+      outboundEmailId: created.id,
+      issues: created.issues,
+      scheduledFor: created.scheduledFor,
+    },
   });
 
   if (sendsItself) {
@@ -441,7 +492,16 @@ const runReplyWriteJob = async (job: Job) => {
 
   const { message, conversation, classification } = row;
   const settings = await getAutomationSettings(conversation.organizationId);
-  const { call, offeredSlots } = await planCall({ conversation, classification });
+  const sendAt = scheduleRecontact({
+    value: classification.recontactAt,
+    now: new Date(),
+    hours: { startHour: settings.businessHourStart, endHour: settings.businessHourEnd },
+  });
+  // Times offered today would be stale on the day the lead asked for; a picked time still books
+  const { call, offeredSlots } =
+    sendAt && !classification.chosenSlot
+      ? NO_CALL
+      : await planCall({ conversation, classification });
   const isBooked = call?.kind === 'booked';
 
   // An interested lead gets the link to their demo, built here on first use; a booking or a
@@ -460,6 +520,7 @@ const runReplyWriteJob = async (job: Job) => {
       call,
       offeredSlots,
       demoUrl: demo ? demoUrl(demo.slug) : null,
+      recontactOn: isBooked ? undefined : recontactDay(sendAt),
     }),
     conversation,
   );
@@ -471,6 +532,7 @@ const runReplyWriteJob = async (job: Job) => {
     written,
     offeredSlots,
     isBooked,
+    sendAt: isBooked ? null : sendAt,
   });
 
   await completeJob(job.id);
@@ -499,12 +561,33 @@ const findOutbound = async (options: { organizationId: string; outboundEmailId: 
 };
 
 /**
+ * Reads fresh call times for a rewritten answer, since the ones offered at first may have
+ * gone; reading them books nothing. An answer leaving on a later day offers none, since
+ * they would be stale by then.
+ * @param options The answer.
+ * @param options.isInterested Whether it answers an interested lead, the only ones offered a call.
+ * @param options.recontactOn The later day it leaves, if any.
+ * @returns The times to offer, possibly none.
+ */
+const freshOfferedSlots = async (options: { isInterested: boolean; recontactOn?: string }) => {
+  if (!options.isInterested || options.recontactOn || !isGhlConfigured()) {
+    return [];
+  }
+
+  const slots = await getDemoSlots();
+
+  return slots?.suggested ?? [];
+};
+
+/**
  * Writes a draft answer again with the current instructions, keeping it a draft. A reply
  * that picked a call time is left alone, since writing it again would book again.
  * @param options The call options.
  * @param options.organizationId The organization the draft must belong to.
  * @param options.userId The person asking, recorded in the log.
  * @param options.outboundEmailId The draft.
+ * @param options.scheduledFor The send time chosen in the dashboard, in Italian time, or null
+ * to send as soon as possible; the draft's own proposal when omitted.
  * @returns The rewritten draft, or null when it is not a draft answer that can be rewritten.
  * @throws {Error} When the writer returns nothing usable.
  */
@@ -512,6 +595,7 @@ export const rewriteOutbound = async (options: {
   organizationId: string;
   userId: string;
   outboundEmailId: string;
+  scheduledFor?: string | null;
 }) => {
   const row = await findOutbound(options);
   const message = row?.email.inboundMessageId
@@ -540,10 +624,10 @@ export const rewriteOutbound = async (options: {
   const settings = await getAutomationSettings(conversation.organizationId);
   const isInterested = classification.category === 'interested';
   const demo = isInterested ? await getConversationDemo(conversation.id) : null;
+  const sendAt = chosenSendTime(options.scheduledFor, row.email.scheduledFor);
+  const recontactOn = recontactDay(sendAt);
 
-  // Fresh times, since the ones offered at first may have gone; reading them books nothing
-  const slots = isInterested && isGhlConfigured() ? await getDemoSlots() : null;
-  const offeredSlots = slots?.suggested ?? [];
+  const offeredSlots = await freshOfferedSlots({ isInterested, recontactOn });
 
   const written = await writeCheckedReply(
     await replyWriterInput({
@@ -554,13 +638,20 @@ export const rewriteOutbound = async (options: {
       call: offeredSlots.length > 0 ? { kind: 'offer' } : null,
       offeredSlots,
       demoUrl: demo?.url ?? null,
+      recontactOn,
     }),
     conversation,
   );
 
   const [updated] = await db
     .update(outboundEmailSchema)
-    .set({ body: written.body, issues: written.issues, offeredSlots, model: written.model })
+    .set({
+      body: written.body,
+      issues: written.issues,
+      offeredSlots,
+      model: written.model,
+      scheduledFor: sendAt,
+    })
     .where(and(eq(outboundEmailSchema.id, row.email.id), eq(outboundEmailSchema.status, 'draft')))
     .returning();
 
@@ -576,14 +667,20 @@ export const rewriteOutbound = async (options: {
   return updated ?? null;
 };
 
+/** Emails a person may approve, or approve again to change their text or send time. */
+const APPROVABLE_STATUSES = new Set<OutboundEmail['status']>(['draft', 'failed', 'scheduled']);
+
 /**
- * Approves a draft, as edited by a person, and schedules it.
+ * Approves a draft, as edited by a person, and schedules it. A scheduled email can be
+ * approved again, to change its text or its send time.
  * @param options The call options.
  * @param options.organizationId The organization the draft must belong to.
  * @param options.userId The person approving, recorded on the email and in the log.
  * @param options.outboundEmailId The draft.
  * @param options.subject The subject to send.
  * @param options.body The body to send.
+ * @param options.scheduledFor When to send it, in Italian time; as soon as possible when
+ * missing or past.
  * @returns The outcome: scheduled, or why the draft cannot go out.
  */
 export const approveOutbound = async (options: {
@@ -592,6 +689,7 @@ export const approveOutbound = async (options: {
   outboundEmailId: string;
   subject: string;
   body: string;
+  scheduledFor?: string | null;
 }) => {
   const row = await findOutbound(options);
 
@@ -599,7 +697,7 @@ export const approveOutbound = async (options: {
     return { status: 'not_found' as const };
   }
 
-  if (row.email.status !== 'draft' && row.email.status !== 'failed') {
+  if (!APPROVABLE_STATUSES.has(row.email.status)) {
     return { status: 'not_draft' as const };
   }
 
@@ -639,6 +737,17 @@ export const approveOutbound = async (options: {
     return { status: 'blocked' as const, issues };
   }
 
+  // A time a person picked is kept as is, even outside business hours
+  const chosen = chosenSendTime(options.scheduledFor, null);
+  const scheduledFor =
+    chosen && chosen > new Date()
+      ? chosen
+      : sendTimeFor({
+          conversation: row.conversation,
+          settings,
+          repliedAt: answered?.receivedAt,
+        });
+
   const [scheduled] = await db
     .update(outboundEmailSchema)
     .set({
@@ -647,11 +756,7 @@ export const approveOutbound = async (options: {
       // A person approved past the remaining issues; they stay on record
       issues,
       status: 'scheduled',
-      scheduledFor: sendTimeFor({
-        conversation: row.conversation,
-        settings,
-        repliedAt: answered?.receivedAt,
-      }),
+      scheduledFor,
       approvedByUserId: options.userId,
       errorMessage: null,
     })
@@ -662,7 +767,13 @@ export const approveOutbound = async (options: {
     return { status: 'not_found' as const };
   }
 
-  await enqueueSend(scheduled);
+  // An email approved again for the same time keeps its job, so it never goes out twice
+  if (
+    row.email.status !== 'scheduled' ||
+    row.email.scheduledFor?.getTime() !== scheduled.scheduledFor?.getTime()
+  ) {
+    await enqueueSend(scheduled);
+  }
   await logEvent({
     conversationId: row.conversation.id,
     type: 'reply_approved',
@@ -888,7 +999,7 @@ const afterSend = async (options: {
  * @param job The reply_send job being processed.
  */
 const runReplySendJob = async (job: Job) => {
-  const { outboundEmailId } = sendPayloadSchema.parse(job.payload);
+  const { outboundEmailId, scheduledFor } = sendPayloadSchema.parse(job.payload);
 
   const [row] = await db
     .select({
@@ -910,8 +1021,12 @@ const runReplySendJob = async (job: Job) => {
     )
     .where(eq(outboundEmailSchema.id, outboundEmailId));
 
-  // Approved again, discarded or already sent since this job was queued
-  if (!row || row.email.status !== 'scheduled') {
+  // Approved again, discarded, already sent or moved to another time since this job was queued
+  if (
+    !row ||
+    row.email.status !== 'scheduled' ||
+    (scheduledFor !== undefined && row.email.scheduledFor?.toISOString() !== scheduledFor)
+  ) {
     await completeJob(job.id);
 
     return;

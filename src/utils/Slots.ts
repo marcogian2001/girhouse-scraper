@@ -86,18 +86,26 @@ export const slotKey = (slot: string) =>
     .replace(' ', 'T');
 
 /**
+ * Writes a day the way an Italian email says it.
+ * @param date The instant.
+ * @returns A label such as "martedì 20 ottobre".
+ */
+export const dayLabel = (date: Date) =>
+  date.toLocaleDateString('it-IT', {
+    timeZone: AppConfig.timeZone,
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  });
+
+/**
  * Writes a slot the way an Italian email says it.
  * @param slot An ISO start time.
  * @returns A label such as "martedì 20 ottobre alle 9:00".
  */
 export const slotLabel = (slot: string) => {
   const date = new Date(slot);
-  const day = date.toLocaleDateString('it-IT', {
-    timeZone: AppConfig.timeZone,
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-  });
+  const day = dayLabel(date);
   const time = date.toLocaleTimeString('it-IT', {
     timeZone: AppConfig.timeZone,
     hour: 'numeric',

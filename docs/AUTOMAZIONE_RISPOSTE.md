@@ -1,6 +1,6 @@
 # Automazione risposte cold email: stato dei lavori
 
-Ultimo aggiornamento: 18 ottobre 2026 (rifacimento della demo come tour guidato).
+Ultimo aggiornamento: 22 ottobre 2026 (risposte programmate e data di ricontatto suggerita dall'AI).
 
 Questo file serve a riprendere il lavoro anche senza la chat originale, da soli o con un altro assistente AI. Per ripartire basta dire all'AI: "leggi `docs/AUTOMAZIONE_RISPOSTE.md` e `AGENTS.md`, poi continuiamo dalla prima voce non spuntata".
 
@@ -63,7 +63,7 @@ Automatizzare tutto quello che succede dopo la risposta di un lead a una cold em
 Tutto il codice è committato su `main`. Restano fuori solo le modifiche `bg-white` del titolare in `src/components/ui/input.tsx`, `ui/select.tsx`, `ui/textarea.tsx` e `src/components/KnowledgeMentionTextarea.tsx`.
 
 **1. Database e deploy**
-- [ ] **Riavviare `bun run dev`.** Applica su Neon le migrazioni fino alla `0022`. Aggiungono tabelle e colonne, senza toccare i dati.
+- [ ] **Riavviare `bun run dev`.** Applica su Neon le migrazioni fino alla `0030`. Aggiungono tabelle e colonne, senza toccare i dati.
 - [ ] **Deploy su Vercel.** Le migrazioni partono da sole con la build.
 
 **2. Variabili d'ambiente su Vercel**, gli stessi valori del `.env` locale:
@@ -381,6 +381,33 @@ Tutto il codice è committato su `main`. Restano fuori solo le modifiche `bg-whi
   - Copre conferme di ricezione, ticket e autoresponder che non sono un'assenza; il fuori ufficio resta a parte.
   - Il bot non risponde, non fa follow-up e non la manda in revisione. Lo stato non è finale: se poi il lead risponde davvero, la conversazione riparte.
 - [x] **Verifica su PGlite:** migrazione applicata, filtri combinati corretti.
+### Risposte programmate [x] (22/10)
+
+Richiesta del titolare, nata dalla dott.ssa Tallarico ("mi può contattare ad inizio settimana prossima"). Prima la risposta partiva dopo 15-20 minuti, e il ricontatto vero arrivava solo con il nurturing, 30 giorni dopo.
+
+- [x] **Data di ricontatto:** il classificatore restituisce `data_ricontatto`, salvata in `reply_classification.recontact_at` (migrazione `0030`) e mostrata nel dettaglio come "Da ricontattare".
+  - Il formato è `YYYY-MM-DD`, oppure `YYYY-MM-DDTHH:mm` se il lead dà anche l'ora.
+  - Vale null per periodi vaghi ("tra qualche mese") e per il fuori ufficio.
+- [x] **Una sola email, alla data chiesta** (decisione del titolare): nessuna conferma subito.
+  - Con la sola data l'email parte all'apertura di quel giorno, più 0-45 minuti casuali; con l'ora, a quell'ora.
+  - Sempre in orario lavorativo, e solo entro 90 giorni (`scheduleRecontact` in `src/utils/BusinessHours.ts`).
+- [x] **Il testo è il ricontatto:** il writer sa in che giorno parte l'email (`recontactOn`) e la scrive per quel giorno, senza "la ricontatto più avanti". Dice "come d'accordo" solo se il lead l'aveva chiesto. Un'email che parte un altro giorno non propone orari della call, perché sarebbero vecchi.
+- [x] **Modalità automatica:** l'email si programma da sola alla data suggerita. **In bozza** la data arriva precompilata nel campo "Invia il (ora italiana)": su una bozza `scheduled_for` è la data proposta.
+- [x] **Dashboard:**
+  - ogni bozza si può programmare per una data e un'ora; con il campo vuoto parte come prima;
+  - un'email già programmata si può modificare e spostare ("Aggiorna programmazione") o annullare;
+  - "Riscrivi con l'AI" scrive per la data scelta nel campo.
+- [x] **Spostamenti:** il job `reply_send` porta con sé l'orario per cui è stato accodato. Se l'email è stata spostata, il job vecchio non invia (come `dueAt` nei follow-up). Una nuova risposta del lead prima della data annulla l'invio, come già succedeva.
+- [x] **Verifica su PGlite:**
+  - la risposta della Tallarico dà `recontact_at = 2026-10-26` e una bozza per lunedì alle 9:xx, scritta come ricontatto;
+  - in automatica, "lunedì verso le 15" diventa un invio alle 15:00;
+  - il job vecchio dopo uno spostamento non invia;
+  - una nuova risposta del lead annulla l'invio.
+- [ ] **Bozza vera della Tallarico** (titolare, dopo il deploy):
+  1. aprire la bozza;
+  2. mettere lunedì 26/10 alle 9:30;
+  3. "Riscrivi con l'AI";
+  4. "Approva e programma".
 
 ---
 

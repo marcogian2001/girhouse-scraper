@@ -1,0 +1,1 @@
+ALTER TABLE "reply_classification" ADD COLUMN "recontact_at" text;

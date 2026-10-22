@@ -97,7 +97,17 @@ export const toObjectionExamples = (text: string) =>
     .map((line) => line.trim())
     .filter(Boolean);
 
+// A send time as a date field gives it, in Italian time; null sends as soon as possible
+const scheduledForField = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/u)
+  .nullable()
+  .optional();
+
 export const OutboundApprovalValidation = z.object({
   subject: z.string().trim().min(1).max(300),
   body: z.string().trim().min(1).max(5000),
+  scheduledFor: scheduledForField,
 });
+
+export const OutboundRewriteValidation = z.object({ scheduledFor: scheduledForField });

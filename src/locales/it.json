@@ -897,6 +897,7 @@
     "detail_slot": "Orario scelto: {slot}",
     "detail_phone": "Telefono: {phone}",
     "detail_return": "Rientro: {date}",
+    "detail_recontact": "Da ricontattare: {date}",
     "not_classified": "Non classificata",
     "pending": "In attesa di elaborazione",
     "log_title": "Cronologia",
@@ -1007,7 +1008,12 @@
     "error_blocked": "Sostituisci il segnaposto del link alla demo e togli i link prima dell'invio",
     "error_disabled": "L'automazione è spenta",
     "button_rewrite": "Riscrivi con l'AI",
-    "error_rewrite": "Impossibile riscrivere la bozza"
+    "error_rewrite": "Impossibile riscrivere la bozza",
+    "label_send_at": "Invia il (ora italiana)",
+    "send_at_hint_proposed": "Data proposta in base alla risposta del lead: confermala o cambiala",
+    "send_at_hint_empty": "Vuoto: parte appena possibile, in orario lavorativo",
+    "button_approve_schedule": "Approva e programma",
+    "button_update_schedule": "Aggiorna programmazione"
   },
   "DemoPage": {
     "meta_title": "La demo per {company}",

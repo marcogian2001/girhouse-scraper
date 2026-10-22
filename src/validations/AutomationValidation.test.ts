@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { AutomationSettingsValidation } from './AutomationValidation';
+import { AutomationSettingsValidation, OutboundApprovalValidation } from './AutomationValidation';
 
 const settings = {
   enabled: true,
@@ -44,6 +44,28 @@ describe('Automation settings validation', () => {
   it('rejects a WhatsApp number not in E.164', () => {
     expect(
       AutomationSettingsValidation.safeParse({ ...settings, whatsappBusinessNumber: '333 123' })
+        .success,
+    ).toBeFalsy();
+  });
+});
+
+describe('Outbound approval validation', () => {
+  const approval = { subject: 'Re: ciao', body: 'Buongiorno' };
+
+  it('accepts an approval without a send time', () => {
+    expect(OutboundApprovalValidation.safeParse(approval).success).toBeTruthy();
+  });
+
+  it('accepts a send time from a date field', () => {
+    expect(
+      OutboundApprovalValidation.safeParse({ ...approval, scheduledFor: '2026-10-26T09:30' })
+        .success,
+    ).toBeTruthy();
+  });
+
+  it('rejects a send time with seconds or a time zone', () => {
+    expect(
+      OutboundApprovalValidation.safeParse({ ...approval, scheduledFor: '2026-10-26T09:30:00Z' })
         .success,
     ).toBeFalsy();
   });

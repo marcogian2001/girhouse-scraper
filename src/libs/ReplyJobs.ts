@@ -327,6 +327,7 @@ const classifyWithAi = async (options: {
     referral: output.referente_indicato,
     chosenSlot: output.orario_scelto,
     returnDate: output.data_rientro,
+    recontactAt: output.data_ricontatto,
     confidence: Math.min(Math.max(output.confidenza, 0), 1),
     reasoning: output.motivazione,
     source: 'ai',

@@ -66,14 +66,54 @@ const toWallClock = (date: Date): WallClock => {
  * @param options.month The month, from 1.
  * @param options.day The day of the month.
  * @param options.hour The hour, from 0 to 23.
+ * @param options.minute The minute, 0 when omitted.
  * @returns The instant.
  */
-const fromWallClock = (options: { year: number; month: number; day: number; hour: number }) => {
-  const asUtc = Date.UTC(options.year, options.month - 1, options.day, options.hour);
+const fromWallClock = (options: {
+  year: number;
+  month: number;
+  day: number;
+  hour: number;
+  minute?: number;
+}) => {
+  const asUtc = Date.UTC(
+    options.year,
+    options.month - 1,
+    options.day,
+    options.hour,
+    options.minute ?? 0,
+  );
   const shown = toWallClock(new Date(asUtc));
   const offset = Date.UTC(shown.year, shown.month - 1, shown.day, shown.hour, shown.minute) - asUtc;
 
   return new Date(asUtc - offset);
+};
+
+/**
+ * Reads an Italian date, with or without the time, as written by the classifier or a date field.
+ * @param value Such as `2026-10-26` or `2026-10-26T09:30`.
+ * @returns The instant, midnight when there is no time, or null when the value is invalid.
+ */
+export const fromItalianTime = (value: string) => {
+  const match = /^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?$/u.exec(value);
+
+  if (!match) {
+    return null;
+  }
+
+  const [, year, month, day, hour, minute] = match.map((part) => Number(part ?? 0));
+  const wanted = {
+    year: year ?? 0,
+    month: month ?? 0,
+    day: day ?? 0,
+    hour: hour ?? 0,
+    minute: minute ?? 0,
+  };
+  const date = fromWallClock(wanted);
+  const clock = toWallClock(date);
+
+  // Rejects dates that roll over, such as 2026-02-30
+  return clock.month === wanted.month && clock.day === wanted.day ? date : null;
 };
 
 /**
@@ -267,4 +307,45 @@ export const scheduleReplySend = (options: {
   });
 
   return planned > options.now ? planned : toBusinessTime(options.now, options.hours);
+};
+
+/** How far ahead a lead may ask to be contacted again; later requests are left to nurturing. */
+const MAX_RECONTACT_DAYS = 90;
+
+/** The longest random delay after the opening, so a recontact does not leave on the hour. */
+const RECONTACT_JITTER_MINUTES = 45;
+
+/**
+ * Picks when an answer leaves for a lead who asked to be contacted again later.
+ * A bare date leaves soon after that day's opening; a date with a time leaves then.
+ * @param options The scheduling options.
+ * @param options.value The Italian date the lead asked for, such as `2026-10-26` or `2026-10-26T15:00`.
+ * @param options.now The current time.
+ * @param options.hours The business hours.
+ * @param options.random A number from 0 to 1, injectable for tests.
+ * @returns The send time inside business hours, or null when the value is missing,
+ * invalid, not in the future or too far ahead.
+ */
+export const scheduleRecontact = (options: {
+  value: string | null;
+  now: Date;
+  hours: BusinessHours;
+  random?: number;
+}) => {
+  const asked = options.value ? fromItalianTime(options.value) : null;
+
+  if (!asked || !options.value) {
+    return null;
+  }
+
+  const hasTime = options.value.includes('T');
+  const jitterMs = Math.round(
+    (options.random ?? Math.random()) * RECONTACT_JITTER_MINUTES * 60_000,
+  );
+  const opening = toBusinessTime(asked, options.hours);
+  const sendAt = hasTime ? opening : new Date(opening.getTime() + jitterMs);
+
+  const latest = options.now.getTime() + MAX_RECONTACT_DAYS * 86_400_000;
+
+  return sendAt > options.now && sendAt.getTime() <= latest ? sendAt : null;
 };

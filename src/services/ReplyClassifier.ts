@@ -34,6 +34,7 @@ const replyClassificationOutputSchema = z.object({
   referente_indicato: z.string().nullable(),
   orario_scelto: z.string().nullable(),
   data_rientro: z.string().nullable(),
+  data_ricontatto: z.string().nullable(),
   confidenza: z.number(),
   motivazione: z.string(),
 });
@@ -62,6 +63,7 @@ const CLASSIFIER_INSTRUCTIONS = [
   '- `referente_indicato`: the name and/or email of the person the lead points to, else null.',
   '- `orario_scelto`: the call time the lead picks or proposes, as YYYY-MM-DDTHH:mm in Italian time. Resolve "il primo", "giovedì" or "domani alle 10" against today and the times Girhouse offered. Null when the lead names no specific day and hour.',
   '- `data_rientro`: for out-of-office replies, the return date as YYYY-MM-DD when stated, else null.',
+  '- `data_ricontatto`: when the lead asks to be contacted again on a given day or period ("lunedì", "inizio settimana prossima", "dopo il 15", "a fine mese"), the first fitting working day as YYYY-MM-DD in Italian time, or YYYY-MM-DDTHH:mm when they also give the hour. Resolve it against today. Null for vague periods ("tra qualche mese"), for out-of-office replies and when they ask for nothing of the kind.',
   '- `confidenza`: how sure you are, from 0 to 1.',
   '- `motivazione`: one line in Italian explaining the choice.',
 ].join('\n');

@@ -62,13 +62,19 @@ const FOLLOW_UP_GUIDANCE: Record<FollowUpKind, string> = {
     'The lead said "not now" a while ago and asked to be contacted later. Write a short, warm check-in: one line on what the system does for a business like theirs, the real scarcity, and one light question asking whether now is a better time. No link.',
 };
 
+/** What a "not now" answer does when it leaves days after the reply, picking the talk up again. */
+const RECONTACT_NOT_NOW_GUIDANCE =
+  "This email leaves days after the lead's reply and picks the conversation up again. Recall in one line what Girhouse proposes for a business like theirs, mention the real scarcity below, and end with one light question: whether they want to see the page prepared for their business. No link.";
+
 /**
  * Picks what the reply does: a follow-up's guidance, the category's guidance, or the
  * booking confirmation once the lead's time is on the calendar.
  * @param options The writer inputs.
  * @returns The guidance for this reply.
  */
-const guidanceFor = (options: Pick<WriteReplyOptions, 'category' | 'call' | 'followUp'>) => {
+const guidanceFor = (
+  options: Pick<WriteReplyOptions, 'category' | 'call' | 'followUp' | 'recontactOn'>,
+) => {
   if (options.followUp) {
     return FOLLOW_UP_GUIDANCE[options.followUp];
   }
@@ -80,6 +86,11 @@ const guidanceFor = (options: Pick<WriteReplyOptions, 'category' | 'call' | 'fol
   // The lead asked for a time: the slots answer replaces the category's call to action
   if (options.call?.kind === 'taken') {
     return callGuidance(options.call);
+  }
+
+  // The answer leaves on a later day: it picks the talk up again rather than promising to
+  if (options.recontactOn && options.category === 'not_now') {
+    return RECONTACT_NOT_NOW_GUIDANCE;
   }
 
   return [REPLY_GUIDANCE[options.category] ?? '', callGuidance(options.call)]
@@ -134,6 +145,8 @@ export type WriteReplyOptions = {
   call: CallPlan | null;
   // Set for an email to a lead who went silent; `reply` is then their last reply
   followUp?: FollowUpKind;
+  // The day the email leaves, when the lead asked to be contacted again then
+  recontactOn?: string;
   // Rules a previous attempt broke, so the next one avoids them
   issues: string[];
 };
@@ -146,6 +159,9 @@ export type WriteReplyOptions = {
 export const buildWriterPrompt = (options: WriteReplyOptions) =>
   [
     `## What this reply does\n${guidanceFor(options)}`,
+    options.recontactOn
+      ? `## When this email leaves\n${options.recontactOn}, days after the lead's reply. Write it for that day: never promise to write later and never refer to that day as still to come. Only when the lead asked to be contacted around then, say you are writing as agreed.`
+      : '',
     options.objection
       ? `## Objection library entry\n${options.objection.title}\nAngle: ${options.objection.responseAngle}`
       : '',

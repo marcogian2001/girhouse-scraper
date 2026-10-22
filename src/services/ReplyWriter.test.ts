@@ -103,6 +103,21 @@ describe('ReplyWriter', () => {
       expect(prompt).toContain('{{orari}}');
     });
 
+    it('writes an answer leaving on a later day for that day', () => {
+      const prompt = buildWriterPrompt({
+        ...options,
+        category: 'not_now',
+        recontactOn: 'lunedì 26 ottobre',
+      });
+
+      expect(prompt).toContain('lunedì 26 ottobre, days after the lead');
+      expect(prompt).toContain('picks the conversation up again');
+    });
+
+    it('leaves the send day out of an answer sent at once', () => {
+      expect(buildWriterPrompt(options)).not.toContain('When this email leaves');
+    });
+
     it('lists the problems of a previous attempt', () => {
       expect(buildWriterPrompt({ ...options, issues: ['too_long'] })).toContain(
         '## Fix these problems of the previous attempt\ntoo_long',

@@ -77,6 +77,11 @@ const InboundBody = (props: { entry: InboundEntry; isLatest: boolean }) => {
             {classification.returnDate && (
               <li>{t('detail_return', { date: classification.returnDate })}</li>
             )}
+            {classification.recontactAt && (
+              <li>
+                {t('detail_recontact', { date: classification.recontactAt.replace('T', ' ') })}
+              </li>
+            )}
           </ul>
 
           {props.isLatest && (

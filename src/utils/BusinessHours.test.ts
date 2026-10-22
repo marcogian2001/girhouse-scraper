@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   addBusinessDays,
+  fromItalianTime,
   isBusinessTime,
+  scheduleRecontact,
   scheduleReplySend,
   scheduleSend,
   toBusinessTime,
@@ -128,6 +130,61 @@ describe('BusinessHours', () => {
       expect(reply('2026-10-20T15:00:00Z', '2026-10-20T17:00:00Z')).toBe(
         '2026-10-21T07:00:00.000Z',
       );
+    });
+  });
+
+  describe('Italian time', () => {
+    it('reads a date and time in Rome', () => {
+      // 9:30 in Rome on Monday, winter time
+      expect(fromItalianTime('2026-10-26T09:30')?.toISOString()).toBe('2026-10-26T08:30:00.000Z');
+    });
+
+    it('reads a bare date as midnight in Rome', () => {
+      expect(fromItalianTime('2026-10-20')?.toISOString()).toBe('2026-10-19T22:00:00.000Z');
+    });
+
+    it('rejects a day that does not exist', () => {
+      expect(fromItalianTime('2026-02-30')).toBeNull();
+    });
+
+    it('rejects free text', () => {
+      expect(fromItalianTime('lunedì')).toBeNull();
+    });
+  });
+
+  describe('Recontact send time', () => {
+    // Thursday 22 October at 10:00 in Rome
+    const now = new Date('2026-10-22T08:00:00Z');
+    const recontact = (value: string | null, random = 0) =>
+      scheduleRecontact({ value, now, hours, random })?.toISOString() ?? null;
+
+    it('leaves at the opening of the day asked for', () => {
+      expect(recontact('2026-10-26')).toBe('2026-10-26T08:00:00.000Z');
+    });
+
+    it('adds up to 45 minutes after the opening', () => {
+      expect(recontact('2026-10-26', 1)).toBe('2026-10-26T08:45:00.000Z');
+    });
+
+    it('leaves at the time asked for', () => {
+      expect(recontact('2026-10-26T15:00')).toBe('2026-10-26T14:00:00.000Z');
+    });
+
+    it('moves a weekend day to the next opening', () => {
+      // Saturday 24 October: Monday at 9:00
+      expect(recontact('2026-10-24')).toBe('2026-10-26T08:00:00.000Z');
+    });
+
+    it('ignores a time already past', () => {
+      expect(recontact('2026-10-22')).toBeNull();
+    });
+
+    it('ignores a date too far ahead', () => {
+      expect(recontact('2027-03-01')).toBeNull();
+    });
+
+    it('ignores a missing date', () => {
+      expect(recontact(null)).toBeNull();
     });
   });
 });
