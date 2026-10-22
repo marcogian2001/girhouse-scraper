@@ -1042,12 +1042,24 @@ export type DemoSnapshot = {
   logoUrl: string | null;
   // Hex colour the page is tinted with
   primaryColor: string;
+  // The professional's public booking profile (MioDottore), when one was found; older demos lack it
+  directory?: {
+    name: string;
+    url: string;
+    portraitUrl: string | null;
+    photos: string[];
+    rating: number | null;
+    reviewsCount: number | null;
+    reviews: { author: string | null; rating: number; when: string | null; text: string }[];
+    addresses: string[];
+  } | null;
   landing: {
     headline: string;
     subheadline: string;
     about: string | null;
     ctaLabel: string;
-    services: { name: string; description: string | null }[];
+    // The price only when a public source states it; older demos lack it
+    services: { name: string; description: string | null; price?: string | null }[];
   };
   // An invented customer and conversation, always labelled as an example
   chat: {

@@ -13,8 +13,8 @@ import {
 import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 import type { DemoSnapshot } from '@/models/Schema';
-import type { DemoReview } from '../GoogleReviews';
-import { GoogleLogo, GoogleReviews, GoogleStars } from '../GoogleReviews';
+import type { DemoReviews } from '../GoogleReviews';
+import { GoogleReviews, GoogleStars, ReviewSourceLogo } from '../GoogleReviews';
 import { ReviewFunnel } from '../ReviewFunnel';
 import type { LandingSection } from '../TourScenes';
 import { WhatsAppIcon } from '../WhatsAppIcon';
@@ -22,6 +22,9 @@ import { WhatsAppIcon } from '../WhatsAppIcon';
 export type DemoPhoto = { src: string; author: string | null };
 
 const SERVICE_ICONS = [HeartPulse, Sparkles, ShieldCheck, CalendarCheck, Star, Clock];
+
+/** Photos after the hero and the about one, shown as a strip under the about section. */
+const GALLERY_SIZE = 4;
 
 /**
  * Builds a monogram for a business without a logo.
@@ -45,16 +48,22 @@ const scrollFrameTo = (node: HTMLElement | null) => {
 };
 
 /**
- * The hero of the landing: photo, headline, buttons and the trust bar.
+ * The hero of the landing: photo, headline, buttons, the professional's portrait and the trust bar.
  * @param props Component props.
  * @param props.data The demo snapshot.
- * @param props.photo The hero photo, if Google has one.
+ * @param props.photo The hero photo, if there is one.
+ * @param props.reviews The rating shown in the trust bar.
  * @returns The hero section content.
  */
-const HeroSection = (props: { data: DemoSnapshot; photo: DemoPhoto | undefined }) => {
+const HeroSection = (props: {
+  data: DemoSnapshot;
+  photo: DemoPhoto | undefined;
+  reviews: DemoReviews;
+}) => {
   const t = useTranslations('DemoPage');
-  const { data } = props;
+  const { data, reviews } = props;
   const hero = props.photo;
+  const portraitUrl = data.directory?.portraitUrl;
 
   return (
     <>
@@ -65,27 +74,40 @@ const HeroSection = (props: { data: DemoSnapshot; photo: DemoPhoto | undefined }
         <div
           className={`absolute inset-0 -z-10 ${hero ? 'bg-gradient-to-r from-black/80 via-black/55 to-black/20' : 'bg-gradient-to-br from-(--demo-primary) to-neutral-900'}`}
         />
-        <div className="max-w-xl space-y-5">
-          {data.city && (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs backdrop-blur">
-              <MapPin className="size-3.5" />
-              {data.city}
-            </span>
-          )}
-          <h3 className="text-3xl leading-tight font-bold tracking-tight md:text-5xl">
-            {data.landing.headline}
-          </h3>
-          <p className="text-base text-white/85 md:text-lg">{data.landing.subheadline}</p>
-          <div className="flex flex-wrap gap-3">
-            <span className="inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-semibold text-neutral-900 shadow">
-              <CalendarCheck className="size-4" />
-              {data.landing.ctaLabel}
-            </span>
-            <span className="inline-flex items-center gap-2 rounded-full bg-[#25d366] px-5 py-3 text-sm font-semibold text-white shadow">
-              <WhatsAppIcon className="size-4" />
-              {t('landing_write')}
-            </span>
+        <div className="flex flex-col-reverse items-start gap-8 md:flex-row md:items-center md:justify-between">
+          <div className="max-w-xl space-y-5">
+            {data.city && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs backdrop-blur">
+                <MapPin className="size-3.5" />
+                {data.city}
+              </span>
+            )}
+            <h3 className="text-3xl leading-tight font-bold tracking-tight md:text-5xl">
+              {data.landing.headline}
+            </h3>
+            <p className="text-base text-white/85 md:text-lg">{data.landing.subheadline}</p>
+            <div className="flex flex-wrap gap-3">
+              <span className="inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-semibold text-neutral-900 shadow">
+                <CalendarCheck className="size-4" />
+                {data.landing.ctaLabel}
+              </span>
+              <span className="inline-flex items-center gap-2 rounded-full bg-[#25d366] px-5 py-3 text-sm font-semibold text-white shadow">
+                <WhatsAppIcon className="size-4" />
+                {t('landing_write')}
+              </span>
+            </div>
           </div>
+          {portraitUrl && (
+            <div className="relative size-28 shrink-0 overflow-hidden rounded-full shadow-2xl ring-4 ring-white/80 md:aspect-[4/5] md:size-auto md:w-56 md:rounded-3xl">
+              <Image
+                src={portraitUrl}
+                alt={t('landing_portrait_alt', { company: data.company })}
+                fill
+                unoptimized
+                className="object-cover object-top"
+              />
+            </div>
+          )}
         </div>
         {hero?.author && (
           <span className="absolute right-3 bottom-2 text-[10px] text-white/60">
@@ -94,14 +116,15 @@ const HeroSection = (props: { data: DemoSnapshot; photo: DemoPhoto | undefined }
         )}
       </div>
       <div className="grid gap-3 border-b border-neutral-100 bg-neutral-50 px-6 py-4 text-sm sm:grid-cols-3">
-        {data.rating !== null && (
+        {reviews.rating !== null && (
           <span className="flex items-center gap-2">
-            <GoogleLogo className="size-4" />
-            <GoogleStars rating={data.rating} className="size-3.5" />
+            <ReviewSourceLogo source={reviews.source} className="size-4" />
+            <GoogleStars rating={reviews.rating} className="size-3.5" />
             <span className="text-neutral-600">
               {t('landing_trust_reviews', {
-                rating: data.rating,
-                count: data.reviewsCount ?? 0,
+                rating: reviews.rating,
+                count: reviews.count ?? 0,
+                source: reviews.source,
               })}
             </span>
           </span>
@@ -148,7 +171,14 @@ const ServicesSection = (props: { services: DemoSnapshot['landing']['services'] 
               <span className="flex size-10 items-center justify-center rounded-xl bg-(--demo-primary)/10 text-(--demo-primary)">
                 <Icon className="size-5" />
               </span>
-              <p className="font-semibold">{service.name}</p>
+              <div className="flex items-start justify-between gap-3">
+                <p className="font-semibold">{service.name}</p>
+                {service.price && (
+                  <span className="shrink-0 rounded-full bg-(--demo-primary)/10 px-2.5 py-0.5 text-xs font-semibold text-(--demo-primary)">
+                    {service.price}
+                  </span>
+                )}
+              </div>
               {service.description && (
                 <p className="text-sm leading-relaxed text-neutral-600">{service.description}</p>
               )}
@@ -161,30 +191,51 @@ const ServicesSection = (props: { services: DemoSnapshot['landing']['services'] 
 };
 
 /**
- * Who the business is, next to its second Google photo.
+ * Who the business is, next to its second photo, with the remaining photos as a strip below.
  * @param props Component props.
  * @param props.data The demo snapshot.
- * @param props.photo The second photo, if Google has one.
+ * @param props.photo The second photo, if there is one.
+ * @param props.gallery The photos after it.
  * @returns The about section content.
  */
-const AboutSection = (props: { data: DemoSnapshot; photo: DemoPhoto | undefined }) => {
+const AboutSection = (props: {
+  data: DemoSnapshot;
+  photo: DemoPhoto | undefined;
+  gallery: DemoPhoto[];
+}) => {
   const t = useTranslations('DemoPage');
   const aboutPhoto = props.photo;
 
   return (
-    <div className="grid items-center gap-8 bg-neutral-50 px-6 py-12 md:grid-cols-2 md:px-12">
-      <div className="space-y-3">
-        <p className="text-xs font-semibold tracking-widest text-(--demo-primary) uppercase">
-          {t('landing_about_kicker')}
-        </p>
-        <h4 className="text-2xl font-bold tracking-tight">
-          {t('landing_about_title', { company: props.data.company })}
-        </h4>
-        <p className="leading-relaxed text-neutral-600">{props.data.landing.about}</p>
+    <div className="space-y-8 bg-neutral-50 px-6 py-12 md:px-12">
+      <div className="grid items-center gap-8 md:grid-cols-2">
+        <div className="space-y-3">
+          <p className="text-xs font-semibold tracking-widest text-(--demo-primary) uppercase">
+            {t('landing_about_kicker')}
+          </p>
+          <h4 className="text-2xl font-bold tracking-tight">
+            {t('landing_about_title', { company: props.data.company })}
+          </h4>
+          <p className="leading-relaxed text-neutral-600">{props.data.landing.about}</p>
+        </div>
+        {aboutPhoto && (
+          <div className="relative aspect-[4/3] overflow-hidden rounded-2xl shadow-lg">
+            <Image src={aboutPhoto.src} alt="" fill unoptimized className="object-cover" />
+          </div>
+        )}
       </div>
-      {aboutPhoto && (
-        <div className="relative aspect-[4/3] overflow-hidden rounded-2xl shadow-lg">
-          <Image src={aboutPhoto.src} alt="" fill unoptimized className="object-cover" />
+      {props.gallery.length > 0 && (
+        <div className="space-y-3">
+          <p className="text-xs font-semibold tracking-widest text-(--demo-primary) uppercase">
+            {t('landing_gallery_title')}
+          </p>
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+            {props.gallery.map((photo) => (
+              <div key={photo.src} className="relative aspect-square overflow-hidden rounded-xl">
+                <Image src={photo.src} alt="" fill unoptimized className="object-cover" />
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>
@@ -225,7 +276,15 @@ const ContactSection = (props: { data: DemoSnapshot }) => {
             <MapPin className="size-5 text-(--demo-primary)" />
             {t('landing_contact')}
           </h4>
-          {data.address && <p>{data.address}</p>}
+          {data.directory?.addresses.length ? (
+            <ul className="space-y-1">
+              {data.directory.addresses.map((address) => (
+                <li key={address}>{address}</li>
+              ))}
+            </ul>
+          ) : (
+            data.address && <p>{data.address}</p>
+          )}
           {data.phone && (
             <p className="flex items-center gap-2">
               <Phone className="size-4 text-neutral-400" />
@@ -252,14 +311,14 @@ const ContactSection = (props: { data: DemoSnapshot }) => {
  * Sections without data never appear, so nothing is made up.
  * @param props Component props.
  * @param props.data The demo snapshot.
- * @param props.reviews Real Google reviews, already picked.
- * @param props.photos The business's Google photos.
+ * @param props.reviews Real reviews, already picked, with their source.
+ * @param props.photos The business's photos, from Google then from its MioDottore profile.
  * @param props.sections The sections revealed so far.
  * @returns The landing preview.
  */
 export const LandingStep = (props: {
   data: DemoSnapshot;
-  reviews: DemoReview[];
+  reviews: DemoReviews;
   photos: DemoPhoto[];
   sections: LandingSection[];
 }) => {
@@ -267,6 +326,9 @@ export const LandingStep = (props: {
   const { data } = props;
   const hero = props.photos.at(0);
   const aboutPhoto = props.photos.at(1);
+  const gallery = props.photos.slice(2, 2 + GALLERY_SIZE);
+  // Without a logo, the professional's face stands for the business
+  const navImage = data.logoUrl ?? data.directory?.portraitUrl ?? null;
   const latest = props.sections.at(-1);
   const host = data.website && URL.canParse(data.website) ? new URL(data.website).hostname : null;
 
@@ -290,14 +352,18 @@ export const LandingStep = (props: {
       <div className="relative h-[calc(100svh-var(--demo-bar-h,12rem)-8rem)] min-h-80 overflow-y-auto scroll-smooth md:h-[calc(100svh-9rem)]">
         <nav className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-neutral-100 bg-white/95 px-5 py-3 backdrop-blur">
           <div className="flex min-w-0 items-center gap-2.5">
-            {data.logoUrl ? (
+            {navImage ? (
               <Image
-                src={data.logoUrl}
+                src={navImage}
                 alt=""
                 width={36}
                 height={36}
                 unoptimized
-                className="size-9 rounded-lg object-contain"
+                className={
+                  data.logoUrl
+                    ? 'size-9 rounded-lg object-contain'
+                    : 'size-9 rounded-full object-cover object-top'
+                }
               />
             ) : (
               <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-(--demo-primary) text-sm font-semibold text-(--demo-on-primary)">
@@ -317,7 +383,7 @@ export const LandingStep = (props: {
         </nav>
 
         <section {...reveal('hero')}>
-          <HeroSection data={data} photo={hero} />
+          <HeroSection data={data} photo={hero} reviews={props.reviews} />
         </section>
 
         {props.sections.includes('services') && (
@@ -328,7 +394,7 @@ export const LandingStep = (props: {
 
         {props.sections.includes('about') && (
           <section {...reveal('about')}>
-            <AboutSection data={data} photo={aboutPhoto} />
+            <AboutSection data={data} photo={aboutPhoto} gallery={gallery} />
           </section>
         )}
 
@@ -336,11 +402,7 @@ export const LandingStep = (props: {
           <section {...reveal('reviews')}>
             <div className="space-y-5 px-6 py-12 md:px-12">
               <h4 className="text-2xl font-bold tracking-tight">{t('landing_reviews_title')}</h4>
-              <GoogleReviews
-                rating={data.rating}
-                count={data.reviewsCount}
-                reviews={props.reviews}
-              />
+              <GoogleReviews reviews={props.reviews} />
             </div>
           </section>
         )}

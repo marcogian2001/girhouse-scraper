@@ -10,6 +10,8 @@ import {
 } from '@/models/Schema';
 import type { DemoSources } from '@/services/DemoWriter';
 import { toDemoContent, writeDemoTexts } from '@/services/DemoWriter';
+import type { MioDottoreProfile } from '@/services/MioDottore';
+import { fetchMioDottoreProfile, guessMioDottoreUrl, isMioDottoreUrl } from '@/services/MioDottore';
 import { fetchWebsiteBrand } from '@/services/WebsiteBrand';
 import { DEFAULT_BRAND_COLOR, isUsableBrandColor } from '@/utils/Colors';
 import { createDemoSlug, pickFreeDemoSlug } from '@/utils/DemoSlug';
@@ -41,7 +43,14 @@ const leadRawSchema = z.looseObject({
   openingHours: z.array(z.object({ day: z.string(), hours: z.string() })).nullish(),
 });
 
-const leadResearchSchema = z.looseObject({ business_description: z.string().nullish() });
+const leadResearchSchema = z.looseObject({
+  business_description: z.string().nullish(),
+  first_name: z.string().nullish(),
+  last_name: z.string().nullish(),
+});
+
+/** Review quotes the AI reads to learn what patients praise. */
+const REVIEW_QUOTES = 5;
 
 /**
  * Builds the public link of a demo, on the demo domain when there is one.
@@ -126,6 +135,63 @@ const leadExtras = (lead?: Lead) => {
 };
 
 /**
+ * Finds the professional's MioDottore profile: the lead's own link, a link the research
+ * cited, or the profile named after the person the research found, when it is in the lead's city.
+ * @param lead The lead, if any.
+ * @param website The lead's website, if any.
+ * @returns The profile, or null when none was found.
+ */
+const findMioDottoreProfile = async (lead?: Lead, website?: string | null) => {
+  if (website && isMioDottoreUrl(website)) {
+    return await fetchMioDottoreProfile(website);
+  }
+
+  const cited = JSON.stringify(lead?.research ?? {}).match(
+    /https:\/\/www\.miodottore\.it\/[^"\s]+/u,
+  )?.[0];
+
+  if (cited) {
+    return await fetchMioDottoreProfile(cited);
+  }
+
+  const research = leadResearchSchema.safeParse(lead?.research);
+  const firstName = research.data?.first_name;
+  const lastName = research.data?.last_name;
+  const city = lead?.city?.toLowerCase();
+
+  if (!firstName || !lastName || !city) {
+    return null;
+  }
+
+  // Namesakes elsewhere are common, so a guessed profile counts only in the lead's city
+  const profile = await fetchMioDottoreProfile(guessMioDottoreUrl({ firstName, lastName }));
+  const isSamePerson =
+    profile?.name.toLowerCase().includes(lastName.toLowerCase()) &&
+    profile.addresses.some((address) => address.toLowerCase().includes(city));
+
+  return isSamePerson ? profile : null;
+};
+
+/**
+ * Keeps what the demo page shows of a MioDottore profile.
+ * @param profile The profile, if one was found.
+ * @returns The snapshot's directory part, or null.
+ */
+const directoryFacts = (profile: MioDottoreProfile | null) =>
+  profile
+    ? {
+        name: 'MioDottore',
+        url: profile.url,
+        portraitUrl: profile.portraitUrl,
+        photos: profile.photos,
+        rating: profile.rating,
+        reviewsCount: profile.reviewsCount,
+        reviews: profile.reviews,
+        addresses: profile.addresses,
+      }
+    : null;
+
+/**
  * Picks the logo and colour a demo is tinted with.
  * @param brand What the business website says, if it could be read.
  * @returns The logo, if any, and a usable colour.
@@ -150,7 +216,10 @@ const buildSnapshot = async (conversation: Conversation): Promise<DemoSnapshot> 
   const settings = await getAutomationSettings(conversation.organizationId);
   const facts = { ...contactFacts({ conversation, lead, contact }), ...placeFacts(lead) };
   const extras = leadExtras(lead);
-  const brand = facts.website ? await fetchWebsiteBrand(facts.website) : null;
+  // A directory profile is not the business's own site: its logo and colour are MioDottore's
+  const ownWebsite = facts.website && !isMioDottoreUrl(facts.website) ? facts.website : null;
+  const brand = ownWebsite ? await fetchWebsiteBrand(ownWebsite) : null;
+  const profile = await findMioDottoreProfile(lead, facts.website);
 
   const sources: DemoSources = {
     company: facts.company,
@@ -161,6 +230,10 @@ const buildSnapshot = async (conversation: Conversation): Promise<DemoSnapshot> 
     websiteTitle: brand?.title ?? null,
     websiteDescription: brand?.description ?? null,
     websiteText: brand?.text ?? null,
+    profileAbout: profile?.about ?? null,
+    profileServices: profile?.services ?? [],
+    profileLocations: profile?.addresses ?? [],
+    reviewQuotes: (profile?.reviews ?? []).slice(0, REVIEW_QUOTES).map((review) => review.text),
   };
 
   const { texts, call } = await writeDemoTexts({ model: settings.classificationModel, sources });
@@ -180,9 +253,11 @@ const buildSnapshot = async (conversation: Conversation): Promise<DemoSnapshot> 
   return {
     version: DEMO_SNAPSHOT_VERSION,
     ...facts,
+    website: ownWebsite,
     categories: extras.categories,
     openingHours: extras.openingHours,
     ...brandFacts(brand),
+    directory: directoryFacts(profile),
     ...toDemoContent(texts),
   };
 };
@@ -269,6 +344,30 @@ export const ensureDemo = async (conversation: Conversation) => {
   }
 
   throw new Error(`Demo for conversation ${conversation.id} could not be stored`);
+};
+
+/**
+ * Builds a conversation's demo again from fresh sources, keeping its link.
+ * @param conversation The conversation the demo is for.
+ * @returns The rebuilt demo row, or a new one when none existed.
+ * @throws {Error} When the demo cannot be built or stored.
+ */
+export const rebuildDemo = async (conversation: Conversation) => {
+  const existing = await db.query.demoSchema.findFirst({
+    where: eq(demoSchema.conversationId, conversation.id),
+  });
+
+  if (!existing) {
+    return await ensureDemo(conversation);
+  }
+
+  const [rebuilt] = await db
+    .update(demoSchema)
+    .set({ data: await buildSnapshot(conversation) })
+    .where(eq(demoSchema.id, existing.id))
+    .returning();
+
+  return rebuilt ?? existing;
 };
 
 /**

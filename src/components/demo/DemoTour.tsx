@@ -8,7 +8,7 @@ import { sendDemoEvent } from './DemoSession';
 import { GigiBar } from './GigiBar';
 import { GigiVideoScene } from './GigiVideoScene';
 import { GirhouseLogo } from './GirhouseLogo';
-import type { DemoReview } from './GoogleReviews';
+import type { DemoReviews } from './GoogleReviews';
 import { HIGHLIGHT_TAGS, parseHighlights, visibleLength } from './Highlights';
 import { PriceCountdown } from './PriceCountdown';
 import type { BookingPhase } from './steps/BookingStep';
@@ -31,7 +31,7 @@ export type DemoTourProps = {
   track: boolean;
   initialStep: number | null;
   data: DemoSnapshot;
-  reviews: DemoReview[];
+  reviews: DemoReviews;
   photos: DemoPhoto[];
   pricing: {
     price: number;
@@ -142,7 +142,7 @@ const DemoTracking = (props: { slug: string; initialStep: number | null }) => {
  */
 export const DemoTour = (props: DemoTourProps) => {
   const t = useTranslations('DemoPage');
-  const scenes = buildTourScenes({ data: props.data, hasReviews: props.reviews.length > 0 });
+  const scenes = buildTourScenes({ data: props.data, hasReviews: props.reviews.items.length > 0 });
   const [index, setIndex] = useState(() =>
     props.initialStep ? firstSceneOf(scenes, props.initialStep) : 0,
   );
@@ -155,8 +155,9 @@ export const DemoTour = (props: DemoTourProps) => {
     ...HIGHLIGHT_TAGS,
     company,
     customer: props.data.chat.customerName,
-    rating: props.data.rating ?? 0,
-    count: props.data.reviewsCount ?? 0,
+    rating: props.reviews.rating ?? 0,
+    count: props.reviews.count ?? 0,
+    source: props.reviews.source,
     price: props.pricing.price,
     slots: props.pricing.slots,
   };
@@ -222,7 +223,7 @@ export const DemoTour = (props: DemoTourProps) => {
     return (
       <>
         {tracking}
-        {/* The landing's Google photos load while Gigi introduces himself; React moves these into the head */}
+        {/* The landing's photos load while Gigi introduces himself; React moves these into the head */}
         {props.photos.slice(0, 2).map((photo) => (
           <link key={photo.src} rel="preload" as="image" href={photo.src} />
         ))}

@@ -1,10 +1,18 @@
 import { useTranslations } from 'next-intl';
 
-export type DemoReview = {
+type DemoReview = {
   author: string | null;
   rating: number;
   when: string | null;
   text: string;
+};
+
+/** The reviews a landing shows: Google's, or the professional's MioDottore ones when Google has none. */
+export type DemoReviews = {
+  source: 'Google' | 'MioDottore';
+  rating: number | null;
+  count: number | null;
+  items: DemoReview[];
 };
 
 /** The colours Google gives avatars without a photo. */
@@ -74,33 +82,47 @@ export const GoogleStars = (props: { rating: number; className?: string }) => (
 );
 
 /**
- * The business's Google rating and real reviews, laid out as Google Maps shows them.
+ * The mark of where reviews come from: Google's "G", or a plain badge naming the source.
  * @param props Component props.
- * @param props.rating The average rating, if known.
- * @param props.count How many reviews Google counts.
- * @param props.reviews The reviews to show.
+ * @param props.source The review source.
+ * @param props.className Size classes.
+ * @returns The mark.
+ */
+export const ReviewSourceLogo = (props: { source: DemoReviews['source']; className?: string }) =>
+  props.source === 'Google' ? (
+    <GoogleLogo className={props.className} />
+  ) : (
+    <span
+      className={`${props.className ?? 'size-4'} flex shrink-0 items-center justify-center rounded-md bg-teal-500 text-[60%] font-bold text-white`}
+      aria-hidden
+    >
+      {props.source.charAt(0)}
+    </span>
+  );
+
+/**
+ * The business's rating and real reviews, laid out as Google Maps shows them.
+ * @param props Component props.
+ * @param props.reviews The rating, count and reviews to show, with their source.
  * @returns The reviews block.
  */
-export const GoogleReviews = (props: {
-  rating: number | null;
-  count: number | null;
-  reviews: DemoReview[];
-}) => {
+export const GoogleReviews = (props: { reviews: DemoReviews }) => {
   const t = useTranslations('DemoPage');
+  const { source, rating, count, items } = props.reviews;
 
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center gap-4">
-        <GoogleLogo className="size-9" />
-        {props.rating !== null && (
+        <ReviewSourceLogo source={source} className="size-9" />
+        {rating !== null && (
           <div className="flex items-center gap-3">
             <span className="text-4xl font-normal text-neutral-900">
-              {props.rating.toLocaleString('it-IT', { minimumFractionDigits: 1 })}
+              {rating.toLocaleString('it-IT', { minimumFractionDigits: 1 })}
             </span>
             <div className="space-y-0.5">
-              <GoogleStars rating={props.rating} className="size-5" />
+              <GoogleStars rating={rating} className="size-5" />
               <p className="text-sm text-neutral-500">
-                {t('landing_reviews_count', { count: props.count ?? 0 })}
+                {t('landing_reviews_count', { count: count ?? 0 })}
               </p>
             </div>
           </div>
@@ -108,8 +130,8 @@ export const GoogleReviews = (props: {
       </div>
 
       <div className="grid gap-3 md:grid-cols-3">
-        {props.reviews.map((review, index) => {
-          const name = review.author ?? t('landing_review_anonymous');
+        {items.map((review, index) => {
+          const name = review.author ?? t('landing_review_anonymous', { source });
 
           return (
             <article
@@ -126,9 +148,11 @@ export const GoogleReviews = (props: {
                 </span>
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium text-neutral-900">{name}</p>
-                  <p className="text-xs text-neutral-500">{t('landing_review_source')}</p>
+                  <p className="text-xs text-neutral-500">
+                    {t('landing_review_source', { source })}
+                  </p>
                 </div>
-                <GoogleLogo className="ml-auto size-4 shrink-0" />
+                <ReviewSourceLogo source={source} className="ml-auto size-4 shrink-0" />
               </div>
               <div className="flex items-center gap-2">
                 <GoogleStars rating={review.rating} className="size-3.5" />

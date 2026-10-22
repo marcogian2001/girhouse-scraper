@@ -98,6 +98,7 @@ export const ConversationDemoCard = (props: {
             </div>
           ))}
         </dl>
+        <GenerateDemoButton conversationId={props.conversationId} rebuild />
       </CardContent>
     </Card>
   );

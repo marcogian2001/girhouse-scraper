@@ -13,7 +13,13 @@ const demoTextsSchema = z.object({
   sottotitolo: z.string(),
   chi_siamo: z.string().nullable(),
   cta: z.string(),
-  servizi: z.array(z.object({ nome: z.string(), descrizione: z.string().nullable() })),
+  servizi: z.array(
+    z.object({
+      nome: z.string(),
+      descrizione: z.string().nullable(),
+      prezzo: z.string().nullable(),
+    }),
+  ),
   chat: z.object({
     nome_cliente: z.string(),
     servizio: z.string().nullable(),
@@ -40,22 +46,27 @@ export type DemoSources = {
   websiteTitle: string | null;
   websiteDescription: string | null;
   websiteText: string | null;
+  // From the professional's MioDottore profile, when one was found
+  profileAbout: string | null;
+  profileServices: { name: string; price: string | null }[];
+  profileLocations: string[];
+  reviewQuotes: string[];
 };
 
 const INSTRUCTIONS = [
   "You write the texts of a guided demo Girhouse shows an Italian small business: the landing page Girhouse would build for it, and an example WhatsApp chat where Girhouse's assistant books a customer on the business's behalf.",
   '',
   'Rules for every text:',
-  '- Italian, plain and warm, written as the business speaking to its own customers.',
+  '- Italian, plain and warm, written as the business speaking to its own customers. When the business is one professional, they speak in the first person singular ("ti aspetto", "il mio studio"), never "noi".',
   '- Use only facts in the sources below. Never invent services, prices, years, awards, numbers, staff names or claims.',
   '- Never use em dashes or en dashes.',
   '',
   'Landing page:',
   '- `titolo`: the headline, at most 8 words, naming what the business does and where when the city is known.',
-  '- `sottotitolo`: one sentence, at most 22 words, on why customers choose it or how they book, with no facts beyond the sources.',
-  '- `chi_siamo`: 2 or 3 sentences about the business, only from the description or website text; null when the sources say nothing about it.',
+  '- `sottotitolo`: one sentence, at most 22 words, on why customers choose it (what the reviews praise, when there are any) or how they book, with no facts beyond the sources.',
+  '- `chi_siamo`: 3 or 4 sentences about the business, only from the description, profile or website text: who they are, their training and credentials, their approach, where they work. In the first person when the business is one professional. Null when the sources say nothing about it.',
   '- `cta`: the main button, 2 to 4 words, fitting the business (for example "Prenota una visita", "Richiedi un preventivo").',
-  '- `servizi`: up to 6 services the sources state explicitly, each with a one-sentence `descrizione` taken from the sources, or null when they give none. An empty list when no services are stated; the category alone is not a service list.',
+  '- `servizi`: up to 6 services the sources state explicitly, the ones a new customer books first, each with a one-sentence `descrizione` taken from the sources, or null when they give none, and its `prezzo` exactly as the sources state it (for example "100 €"), or null. An empty list when no services are stated; the category alone is not a service list.',
   '',
   'Example WhatsApp chat (`chat`), clearly an example:',
   '- `nome_cliente`: a common Italian first name for the invented customer.',
@@ -87,6 +98,15 @@ export const renderDemoSources = (sources: DemoSources) =>
     ['Website title', sources.websiteTitle],
     ['Website description', sources.websiteDescription],
     ['Website text', sources.websiteText],
+    ['Professional profile', sources.profileAbout],
+    [
+      'Services and prices',
+      sources.profileServices
+        .map((service) => (service.price ? `${service.name}: ${service.price}` : service.name))
+        .join('\n'),
+    ],
+    ['Locations', sources.profileLocations.join('\n')],
+    ['What patients say in reviews', sources.reviewQuotes.map((quote) => `- ${quote}`).join('\n')],
   ]
     .filter(([, value]) => value)
     .map(([label, value]) => `## ${label}\n${value}`)
@@ -137,6 +157,7 @@ export const toDemoContent = (texts: DemoTexts) => ({
     services: texts.servizi.slice(0, MAX_SERVICES).map((service) => ({
       name: cleanReply(service.nome),
       description: service.descrizione ? cleanReply(service.descrizione) : null,
+      price: service.prezzo ? cleanReply(service.prezzo) : null,
     })),
   },
   chat: {

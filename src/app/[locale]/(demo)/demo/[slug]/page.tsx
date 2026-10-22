@@ -3,6 +3,7 @@ import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/serve
 import { notFound } from 'next/navigation';
 import * as z from 'zod';
 import { DemoTour } from '@/components/demo/DemoTour';
+import type { DemoReviews } from '@/components/demo/GoogleReviews';
 import { getDemoPage } from '@/libs/Demos';
 import { getPlaceDetails, pickReviews } from '@/services/GooglePlaces';
 import { AppConfig } from '@/utils/AppConfig';
@@ -15,8 +16,11 @@ type DemoPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
-/** Photos the landing preview can use: the hero and the "about" section. */
+/** Google photos the landing preview can use: the hero and the "about" section. */
 const PHOTO_COUNT = 2;
+
+/** Reviews shown as cards, as many as Google returns at most. */
+const REVIEW_COUNT = 3;
 
 /**
  * Loads a demo from its slug, or answers with a 404 page.
@@ -58,6 +62,24 @@ export default async function DemoPage(props: DemoPageProps) {
 
   // Read live, since Google forbids storing them; the page still works when Google does not answer
   const details = data.placeId ? await getPlaceDetails(data.placeId).catch(() => null) : null;
+  const googleReviews = details ? pickReviews(details.reviews) : [];
+  const { directory } = data;
+
+  // Google's reviews first; a professional without them shows their MioDottore ones
+  const reviews: DemoReviews =
+    googleReviews.length > 0 || !directory?.reviews.length
+      ? { source: 'Google', rating: data.rating, count: data.reviewsCount, items: googleReviews }
+      : {
+          source: 'MioDottore',
+          rating: directory.rating,
+          count: directory.reviewsCount,
+          items: directory.reviews.slice(0, REVIEW_COUNT).map((review) => ({
+            ...review,
+            when: review.when
+              ? format.dateTime(new Date(review.when), { month: 'long', year: 'numeric' })
+              : null,
+          })),
+        };
 
   const increaseOn = conversation.firstEmailSentAt
     ? new Date(conversation.firstEmailSentAt.getTime() + settings.priceIncreaseDays * 86_400_000)
@@ -79,11 +101,14 @@ export default async function DemoPage(props: DemoPageProps) {
         track={!isPreview}
         initialStep={step.success ? step.data : null}
         data={data}
-        reviews={details ? pickReviews(details.reviews) : []}
-        photos={(details?.photos ?? []).slice(0, PHOTO_COUNT).map((photo, index) => ({
-          src: `/api/demo/${slug}/photo/${index}`,
-          author: photo.authorAttributions.at(0)?.displayName ?? null,
-        }))}
+        reviews={reviews}
+        photos={[
+          ...(details?.photos ?? []).slice(0, PHOTO_COUNT).map((photo, index) => ({
+            src: `/api/demo/${slug}/photo/${index}`,
+            author: photo.authorAttributions.at(0)?.displayName ?? null,
+          })),
+          ...(directory?.photos ?? []).map((src) => ({ src, author: null })),
+        ]}
         pricing={{
           price: settings.monthlyPrice,
           newPrice: settings.newMonthlyPrice,
