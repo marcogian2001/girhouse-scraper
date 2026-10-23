@@ -67,7 +67,8 @@ export default async function DashboardLayout(props: DashboardLayoutProps) {
           usageSummary={<UsageSummary period={period} totals={usageTotals} />}
         />
 
-        <SidebarInset>
+        {/* `min-w-0` keeps a wide table scrolling inside its frame instead of widening the page */}
+        <SidebarInset className="min-w-0">
           <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b bg-background px-4 md:px-6">
             <SidebarTrigger className="-ml-1.5 text-muted-foreground" />
             <DashboardBreadcrumb />
