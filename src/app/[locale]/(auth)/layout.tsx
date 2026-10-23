@@ -31,11 +31,8 @@ export default async function AuthLayout(props: {
         </div>
       </div>
 
-      <aside className="relative hidden overflow-hidden bg-brand-panel p-12 text-brand-panel-foreground lg:flex lg:flex-col lg:justify-center">
-        {/* Cyan bloom lifting the flat brand fill */}
-        <div className="absolute inset-0 bg-[radial-gradient(60%_50%_at_75%_15%,oklch(0.72_0.13_209),transparent_65%)] opacity-35" />
-
-        <div className="relative max-w-md space-y-8">
+      <aside className="hidden bg-brand-panel p-12 text-brand-panel-foreground lg:flex lg:flex-col lg:justify-center">
+        <div className="max-w-md space-y-8">
           <div className="space-y-3">
             <p className="text-3xl font-semibold tracking-tight">{t('brand_title')}</p>
             <p className="text-brand-panel-foreground/90">{t('brand_subtitle')}</p>

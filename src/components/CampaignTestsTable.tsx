@@ -4,9 +4,9 @@ import { ArrowDown, ArrowUp } from 'lucide-react';
 import { useFormatter, useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { ExampleEmailButton } from '@/components/ExampleEmailButton';
+import { TableFrame } from '@/components/TableFrame';
 import { TestedNoteEditor } from '@/components/TestedNoteEditor';
 import { Badge } from '@/components/ui/badge';
-import { Card } from '@/components/ui/card';
 import {
   Select,
   SelectContent,
@@ -236,7 +236,7 @@ export const CampaignTestsTable = (props: { tests: CampaignTest[] }) => {
       </div>
 
       {/* The table scrolls inside its own box, so the header and the first column stay put */}
-      <Card className="p-0 **:data-[slot=table-container]:max-h-[calc(100svh-14rem)] **:data-[slot=table-container]:overflow-auto">
+      <TableFrame className="**:data-[slot=table-container]:max-h-[calc(100svh-14rem)] **:data-[slot=table-container]:overflow-auto">
         <Table>
           <TableHeader className="sticky top-0 z-20 bg-muted shadow-[0_1px_0_var(--border)]">
             <TableRow className="hover:bg-transparent">
@@ -349,7 +349,7 @@ export const CampaignTestsTable = (props: { tests: CampaignTest[] }) => {
             ))}
           </TableBody>
         </Table>
-      </Card>
+      </TableFrame>
     </div>
   );
 };

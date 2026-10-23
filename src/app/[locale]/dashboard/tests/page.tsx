@@ -1,14 +1,9 @@
 import { FlaskConical } from 'lucide-react';
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 import { CampaignTestsTable } from '@/components/CampaignTestsTable';
+import { EmptyState } from '@/components/EmptyState';
 import { InstantlySyncButton } from '@/components/InstantlySyncButton';
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from '@/components/ui/empty';
+import { PageHeader } from '@/components/PageHeader';
 import { getApiContext } from '@/libs/ApiAuth';
 import { getCampaignTests } from '@/libs/CampaignTests';
 import {
@@ -55,41 +50,33 @@ export default async function CampaignTestsPage(props: { params: Promise<{ local
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight">{t('title')}</h1>
-          <p className="text-sm text-muted-foreground">{t('subtitle')}</p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="text-xs text-muted-foreground">
-            {syncedAt
-              ? t('synced_at', {
-                  date: format.dateTime(syncedAt, {
-                    dateStyle: 'short',
-                    timeStyle: 'short',
-                    timeZone: AppConfig.timeZone,
-                  }),
-                })
-              : t('never_synced')}
-          </span>
-          <InstantlySyncButton />
-        </div>
-      </div>
+      <PageHeader
+        title={t('title')}
+        description={t('subtitle')}
+        actions={
+          <>
+            <span className="text-xs text-muted-foreground">
+              {syncedAt
+                ? t('synced_at', {
+                    date: format.dateTime(syncedAt, {
+                      dateStyle: 'short',
+                      timeStyle: 'short',
+                      timeZone: AppConfig.timeZone,
+                    }),
+                  })
+                : t('never_synced')}
+            </span>
+            <InstantlySyncButton />
+          </>
+        }
+      />
 
       {tests.length === 0 ? (
-        <Empty className="rounded-xl border border-dashed">
-          <EmptyHeader>
-            <EmptyMedia>
-              <span className="flex size-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                <FlaskConical className="size-5" />
-              </span>
-            </EmptyMedia>
-
-            <EmptyTitle>{t('empty_title')}</EmptyTitle>
-            <EmptyDescription>{t('empty_description')}</EmptyDescription>
-          </EmptyHeader>
-        </Empty>
+        <EmptyState
+          icon={<FlaskConical />}
+          title={t('empty_title')}
+          description={t('empty_description')}
+        />
       ) : (
         <CampaignTestsTable tests={tests} />
       )}

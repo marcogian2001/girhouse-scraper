@@ -1,14 +1,9 @@
 import { Plus, Vote } from 'lucide-react';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
+import { EmptyState } from '@/components/EmptyState';
+import { PageHeader } from '@/components/PageHeader';
+import { TableFrame } from '@/components/TableFrame';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from '@/components/ui/empty';
 import {
   Table,
   TableBody,
@@ -32,35 +27,23 @@ export default async function EmailPollsPage(props: { params: Promise<{ locale: 
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight">{t('title')}</h1>
-          <p className="text-sm text-muted-foreground">{t('subtitle')}</p>
-        </div>
-
-        <Button asChild className="h-10 px-4">
-          <Link href="/dashboard/email-polls/new/">
-            <Plus />
-            {t('button_new')}
-          </Link>
-        </Button>
-      </div>
+      <PageHeader
+        title={t('title')}
+        description={t('subtitle')}
+        actions={
+          <Button asChild>
+            <Link href="/dashboard/email-polls/new/">
+              <Plus />
+              {t('button_new')}
+            </Link>
+          </Button>
+        }
+      />
 
       {polls.length === 0 ? (
-        <Empty className="rounded-xl border border-dashed">
-          <EmptyHeader>
-            <EmptyMedia>
-              <span className="flex size-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                <Vote className="size-5" />
-              </span>
-            </EmptyMedia>
-
-            <EmptyTitle>{t('empty_title')}</EmptyTitle>
-            <EmptyDescription>{t('empty_description')}</EmptyDescription>
-          </EmptyHeader>
-        </Empty>
+        <EmptyState icon={<Vote />} title={t('empty_title')} description={t('empty_description')} />
       ) : (
-        <Card className="p-0">
+        <TableFrame>
           <Table>
             <TableHeader>
               <TableRow>
@@ -73,11 +56,11 @@ export default async function EmailPollsPage(props: { params: Promise<{ locale: 
 
             <TableBody>
               {polls.map((poll) => (
-                <TableRow key={poll.id} className="hover:bg-accent/40">
+                <TableRow key={poll.id} className="relative">
                   <TableCell>
                     <Link
                       href={`/dashboard/email-polls/${poll.id}/`}
-                      className="font-medium hover:text-primary"
+                      className="font-medium after:absolute after:inset-0"
                     >
                       {poll.name}
                     </Link>
@@ -91,7 +74,7 @@ export default async function EmailPollsPage(props: { params: Promise<{ locale: 
               ))}
             </TableBody>
           </Table>
-        </Card>
+        </TableFrame>
       )}
     </div>
   );

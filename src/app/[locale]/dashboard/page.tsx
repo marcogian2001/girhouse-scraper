@@ -1,18 +1,19 @@
 import { and, count, desc, eq, isNull } from 'drizzle-orm';
-import { BookOpen, ChevronRight, Mail, Megaphone, Plus, Rocket, Users } from 'lucide-react';
+import { BookOpen, ChevronRight, Mail, Plus, Rocket, Send, Users } from 'lucide-react';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { NoCampaigns } from '@/components/NoCampaigns';
+import { PageHeader } from '@/components/PageHeader';
 import { StatCard } from '@/components/StatCard';
 import { StatusBadge } from '@/components/StatusBadge';
+import { TableFrame } from '@/components/TableFrame';
 import { Button } from '@/components/ui/button';
-import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Item,
   ItemActions,
   ItemContent,
   ItemDescription,
   ItemGroup,
-  ItemMedia,
   ItemTitle,
 } from '@/components/ui/item';
 import { getApiContext, getSession } from '@/libs/ApiAuth';
@@ -90,56 +91,46 @@ export default async function DashboardHomePage(props: { params: Promise<{ local
   const firstName = session?.user.name?.split(' ')[0] ?? '';
 
   const stats = [
-    { label: t('stat_campaigns'), value: totalCampaigns, icon: <Megaphone className="size-4" /> },
+    { label: t('stat_campaigns'), value: totalCampaigns, icon: <Send /> },
     {
       label: t('stat_contacts'),
       value: contactStats[0]?.total ?? 0,
-      icon: <Users className="size-4" />,
+      icon: <Users />,
     },
     {
       label: t('stat_emails'),
       value: draftStats[0]?.total ?? 0,
-      icon: <Mail className="size-4" />,
+      icon: <Mail />,
     },
     {
       label: t('stat_live'),
       value: campaignStats[0]?.live ?? 0,
-      icon: <Rocket className="size-4" />,
+      icon: <Rocket />,
     },
   ];
 
   return (
     <div className="space-y-6">
-      {/* One spacing token drives the card's vertical padding and the content's
-          horizontal padding, so the hero stays square on all four sides */}
-      <Card className="relative overflow-hidden [--card-spacing:--spacing(6)]">
-        {/* Tinted wash so the hero reads as the primary surface on the page */}
-        <div className="absolute inset-0 bg-[radial-gradient(45%_120%_at_85%_0%,var(--accent),transparent_70%)]" />
+      <PageHeader
+        title={firstName ? t('title', { name: firstName }) : t('title_generic')}
+        description={t('subtitle')}
+        actions={
+          <>
+            <Button asChild variant="outline">
+              <Link href="/dashboard/knowledge/">{t('link_knowledge')}</Link>
+            </Button>
 
-        <CardContent className="relative flex flex-col gap-5">
-          <div className="space-y-2">
-            <h1 className="text-3xl font-semibold tracking-tight">
-              {firstName ? t('title', { name: firstName }) : t('title_generic')}
-            </h1>
-            <p className="max-w-xl text-muted-foreground">{t('subtitle')}</p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-            <Button asChild className="h-11 px-5">
+            <Button asChild>
               <Link href="/dashboard/campaigns/new/">
                 <Plus />
                 {t('button_new')}
               </Link>
             </Button>
+          </>
+        }
+      />
 
-            <Button asChild variant="ghost" className="h-11">
-              <Link href="/dashboard/knowledge/">{t('link_knowledge')}</Link>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat) => (
           <StatCard key={stat.label} label={stat.label} value={stat.value} icon={stat.icon} />
         ))}
@@ -149,28 +140,19 @@ export default async function DashboardHomePage(props: { params: Promise<{ local
         <NoCampaigns />
       ) : (
         <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-          {/* `py-0` lets the rows run edge to edge, so the header carries its own */}
-          <Card className="py-0">
-            <CardHeader className="border-b py-(--card-spacing)">
-              <CardTitle>{t('recent_title')}</CardTitle>
+          <TableFrame>
+            <div className="flex items-center justify-between gap-2 border-b px-4 py-3">
+              <h2 className="text-sm font-medium">{t('recent_title')}</h2>
 
-              <CardAction>
-                <Button asChild variant="link" size="sm">
-                  <Link href="/dashboard/campaigns/">{t('recent_all')}</Link>
-                </Button>
-              </CardAction>
-            </CardHeader>
+              <Button asChild variant="link" size="sm" className="h-auto p-0">
+                <Link href="/dashboard/campaigns/">{t('recent_all')}</Link>
+              </Button>
+            </div>
 
             <ItemGroup>
               {recent.map((campaign) => (
-                <Item key={campaign.id} asChild>
+                <Item key={campaign.id} asChild className="rounded-none px-4 hover:bg-muted/50">
                   <Link href={`/dashboard/campaigns/${campaign.id}/`}>
-                    <ItemMedia>
-                      <span className="flex size-9 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-                        <Megaphone className="size-4" />
-                      </span>
-                    </ItemMedia>
-
                     <ItemContent>
                       <ItemTitle>{campaign.name}</ItemTitle>
                       <ItemDescription>
@@ -191,19 +173,20 @@ export default async function DashboardHomePage(props: { params: Promise<{ local
                 </Item>
               ))}
             </ItemGroup>
-          </Card>
+          </TableFrame>
 
-          <Card>
+          <Card size="sm" className="self-start">
             <CardHeader>
               <CardTitle>{t('knowledge_title')}</CardTitle>
+              <CardDescription>{t('knowledge_description')}</CardDescription>
             </CardHeader>
 
-            <CardContent className="space-y-4">
-              <p className="text-sm text-muted-foreground">{t('knowledge_description')}</p>
+            <CardContent className="flex items-end justify-between gap-4">
+              <p className="text-2xl font-semibold tracking-tight tabular-nums">
+                {knowledgeStats[0]?.total ?? 0}
+              </p>
 
-              <p className="text-2xl font-semibold tabular-nums">{knowledgeStats[0]?.total ?? 0}</p>
-
-              <Button asChild variant="outline" className="w-full">
+              <Button asChild variant="outline" size="sm">
                 <Link href="/dashboard/knowledge/">
                   <BookOpen />
                   {t('knowledge_button')}

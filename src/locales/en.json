@@ -337,7 +337,9 @@
     "tab_archived": "Archived ({count})",
     "empty_active": "Every campaign is archived.",
     "empty_archived": "No archived campaigns.",
-    "row_meta": "{contacts, plural, one {# contact} other {# contacts}} · {cost} · {date}"
+    "row_meta": "{contacts, plural, one {# contact} other {# contacts}} · {cost} · {date}",
+    "search_placeholder": "Search campaigns",
+    "empty_search": "No campaign matches “{search}”."
   },
   "NewCampaignPage": {
     "title": "New campaign",

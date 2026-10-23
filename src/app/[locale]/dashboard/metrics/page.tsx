@@ -1,6 +1,8 @@
 import { BarChart3, CalendarCheck, Inbox, MessageCircle, MonitorPlay } from 'lucide-react';
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 import { DatePicker } from '@/components/DatePicker';
+import { EmptyState } from '@/components/EmptyState';
+import { PageHeader } from '@/components/PageHeader';
 import {
   CategoryStatsTable,
   ObjectionStatsTable,
@@ -9,13 +11,6 @@ import {
 import { StatCard } from '@/components/StatCard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from '@/components/ui/empty';
 import { Field, FieldLabel } from '@/components/ui/field';
 import { getApiContext } from '@/libs/ApiAuth';
 import { Link } from '@/libs/I18nNavigation';
@@ -75,65 +70,51 @@ export default async function MetricsPage(props: {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">{t('title')}</h1>
-        <p className="text-sm text-muted-foreground">{t('subtitle')}</p>
-      </div>
+      <PageHeader title={t('title')} description={t('subtitle')} />
 
-      <Card size="sm">
-        <CardContent>
-          {/* Keyed by the range: the inputs are uncontrolled, so a preset link
-              would otherwise leave the previous dates in them */}
-          <form key={`${range.from}:${range.to}`} className="flex flex-wrap items-end gap-3">
-            <Field className="w-auto">
-              <FieldLabel htmlFor="metrics-from">{t('label_from')}</FieldLabel>
-              <DatePicker id="metrics-from" name="from" defaultValue={range.from} />
-            </Field>
+      {/* Keyed by the range: the inputs are uncontrolled, so a preset link
+          would otherwise leave the previous dates in them */}
+      <form key={`${range.from}:${range.to}`} className="flex flex-wrap items-end gap-3">
+        <Field className="w-auto">
+          <FieldLabel htmlFor="metrics-from">{t('label_from')}</FieldLabel>
+          <DatePicker id="metrics-from" name="from" defaultValue={range.from} />
+        </Field>
 
-            <Field className="w-auto">
-              <FieldLabel htmlFor="metrics-to">{t('label_to')}</FieldLabel>
-              <DatePicker id="metrics-to" name="to" defaultValue={range.to} />
-            </Field>
+        <Field className="w-auto">
+          <FieldLabel htmlFor="metrics-to">{t('label_to')}</FieldLabel>
+          <DatePicker id="metrics-to" name="to" defaultValue={range.to} />
+        </Field>
 
-            <Button type="submit">{t('button_filter')}</Button>
+        <Button type="submit">{t('button_filter')}</Button>
 
-            <div className="flex gap-2 sm:ml-auto">
-              <Button asChild variant="outline">
-                <Link href={`/dashboard/metrics/?from=${thisMonth.from}&to=${thisMonth.to}`}>
-                  {t('preset_this_month')}
-                </Link>
-              </Button>
+        <div className="flex gap-2 sm:ml-auto">
+          <Button asChild variant="outline">
+            <Link href={`/dashboard/metrics/?from=${thisMonth.from}&to=${thisMonth.to}`}>
+              {t('preset_this_month')}
+            </Link>
+          </Button>
 
-              <Button asChild variant="outline">
-                <Link href={`/dashboard/metrics/?from=${lastMonth.from}&to=${lastMonth.to}`}>
-                  {t('preset_last_month')}
-                </Link>
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+          <Button asChild variant="outline">
+            <Link href={`/dashboard/metrics/?from=${lastMonth.from}&to=${lastMonth.to}`}>
+              {t('preset_last_month')}
+            </Link>
+          </Button>
+        </div>
+      </form>
 
       <p className="text-sm text-muted-foreground">
         {t('range_line', { from: day(range.from), to: day(range.to) })}
       </p>
 
       {funnel.replied === 0 ? (
-        <Empty className="rounded-xl border border-dashed">
-          <EmptyHeader>
-            <EmptyMedia>
-              <span className="flex size-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                <BarChart3 className="size-5" />
-              </span>
-            </EmptyMedia>
-
-            <EmptyTitle>{t('empty_title')}</EmptyTitle>
-            <EmptyDescription>{t('empty_description')}</EmptyDescription>
-          </EmptyHeader>
-        </Empty>
+        <EmptyState
+          icon={<BarChart3 />}
+          title={t('empty_title')}
+          description={t('empty_description')}
+        />
       ) : (
         <>
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             {cards.map((card) => (
               <StatCard
                 key={card.label}

@@ -1,10 +1,12 @@
 import { count, desc, eq } from 'drizzle-orm';
 import { ChevronRight, Download, Megaphone, Plus } from 'lucide-react';
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
+import { ListSearch } from '@/components/ListSearch';
 import { NoCampaigns } from '@/components/NoCampaigns';
+import { PageHeader } from '@/components/PageHeader';
 import { StatusBadge } from '@/components/StatusBadge';
+import { TableFrame } from '@/components/TableFrame';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import {
   Item,
   ItemActions,
@@ -40,6 +42,7 @@ export default async function CampaignsPage(props: {
 
   const searchParams = await props.searchParams;
   const isArchivedView = searchParams.view === 'archived';
+  const search = typeof searchParams.q === 'string' ? searchParams.q.trim() : '';
 
   const t = await getTranslations({ locale, namespace: 'CampaignsPage' });
   const format = await getFormatter({ locale });
@@ -65,67 +68,73 @@ export default async function CampaignsPage(props: {
         .orderBy(desc(campaignSchema.createdAt))
     : [];
   const archivedCount = allCampaigns.filter((campaign) => campaign.archivedAt).length;
-  const campaigns = allCampaigns.filter(
+  const viewCampaigns = allCampaigns.filter(
     (campaign) => Boolean(campaign.archivedAt) === isArchivedView,
   );
+  // Few enough rows per organization to filter here rather than in SQL
+  const campaigns = viewCampaigns.filter((campaign) =>
+    campaign.name.toLocaleLowerCase(locale).includes(search.toLocaleLowerCase(locale)),
+  );
+  const emptyMessage = isArchivedView ? t('empty_archived') : t('empty_active');
   const usd = (micros: number) => format.number(microsToUsd(micros), USD_FORMAT);
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight">{t('title')}</h1>
-          <p className="text-sm text-muted-foreground">{t('subtitle')}</p>
-        </div>
+      <PageHeader
+        title={t('title')}
+        description={t('subtitle')}
+        actions={
+          <Button asChild>
+            <Link href="/dashboard/campaigns/new/">
+              <Plus />
+              {t('button_new')}
+            </Link>
+          </Button>
+        }
+      />
 
-        <div className="flex items-center gap-2">
+      {allCampaigns.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <Tabs value={isArchivedView ? 'archived' : 'active'}>
+            <TabsList>
+              <TabsTrigger value="active" asChild>
+                <Link href="/dashboard/campaigns/">
+                  {t('tab_active', { count: allCampaigns.length - archivedCount })}
+                </Link>
+              </TabsTrigger>
+
+              <TabsTrigger value="archived" asChild>
+                <Link href="/dashboard/campaigns/?view=archived">
+                  {t('tab_archived', { count: archivedCount })}
+                </Link>
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+
+          <ListSearch defaultValue={search} placeholder={t('search_placeholder')} />
+
           {campaigns.length > 0 && (
-            <Button asChild variant="outline" className="h-10 px-4">
+            <Button asChild variant="outline" className="sm:ml-auto">
               <a href={`/api/campaigns/export${isArchivedView ? '?view=archived' : ''}`} download>
                 <Download />
                 {isArchivedView ? t('button_export_archived') : t('button_export_active')}
               </a>
             </Button>
           )}
-
-          <Button asChild className="h-10 px-4">
-            <Link href="/dashboard/campaigns/new/">
-              <Plus />
-              {t('button_new')}
-            </Link>
-          </Button>
         </div>
-      </div>
-
-      {allCampaigns.length > 0 && (
-        <Tabs value={isArchivedView ? 'archived' : 'active'}>
-          <TabsList>
-            <TabsTrigger value="active" asChild>
-              <Link href="/dashboard/campaigns/">
-                {t('tab_active', { count: allCampaigns.length - archivedCount })}
-              </Link>
-            </TabsTrigger>
-
-            <TabsTrigger value="archived" asChild>
-              <Link href="/dashboard/campaigns/?view=archived">
-                {t('tab_archived', { count: archivedCount })}
-              </Link>
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
       )}
 
       {allCampaigns.length === 0 && <NoCampaigns />}
 
       {allCampaigns.length > 0 && campaigns.length === 0 && (
-        <p className="text-sm text-muted-foreground">
-          {isArchivedView ? t('empty_archived') : t('empty_active')}
+        <p className="rounded-lg border border-dashed px-4 py-8 text-center text-sm text-muted-foreground">
+          {search ? t('empty_search', { search }) : emptyMessage}
         </p>
       )}
 
       {campaigns.length > 0 && (
         <>
-          <Card className="hidden p-0 md:block">
+          <TableFrame className="hidden md:block">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -143,11 +152,12 @@ export default async function CampaignsPage(props: {
 
               <TableBody>
                 {campaigns.map((campaign) => (
-                  <TableRow key={campaign.id} className="hover:bg-accent/40">
+                  <TableRow key={campaign.id} className="relative">
                     <TableCell>
                       <Link
                         href={`/dashboard/campaigns/${campaign.id}/`}
-                        className="font-medium hover:text-primary"
+                        // Stretched over the row, so the whole row opens the campaign
+                        className="font-medium after:absolute after:inset-0"
                       >
                         {campaign.name}
                       </Link>
@@ -173,7 +183,7 @@ export default async function CampaignsPage(props: {
 
                     <TableCell className="text-right">
                       {campaign.contacts > 0 && (
-                        <Button asChild variant="ghost" size="icon">
+                        <Button asChild variant="ghost" size="icon" className="relative z-10">
                           <a
                             href={`/api/campaigns/${campaign.id}/export`}
                             download
@@ -188,10 +198,10 @@ export default async function CampaignsPage(props: {
                 ))}
               </TableBody>
             </Table>
-          </Card>
+          </TableFrame>
 
           {/* A seven-column table has nowhere to go on a phone, so it becomes rows */}
-          <Card className="p-0 md:hidden">
+          <TableFrame className="md:hidden">
             <ItemGroup>
               {campaigns.map((campaign) => (
                 <Item key={campaign.id} asChild>
@@ -223,7 +233,7 @@ export default async function CampaignsPage(props: {
                 </Item>
               ))}
             </ItemGroup>
-          </Card>
+          </TableFrame>
         </>
       )}
     </div>

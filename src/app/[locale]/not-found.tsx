@@ -16,7 +16,7 @@ export default function NotFoundPage() {
         <p className="max-w-sm text-sm text-muted-foreground">{t('description')}</p>
       </div>
 
-      <Button asChild className="h-10 px-5">
+      <Button asChild>
         <Link href="/dashboard/">{t('button')}</Link>
       </Button>
     </div>

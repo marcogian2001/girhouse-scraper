@@ -1,5 +1,5 @@
 import { useFormatter, useTranslations } from 'next-intl';
-import { Card } from '@/components/ui/card';
+import { TableFrame } from '@/components/TableFrame';
 import {
   Item,
   ItemActions,
@@ -53,7 +53,7 @@ export const UsageTable = (props: { title: string; rows: UsageRow[]; total: Usag
 
   return (
     <>
-      <Card className="hidden p-0 md:block">
+      <TableFrame className="hidden md:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -83,9 +83,9 @@ export const UsageTable = (props: { title: string; rows: UsageRow[]; total: Usag
             </TableRow>
           </TableFooter>
         </Table>
-      </Card>
+      </TableFrame>
 
-      <Card className="p-0 md:hidden">
+      <TableFrame className="md:hidden">
         <ItemGroup>
           {props.rows.map((row) => (
             <Item key={row.key}>
@@ -108,7 +108,7 @@ export const UsageTable = (props: { title: string; rows: UsageRow[]; total: Usag
             </Item>
           ))}
         </ItemGroup>
-      </Card>
+      </TableFrame>
     </>
   );
 };

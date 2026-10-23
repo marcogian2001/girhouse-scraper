@@ -1,10 +1,10 @@
 'use client';
 
-import { Search, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useRef, useState, useTransition } from 'react';
+import { SearchInput } from '@/components/SearchInput';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -60,29 +60,23 @@ export const RepliesFilters = (props: {
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <div className="relative w-full sm:max-w-xs">
-        <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          type="search"
-          value={query.search}
-          onChange={(event) => {
-            const next = { ...query, search: event.target.value };
+      <SearchInput
+        value={query.search}
+        onChange={(event) => {
+          const next = { ...query, search: event.target.value };
 
-            setQuery(next);
+          setQuery(next);
 
-            if (searchTimer.current) {
-              clearTimeout(searchTimer.current);
-            }
+          if (searchTimer.current) {
+            clearTimeout(searchTimer.current);
+          }
 
-            searchTimer.current = setTimeout(() => {
-              navigate(next);
-            }, SEARCH_DELAY_MS);
-          }}
-          placeholder={t('search_placeholder')}
-          aria-label={t('search_placeholder')}
-          className="pl-8"
-        />
-      </div>
+          searchTimer.current = setTimeout(() => {
+            navigate(next);
+          }, SEARCH_DELAY_MS);
+        }}
+        placeholder={t('search_placeholder')}
+      />
 
       <Select
         value={query.state ?? ALL}

@@ -337,7 +337,9 @@
     "tab_archived": "Archiviate ({count})",
     "empty_active": "Tutte le campagne sono archiviate.",
     "empty_archived": "Nessuna campagna archiviata.",
-    "row_meta": "{contacts, plural, one {# contatto} other {# contatti}} · {cost} · {date}"
+    "row_meta": "{contacts, plural, one {# contatto} other {# contatti}} · {cost} · {date}",
+    "search_placeholder": "Cerca campagne",
+    "empty_search": "Nessuna campagna corrisponde a “{search}”."
   },
   "NewCampaignPage": {
     "title": "Nuova campagna",

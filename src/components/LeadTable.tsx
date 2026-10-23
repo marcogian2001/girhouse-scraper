@@ -3,8 +3,8 @@
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { StatusBadge } from '@/components/StatusBadge';
+import { TableFrame } from '@/components/TableFrame';
 import { Badge } from '@/components/ui/badge';
-import { Card } from '@/components/ui/card';
 import {
   Item,
   ItemActions,
@@ -156,7 +156,7 @@ export const LeadTable = (props: { leads: LeadRowView[] }) => {
         </Select>
       </div>
 
-      <Card className="hidden p-0 md:block">
+      <TableFrame className="hidden md:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -199,10 +199,10 @@ export const LeadTable = (props: { leads: LeadRowView[] }) => {
             ))}
           </TableBody>
         </Table>
-      </Card>
+      </TableFrame>
 
       {/* Five columns have nowhere to go on a phone, so they become rows */}
-      <Card className="p-0 md:hidden">
+      <TableFrame className="md:hidden">
         <ItemGroup>
           {leads.map((lead) => (
             <Item key={lead.id}>
@@ -222,7 +222,7 @@ export const LeadTable = (props: { leads: LeadRowView[] }) => {
             </Item>
           ))}
         </ItemGroup>
-      </Card>
+      </TableFrame>
     </div>
   );
 };

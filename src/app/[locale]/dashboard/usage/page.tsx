@@ -1,16 +1,10 @@
 import { Coins, Hash, MapPin, Receipt, Search, Sparkles } from 'lucide-react';
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 import { DatePicker } from '@/components/DatePicker';
+import { EmptyState } from '@/components/EmptyState';
+import { PageHeader } from '@/components/PageHeader';
 import { StatCard } from '@/components/StatCard';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from '@/components/ui/empty';
 import { Field, FieldLabel } from '@/components/ui/field';
 import { UsageTable } from '@/components/UsageTable';
 import { getApiContext } from '@/libs/ApiAuth';
@@ -53,7 +47,7 @@ export default async function UsagePage(props: {
       return (
         <Link
           href={`/dashboard/campaigns/${row.campaignId}/`}
-          className="font-medium hover:text-primary"
+          className="font-medium after:absolute after:inset-0"
         >
           {row.name}
         </Link>
@@ -64,7 +58,7 @@ export default async function UsagePage(props: {
       return (
         <Link
           href={`/dashboard/leads/${row.leadSearchId}/`}
-          className="font-medium hover:text-primary"
+          className="font-medium after:absolute after:inset-0"
         >
           {t('lead_search_label', { name: row.leadSearchName })}
         </Link>
@@ -112,44 +106,37 @@ export default async function UsagePage(props: {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">{t('title')}</h1>
-        <p className="text-sm text-muted-foreground">{t('subtitle')}</p>
-      </div>
+      <PageHeader title={t('title')} description={t('subtitle')} />
 
-      <Card size="sm">
-        <CardContent>
-          {/* Keyed by the range: the inputs are uncontrolled, so a preset link
-              would otherwise leave the previous dates in them */}
-          <form key={`${range.from}:${range.to}`} className="flex flex-wrap items-end gap-3">
-            <Field className="w-auto">
-              <FieldLabel htmlFor="usage-from">{t('label_from')}</FieldLabel>
-              <DatePicker id="usage-from" name="from" defaultValue={range.from} />
-            </Field>
+      {/* Keyed by the range: the inputs are uncontrolled, so a preset link
+          would otherwise leave the previous dates in them */}
+      <form key={`${range.from}:${range.to}`} className="flex flex-wrap items-end gap-3">
+        <Field className="w-auto">
+          <FieldLabel htmlFor="usage-from">{t('label_from')}</FieldLabel>
+          <DatePicker id="usage-from" name="from" defaultValue={range.from} />
+        </Field>
 
-            <Field className="w-auto">
-              <FieldLabel htmlFor="usage-to">{t('label_to')}</FieldLabel>
-              <DatePicker id="usage-to" name="to" defaultValue={range.to} />
-            </Field>
+        <Field className="w-auto">
+          <FieldLabel htmlFor="usage-to">{t('label_to')}</FieldLabel>
+          <DatePicker id="usage-to" name="to" defaultValue={range.to} />
+        </Field>
 
-            <Button type="submit">{t('button_filter')}</Button>
+        <Button type="submit">{t('button_filter')}</Button>
 
-            <div className="flex gap-2 sm:ml-auto">
-              <Button asChild variant="outline">
-                <Link href={`/dashboard/usage/?from=${thisMonth.from}&to=${thisMonth.to}`}>
-                  {t('preset_this_month')}
-                </Link>
-              </Button>
+        <div className="flex gap-2 sm:ml-auto">
+          <Button asChild variant="outline">
+            <Link href={`/dashboard/usage/?from=${thisMonth.from}&to=${thisMonth.to}`}>
+              {t('preset_this_month')}
+            </Link>
+          </Button>
 
-              <Button asChild variant="outline">
-                <Link href={`/dashboard/usage/?from=${lastMonth.from}&to=${lastMonth.to}`}>
-                  {t('preset_last_month')}
-                </Link>
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+          <Button asChild variant="outline">
+            <Link href={`/dashboard/usage/?from=${lastMonth.from}&to=${lastMonth.to}`}>
+              {t('preset_last_month')}
+            </Link>
+          </Button>
+        </div>
+      </form>
 
       <p className="text-sm text-muted-foreground">
         {t('total_line', {
@@ -159,7 +146,7 @@ export default async function UsagePage(props: {
         })}
       </p>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         {stats.map((stat) => (
           <StatCard
             key={stat.label}
@@ -172,18 +159,11 @@ export default async function UsagePage(props: {
       </div>
 
       {daily.length === 0 ? (
-        <Empty className="rounded-xl border border-dashed">
-          <EmptyHeader>
-            <EmptyMedia>
-              <span className="flex size-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                <Receipt className="size-5" />
-              </span>
-            </EmptyMedia>
-
-            <EmptyTitle>{t('empty_title')}</EmptyTitle>
-            <EmptyDescription>{t('empty_description')}</EmptyDescription>
-          </EmptyHeader>
-        </Empty>
+        <EmptyState
+          icon={<Receipt />}
+          title={t('empty_title')}
+          description={t('empty_description')}
+        />
       ) : (
         <>
           <section className="space-y-3">

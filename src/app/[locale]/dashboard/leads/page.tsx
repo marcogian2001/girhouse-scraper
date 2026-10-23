@@ -1,17 +1,11 @@
 import { and, count, desc, eq, notInArray, sql } from 'drizzle-orm';
 import { ChevronRight, MapPin, Plus, Search } from 'lucide-react';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
+import { EmptyState } from '@/components/EmptyState';
+import { PageHeader } from '@/components/PageHeader';
 import { StatusBadge } from '@/components/StatusBadge';
+import { TableFrame } from '@/components/TableFrame';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from '@/components/ui/empty';
 import {
   Item,
   ItemActions,
@@ -73,42 +67,33 @@ export default async function LeadSearchesPage(props: { params: Promise<{ locale
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight">{t('title')}</h1>
-          <p className="text-sm text-muted-foreground">{t('subtitle')}</p>
-        </div>
-
-        <Button asChild className="h-10 px-4">
-          <Link href="/dashboard/leads/new/">
-            <Plus />
-            {t('button_new')}
-          </Link>
-        </Button>
-      </div>
+      <PageHeader
+        title={t('title')}
+        description={t('subtitle')}
+        actions={
+          <Button asChild>
+            <Link href="/dashboard/leads/new/">
+              <Plus />
+              {t('button_new')}
+            </Link>
+          </Button>
+        }
+      />
 
       {searches.length === 0 ? (
-        <Empty className="rounded-xl border border-dashed">
-          <EmptyHeader>
-            <EmptyMedia>
-              <span className="flex size-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                <Search className="size-5" />
-              </span>
-            </EmptyMedia>
-
-            <EmptyTitle>{t('empty_title')}</EmptyTitle>
-            <EmptyDescription>{t('empty_description')}</EmptyDescription>
-          </EmptyHeader>
-
-          <EmptyContent>
-            <Button asChild className="h-10 px-5">
+        <EmptyState
+          icon={<Search />}
+          title={t('empty_title')}
+          description={t('empty_description')}
+          action={
+            <Button asChild>
               <Link href="/dashboard/leads/new/">{t('button_first')}</Link>
             </Button>
-          </EmptyContent>
-        </Empty>
+          }
+        />
       ) : (
         <>
-          <Card className="hidden p-0 md:block">
+          <TableFrame className="hidden md:block">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -123,11 +108,11 @@ export default async function LeadSearchesPage(props: { params: Promise<{ locale
 
               <TableBody>
                 {searches.map((search) => (
-                  <TableRow key={search.id} className="hover:bg-accent/40">
+                  <TableRow key={search.id} className="relative">
                     <TableCell>
                       <Link
                         href={`/dashboard/leads/${search.id}/`}
-                        className="font-medium hover:text-primary"
+                        className="font-medium after:absolute after:inset-0"
                       >
                         {search.name}
                       </Link>
@@ -152,10 +137,10 @@ export default async function LeadSearchesPage(props: { params: Promise<{ locale
                 ))}
               </TableBody>
             </Table>
-          </Card>
+          </TableFrame>
 
           {/* A six-column table has nowhere to go on a phone, so it becomes rows */}
-          <Card className="p-0 md:hidden">
+          <TableFrame className="md:hidden">
             <ItemGroup>
               {searches.map((search) => (
                 <Item key={search.id} asChild>
@@ -184,7 +169,7 @@ export default async function LeadSearchesPage(props: { params: Promise<{ locale
                 </Item>
               ))}
             </ItemGroup>
-          </Card>
+          </TableFrame>
         </>
       )}
     </div>

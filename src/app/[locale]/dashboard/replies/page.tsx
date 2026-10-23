@@ -1,17 +1,12 @@
 import { ChevronLeft, ChevronRight, Download, Inbox } from 'lucide-react';
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
+import { EmptyState } from '@/components/EmptyState';
+import { PageHeader } from '@/components/PageHeader';
 import { RepliesFilters } from '@/components/RepliesFilters';
 import { StatusBadge } from '@/components/StatusBadge';
+import { TableFrame } from '@/components/TableFrame';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from '@/components/ui/empty';
 import {
   Table,
   TableBody,
@@ -59,46 +54,29 @@ export default async function RepliesPage(props: {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight">{t('title')}</h1>
-          <p className="text-sm text-muted-foreground">{t('subtitle')}</p>
-        </div>
-
-        <Button asChild variant="outline" className="h-10 px-4">
-          <Link href="/dashboard/replies/import/">
-            <Download />
-            {t('button_import')}
-          </Link>
-        </Button>
-      </div>
+      <PageHeader
+        title={t('title')}
+        description={t('subtitle')}
+        actions={
+          <Button asChild variant="outline">
+            <Link href="/dashboard/replies/import/">
+              <Download />
+              {t('button_import')}
+            </Link>
+          </Button>
+        }
+      />
 
       <RepliesFilters query={query} states={conversationStateEnum.enumValues} />
 
       {conversations.length === 0 ? (
-        <Empty className="rounded-xl border border-dashed">
-          <EmptyHeader>
-            <EmptyMedia>
-              <span className="flex size-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                <Inbox className="size-5" />
-              </span>
-            </EmptyMedia>
-
-            {isFiltered ? (
-              <>
-                <EmptyTitle>{t('empty_filtered_title')}</EmptyTitle>
-                <EmptyDescription>{t('empty_filtered_description')}</EmptyDescription>
-              </>
-            ) : (
-              <>
-                <EmptyTitle>{t('empty_title')}</EmptyTitle>
-                <EmptyDescription>{t('empty_description')}</EmptyDescription>
-              </>
-            )}
-          </EmptyHeader>
-        </Empty>
+        <EmptyState
+          icon={<Inbox />}
+          title={isFiltered ? t('empty_filtered_title') : t('empty_title')}
+          description={isFiltered ? t('empty_filtered_description') : t('empty_description')}
+        />
       ) : (
-        <Card className="p-0">
+        <TableFrame>
           <Table>
             <TableHeader>
               <TableRow>
@@ -112,11 +90,11 @@ export default async function RepliesPage(props: {
 
             <TableBody>
               {conversations.map((conversation) => (
-                <TableRow key={conversation.id} className="hover:bg-accent/40">
+                <TableRow key={conversation.id} className="relative">
                   <TableCell>
                     <Link
                       href={`/dashboard/replies/${conversation.id}/`}
-                      className="font-medium hover:text-primary"
+                      className="font-medium after:absolute after:inset-0"
                     >
                       {conversation.company ?? conversation.leadEmail}
                     </Link>
@@ -160,7 +138,7 @@ export default async function RepliesPage(props: {
               ))}
             </TableBody>
           </Table>
-        </Card>
+        </TableFrame>
       )}
 
       {pageCount > 1 && (
@@ -171,28 +149,28 @@ export default async function RepliesPage(props: {
 
           <div className="flex items-center gap-2">
             {page > 1 ? (
-              <Button asChild variant="outline" className="h-10 px-4">
+              <Button asChild variant="outline">
                 <Link href={repliesHref(query, page - 1)}>
                   <ChevronLeft />
                   {t('button_previous')}
                 </Link>
               </Button>
             ) : (
-              <Button variant="outline" className="h-10 px-4" disabled>
+              <Button variant="outline" disabled>
                 <ChevronLeft />
                 {t('button_previous')}
               </Button>
             )}
 
             {page < pageCount ? (
-              <Button asChild variant="outline" className="h-10 px-4">
+              <Button asChild variant="outline">
                 <Link href={repliesHref(query, page + 1)}>
                   {t('button_next')}
                   <ChevronRight />
                 </Link>
               </Button>
             ) : (
-              <Button variant="outline" className="h-10 px-4" disabled>
+              <Button variant="outline" disabled>
                 {t('button_next')}
                 <ChevronRight />
               </Button>

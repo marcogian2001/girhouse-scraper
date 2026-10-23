@@ -1,3 +1,4 @@
+import { cn } from 'cn';
 import { useTranslations } from 'next-intl';
 import { Badge } from '@/components/ui/badge';
 import type {
@@ -96,13 +97,21 @@ const OUTBOUND_TONE: Record<OutboundStatus, Tone> = {
   failed: 'danger',
 };
 
-// Mirrors the `bg-destructive/10 text-destructive` idiom the shadcn components ship with
+// A tinted dot carries the tone; the label stays readable foreground text
+const DOT_CLASS: Record<Tone, string> = {
+  neutral: 'bg-muted-foreground/60',
+  info: 'bg-info',
+  warning: 'bg-warning',
+  success: 'bg-success',
+  danger: 'bg-destructive',
+};
+
 const TONE_CLASS: Record<Tone, string> = {
   neutral: 'bg-muted text-muted-foreground',
-  info: 'bg-info/10 text-info',
-  warning: 'bg-warning/10 text-warning',
-  success: 'bg-success/10 text-success',
-  danger: 'bg-destructive/10 text-destructive',
+  info: 'bg-info/8 text-foreground',
+  warning: 'bg-warning/10 text-foreground',
+  success: 'bg-success/10 text-foreground',
+  danger: 'bg-destructive/8 text-destructive',
 };
 
 type StatusBadgeProps =
@@ -148,7 +157,8 @@ const toneOf = (props: StatusBadgeProps) => {
 };
 
 /**
- * Shows a campaign, contact, lead search, lead, conversation, reply or email status as a tinted pill.
+ * Shows a campaign, contact, lead search, lead, conversation, reply or email status as a pill
+ * with a colored dot.
  * @param props Component props.
  * @param props.kind Which status vocabulary the value belongs to.
  * @param props.status The status to label.
@@ -195,7 +205,8 @@ export const StatusBadge = (props: StatusBadgeProps) => {
   const label = labelOf();
 
   return (
-    <Badge variant="ghost" className={TONE_CLASS[tone]}>
+    <Badge variant="ghost" className={cn('gap-1.5 rounded-full pl-1.5', TONE_CLASS[tone])}>
+      <span aria-hidden className={cn('size-1.5 rounded-full', DOT_CLASS[tone])} />
       {label}
     </Badge>
   );
