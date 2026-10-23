@@ -12,7 +12,7 @@ export const buildOfferBrief = (settings: AutomationSettings) =>
   [
     "Girhouse rifà la landing page dell'attività e configura Go High Level: telefono, WhatsApp ed email collegati in un unico posto, risposta automatica e follow-up automatici a chi non risponde. Numeri e account restano del cliente.",
     `Prezzo: ${settings.monthlyPrice}€/mese, zero costi di attivazione, nessun vincolo, assistenza italiana inclusa.`,
-    'Prima settimana attiva a costo zero. Nessuna carta, nessun contratto.',
+    'La prima settimana è a costo zero, senza contratto.',
     `Il prezzo va presentato come quasi un regalo per quello che include, mai come una promozione a tempo: nei messaggi non si citano scadenze né aumenti di prezzo.`,
     `Scarcity reale, l'unica che si può usare: prendiamo solo ${settings.onboardingSlotsPerMonth} nuove attività al mese.`,
   ].join('\n');

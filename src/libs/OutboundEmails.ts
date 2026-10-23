@@ -296,8 +296,9 @@ const bookWantedTime = async (options: {
 };
 
 /**
- * Decides what a reply does about the call: books the time the lead picked, offers two
- * free times to an interested lead, or offers other times when the asked one is gone.
+ * Decides what a reply does about the call: books the time the lead picked, or offers
+ * other times when the asked one is gone. The demo page proposes the call itself, so a
+ * reply that only sends it offers no times.
  * @param options The reply.
  * @param options.conversation The conversation, as read for this job.
  * @param options.classification The reply's classification.
@@ -312,7 +313,7 @@ const planCall = async (options: {
   const canBook = BOOKING_CATEGORIES.has(classification.category);
   const wanted = canBook ? classification.chosenSlot : null;
 
-  if (!isGhlConfigured() || (!wanted && classification.category !== 'interested')) {
+  if (!isGhlConfigured() || !wanted) {
     return NO_CALL;
   }
 
@@ -330,13 +331,7 @@ const planCall = async (options: {
     return NO_CALL;
   }
 
-  if (wanted) {
-    return await bookWantedTime({ conversation, wanted, slots });
-  }
-
-  return slots.suggested.length > 0
-    ? { call: { kind: 'offer' }, offeredSlots: slots.suggested }
-    : NO_CALL;
+  return await bookWantedTime({ conversation, wanted, slots });
 };
 
 /**
@@ -497,11 +492,7 @@ const runReplyWriteJob = async (job: Job) => {
     now: new Date(),
     hours: { startHour: settings.businessHourStart, endHour: settings.businessHourEnd },
   });
-  // Times offered today would be stale on the day the lead asked for; a picked time still books
-  const { call, offeredSlots } =
-    sendAt && !classification.chosenSlot
-      ? NO_CALL
-      : await planCall({ conversation, classification });
+  const { call, offeredSlots } = await planCall({ conversation, classification });
   const isBooked = call?.kind === 'booked';
 
   // An interested lead gets the link to their demo, built here on first use; a booking or a
@@ -561,25 +552,6 @@ const findOutbound = async (options: { organizationId: string; outboundEmailId: 
 };
 
 /**
- * Reads fresh call times for a rewritten answer, since the ones offered at first may have
- * gone; reading them books nothing. An answer leaving on a later day offers none, since
- * they would be stale by then.
- * @param options The answer.
- * @param options.isInterested Whether it answers an interested lead, the only ones offered a call.
- * @param options.recontactOn The later day it leaves, if any.
- * @returns The times to offer, possibly none.
- */
-const freshOfferedSlots = async (options: { isInterested: boolean; recontactOn?: string }) => {
-  if (!options.isInterested || options.recontactOn || !isGhlConfigured()) {
-    return [];
-  }
-
-  const slots = await getDemoSlots();
-
-  return slots?.suggested ?? [];
-};
-
-/**
  * Writes a draft answer again with the current instructions, keeping it a draft. A reply
  * that picked a call time is left alone, since writing it again would book again.
  * @param options The call options.
@@ -622,12 +594,10 @@ export const rewriteOutbound = async (options: {
 
   const { conversation } = row;
   const settings = await getAutomationSettings(conversation.organizationId);
-  const isInterested = classification.category === 'interested';
-  const demo = isInterested ? await getConversationDemo(conversation.id) : null;
+  const demo =
+    classification.category === 'interested' ? await getConversationDemo(conversation.id) : null;
   const sendAt = chosenSendTime(options.scheduledFor, row.email.scheduledFor);
   const recontactOn = recontactDay(sendAt);
-
-  const offeredSlots = await freshOfferedSlots({ isInterested, recontactOn });
 
   const written = await writeCheckedReply(
     await replyWriterInput({
@@ -635,8 +605,8 @@ export const rewriteOutbound = async (options: {
       message,
       classification,
       settings,
-      call: offeredSlots.length > 0 ? { kind: 'offer' } : null,
-      offeredSlots,
+      call: null,
+      offeredSlots: [],
       demoUrl: demo?.url ?? null,
       recontactOn,
     }),
@@ -648,7 +618,7 @@ export const rewriteOutbound = async (options: {
     .set({
       body: written.body,
       issues: written.issues,
-      offeredSlots,
+      offeredSlots: [],
       model: written.model,
       scheduledFor: sendAt,
     })

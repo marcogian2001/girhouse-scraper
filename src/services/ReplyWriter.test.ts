@@ -55,15 +55,11 @@ describe('ReplyWriter', () => {
       expect(prompt).toContain("## The lead's reply\nAbbiamo già un sito.");
     });
 
-    it('asks for the call times placeholder when offering a call', () => {
-      const prompt = buildWriterPrompt({
-        ...options,
-        category: 'interested',
-        call: { kind: 'offer' },
-      });
+    it('sends the demo link without offering a call', () => {
+      const prompt = buildWriterPrompt({ ...options, category: 'interested' });
 
       expect(prompt).toContain('{{link_demo}}');
-      expect(prompt).toContain('ending with {{orari}}');
+      expect(prompt).not.toContain('{{orari}}');
     });
 
     it('confirms a booked call instead of the category guidance', () => {

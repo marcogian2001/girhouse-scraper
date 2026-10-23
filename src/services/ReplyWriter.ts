@@ -15,44 +15,27 @@ const replyOutputSchema = z.object({ corpo: z.string() });
 
 /** The categories that get an answer, and what that answer does. */
 const REPLY_GUIDANCE: Partial<Record<ReplyCategory, string>> = {
-  interested: `The lead is interested. Thank them in a few words, say you prepared a page showing how it would work for their business, put ${DEMO_LINK_PLACEHOLDER} alone on its own line, and ask them to take a look. That is the only call to action.`,
+  interested: `The lead is interested. Thank them in a few words, say you prepared a page showing how it would work for their business, put ${DEMO_LINK_PLACEHOLDER} alone on its own line, and ask them to take a look. That is the only call to action: never propose a call, since the page itself proposes one at its end.`,
   question:
     'Answer the question briefly, using only the offer and the facts below. If the answer is not there, do not guess: say it is quicker to explain in a short call. Then ask whether they want to see the page prepared for their business.',
   objection:
     'Answer the objection following the angle from the objection library entry below, in your own words. The angle wins over everything else here: end with the call to action it gives, make no proposal when it says to make none, and only when it gives no call to action ask whether they want to see the page prepared for their business.',
   not_now:
     'Accept the timing. Explain the offer a little better in one or two lines and mention the real scarcity below. End with one light question, such as whether you can write again in a few weeks.',
-  not_interested: `The lead said no. This is the only email after a no, so be careful: a no that gets a sales pitch annoys. Be kind and helpful, never pushy. Thank them for answering and respect the no in a few words. Then, in one or two lines, present the offer as almost a gift: it is only the monthly price of the offer below, and it includes the new landing page plus phone, WhatsApp and email in one place, with automatic replies and follow-ups; the first week is free, with no card. Then offer the demo lightly, asking permission: you already prepared a short page showing how it would work for their business, you can send it over if they want, and if it does not interest them you will simply delete it. No link, no deadline, no scarcity, nothing else to ask.`,
+  not_interested: `The lead said no. This is the only email after a no, so be careful: a no that gets a sales pitch annoys. Be kind and helpful, never pushy. Thank them for answering and respect the no in a few words. Then, in one or two lines, present the offer as almost a gift: first what it includes, the new landing page plus phone, WhatsApp and email in one place, with automatic replies and follow-ups, and only then that it all comes for the monthly price of the offer below. Then offer the demo lightly, asking permission: you already prepared a short page showing how it would work for their business, you can send it over if they want, and if it does not interest them you will simply delete it. No link, no deadline, no scarcity, nothing else to ask.`,
   wrong_person:
     'Thank them for pointing you to the right person and say you will write to them directly. Ask nothing else.',
 };
 
-/** What the reply does about the call: offer two times, confirm a booking, or say a time is gone. */
-export type CallPlan = { kind: 'offer' } | { kind: 'booked'; when: string } | { kind: 'taken' };
+/** What the reply does about the call the lead asked for: confirm the booking, or say the time is gone. */
+export type CallPlan = { kind: 'booked'; when: string } | { kind: 'taken' };
 
 const SLOT_RULE = `the two free times are filled in for you, so never write a day or a time yourself`;
-
-/**
- * Renders what the reply says about the call.
- * @param call The call plan, if the reply has one.
- * @returns The guidance, or an empty string.
- */
-const callGuidance = (call: CallPlan | null) => {
-  if (call?.kind === 'offer') {
-    return `After the demo link, add one line offering a short call instead, ending with ${SLOTS_PLACEHOLDER}: ${SLOT_RULE}.`;
-  }
-
-  if (call?.kind === 'taken') {
-    return `The time the lead asked for is no longer free. Say so in a few words and propose the other two in one line ending with ${SLOTS_PLACEHOLDER}: ${SLOT_RULE}. No other call to action.`;
-  }
-
-  return '';
-};
 
 /** What each follow-up to a silent lead does. */
 const FOLLOW_UP_GUIDANCE: Record<FollowUpKind, string> = {
   demo_not_opened: `You sent the link to the page prepared for their business a few days ago and it was never opened. Ask lightly whether it arrived, put ${DEMO_LINK_PLACEHOLDER} alone on its own line again, and ask nothing else. No guilt, no pressure.`,
-  demo_partial: `The lead opened the page prepared for their business but stopped halfway. Say in a few words that the most useful part comes next, put ${DEMO_LINK_PLACEHOLDER} alone on its own line (it opens where they stopped), and say you can also explain it in two minutes on the phone.`,
+  demo_partial: `The lead opened the page prepared for their business but stopped halfway. Say in a few words that the most useful part comes next, put ${DEMO_LINK_PLACEHOLDER} alone on its own line (it opens where they stopped), and ask nothing else: the page itself proposes the call at its end.`,
   demo_complete:
     'The lead watched the whole page prepared for their business but did not book the call. Ask simply, without pressure, what held them back. That question is the only call to action: no link.',
   closing: `This is the last email of the sequence. Say you will not write again about this, recall the real scarcity below in one line, and propose a short call in one line ending with ${SLOTS_PLACEHOLDER}: ${SLOT_RULE}. No link.`,
@@ -85,7 +68,7 @@ const guidanceFor = (
 
   // The lead asked for a time: the slots answer replaces the category's call to action
   if (options.call?.kind === 'taken') {
-    return callGuidance(options.call);
+    return `The time the lead asked for is no longer free. Say so in a few words and propose the other two in one line ending with ${SLOTS_PLACEHOLDER}: ${SLOT_RULE}. No other call to action.`;
   }
 
   // The answer leaves on a later day: it picks the talk up again rather than promising to
@@ -93,9 +76,7 @@ const guidanceFor = (
     return RECONTACT_NOT_NOW_GUIDANCE;
   }
 
-  return [REPLY_GUIDANCE[options.category] ?? '', callGuidance(options.call)]
-    .filter(Boolean)
-    .join(' ');
+  return REPLY_GUIDANCE[options.category] ?? '';
 };
 
 const WRITING_RULES = [
@@ -107,6 +88,9 @@ const WRITING_RULES = [
   '- Never use em dashes or en dashes.',
   '- Stay consistent with the thread: do not repeat what was already said, answer what the lead actually wrote.',
   '- Never quote data, results, prices or deadlines that are not in the business facts or the offer below. No links, unless the instructions give a placeholder.',
+  '- Never ask the lead to activate, start or try the system: before anything else they must see the page prepared for their business, so every pitch leads to that page. This wins over the objection angle too.',
+  '- Never mention a credit card, not even to say none is needed. This wins over the objection angle too.',
+  '- When you quote the price, first say everything it includes, then the price.',
   '- Plain text, no subject line. Greet by first name when known. Use "tu" or "lei" as the earlier Girhouse emails did.',
   '- Sign with the first name that signs the earlier Girhouse emails; if none does, do not sign.',
 ].join('\n');

@@ -7,7 +7,7 @@
       "ho già le mie segretarie che organizzano i miei appuntamenti",
       "I miei studi hanno una importante mole di lavoro e non sono piccoli infatti mi contrallano già tutte le mie segretarie"
     ],
-    "responseAngle": "Non sostituiamo la segretaria: copriamo le ore in cui non c'è (sera, weekend, pausa pranzo) con una risposta immediata su WhatsApp ed email, così la mattina trova le richieste già raccolte. Numeri e account restano dello studio. Settimana gratis, senza carta e senza contratto, per vedere quante richieste arrivano fuori orario."
+    "responseAngle": "Non sostituiamo la segretaria: copriamo le ore in cui non c'è (sera, weekend, pausa pranzo) con una risposta immediata su WhatsApp ed email, così la mattina trova le richieste già raccolte. Numeri e account restano dello studio. Chiedere se vuole vedere la pagina preparata per il suo studio, che mostra come funzionerebbe fuori orario."
   },
   {
     "title": "Ho già un gestionale o un sistema",
@@ -18,7 +18,7 @@
       "è un servizio compreso nel nostro servizio",
       "il mio servizio fa i colloqui sia tramite wa che vocale ai candidati"
     ],
-    "responseAngle": "Non chiediamo di cambiare il gestionale che usa: quello organizza chi è già cliente o paziente, noi rispondiamo subito a chi scrive per la prima volta, anche fuori orario, e raccogliamo i suoi dati. Numeri e account restano suoi. Settimana gratis, senza carta e senza contratto, per confrontare."
+    "responseAngle": "Non chiediamo di cambiare il gestionale che usa: quello organizza chi è già cliente o paziente, noi rispondiamo subito a chi scrive per la prima volta, anche fuori orario, e raccogliamo i suoi dati. Numeri e account restano suoi. Chiedere se vuole vedere la pagina preparata per la sua attività, per confrontare."
   },
   {
     "title": "Ho già chi mi segue",
@@ -29,7 +29,7 @@
       "Io ho già un sito e chi mi cura il tutto.",
       "già siamo seguiti da un'agenzia per queste cose."
     ],
-    "responseAngle": "Non tocchiamo il sito né il lavoro dell'agenzia: il punto è chi risponde quando un cliente scrive o chiama mentre lei è occupato. Ce ne occupiamo noi, con un team italiano, e numeri e account restano suoi. Settimana gratis, senza carta e senza contratto."
+    "responseAngle": "Non tocchiamo il sito né il lavoro dell'agenzia: il punto è chi risponde quando un cliente scrive o chiama mentre lei è occupato. Ce ne occupiamo noi, con un team italiano, e numeri e account restano suoi. Chiedere se vuole vedere la pagina preparata per la sua attività."
   },
   {
     "title": "Rispondo già subito",
@@ -38,7 +38,7 @@
       "In realtà la chiamata mi arriva subito.",
       "non essendo solo al negozio non mi serve"
     ],
-    "responseAngle": "Bene, allora il tema sono solo i momenti in cui non può rispondere: sera, weekend, quando è con un cliente. In quei casi parte una risposta automatica immediata, e numeri e account restano suoi. Una settimana gratis, senza carta e senza contratto, per vedere se quei momenti ci sono."
+    "responseAngle": "Bene, allora il tema sono solo i momenti in cui non può rispondere: sera, weekend, quando è con un cliente. In quei casi parte una risposta automatica immediata, e numeri e account restano suoi. Chiedere se vuole vedere la pagina preparata per la sua attività, che mostra cosa succede in quei momenti."
   },
   {
     "title": "Ho poche richieste",
@@ -48,7 +48,7 @@
       "riesco tranquillamente a gestire il flusso",
       "sto gradualmente restringendo le disponibilità di visita per nuovi pazienti"
     ],
-    "responseAngle": "Nessuna insistenza: con poche richieste oggi non serve. Ringraziare e lasciare la porta aperta, ricordando che quando le richieste aumentano può provarlo una settimana gratis, senza carta e senza contratto."
+    "responseAngle": "Nessuna insistenza: con poche richieste oggi non serve. Ringraziare e lasciare la porta aperta, ricordando che quando le richieste aumentano la pagina preparata per la sua attività è pronta, se vuole vederla."
   },
   {
     "title": "Non ho budget",
@@ -57,7 +57,7 @@
       "al momento non avrei modo di investire economicamente in altri servizi, seppur ne riconosca la validità e l'efficacia",
       "al momento non riesco ad investire su un aiuto del genere"
     ],
-    "responseAngle": "Il costo è 97€ al mese, senza attivazione e senza vincoli: si disdice quando vuole. Prima c'è una settimana gratis senza carta, quindi può vedere se recupera anche solo una richiesta prima di spendere qualcosa."
+    "responseAngle": "Prima dire cosa include: la nuova landing page, telefono, WhatsApp ed email in un unico posto, risposte e follow-up automatici, assistenza italiana. Solo dopo il costo: 97€ al mese, senza costi di attivazione e senza vincoli, si disdice quando vuole. Chiudere chiedendo se vuole vedere la pagina preparata per la sua attività."
   },
   {
     "title": "Non ho ricevuto la prima email",
@@ -79,7 +79,7 @@
       "Chi sei e perché mi scrivi?",
       "in realtà non ho capito. Se mi manda un esempio forse è meglio"
     ],
-    "responseAngle": "Rispiegare in una frase semplice: quando qualcuno scrive o chiama e lei non può rispondere, parte subito una risposta su WhatsApp ed email che raccoglie la richiesta, e lo gestiamo noi. Offrire un esempio concreto per il suo studio e la settimana gratis, senza carta e senza contratto."
+    "responseAngle": "Rispiegare in una frase semplice: quando qualcuno scrive o chiama e lei non può rispondere, parte subito una risposta su WhatsApp ed email che raccoglie la richiesta, e lo gestiamo noi. Chiedere se vuole vedere la pagina preparata per il suo studio, che lo mostra con un esempio concreto."
   },
   {
     "title": "Tono non adatto",

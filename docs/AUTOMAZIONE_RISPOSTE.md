@@ -25,11 +25,12 @@ Automatizzare tutto quello che succede dopo la risposta di un lead a una cold em
 
 - **Cosa facciamo:** rifacciamo la landing page e configuriamo GHL: telefono, WhatsApp ed email in un unico posto, risposta automatica e follow-up. Numeri e account restano del cliente.
 - **Prezzo:** 97€/mese, zero attivazione, nessun vincolo, assistenza italiana inclusa.
-- **Prova:** prima settimana gratis, senza carta né contratto.
+- **Prova:** prima settimana gratis, senza contratto. Le email non parlano mai di carta (decisione del 23/10: non è vero che non serve).
 - **Scarcity reale:**
   - 10 nuove attività al mese, una cifra fissa e non un conteggio dei posti rimasti;
   - 15 giorni dopo la prima email il prezzo sale a 197€: questo compare **solo nella demo**, mai nelle email (decisione del 20/10, sembrava una spinta commerciale).
-- **Come si presenta il prezzo nelle email:** quasi un regalo per quello che include, mai una promozione a tempo.
+- **Come si presenta il prezzo nelle email:** quasi un regalo per quello che include, mai una promozione a tempo. Prima si dice tutto quello che include, poi il prezzo.
+- **Niente attivazione prima della demo (23/10):** le email non chiedono mai di attivare o provare il sistema; il lead deve prima vedere la demo, quindi ogni pitch porta alla demo. Vale anche sopra l'angolo dell'obiezione.
 
 ### Regole di scrittura
 
@@ -259,6 +260,7 @@ Tutto il codice è committato su `main`. Restano fuori solo le modifiche `bg-whi
 
 - [x] **Client GHL** (`src/services/GoHighLevel.ts`): slot liberi, durata della call, contatto (upsert e ricerca per email), appuntamento, DND, opportunità.
 - [x] **Le email ai lead interessati propongono due orari veri** dal calendario, dopo il link alla demo.
+  - Tolto il 23/10: l'email con la demo non propone più la chiamata, perché la propone già la demo alla fine. Gli orari si propongono solo quando il lead ne chiede uno che è già preso, e nella chiusura.
   - L'AI scrive solo il segnaposto `{{orari}}`; la piattaforma lo sostituisce con "giovedì 22 ottobre alle 9:00 oppure venerdì 23 ottobre alle 13:00". Un orario non è mai inventato.
   - Gli orari offerti restano sull'email (`outbound_email.offered_slots`, migrazione 0019).
 - [x] **Prenotazione da email:**

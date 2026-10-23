@@ -14,7 +14,7 @@ const body = [
   'Ciao Mario,',
   'capisco, il sito ce l’hai già.',
   'Noi lavoriamo su chi risponde quando un cliente scrive o chiama.',
-  'Costa 97€ al mese e la prima settimana è gratis, senza carta.',
+  'Costa 97€ al mese e la prima settimana è gratis.',
   'Ti va se ti mando una pagina con la tua attività?',
   'Luca',
 ].join('\n');
