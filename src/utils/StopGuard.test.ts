@@ -15,6 +15,7 @@ describe('StopGuard', () => {
       'Basta email!',
       'Smettetela',
       'Questo è spam',
+      'Vi segnalo come spam',
       'Vi segnalo al Garante',
       'STOP',
       'unsubscribe',
@@ -39,6 +40,9 @@ describe('StopGuard', () => {
       'Mi interessa, chiamatemi',
       'Non mi occorre al momento un servizio di questo genere',
       'Grazie per la tua proposta, ne terrò conto.',
+      'La Sua mail precedente era finita in spam. Mi mandi pure lo schema',
+      'Ho trovato la mail nella cartella spam',
+      'era finita nello spam, mi interessa',
     ];
 
     it.each(replies)('lets "%s" through', (reply) => {

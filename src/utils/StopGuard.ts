@@ -19,7 +19,8 @@ const STOP_PATTERNS = [
   /\bbasta (?:con )?(?:le )?(?:email|mail|messaggi|scrivere)\b/u,
   /\bsmettete(?:la)?\b/u,
   /\blasciatemi in pace\b/u,
-  /\bspam\b/u,
+  // "Finita in spam" is about the junk folder, often from a lead who is interested
+  /(?<!\b(?:in|nello|nella|nella cartella|tra lo|fra lo|cartella)\s)\bspam\b/u,
   /\bgarante\b/u,
   /\b(?:denunc|diffid|querel)/u,
   /\b(?:vi|ti) segnal(?:o|ero|eremo) (?:al|alla|alle|come|per)\b/u,
