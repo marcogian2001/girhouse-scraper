@@ -707,18 +707,15 @@
   "ConversationProgress": {
     "processing": "Elaborazione in corso"
   },
-  "ReplySimulationForm": {
-    "label_company": "Nome attività",
-    "error_company": "Inserisci il nome dell'attività",
-    "label_email": "Email del lead",
-    "hint_email": "Usa l'email di un lead vero per vedere la demo con i suoi dati. Le risposte allo stesso indirizzo continuano la stessa conversazione di test.",
-    "error_email": "Inserisci un'email valida",
-    "label_previous_email": "Cold email a cui risponde il lead",
-    "hint_previous_email": "Facoltativa. Dà al classificatore il contesto del thread.",
-    "label_reply": "Risposta del lead",
-    "error_reply": "Inserisci la risposta",
-    "button_simulate": "Simula risposta",
-    "error_simulate": "Impossibile simulare la risposta"
+  "ReplyImportForm": {
+    "label_eaccount": "Casella di invio",
+    "placeholder_eaccount": "Scegli una casella",
+    "hint_eaccount": "Importa l'ultima risposta di ogni lead delle campagne create qui. L'AI la classifica e prepara la demo per chi è interessato. Nessuna email viene scritta o inviata.",
+    "error_eaccount": "Scegli una casella",
+    "button_import": "Importa risposte",
+    "error_import": "Impossibile importare le risposte",
+    "summary": "{imported, plural, one {# conversazione importata} other {# conversazioni importate}}, {alreadyPresent} già presenti, {otherCampaigns} di altre campagne. La classificazione prosegue nei prossimi minuti.",
+    "link_replies": "Vai alle risposte"
   },
   "ClassificationEditor": {
     "label_category": "Categoria",
@@ -837,9 +834,9 @@
   "RepliesPage": {
     "title": "Risposte",
     "subtitle": "I lead che hanno risposto a una cold email, e a che punto è ognuno.",
-    "button_simulate": "Simula una risposta",
+    "button_import": "Importa risposte",
     "empty_title": "Ancora nessuna risposta",
-    "empty_description": "Le risposte arrivano qui dal webhook di Instantly. Simulane una per provare il flusso.",
+    "empty_description": "Le risposte arrivano qui dal webhook di Instantly. Importa quelle già ricevute da una casella.",
     "column_lead": "Lead",
     "column_state": "Stato",
     "column_category": "Ultima risposta",
@@ -868,10 +865,10 @@
     "filter_bot_no": "Non gestiti dal bot",
     "button_clear": "Azzera filtri"
   },
-  "NewReplySimulationPage": {
+  "ReplyImportPage": {
     "back_link": "Risposte",
-    "title": "Simula una risposta",
-    "subtitle": "Fa passare una risposta inventata nella pipeline reale. Instantly e GHL non vengono mai chiamati."
+    "title": "Importa risposte",
+    "subtitle": "Porta qui le conversazioni che una casella ha avuto su Instantly, per classificarle e preparare la demo ai vecchi contatti."
   },
   "ReplyDetailPage": {
     "back_link": "Risposte",
@@ -904,6 +901,7 @@
     "by_person": "da {name}",
     "event_reply_received": "Risposta ricevuta",
     "event_reply_simulated": "Risposta simulata",
+    "event_reply_imported": "Risposta importata",
     "event_duplicate_ignored": "Duplicato ignorato",
     "event_state_changed": "Stato cambiato",
     "event_classified": "Classificata",

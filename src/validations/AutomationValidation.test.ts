@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { AutomationSettingsValidation, OutboundApprovalValidation } from './AutomationValidation';
+import {
+  AutomationSettingsValidation,
+  OutboundApprovalValidation,
+  ReplyImportValidation,
+} from './AutomationValidation';
 
 const settings = {
   enabled: true,
@@ -68,5 +72,17 @@ describe('Outbound approval validation', () => {
       OutboundApprovalValidation.safeParse({ ...approval, scheduledFor: '2026-10-26T09:30:00Z' })
         .success,
     ).toBeFalsy();
+  });
+});
+
+describe('Reply import validation', () => {
+  it('accepts a mailbox address', () => {
+    const parse = ReplyImportValidation.safeParse({ eaccount: 'gianmarco@girhouse.com' });
+
+    expect(parse.success).toBeTruthy();
+  });
+
+  it('rejects a value that is not an address', () => {
+    expect(ReplyImportValidation.safeParse({ eaccount: 'gianmarco' }).success).toBeFalsy();
   });
 });

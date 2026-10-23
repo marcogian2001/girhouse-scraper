@@ -5,7 +5,7 @@ const ID = '00000000-0000-0000-0000-000000000000';
 test.describe('Reply automation API', () => {
   test.describe('Authentication', () => {
     const anonymousRequests = [
-      { name: 'simulate a reply', method: 'POST', path: '/api/replies/simulate' },
+      { name: 'import replies', method: 'POST', path: '/api/replies/import' },
       { name: 'read a conversation status', method: 'GET', path: `/api/replies/${ID}/status` },
       {
         name: 'override a classification',

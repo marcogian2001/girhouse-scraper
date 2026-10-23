@@ -36,8 +36,15 @@ import { slotKey, slotLabel } from '@/utils/Slots';
 import { isStopRequest } from '@/utils/StopGuard';
 import { getAutomationSettings } from './AutomationSettings';
 import type { Conversation, EventType } from './Conversations';
-import { applyStop, isBotManaged, logEvent, setConversationState } from './Conversations';
+import {
+  applyStop,
+  IMPORTED_EVENT,
+  isBotManaged,
+  logEvent,
+  setConversationState,
+} from './Conversations';
 import { db } from './DB';
+import { ensureDemo } from './Demos';
 import { completeJob, enqueue } from './JobQueue';
 import { loadLeadContext } from './LeadContext';
 import { scheduleNextAction } from './NextAction';
@@ -166,7 +173,7 @@ const syncInstantlyThread = async (options: {
 };
 
 /**
- * Rebuilds the thread of a simulated conversation from what was stored.
+ * Rebuilds the thread of a test conversation from what was stored.
  * @param options The call options.
  * @param options.conversation The test conversation.
  * @param options.message The reply being processed.
@@ -412,6 +419,13 @@ const routeClassification = async (options: {
     return;
   }
 
+  const isImported = options.message.eventType === IMPORTED_EVENT;
+
+  // Built before the reply is marked processed, so a failure retries the job
+  if (isImported && classification.category === 'interested') {
+    await ensureDemo(conversation);
+  }
+
   await db.transaction(async (tx) => {
     await tx
       .update(conversationSchema)
@@ -454,6 +468,11 @@ const routeClassification = async (options: {
     await setConversationState({ conversation, state }, tx);
     await markProcessed(options.message.id, tx);
   });
+
+  // An imported reply is only read: nothing is written, scheduled or added to a campaign
+  if (isImported) {
+    return;
+  }
 
   // The colleague a wrong person points to joins the campaign, for a person to approve
   if (classification.category === 'wrong_person' && classification.referral) {
@@ -562,7 +581,8 @@ const handleWithoutAi = async (options: {
     return true;
   }
 
-  if (options.context.manualReply) {
+  // An imported old reply may well have had a salesperson's answer, and is still classified
+  if (options.context.manualReply && message.eventType !== IMPORTED_EVENT) {
     await db
       .update(conversationSchema)
       .set({ pausedReason: 'manual_reply' })
@@ -655,7 +675,12 @@ const runReplyProcessJob = async (job: Job) => {
   const { message, conversation } = loaded;
   const reply = stripQuotedReply(message.bodyText) || message.bodyText;
 
-  if (!isStopRequest(reply) && (await leaveToSalesReps({ conversation, message }))) {
+  // An imported reply is classified whoever handles its campaign
+  if (
+    message.eventType !== IMPORTED_EVENT &&
+    !isStopRequest(reply) &&
+    (await leaveToSalesReps({ conversation, message }))
+  ) {
     await completeJob(job.id);
 
     return;

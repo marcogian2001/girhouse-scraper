@@ -1,15 +1,15 @@
 import { ArrowLeft } from 'lucide-react';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { ReplySimulationForm } from '@/components/ReplySimulationForm';
+import { ReplyImportForm } from '@/components/ReplyImportForm';
 import { Link } from '@/libs/I18nNavigation';
+import { listAccounts } from '@/services/Instantly';
 
-export default async function NewReplySimulationPage(props: {
-  params: Promise<{ locale: string }>;
-}) {
+export default async function ReplyImportPage(props: { params: Promise<{ locale: string }> }) {
   const { locale } = await props.params;
   setRequestLocale(locale);
 
-  const t = await getTranslations({ locale, namespace: 'NewReplySimulationPage' });
+  const t = await getTranslations({ locale, namespace: 'ReplyImportPage' });
+  const accounts = await listAccounts();
 
   return (
     <div className="space-y-6">
@@ -28,7 +28,7 @@ export default async function NewReplySimulationPage(props: {
         </div>
       </div>
 
-      <ReplySimulationForm />
+      <ReplyImportForm accounts={accounts.map((account) => account.email)} />
     </div>
   );
 }

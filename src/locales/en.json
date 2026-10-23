@@ -707,18 +707,15 @@
   "ConversationProgress": {
     "processing": "Processing"
   },
-  "ReplySimulationForm": {
-    "label_company": "Business name",
-    "error_company": "Enter a business name",
-    "label_email": "Lead email",
-    "hint_email": "Use a real lead's email to see the demo with their data. Replies to the same address continue the same test conversation.",
-    "error_email": "Enter a valid email",
-    "label_previous_email": "Cold email the lead is answering",
-    "hint_previous_email": "Optional. Gives the classifier the context of the thread.",
-    "label_reply": "Lead reply",
-    "error_reply": "Enter the reply",
-    "button_simulate": "Simulate reply",
-    "error_simulate": "Could not simulate the reply"
+  "ReplyImportForm": {
+    "label_eaccount": "Sending mailbox",
+    "placeholder_eaccount": "Choose a mailbox",
+    "hint_eaccount": "Imports each lead's latest reply from the campaigns created here. The AI classifies it and prepares the demo for interested leads. No email is written or sent.",
+    "error_eaccount": "Choose a mailbox",
+    "button_import": "Import replies",
+    "error_import": "Could not import the replies",
+    "summary": "{imported, plural, one {# conversation imported} other {# conversations imported}}, {alreadyPresent} already here, {otherCampaigns} from other campaigns. Classification continues over the next few minutes.",
+    "link_replies": "Go to replies"
   },
   "ClassificationEditor": {
     "label_category": "Category",
@@ -837,9 +834,9 @@
   "RepliesPage": {
     "title": "Replies",
     "subtitle": "Leads who answered a cold email, and where each one stands.",
-    "button_simulate": "Simulate a reply",
+    "button_import": "Import replies",
     "empty_title": "No replies yet",
-    "empty_description": "Replies arrive here from the Instantly webhook. Simulate one to try the flow.",
+    "empty_description": "Replies arrive here from the Instantly webhook. Import the ones a mailbox already received.",
     "column_lead": "Lead",
     "column_state": "State",
     "column_category": "Last reply",
@@ -868,10 +865,10 @@
     "filter_bot_no": "Not handled by the bot",
     "button_clear": "Clear filters"
   },
-  "NewReplySimulationPage": {
+  "ReplyImportPage": {
     "back_link": "Replies",
-    "title": "Simulate a reply",
-    "subtitle": "Runs a made-up reply through the real pipeline. Instantly and GHL are never called."
+    "title": "Import replies",
+    "subtitle": "Brings in the conversations a mailbox had on Instantly, to classify them and prepare the demo for old contacts."
   },
   "ReplyDetailPage": {
     "back_link": "Replies",
@@ -904,6 +901,7 @@
     "by_person": "by {name}",
     "event_reply_received": "Reply received",
     "event_reply_simulated": "Reply simulated",
+    "event_reply_imported": "Reply imported",
     "event_duplicate_ignored": "Duplicate ignored",
     "event_state_changed": "State changed",
     "event_classified": "Classified",

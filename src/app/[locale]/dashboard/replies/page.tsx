@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, FlaskConical, Inbox } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Download, Inbox } from 'lucide-react';
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 import { RepliesFilters } from '@/components/RepliesFilters';
 import { StatusBadge } from '@/components/StatusBadge';
@@ -66,9 +66,9 @@ export default async function RepliesPage(props: {
         </div>
 
         <Button asChild variant="outline" className="h-10 px-4">
-          <Link href="/dashboard/replies/new/">
-            <FlaskConical />
-            {t('button_simulate')}
+          <Link href="/dashboard/replies/import/">
+            <Download />
+            {t('button_import')}
           </Link>
         </Button>
       </div>

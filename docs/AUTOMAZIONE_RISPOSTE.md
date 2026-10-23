@@ -133,7 +133,15 @@ Tutto il codice è committato su `main`. Restano fuori solo le modifiche `bg-whi
   - **dettaglio conversazione**, con thread, classificazione, correzione della categoria e log con chi ha agito;
   - **Obiezioni**;
   - **Automazione**, con kill switch, modalità, soglie, offerta e modelli.
-- [x] Simulazione di risposte (`/dashboard/replies/new`), che non chiama mai Instantly né GHL.
+- [x] ~~Simulazione di risposte~~: tolta il 23/10, sostituita da **Importa risposte**.
+- [x] **Importa risposte** (`/dashboard/replies/import`, 23/10), per i vecchi contatti che hanno risposto prima della piattaforma:
+  - si sceglie una casella di invio di Instantly; `importInstantlyReplies` (`src/libs/Conversations.ts`) legge tutte le sue email ricevute (`GET /emails?eaccount=…&email_type=received`, a pagine da 100);
+  - tiene l'ultima risposta di ogni lead per campagna, salta le auto-risposte e le campagne non create dalla piattaforma;
+  - salta i lead che hanno già una conversazione, quindi rilanciarlo aggiunge solo quelle nuove;
+  - crea conversazione e `inbound_message` con `event_type = 'imported'` e mette in coda `reply_process`, distanziati di 4 secondi (Instantly concede 20 chiamate al minuto su `/emails`);
+  - il job classifica anche se la campagna non è gestita dal bot o se un venditore aveva già risposto a mano; per chi è interessato genera la demo (`ensureDemo`);
+  - **non scrive e non invia nulla**: niente bozza, niente follow-up, niente fuori ufficio, niente referral, niente GHL. Lo stop invece vale come sempre (blocklist e DND).
+  - Il link della demo si copia dal riquadro Demo del dettaglio.
 - [x] Le email in stop sono escluse dagli export CSV delle ricerche lead.
 
 ### Fase 2: risposte e invio [x]
@@ -186,7 +194,6 @@ Tutto il codice è committato su `main`. Restano fuori solo le modifiche `bg-whi
   - la conversazione passa da `demo_sent` a `demo_viewed`.
 - [x] La bozza per un lead "interessato" contiene il link vero alla demo.
 - [x] Riquadro **Demo** nel dettaglio conversazione: stato, passo raggiunto, tempo sulla pagina, pulsante "Genera demo".
-- [x] Simulando con l'email di un lead vero, la conversazione di test usa i dati veri di quel lead.
 - [x] **Verifica visiva della pagina nel browser**, fatta con Playwright su desktop e mobile.
 - [ ] **Colore dalle foto Maps:** non fatto, perché richiede la dipendenza `sharp` e l'installazione è fallita. Oggi il colore viene dal `theme-color` del sito, altrimenti è il blu della giacca della giraffa.
 
@@ -489,20 +496,13 @@ Per caricarle ci sono due strade:
 2. In **Automazione**:
    - inserire il numero WhatsApp;
    - lasciare la modalità **bozza**.
-3. In **Risposte → Simula una risposta**, provare un caso per categoria:
-   - "Sì, mi interessa" con `michienzistudio@gmail.com` (lead vero, così la demo ha dati veri);
-   - "Quanto costa?";
-   - "Ho già la segretaria";
-   - "Non ci serve", e poi di nuovo un no con la stessa email;
-   - "Non scrivetemi più";
-   - "Sono fuori ufficio fino al 30 ottobre";
-   - "Non sono il titolare, scrivete a mario@…".
-4. In ogni conversazione controllare:
+3. In **Risposte → Importa risposte**, scegliere una casella e controllare il riepilogo (importate, già presenti, di altre campagne).
+4. Nei minuti successivi, in ogni conversazione importata controllare:
    - classificazione;
-   - bozza;
-   - riquadro Demo e "Apri anteprima" (la pagina);
-   - log.
-5. Approvare una bozza: in una conversazione di test l'invio è simulato e non parte nulla davvero.
+   - nessuna bozza;
+   - per gli interessati, riquadro Demo e "Apri anteprima" (la pagina);
+   - log ("Risposta importata").
+5. Le conversazioni di test create prima del 23/10 con la simulazione restano e funzionano come prima: l'invio è simulato e non parte nulla davvero.
 
 ---
 

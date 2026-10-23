@@ -57,11 +57,8 @@ export const ObjectionValidation = z.object({
 
 export type ObjectionInput = z.infer<typeof ObjectionValidation>;
 
-export const ReplySimulationValidation = z.object({
-  company: z.string().trim().min(1).max(200),
-  leadEmail: z.email(),
-  previousEmail: z.string().trim().max(5000),
-  replyText: z.string().trim().min(1).max(5000),
+export const ReplyImportValidation = z.object({
+  eaccount: z.email(),
 });
 
 export const CATEGORY_VALUES = [

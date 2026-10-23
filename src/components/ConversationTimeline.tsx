@@ -65,6 +65,7 @@ const FAMILY_ICONS: [prefix: string, icon: LucideIcon][] = [
   ['state_changed', ArrowRight],
   ['reply_received', Inbox],
   ['reply_simulated', Inbox],
+  ['reply_imported', Inbox],
   ['reply_sent', MailCheck],
   ['reply', Mail],
 ];
@@ -100,7 +101,10 @@ const styleOf = (type: string): { icon: LucideIcon; tone: Tone } => {
   // The lead's own messages stand out from what the platform did
   return {
     icon,
-    tone: type === 'reply_received' || type === 'reply_simulated' ? 'info' : 'neutral',
+    tone:
+      type === 'reply_received' || type === 'reply_simulated' || type === 'reply_imported'
+        ? 'info'
+        : 'neutral',
   };
 };
 
