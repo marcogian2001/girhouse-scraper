@@ -1,8 +1,9 @@
 'use client';
 
-import { Building2, Check, ChevronsUpDown, Plus } from 'lucide-react';
+import { Check, ChevronsUpDown, Plus } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useState, useTransition } from 'react';
+import { BrandMark } from '@/components/BrandMark';
 import { OrganizationSwitchOverlay } from '@/components/OrganizationSwitchOverlay';
 import {
   DropdownMenu,
@@ -15,6 +16,7 @@ import {
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { organization } from '@/libs/AuthClient';
 import { Link, useRouter } from '@/libs/I18nNavigation';
+import { AppConfig } from '@/utils/AppConfig';
 
 export const OrganizationSwitcher = (props: {
   organizations: { id: string; name: string }[];
@@ -32,14 +34,29 @@ export const OrganizationSwitcher = (props: {
       <SidebarMenuItem>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <SidebarMenuButton tooltip={active?.name ?? t('label')}>
-              <Building2 />
-              <span className="truncate">{active?.name}</span>
-              <ChevronsUpDown className="ml-auto" />
+            {/* Outlined so the workspace reads as a control apart from the nav items below */}
+            <SidebarMenuButton
+              variant="outline"
+              size="lg"
+              tooltip={active?.name ?? t('label')}
+              className="data-[state=open]:bg-sidebar-accent"
+            >
+              <BrandMark className="size-8 rounded-md" />
+
+              <span className="grid flex-1 text-left leading-tight">
+                <span className="truncate font-medium">{active?.name}</span>
+                <span className="truncate text-xs text-muted-foreground">{AppConfig.name}</span>
+              </span>
+
+              <ChevronsUpDown className="ml-auto text-muted-foreground" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
 
-          <DropdownMenuContent side="right" align="start" className="w-56">
+          <DropdownMenuContent
+            side="bottom"
+            align="start"
+            className="w-(--radix-dropdown-menu-trigger-width) min-w-56"
+          >
             <DropdownMenuLabel className="text-xs text-muted-foreground">
               {t('label')}
             </DropdownMenuLabel>

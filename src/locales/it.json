@@ -89,11 +89,11 @@
   },
   "UsageSummary": {
     "title": "Spesa di {month}",
-    "copywriting_line": "Copywriting AI · {tokens} token",
+    "claude_line": "Claude · {tokens} token",
     "parallel_line": "Parallel · {runs, plural, one {# ricerca} other {# ricerche}}",
     "parallel_cost": "~{cost}",
     "tooltip": "Spesa di {month}: {total}",
-    "leads_line": "Ricerca lead"
+    "apify_line": "Apify"
   },
   "DashboardHomePage": {
     "title": "Bentornato, {name}",
@@ -363,7 +363,7 @@
     "tab_send": "Invio",
     "push_title": "Invia a Instantly",
     "pushed_notice": "Questa campagna è attiva su Instantly come {campaignId}.",
-    "spend_line": "Spesa stimata {total}: copywriting AI {tokens} token, {copywritingCost} · Parallel {runs, plural, one {# ricerca} other {# ricerche}}, ~{parallelCost}"
+    "spend_line": "Spesa stimata {total}: Claude {tokens} token, {copywritingCost} · Parallel {runs, plural, one {# ricerca} other {# ricerche}}, ~{parallelCost}"
   },
   "KnowledgePage": {
     "title": "Knowledge base",
@@ -555,15 +555,15 @@
   },
   "UsagePage": {
     "title": "Consumi",
-    "subtitle": "Spesa stimata su copywriting AI, Parallel e ricerca lead, a prezzo di listino al momento di ogni chiamata.",
+    "subtitle": "Spesa stimata su Claude, Parallel e Apify, a prezzo di listino al momento di ogni chiamata.",
     "label_from": "Dal",
     "label_to": "Al",
     "button_filter": "Filtra",
     "preset_this_month": "Questo mese",
     "preset_last_month": "Mese scorso",
     "total_line": "Totale dal {from} al {to}: {total}",
-    "stat_copywriting_cost": "Spesa copywriting AI",
-    "stat_copywriting_tokens": "Token copywriting AI",
+    "stat_copywriting_cost": "Spesa Claude",
+    "stat_copywriting_tokens": "Token Claude",
     "stat_tokens_breakdown": "{input} input · {output} output · {cacheWrite} scritti in cache · {cacheRead} letti dalla cache",
     "stat_parallel_cost": "Spesa Parallel",
     "stat_parallel_note": "Stima: i crediti del piano gratuito non sono scalati",
@@ -575,19 +575,19 @@
     "deleted_campaign": "Campagna eliminata",
     "empty_title": "Nessuna spesa in questo periodo",
     "empty_description": "La spesa compare qui appena una campagna fa ricerche sui contatti o scrive le email.",
-    "stat_leads_cost": "Spesa ricerca lead",
+    "stat_leads_cost": "Spesa Apify",
     "stat_leads_note": "Google Maps, ricerca e verifica email",
     "lead_search_label": "Ricerca lead: {name}"
   },
   "UsageTable": {
-    "column_copywriting_tokens": "Token copywriting AI",
-    "column_copywriting_cost": "Costo copywriting AI",
+    "column_copywriting_tokens": "Token Claude",
+    "column_copywriting_cost": "Costo Claude",
     "column_parallel_runs": "Ricerche Parallel",
     "column_parallel_cost": "Costo Parallel",
     "column_total": "Totale",
     "row_total": "Totale",
-    "row_meta": "Copywriting AI {tokens} token, {copywritingCost} · Parallel {runs, plural, one {# ricerca} other {# ricerche}}, {parallelCost} · Ricerca lead {leadsCost}",
-    "column_leads_cost": "Costo ricerca lead"
+    "row_meta": "Claude {tokens} token, {copywritingCost} · Parallel {runs, plural, one {# ricerca} other {# ricerche}}, {parallelCost} · Apify {leadsCost}",
+    "column_leads_cost": "Costo Apify"
   },
   "NotFoundPage": {
     "code": "Errore 404",

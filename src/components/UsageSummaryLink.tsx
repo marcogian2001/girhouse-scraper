@@ -14,9 +14,10 @@ import { Link } from '@/libs/I18nNavigation';
  * @returns A sidebar menu button, reduced to an icon with a tooltip when collapsed.
  */
 export const UsageSummaryLink = (props: { tooltip: string; children: React.ReactNode }) => (
-  <SidebarMenuButton asChild tooltip={props.tooltip} className="h-auto items-start">
+  <SidebarMenuButton asChild variant="outline" tooltip={props.tooltip} className="h-auto p-3">
     <Link href="/dashboard/usage/">
-      <Coins className="mt-0.5" />
+      {/* Only the collapsed icon rail needs a glyph; expanded, the figures speak for themselves */}
+      <Coins className="hidden group-data-[collapsible=icon]:block" />
       {props.children}
     </Link>
   </SidebarMenuButton>

@@ -1,7 +1,6 @@
 'use client';
 
 import { ChevronsUpDown } from 'lucide-react';
-import { BrandMark } from '@/components/BrandMark';
 import { OrganizationSwitcher } from '@/components/OrganizationSwitcher';
 import { SidebarNav } from '@/components/SidebarNav';
 import { SignOutButton } from '@/components/SignOutButton';
@@ -23,8 +22,7 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from '@/components/ui/sidebar';
-import { Link, usePathname } from '@/libs/I18nNavigation';
-import { AppConfig } from '@/utils/AppConfig';
+import { usePathname } from '@/libs/I18nNavigation';
 
 /**
  * Builds the two-letter monogram shown while no avatar image exists.
@@ -51,18 +49,6 @@ export const AppSidebar = (props: {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
-        {/* Deliberately not a SidebarMenuButton: that forces every nested svg to
-            16px, which would shrink the mark below the menu buttons it sits above */}
-        <Link
-          href="/dashboard/"
-          className="flex h-10 items-center gap-2 rounded-md px-1.5 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0"
-        >
-          <BrandMark className="size-7" />
-          <span className="truncate font-semibold group-data-[collapsible=icon]:hidden">
-            {AppConfig.name}
-          </span>
-        </Link>
-
         <OrganizationSwitcher
           organizations={props.organizations}
           activeOrganizationId={props.activeOrganizationId}

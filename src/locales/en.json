@@ -89,11 +89,11 @@
   },
   "UsageSummary": {
     "title": "{month} spend",
-    "copywriting_line": "AI copywriting · {tokens} tokens",
+    "claude_line": "Claude · {tokens} tokens",
     "parallel_line": "Parallel · {runs, plural, one {# search} other {# searches}}",
     "parallel_cost": "~{cost}",
     "tooltip": "{month} spend: {total}",
-    "leads_line": "Lead search"
+    "apify_line": "Apify"
   },
   "DashboardHomePage": {
     "title": "Welcome back, {name}",
@@ -363,7 +363,7 @@
     "tab_send": "Send",
     "push_title": "Send to Instantly",
     "pushed_notice": "This campaign is live in Instantly as {campaignId}.",
-    "spend_line": "Estimated spend {total}: AI copywriting {tokens} tokens, {copywritingCost} · Parallel {runs, plural, one {# search} other {# searches}}, ~{parallelCost}"
+    "spend_line": "Estimated spend {total}: Claude {tokens} tokens, {copywritingCost} · Parallel {runs, plural, one {# search} other {# searches}}, ~{parallelCost}"
   },
   "KnowledgePage": {
     "title": "Knowledge base",
@@ -555,15 +555,15 @@
   },
   "UsagePage": {
     "title": "Usage",
-    "subtitle": "Estimated spend on AI copywriting, Parallel and lead search, priced at list rates when each call was made.",
+    "subtitle": "Estimated spend on Claude, Parallel and Apify, priced at list rates when each call was made.",
     "label_from": "From",
     "label_to": "To",
     "button_filter": "Filter",
     "preset_this_month": "This month",
     "preset_last_month": "Last month",
     "total_line": "Total from {from} to {to}: {total}",
-    "stat_copywriting_cost": "AI copywriting spend",
-    "stat_copywriting_tokens": "AI copywriting tokens",
+    "stat_copywriting_cost": "Claude spend",
+    "stat_copywriting_tokens": "Claude tokens",
     "stat_tokens_breakdown": "{input} input · {output} output · {cacheWrite} cache writes · {cacheRead} cache reads",
     "stat_parallel_cost": "Parallel spend",
     "stat_parallel_note": "Estimate: free plan credits are not deducted",
@@ -575,19 +575,19 @@
     "deleted_campaign": "Deleted campaign",
     "empty_title": "No spend in this period",
     "empty_description": "Spend shows up here as soon as a campaign researches contacts or writes emails.",
-    "stat_leads_cost": "Lead search spend",
+    "stat_leads_cost": "Apify spend",
     "stat_leads_note": "Google Maps, email lookup and verification",
     "lead_search_label": "Lead search: {name}"
   },
   "UsageTable": {
-    "column_copywriting_tokens": "AI copywriting tokens",
-    "column_copywriting_cost": "AI copywriting cost",
+    "column_copywriting_tokens": "Claude tokens",
+    "column_copywriting_cost": "Claude cost",
     "column_parallel_runs": "Parallel searches",
     "column_parallel_cost": "Parallel cost",
     "column_total": "Total",
     "row_total": "Total",
-    "row_meta": "AI copywriting {tokens} tokens, {copywritingCost} · Parallel {runs, plural, one {# search} other {# searches}}, {parallelCost} · Lead search {leadsCost}",
-    "column_leads_cost": "Lead search cost"
+    "row_meta": "Claude {tokens} tokens, {copywritingCost} · Parallel {runs, plural, one {# search} other {# searches}}, {parallelCost} · Apify {leadsCost}",
+    "column_leads_cost": "Apify cost"
   },
   "NotFoundPage": {
     "code": "Error 404",
