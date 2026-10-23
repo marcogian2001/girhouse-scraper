@@ -16,27 +16,28 @@ export default async function AutomationPage(props: { params: Promise<{ locale: 
 
   const t = await getTranslations({ locale, namespace: 'AutomationPage' });
   const context = await getApiContext();
-  const settings = context ? await getAutomationSettings(context.organizationId) : null;
-
-  // Only campaigns already on Instantly can receive replies
-  const campaigns = context
-    ? await db
-        .select({
-          id: campaignSchema.id,
-          name: campaignSchema.name,
-          botManaged: campaignSchema.botManaged,
-          createdAt: campaignSchema.createdAt,
-        })
-        .from(campaignSchema)
-        .where(
-          and(
-            eq(campaignSchema.organizationId, context.organizationId),
-            isNotNull(campaignSchema.instantlyCampaignId),
-            isNull(campaignSchema.archivedAt),
-          ),
-        )
-        .orderBy(desc(campaignSchema.createdAt))
-    : [];
+  const [settings, campaigns] = context
+    ? await Promise.all([
+        getAutomationSettings(context.organizationId),
+        // Only campaigns already on Instantly can receive replies
+        db
+          .select({
+            id: campaignSchema.id,
+            name: campaignSchema.name,
+            botManaged: campaignSchema.botManaged,
+            createdAt: campaignSchema.createdAt,
+          })
+          .from(campaignSchema)
+          .where(
+            and(
+              eq(campaignSchema.organizationId, context.organizationId),
+              isNotNull(campaignSchema.instantlyCampaignId),
+              isNull(campaignSchema.archivedAt),
+            ),
+          )
+          .orderBy(desc(campaignSchema.createdAt)),
+      ])
+    : [null, []];
 
   return (
     <div className="space-y-6">

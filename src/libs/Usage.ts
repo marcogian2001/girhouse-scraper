@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, inArray, lte, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, sql } from 'drizzle-orm';
 import type { AnyPgColumn } from 'drizzle-orm/pg-core';
 import { apiUsageSchema, campaignSchema, leadSearchSchema } from '@/models/Schema';
 import { PLACE_COST_MICROS } from '@/services/Apify';
@@ -10,6 +10,7 @@ import { EMAIL_COST_MICROS } from '@/services/Prospeo';
 import { VERIFICATION_COST_MICROS as REOON_VERIFICATION_COST_MICROS } from '@/services/Reoon';
 import { AppConfig } from '@/utils/AppConfig';
 import type { DateRange } from '@/utils/DateRange';
+import { withinLocalDays } from '@/utils/DateRangeSql';
 import { db } from './DB';
 
 type UsageProvider = (typeof apiUsageSchema.$inferSelect)['provider'];
@@ -109,8 +110,7 @@ type UsageFilter = {
 const matching = (filter: UsageFilter) =>
   and(
     eq(apiUsageSchema.organizationId, filter.organizationId),
-    filter.range ? gte(localDay, filter.range.from) : undefined,
-    filter.range ? lte(localDay, filter.range.to) : undefined,
+    filter.range ? withinLocalDays(apiUsageSchema.createdAt, filter.range) : undefined,
     filter.campaignId ? eq(apiUsageSchema.campaignId, filter.campaignId) : undefined,
     filter.leadSearchId ? eq(apiUsageSchema.leadSearchId, filter.leadSearchId) : undefined,
   );

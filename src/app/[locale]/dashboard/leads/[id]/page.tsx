@@ -1,4 +1,4 @@
-import { and, asc, eq, notInArray } from 'drizzle-orm';
+import { and, asc, eq, notInArray, sql } from 'drizzle-orm';
 import { ArrowLeft, Send } from 'lucide-react';
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
@@ -25,9 +25,11 @@ export default async function LeadSearchPage(props: {
   const { locale, id } = await props.params;
   setRequestLocale(locale);
 
-  const t = await getTranslations({ locale, namespace: 'LeadSearchPage' });
-  const formT = await getTranslations({ locale, namespace: 'LeadSearchForm' });
-  const context = await getApiContext();
+  const [t, formT, context] = await Promise.all([
+    getTranslations({ locale, namespace: 'LeadSearchPage' }),
+    getTranslations({ locale, namespace: 'LeadSearchForm' }),
+    getApiContext(),
+  ]);
 
   const search = context
     ? await db.query.leadSearchSchema.findFirst({
@@ -42,27 +44,44 @@ export default async function LeadSearchPage(props: {
     notFound();
   }
 
-  const format = await getFormatter({ locale });
-  const usage = await getUsageTotals({
-    organizationId: search.organizationId,
-    leadSearchId: search.id,
-  });
-
-  const leads = await db
-    .select()
-    .from(leadSchema)
-    .where(
-      and(
-        eq(leadSchema.leadSearchId, search.id),
-        notInArray(leadSchema.status, [...RESERVE_LEAD_STATUSES]),
-      ),
-    )
-    .orderBy(asc(leadSchema.createdAt), asc(leadSchema.company));
+  const [format, usage, leads] = await Promise.all([
+    getFormatter({ locale }),
+    getUsageTotals({ organizationId: search.organizationId, leadSearchId: search.id }),
+    // Only what the table shows: the raw scrape and research JSON stay on the server
+    db
+      .select({
+        id: leadSchema.id,
+        company: leadSchema.company,
+        city: leadSchema.city,
+        category: leadSchema.category,
+        description: leadSchema.description,
+        phone: leadSchema.phone,
+        website: leadSchema.website,
+        domain: leadSchema.domain,
+        hasWebsite: leadSchema.hasWebsite,
+        firstName: leadSchema.firstName,
+        lastName: leadSchema.lastName,
+        role: leadSchema.role,
+        email: leadSchema.email,
+        emailSource: leadSchema.emailSource,
+        emailVerification: leadSchema.emailVerification,
+        status: leadSchema.status,
+        hasNoAttempts: sql<boolean>`${leadSchema.emailAttempts} is null`,
+      })
+      .from(leadSchema)
+      .where(
+        and(
+          eq(leadSchema.leadSearchId, search.id),
+          notInArray(leadSchema.status, [...RESERVE_LEAD_STATUSES]),
+        ),
+      )
+      .orderBy(asc(leadSchema.createdAt), asc(leadSchema.company)),
+  ]);
 
   const readyCount = leads.filter((lead) => lead.status === 'ready').length;
   // Leads settled before the website and info@ routes existed have no attempts on record
   const retryableCount = leads.filter(
-    (lead) => lead.status === 'no_email' && lead.emailAttempts === null,
+    (lead) => lead.status === 'no_email' && lead.hasNoAttempts,
   ).length;
   // Only searches that scan their area know when it has run out of new businesses
   const isShort =

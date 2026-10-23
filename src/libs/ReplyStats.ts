@@ -1,4 +1,4 @@
-import { and, asc, eq, gte, inArray, lte, sql } from 'drizzle-orm';
+import { and, asc, eq, inArray } from 'drizzle-orm';
 import * as z from 'zod';
 import {
   conversationEventSchema,
@@ -10,14 +10,11 @@ import {
   replyClassificationSchema,
   whatsappHandoffSchema,
 } from '@/models/Schema';
-import { AppConfig } from '@/utils/AppConfig';
 import type { DateRange } from '@/utils/DateRange';
+import { withinLocalDays } from '@/utils/DateRangeSql';
 import type { BookingSource, ConversationFacts } from '@/utils/ReplyStats';
 import { buildReplyStats } from '@/utils/ReplyStats';
 import { db } from './DB';
-
-/** The day a conversation started, in the app time zone, so ranges match the calendar. */
-const startedOn = sql<string>`to_char((${conversationSchema.createdAt} AT TIME ZONE 'UTC') AT TIME ZONE ${sql.raw(`'${AppConfig.timeZone}'`)}, 'YYYY-MM-DD')`;
 
 const bookedPayloadSchema = z.object({ source: z.enum(['demo', 'email']).optional() });
 
@@ -155,8 +152,7 @@ export const getReplyStats = async (options: { organizationId: string; range: Da
       and(
         eq(conversationSchema.organizationId, options.organizationId),
         eq(conversationSchema.isTest, false),
-        gte(startedOn, options.range.from),
-        lte(startedOn, options.range.to),
+        withinLocalDays(conversationSchema.createdAt, options.range),
       ),
     );
 

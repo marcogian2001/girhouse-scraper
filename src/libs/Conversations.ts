@@ -733,44 +733,45 @@ export const getConversationDetail = async (options: {
     return null;
   }
 
-  const messages = await db
-    .select({
-      message: inboundMessageSchema,
-      classification: replyClassificationSchema,
-      objection: { id: objectionSchema.id, title: objectionSchema.title },
-    })
-    .from(inboundMessageSchema)
-    .leftJoin(
-      replyClassificationSchema,
-      eq(replyClassificationSchema.inboundMessageId, inboundMessageSchema.id),
-    )
-    .leftJoin(objectionSchema, eq(objectionSchema.id, replyClassificationSchema.objectionId))
-    .where(eq(inboundMessageSchema.conversationId, conversation.id))
-    .orderBy(inboundMessageSchema.receivedAt);
-
-  const events = await db
-    .select({ event: conversationEventSchema, actorName: userSchema.name })
-    .from(conversationEventSchema)
-    .leftJoin(userSchema, eq(userSchema.id, conversationEventSchema.actorUserId))
-    .where(eq(conversationEventSchema.conversationId, conversation.id))
-    .orderBy(desc(conversationEventSchema.createdAt))
-    .limit(200);
-
-  const outbound = await db
-    .select()
-    .from(outboundEmailSchema)
-    .where(eq(outboundEmailSchema.conversationId, conversation.id))
-    .orderBy(outboundEmailSchema.createdAt);
-
-  const whatsappHandoff = await db.query.whatsappHandoffSchema.findFirst({
-    where: eq(whatsappHandoffSchema.conversationId, conversation.id),
-  });
-
-  const whatsappMessages = await db
-    .select()
-    .from(whatsappMessageSchema)
-    .where(eq(whatsappMessageSchema.conversationId, conversation.id))
-    .orderBy(whatsappMessageSchema.receivedAt);
+  // Every part hangs off the conversation alone, so they load together
+  const [messages, events, outbound, whatsappHandoff, whatsappMessages, pendingJobs] =
+    await Promise.all([
+      db
+        .select({
+          message: inboundMessageSchema,
+          classification: replyClassificationSchema,
+          objection: { id: objectionSchema.id, title: objectionSchema.title },
+        })
+        .from(inboundMessageSchema)
+        .leftJoin(
+          replyClassificationSchema,
+          eq(replyClassificationSchema.inboundMessageId, inboundMessageSchema.id),
+        )
+        .leftJoin(objectionSchema, eq(objectionSchema.id, replyClassificationSchema.objectionId))
+        .where(eq(inboundMessageSchema.conversationId, conversation.id))
+        .orderBy(inboundMessageSchema.receivedAt),
+      db
+        .select({ event: conversationEventSchema, actorName: userSchema.name })
+        .from(conversationEventSchema)
+        .leftJoin(userSchema, eq(userSchema.id, conversationEventSchema.actorUserId))
+        .where(eq(conversationEventSchema.conversationId, conversation.id))
+        .orderBy(desc(conversationEventSchema.createdAt))
+        .limit(200),
+      db
+        .select()
+        .from(outboundEmailSchema)
+        .where(eq(outboundEmailSchema.conversationId, conversation.id))
+        .orderBy(outboundEmailSchema.createdAt),
+      db.query.whatsappHandoffSchema.findFirst({
+        where: eq(whatsappHandoffSchema.conversationId, conversation.id),
+      }),
+      db
+        .select()
+        .from(whatsappMessageSchema)
+        .where(eq(whatsappMessageSchema.conversationId, conversation.id))
+        .orderBy(whatsappMessageSchema.receivedAt),
+      countPendingJobs(conversation.id),
+    ]);
 
   return {
     conversation,
@@ -779,7 +780,7 @@ export const getConversationDetail = async (options: {
     events,
     whatsappHandoff: whatsappHandoff ?? null,
     whatsappMessages,
-    pendingJobs: await countPendingJobs(conversation.id),
+    pendingJobs,
   };
 };
 

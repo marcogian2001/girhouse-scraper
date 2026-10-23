@@ -36,8 +36,10 @@ export default async function CampaignDetailPage(props: {
   const { locale, id } = await props.params;
   setRequestLocale(locale);
 
-  const t = await getTranslations({ locale, namespace: 'CampaignDetailPage' });
-  const context = await getApiContext();
+  const [t, context] = await Promise.all([
+    getTranslations({ locale, namespace: 'CampaignDetailPage' }),
+    getApiContext(),
+  ]);
 
   const campaign = context
     ? await db.query.campaignSchema.findFirst({
@@ -52,40 +54,40 @@ export default async function CampaignDetailPage(props: {
     notFound();
   }
 
-  const format = await getFormatter({ locale });
-  const usage = await getUsageTotals({
-    organizationId: campaign.organizationId,
-    campaignId: campaign.id,
-  });
+  // Enrichments and drafts are matched through the campaign, so nothing waits for the contacts
+  const campaignContactIds = db
+    .select({ id: contactSchema.id })
+    .from(contactSchema)
+    .where(eq(contactSchema.campaignId, campaign.id));
+
+  const [format, usage, contacts, enrichments, drafts, tests] = await Promise.all([
+    getFormatter({ locale }),
+    getUsageTotals({ organizationId: campaign.organizationId, campaignId: campaign.id }),
+    db
+      .select()
+      .from(contactSchema)
+      .where(eq(contactSchema.campaignId, campaign.id))
+      .orderBy(asc(contactSchema.rowIndex)),
+    db
+      .select()
+      .from(enrichmentSchema)
+      .where(inArray(enrichmentSchema.contactId, campaignContactIds)),
+    db
+      .select()
+      .from(emailDraftSchema)
+      .where(inArray(emailDraftSchema.contactId, campaignContactIds))
+      .orderBy(asc(emailDraftSchema.stepIndex)),
+    campaign.instantlyCampaignId
+      ? getCampaignTests({ organizationId: campaign.organizationId, campaignId: campaign.id })
+      : [],
+  ]);
   const usd = (micros: number) => format.number(microsToUsd(micros), USD_FORMAT);
 
-  const contacts = await db
-    .select()
-    .from(contactSchema)
-    .where(eq(contactSchema.campaignId, campaign.id))
-    .orderBy(asc(contactSchema.rowIndex));
-
-  const contactIds = contacts.map((contact) => contact.id);
-
-  const enrichments =
-    contactIds.length > 0
-      ? await db
-          .select()
-          .from(enrichmentSchema)
-          .where(inArray(enrichmentSchema.contactId, contactIds))
-      : [];
-
-  const drafts =
-    contactIds.length > 0
-      ? await db
-          .select()
-          .from(emailDraftSchema)
-          .where(inArray(emailDraftSchema.contactId, contactIds))
-          .orderBy(asc(emailDraftSchema.stepIndex))
-      : [];
+  const enrichmentByContact = new Map(enrichments.map((row) => [row.contactId, row]));
+  const draftsByContact = Map.groupBy(drafts, (draft) => draft.contactId);
 
   const reviews: ContactReview[] = contacts.map((contact) => {
-    const enrichment = enrichments.find((row) => row.contactId === contact.id);
+    const enrichment = enrichmentByContact.get(contact.id);
     const parsed = EnrichmentContentValidation.safeParse(enrichment?.content);
     // Basis is stored as raw JSON, so it is re-validated before it reaches the UI
     const basis = z.array(EnrichmentBasisValidation).safeParse(enrichment?.basis);
@@ -107,14 +109,12 @@ export default async function CampaignDetailPage(props: {
             error: enrichment.error,
           }
         : null,
-      drafts: drafts
-        .filter((draft) => draft.contactId === contact.id)
-        .map((draft) => ({
-          id: draft.id,
-          stepIndex: draft.stepIndex,
-          subject: draft.subject,
-          body: draft.body,
-        })),
+      drafts: (draftsByContact.get(contact.id) ?? []).map((draft) => ({
+        id: draft.id,
+        stepIndex: draft.stepIndex,
+        subject: draft.subject,
+        body: draft.body,
+      })),
     };
   });
 
@@ -122,9 +122,7 @@ export default async function CampaignDetailPage(props: {
   const approvedCount = contacts.filter((contact) => contact.status === 'approved').length;
 
   const isPushed = campaign.status === 'pushed';
-  const [test] = campaign.instantlyCampaignId
-    ? await getCampaignTests({ organizationId: campaign.organizationId, campaignId: campaign.id })
-    : [];
+  const [test] = tests;
 
   return (
     <div className="space-y-6">

@@ -21,19 +21,25 @@ export default async function NewCampaignPage(props: {
   const t = await getTranslations({ locale, namespace: 'NewCampaignPage' });
   const context = await getApiContext();
 
-  const storedAssets = context
-    ? await db
-        .select({
-          id: knowledgeAssetSchema.id,
-          name: knowledgeAssetSchema.name,
-          kind: knowledgeAssetSchema.kind,
-          anthropicFileId: knowledgeAssetSchema.anthropicFileId,
-          openaiFileId: knowledgeAssetSchema.openaiFileId,
-        })
-        .from(knowledgeAssetSchema)
-        .where(eq(knowledgeAssetSchema.organizationId, context.organizationId))
-        .orderBy(asc(knowledgeAssetSchema.name))
-    : [];
+  const [storedAssets, averageCall, initialCsv] = context
+    ? await Promise.all([
+        db
+          .select({
+            id: knowledgeAssetSchema.id,
+            name: knowledgeAssetSchema.name,
+            kind: knowledgeAssetSchema.kind,
+            anthropicFileId: knowledgeAssetSchema.anthropicFileId,
+            openaiFileId: knowledgeAssetSchema.openaiFileId,
+          })
+          .from(knowledgeAssetSchema)
+          .where(eq(knowledgeAssetSchema.organizationId, context.organizationId))
+          .orderBy(asc(knowledgeAssetSchema.name)),
+        getAverageCopywritingCall(context.organizationId),
+        leadSearchId && z.uuid().safeParse(leadSearchId).success
+          ? loadLeadSearchCsv({ leadSearchId, organizationId: context.organizationId })
+          : null,
+      ])
+    : [[], null, null];
 
   // File ids stay on the server; the form only needs to know which PDFs GPT cannot read
   const knowledgeAssets = storedAssets.map((asset) => ({
@@ -42,13 +48,6 @@ export default async function NewCampaignPage(props: {
     kind: asset.kind,
     missingOnOpenAI: Boolean(asset.anthropicFileId && !asset.openaiFileId),
   }));
-
-  const averageCall = context ? await getAverageCopywritingCall(context.organizationId) : null;
-
-  const initialCsv =
-    context && leadSearchId && z.uuid().safeParse(leadSearchId).success
-      ? await loadLeadSearchCsv({ leadSearchId, organizationId: context.organizationId })
-      : null;
 
   return (
     <div className="space-y-6">

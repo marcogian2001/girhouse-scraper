@@ -22,11 +22,13 @@ export default async function ReplyDetailPage(props: {
   const { locale, id } = await props.params;
   setRequestLocale(locale);
 
-  const t = await getTranslations({ locale, namespace: 'ReplyDetailPage' });
-  const stateT = await getTranslations({ locale, namespace: 'ConversationState' });
-  const categoryT = await getTranslations({ locale, namespace: 'ReplyCategory' });
-  const format = await getFormatter({ locale });
-  const context = await getApiContext();
+  const [t, stateT, categoryT, format, context] = await Promise.all([
+    getTranslations({ locale, namespace: 'ReplyDetailPage' }),
+    getTranslations({ locale, namespace: 'ConversationState' }),
+    getTranslations({ locale, namespace: 'ReplyCategory' }),
+    getFormatter({ locale }),
+    getApiContext(),
+  ]);
 
   const detail =
     context && z.uuid().safeParse(id).success
@@ -38,9 +40,11 @@ export default async function ReplyDetailPage(props: {
   }
 
   const { conversation, events } = detail;
-  const demo = await getConversationDemo(conversation.id);
-  const canRunNow = await canRunNextActionNow(conversation);
-  const canSkip = await canSkipToWhatsapp(conversation);
+  const [demo, canRunNow, canSkip] = await Promise.all([
+    getConversationDemo(conversation.id),
+    canRunNextActionNow(conversation),
+    canSkipToWhatsapp(conversation),
+  ]);
 
   const stateLabel = (value: unknown) => {
     const state = conversationStateEnum.enumValues.find((option) => option === value);
