@@ -1212,6 +1212,8 @@
     "empty": "No demo yet. It is built on its own when the lead is interested, or you can build it now.",
     "button_generate": "Build demo",
     "button_rebuild": "Rebuild demo",
+    "label_guidance": "Demo guidance",
+    "hint_guidance": "Optional. Write what you know about the client and paste links to their pages (Instagram, website, profiles, articles): the demo takes photos and information from them. They stay saved for the next rebuilds.",
     "building": "Building the demo…",
     "error_generate": "Could not build the demo",
     "open_preview": "Open preview (not tracked)",

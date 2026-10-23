@@ -1212,6 +1212,8 @@
     "empty": "Nessuna demo ancora. Viene creata da sola quando il lead è interessato, oppure puoi generarla ora.",
     "button_generate": "Genera demo",
     "button_rebuild": "Rigenera demo",
+    "label_guidance": "Indicazioni per la demo",
+    "hint_guidance": "Facoltative. Scrivi cosa sai del cliente e incolla i link alle sue pagine (Instagram, sito, profili, articoli): la demo ne prende foto e informazioni. Restano salvate per le prossime rigenerazioni.",
     "building": "Preparo la demo…",
     "error_generate": "Impossibile generare la demo",
     "open_preview": "Apri anteprima (non tracciata)",

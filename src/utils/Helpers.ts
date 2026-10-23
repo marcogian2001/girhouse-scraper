@@ -43,6 +43,13 @@ export const getI18nPath = (url: string, locale: string) => {
 };
 
 /**
+ * Treats a blank text as missing, as sources often send empty strings for unknown fields.
+ * @param value The text, if any.
+ * @returns The text, or null when it is missing or only whitespace.
+ */
+export const textOrNull = (value: string | null | undefined) => (value?.trim() ? value : null);
+
+/**
  * Turns a display name into a URL segment.
  * @param name The name.
  * @returns The name lower-cased, without accents, words joined by hyphens.

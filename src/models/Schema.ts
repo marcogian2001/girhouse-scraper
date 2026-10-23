@@ -1055,6 +1055,16 @@ export type DemoSnapshot = {
     reviews: { author: string | null; rating: number; when: string | null; text: string }[];
     addresses: string[];
   } | null;
+  // The business's Instagram profile, when one was found; older demos lack it
+  social?: {
+    network: 'instagram';
+    handle: string;
+    url: string;
+    followersCount: number | null;
+  } | null;
+  // Photos from Instagram, the website and the reference links, as copies kept in `demo_image`
+  // since their own links can expire; older demos lack them
+  images?: { portraitUrl: string | null; photos: string[] };
   landing: {
     headline: string;
     subheadline: string;
@@ -1096,6 +1106,8 @@ export const demoSchema = pgTable(
     // The public URL segment: the business name, numbered when another demo has it
     slug: text('slug').notNull().unique(),
     data: jsonb('data').$type<DemoSnapshot>().notNull(),
+    // What the Girhouse team told the demo to use, links to the business's pages included
+    guidance: text('guidance'),
     firstOpenedAt: timestamp('first_opened_at', { mode: 'date' }),
     // Set once the lead reaches the last step
     completedAt: timestamp('completed_at', { mode: 'date' }),
@@ -1104,6 +1116,22 @@ export const demoSchema = pgTable(
     ...timestamps,
   },
   (table) => [index('demo_organization_id_idx').on(table.organizationId)],
+);
+
+/** An image a demo shows whose source link expires, such as an Instagram photo, kept as a copy. */
+export const demoImageSchema = pgTable(
+  'demo_image',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    conversationId: uuid('conversation_id')
+      .notNull()
+      .references(() => conversationSchema.id, { onDelete: 'cascade' }),
+    contentType: text('content_type').notNull(),
+    // The file, base64-encoded
+    data: text('data').notNull(),
+    createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
+  },
+  (table) => [index('demo_image_conversation_id_idx').on(table.conversationId)],
 );
 
 /** One thing a visitor did on a demo page. */

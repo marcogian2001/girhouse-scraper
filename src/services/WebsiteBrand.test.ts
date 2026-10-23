@@ -31,6 +31,20 @@ describe('WebsiteBrand', () => {
     expect(brand.text).not.toContain('color: red');
   });
 
+  it('collects the sharing image and large photos, skipping logos and icons', () => {
+    const page = parseBrandHtml(
+      `<meta property="og:image" content="/cover.jpg">
+      <img src="/logo.png"><img src="/thumb.jpg" width="80">
+      <img data-src="/studio.jpg" src="data:image/gif;base64,R0lG"><img src="/cover.jpg">`,
+      'https://www.studio.it/',
+    );
+
+    expect(page.images).toStrictEqual([
+      'https://www.studio.it/cover.jpg',
+      'https://www.studio.it/studio.jpg',
+    ]);
+  });
+
   it('ignores a site that only has a tiny favicon', () => {
     const tiny = parseBrandHtml('<link rel="icon" href="/favicon.ico">', 'https://example.com/');
 

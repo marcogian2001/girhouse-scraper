@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { routing } from '@/libs/I18nRouting';
-import { createOrganizationSlug, getI18nPath } from './Helpers';
+import { createOrganizationSlug, getI18nPath, textOrNull } from './Helpers';
 
 describe('Helpers', () => {
   describe('I18n path helper', () => {
@@ -16,6 +16,14 @@ describe('Helpers', () => {
       const locale = 'it';
 
       expect(getI18nPath(url, locale)).toBe(`/it${url}`);
+    });
+  });
+
+  describe('Text or null', () => {
+    it('keeps a text and drops a blank one', () => {
+      expect(textOrNull('Roberta')).toBe('Roberta');
+      expect(textOrNull('  ')).toBeNull();
+      expect(textOrNull(null)).toBeNull();
     });
   });
 

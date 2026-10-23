@@ -8,21 +8,31 @@ import {
   demoSchema,
   leadSchema,
 } from '@/models/Schema';
-import type { DemoSources } from '@/services/DemoWriter';
+import { isReadableWebsite } from '@/services/Apify';
 import { toDemoContent, writeDemoTexts } from '@/services/DemoWriter';
 import type { MioDottoreProfile } from '@/services/MioDottore';
 import { fetchMioDottoreProfile, guessMioDottoreUrl, isMioDottoreUrl } from '@/services/MioDottore';
 import { fetchWebsiteBrand } from '@/services/WebsiteBrand';
 import { DEFAULT_BRAND_COLOR, isUsableBrandColor } from '@/utils/Colors';
+import { extractLinks } from '@/utils/DemoGuidance';
 import { createDemoSlug, pickFreeDemoSlug } from '@/utils/DemoSlug';
 import { DEMO_STEPS, summarizeDemo } from '@/utils/DemoStats';
-import { getBaseUrl } from '@/utils/Helpers';
+import { getBaseUrl, textOrNull } from '@/utils/Helpers';
 import { normalizeOpeningHours } from '@/utils/OpeningHours';
 import { toE164 } from '@/utils/Phone';
 import { getAutomationSettings } from './AutomationSettings';
 import type { Conversation } from './Conversations';
 import { logEvent, setConversationState } from './Conversations';
 import { db } from './DB';
+import {
+  copyDemoImages,
+  deleteUnusedImages,
+  instagramSources,
+  loadContactResearch,
+  readOutsideSources,
+  renderReferences,
+  socialFacts,
+} from './DemoReferences';
 import { Env } from './Env';
 import { recordCopywritingUsage } from './Usage';
 
@@ -87,17 +97,28 @@ type WebsiteBrand = NonNullable<Awaited<ReturnType<typeof fetchWebsiteBrand>>>;
 
 /**
  * Reads how to name and reach the business, from the lead search first, then the campaign contact.
+ * A professional with no business name goes by their own name; the email is the last resort.
  * @param options The sources.
  * @param options.conversation The conversation the demo is for.
  * @param options.lead The lead behind it, if any.
  * @param options.contact The campaign contact behind it, if any.
+ * @param options.person The professional's name, from the research or the contact.
+ * @param options.socialName The name on the business's Instagram profile, if any.
  * @returns The name, phone and website; unknown ones are null.
  */
-const contactFacts = (options: { conversation: Conversation; lead?: Lead; contact?: Contact }) => ({
+const contactFacts = (options: {
+  conversation: Conversation;
+  lead?: Lead;
+  contact?: Contact;
+  person: string | null;
+  socialName: string | null;
+}) => ({
   company:
     options.lead?.company ??
     options.contact?.company ??
     options.conversation.company ??
+    options.person ??
+    options.socialName ??
     options.conversation.leadEmail,
   phone: options.lead?.phone ?? options.contact?.phone ?? null,
   website: options.lead?.website ?? options.contact?.website ?? null,
@@ -205,38 +226,125 @@ const brandFacts = (brand: WebsiteBrand | null) => ({
 });
 
 /**
- * Builds the snapshot a demo page shows: the lead's own data, its website's brand,
- * and texts the AI writes from those facts only.
+ * Reads the business's own website.
+ * @param website The website the lead or contact lists, if any.
+ * @returns The website and what it says, or nulls when there is none to read.
+ */
+const readOwnWebsite = async (website: string | null) => {
+  // A directory profile is not the business's own site: its logo and colour are MioDottore's
+  const own = website && !isMioDottoreUrl(website) && isReadableWebsite(website) ? website : null;
+
+  return { website: own, brand: own ? await fetchWebsiteBrand(own) : null };
+};
+
+/**
+ * Reads every source a demo is built from: the lead, the campaign contact and the research on
+ * them, their MioDottore profile, Instagram and website, and the pages the Girhouse team linked.
  * @param conversation The conversation the demo is for.
+ * @param guidance What the Girhouse team told the demo to use, if anything.
+ * @returns What each source said; sources that could not be read are empty.
+ */
+const gatherSources = async (conversation: Conversation, guidance: string | null) => {
+  const { lead, contact } = await loadBusiness(conversation);
+  const research = await loadContactResearch(contact);
+  const links = extractLinks(guidance);
+  const listedWebsite = lead?.website ?? contact?.website ?? null;
+
+  const [outside, profile, own] = await Promise.all([
+    readOutsideSources({
+      links,
+      citations: [research.raw, JSON.stringify(lead?.research ?? {}), listedWebsite],
+    }),
+    // A MioDottore page the team linked wins over the one the lead lists
+    findMioDottoreProfile(lead, links.find((link) => isMioDottoreUrl(link)) ?? listedWebsite),
+    readOwnWebsite(listedWebsite),
+  ]);
+
+  return { lead, contact, research, profile, own, ...outside };
+};
+
+type GatheredSources = Awaited<ReturnType<typeof gatherSources>>;
+
+/**
+ * Lists what a MioDottore profile tells the AI.
+ * @param profile The profile, if one was found.
+ * @returns The profile's part of the writer sources.
+ */
+const profileSources = (profile: MioDottoreProfile | null) => ({
+  profileAbout: profile?.about ?? null,
+  profileServices: profile?.services ?? [],
+  profileLocations: profile?.addresses ?? [],
+  reviewQuotes: (profile?.reviews ?? []).slice(0, REVIEW_QUOTES).map((review) => review.text),
+});
+
+/**
+ * Lists what the business's website tells the AI.
+ * @param brand What the website says, if it could be read.
+ * @returns The website's part of the writer sources.
+ */
+const websiteSources = (brand: WebsiteBrand | null) => ({
+  websiteTitle: brand?.title ?? null,
+  websiteDescription: brand?.description ?? null,
+  websiteText: brand?.text ?? null,
+});
+
+/**
+ * Builds the snapshot a demo page shows from every source it can read, with texts the AI
+ * writes from those facts only.
+ * @param conversation The conversation the demo is for.
+ * @param guidance What the Girhouse team told the demo to use, if anything.
  * @returns The snapshot.
  * @throws {Error} When the AI answer does not parse, so the caller can retry.
  */
-const buildSnapshot = async (conversation: Conversation): Promise<DemoSnapshot> => {
-  const { lead, contact } = await loadBusiness(conversation);
+const buildSnapshot = async (
+  conversation: Conversation,
+  guidance: string | null,
+): Promise<DemoSnapshot> => {
+  const sources: GatheredSources = await gatherSources(conversation, guidance);
+  const { lead, contact, research, profile, own, instagram, references } = sources;
   const settings = await getAutomationSettings(conversation.organizationId);
-  const facts = { ...contactFacts({ conversation, lead, contact }), ...placeFacts(lead) };
-  const extras = leadExtras(lead);
-  // A directory profile is not the business's own site: its logo and colour are MioDottore's
-  const ownWebsite = facts.website && !isMioDottoreUrl(facts.website) ? facts.website : null;
-  const brand = ownWebsite ? await fetchWebsiteBrand(ownWebsite) : null;
-  const profile = await findMioDottoreProfile(lead, facts.website);
-
-  const sources: DemoSources = {
-    company: facts.company,
-    city: facts.city,
-    category: facts.category,
-    categories: extras.categories,
-    description: extras.description,
-    websiteTitle: brand?.title ?? null,
-    websiteDescription: brand?.description ?? null,
-    websiteText: brand?.text ?? null,
-    profileAbout: profile?.about ?? null,
-    profileServices: profile?.services ?? [],
-    profileLocations: profile?.addresses ?? [],
-    reviewQuotes: (profile?.reviews ?? []).slice(0, REVIEW_QUOTES).map((review) => review.text),
+  const facts = {
+    ...contactFacts({
+      conversation,
+      lead,
+      contact,
+      person: research.personName,
+      socialName: textOrNull(instagram?.fullName),
+    }),
+    ...placeFacts(lead),
   };
+  const category = facts.category ?? textOrNull(instagram?.businessCategoryName);
+  const extras = leadExtras(lead);
 
-  const { texts, call } = await writeDemoTexts({ model: settings.classificationModel, sources });
+  const [{ texts, call }, images] = await Promise.all([
+    writeDemoTexts({
+      model: settings.classificationModel,
+      sources: {
+        company: facts.company,
+        person: research.personName,
+        city: facts.city,
+        category,
+        categories: extras.categories,
+        description: extras.description,
+        research: research.research,
+        teamNotes: textOrNull(guidance),
+        referencePages: renderReferences(references),
+        ...websiteSources(own.brand),
+        ...profileSources(profile),
+        ...instagramSources(instagram),
+      },
+    }),
+    copyDemoImages({
+      conversationId: conversation.id,
+      // A MioDottore portrait is the professional's own; Instagram's is the fallback
+      portrait: profile?.portraitUrl
+        ? null
+        : (instagram?.profilePicUrlHD ?? instagram?.profilePicUrl ?? null),
+      references,
+      website: own.brand,
+      instagram,
+    }),
+  ]);
 
   // Recorded before the answer is checked: an unparsable answer is still billed
   await recordCopywritingUsage({
@@ -253,11 +361,14 @@ const buildSnapshot = async (conversation: Conversation): Promise<DemoSnapshot> 
   return {
     version: DEMO_SNAPSHOT_VERSION,
     ...facts,
-    website: ownWebsite,
+    category,
+    website: own.website,
     categories: extras.categories,
     openingHours: extras.openingHours,
-    ...brandFacts(brand),
+    ...brandFacts(own.brand),
     directory: directoryFacts(profile),
+    social: socialFacts(instagram),
+    images,
     ...toDemoContent(texts),
   };
 };
@@ -278,31 +389,20 @@ const findFreeSlug = async (company: string) => {
 };
 
 /**
- * Returns the demo of a conversation, building it on first use.
- * @param conversation The conversation the demo is for.
- * @returns The demo row.
- * @throws {Error} When the demo cannot be built or stored.
+ * Stores a conversation's first demo under a free slug.
+ * @param options The demo.
+ * @param options.conversation The conversation it is for.
+ * @param options.data The snapshot.
+ * @param options.guidance What the Girhouse team told it to use, if anything.
+ * @returns The stored demo, or the one a build running at the same time stored first.
+ * @throws {Error} When no free slug could be taken.
  */
-export const ensureDemo = async (conversation: Conversation) => {
-  const existing = await db.query.demoSchema.findFirst({
-    where: eq(demoSchema.conversationId, conversation.id),
-  });
-
-  if (existing?.data.version === DEMO_SNAPSHOT_VERSION) {
-    return existing;
-  }
-
-  const data = await buildSnapshot(conversation);
-
-  if (existing) {
-    const [rebuilt] = await db
-      .update(demoSchema)
-      .set({ data })
-      .where(eq(demoSchema.id, existing.id))
-      .returning();
-
-    return rebuilt ?? existing;
-  }
+const insertDemo = async (options: {
+  conversation: Conversation;
+  data: DemoSnapshot;
+  guidance: string | null;
+}) => {
+  const { conversation, data } = options;
 
   for (let attempt = 0; attempt < SLUG_ATTEMPTS; attempt += 1) {
     // oxlint-disable-next-line no-await-in-loop
@@ -316,11 +416,14 @@ export const ensureDemo = async (conversation: Conversation) => {
         leadId: conversation.leadId,
         slug,
         data,
+        guidance: options.guidance,
       })
       .onConflictDoNothing()
       .returning();
 
     if (created) {
+      // oxlint-disable-next-line no-await-in-loop
+      await deleteUnusedImages(conversation.id, data.images);
       // oxlint-disable-next-line no-await-in-loop
       await logEvent({
         conversationId: conversation.id,
@@ -347,25 +450,89 @@ export const ensureDemo = async (conversation: Conversation) => {
 };
 
 /**
- * Builds a conversation's demo again from fresh sources, keeping its link.
+ * Returns the demo of a conversation, building it on first use.
  * @param conversation The conversation the demo is for.
- * @returns The rebuilt demo row, or a new one when none existed.
+ * @returns The demo row.
  * @throws {Error} When the demo cannot be built or stored.
  */
-export const rebuildDemo = async (conversation: Conversation) => {
+export const ensureDemo = async (conversation: Conversation) => {
   const existing = await db.query.demoSchema.findFirst({
     where: eq(demoSchema.conversationId, conversation.id),
   });
 
+  if (existing?.data.version === DEMO_SNAPSHOT_VERSION) {
+    return existing;
+  }
+
+  const data = await buildSnapshot(conversation, existing?.guidance ?? null);
+
   if (!existing) {
-    return await ensureDemo(conversation);
+    return await insertDemo({ conversation, data, guidance: null });
   }
 
   const [rebuilt] = await db
     .update(demoSchema)
-    .set({ data: await buildSnapshot(conversation) })
+    .set({ data })
     .where(eq(demoSchema.id, existing.id))
     .returning();
+
+  await deleteUnusedImages(conversation.id, data.images);
+
+  return rebuilt ?? existing;
+};
+
+/**
+ * Picks the link of a rebuilt demo: the same one, unless it was made from the lead's email
+ * because no name was known and nobody has opened it yet.
+ * @param options The demo.
+ * @param options.conversation The conversation it is for.
+ * @param options.demo The demo before the rebuild.
+ * @param options.company The business name the rebuild found.
+ * @returns The slug to keep or the new one.
+ */
+const rebuiltSlug = async (options: {
+  conversation: Conversation;
+  demo: typeof demoSchema.$inferSelect;
+  company: string;
+}) => {
+  const isEmailSlug = options.demo.slug.startsWith(createDemoSlug(options.conversation.leadEmail));
+  const hasName = options.company !== options.conversation.leadEmail;
+
+  return isEmailSlug && hasName && !options.demo.firstOpenedAt
+    ? await findFreeSlug(options.company)
+    : options.demo.slug;
+};
+
+/**
+ * Builds a conversation's demo again from fresh sources, keeping its link.
+ * @param conversation The conversation the demo is for.
+ * @param guidance What the Girhouse team tells the demo to use, links included; the stored
+ * guidance is kept when omitted.
+ * @returns The rebuilt demo row, or a new one when none existed.
+ * @throws {Error} When the demo cannot be built or stored.
+ */
+export const rebuildDemo = async (conversation: Conversation, guidance?: string | null) => {
+  const existing = await db.query.demoSchema.findFirst({
+    where: eq(demoSchema.conversationId, conversation.id),
+  });
+  const kept = guidance === undefined ? (existing?.guidance ?? null) : guidance;
+  const data = await buildSnapshot(conversation, kept);
+
+  if (!existing) {
+    return await insertDemo({ conversation, data, guidance: kept });
+  }
+
+  const [rebuilt] = await db
+    .update(demoSchema)
+    .set({
+      data,
+      guidance: kept,
+      slug: await rebuiltSlug({ conversation, demo: existing, company: data.company }),
+    })
+    .where(eq(demoSchema.id, existing.id))
+    .returning();
+
+  await deleteUnusedImages(conversation.id, data.images);
 
   return rebuilt ?? existing;
 };

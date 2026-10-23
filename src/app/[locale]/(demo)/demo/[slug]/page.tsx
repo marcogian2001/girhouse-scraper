@@ -107,6 +107,7 @@ export default async function DemoPage(props: DemoPageProps) {
             src: `/api/demo/${slug}/photo/${index}`,
             author: photo.authorAttributions.at(0)?.displayName ?? null,
           })),
+          ...(data.images?.photos ?? []).map((src) => ({ src, author: null })),
           ...(directory?.photos ?? []).map((src) => ({ src, author: null })),
         ]}
         pricing={{

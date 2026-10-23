@@ -5,6 +5,7 @@ describe('DemoWriter', () => {
   it('lists the known facts and leaves the unknown ones out', () => {
     const rendered = renderDemoSources({
       company: 'Pizzeria Da Mario',
+      person: null,
       city: 'Bologna',
       category: 'Pizzeria',
       categories: ['Pizzeria', 'Ristorante'],
@@ -16,6 +17,11 @@ describe('DemoWriter', () => {
       profileServices: [],
       profileLocations: [],
       reviewQuotes: [],
+      research: null,
+      socialBio: null,
+      socialPosts: [],
+      teamNotes: null,
+      referencePages: [],
     });
 
     expect(rendered).toContain('## Business\nPizzeria Da Mario');
@@ -27,6 +33,7 @@ describe('DemoWriter', () => {
   it('lists profile services with their prices and review quotes', () => {
     const rendered = renderDemoSources({
       company: 'Dott.ssa Giada Todisco',
+      person: null,
       city: 'Roma',
       category: null,
       categories: [],
@@ -41,10 +48,46 @@ describe('DemoWriter', () => {
       ],
       profileLocations: ['Via Garigliano 17, Cassino'],
       reviewQuotes: ['Empatica e preparata'],
+      research: null,
+      socialBio: null,
+      socialPosts: [],
+      teamNotes: null,
+      referencePages: [],
     });
 
     expect(rendered).toContain('## Services and prices\nPrima Visita: 100 €\nControllo peso');
     expect(rendered).toContain('## What patients say in reviews\n- Empatica e preparata');
+  });
+
+  it('lists the research and the Instagram profile', () => {
+    const rendered = renderDemoSources({
+      company: 'Roberta Russo',
+      person: 'Roberta Russo',
+      city: null,
+      category: null,
+      categories: [],
+      description: null,
+      websiteTitle: null,
+      websiteDescription: null,
+      websiteText: null,
+      profileAbout: null,
+      profileServices: [],
+      profileLocations: [],
+      reviewQuotes: [],
+      research: 'Educatrice e puericultrice',
+      socialBio: 'La puericultrice delle mamme',
+      socialPosts: ['Il sonno del neonato'],
+      teamNotes: 'Lavora a domicilio',
+      referencePages: ['Roberta Russo - Materno Infantile'],
+    });
+
+    expect(rendered).toContain(
+      '## What research on the professional found\nEducatrice e puericultrice',
+    );
+    expect(rendered).toContain('## Instagram bio\nLa puericultrice delle mamme');
+    expect(rendered).toContain('## Recent Instagram posts\n- Il sonno del neonato');
+    expect(rendered).toContain('## Notes from the Girhouse team\nLavora a domicilio');
+    expect(rendered).toContain('## Reference pages about the business\nRoberta Russo');
   });
 });
 

@@ -6,6 +6,16 @@ const MAX_HTML_BYTES = 1_500_000;
 
 const MAX_TEXT_LENGTH = 6000;
 
+/** Photos a page can lend a demo at most. */
+const MAX_IMAGES = 6;
+
+/** An image declared narrower than this is an icon or a thumbnail, not a photo. */
+const MIN_IMAGE_WIDTH_PX = 300;
+
+/** Image files that are logos, icons or decoration rather than photos of the business. */
+const DECORATION =
+  /logo|icon|favicon|sprite|avatar|placeholder|badge|\.svg(?:$|\?)|\.gif(?:$|\?)/iu;
+
 /** What a business's own website says about it. */
 export type WebsiteBrand = {
   logoUrl: string | null;
@@ -14,6 +24,8 @@ export type WebsiteBrand = {
   description: string | null;
   // Visible text, for the AI to read services from
   text: string;
+  // Photos the page shows, the sharing image first
+  images: string[];
 };
 
 /**
@@ -102,10 +114,34 @@ const findLogo = (links: string[], baseUrl: string) => {
 };
 
 /**
+ * Picks the photos a page shows: its sharing image, then its large inline images.
+ * @param options The page parts.
+ * @param options.sharingImage The `og:image` of the page, if any.
+ * @param options.html The page source.
+ * @param options.baseUrl The page URL.
+ * @returns Up to `MAX_IMAGES` absolute photo URLs.
+ */
+const findImages = (options: { sharingImage?: string; html: string; baseUrl: string }) => {
+  const inline = (options.html.match(/<img\b[^>]*>/giu) ?? []).flatMap((tag) => {
+    const width = Number(readAttribute(tag, 'width') ?? 0);
+
+    return width > 0 && width < MIN_IMAGE_WIDTH_PX
+      ? []
+      : [readAttribute(tag, 'data-src') ?? readAttribute(tag, 'src')];
+  });
+
+  const images = [options.sharingImage, ...inline]
+    .map((href) => resolveUrl(href, options.baseUrl))
+    .filter((url): url is string => url !== null && !DECORATION.test(url));
+
+  return [...new Set(images)].slice(0, MAX_IMAGES);
+};
+
+/**
  * Extracts a business's brand from its homepage HTML.
  * @param html The page source.
  * @param baseUrl The page URL, to resolve relative links.
- * @returns The logo, theme colour, title, description and visible text.
+ * @returns The logo, theme colour, title, description, visible text and photos.
  */
 export const parseBrandHtml = (html: string, baseUrl: string): WebsiteBrand => {
   const metas = html.match(/<meta\b[^>]*>/giu) ?? [];
@@ -141,6 +177,7 @@ export const parseBrandHtml = (html: string, baseUrl: string): WebsiteBrand => {
     title: title ? decodeEntities(title).trim() || null : null,
     description: description ? decodeEntities(description) : null,
     text,
+    images: findImages({ sharingImage: meta('og:image'), html, baseUrl }),
   };
 };
 

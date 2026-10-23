@@ -1,6 +1,7 @@
 import { ExternalLink } from 'lucide-react';
 import { useFormatter, useTranslations } from 'next-intl';
 import { GenerateDemoButton } from '@/components/GenerateDemoButton';
+import { RebuildDemoForm } from '@/components/RebuildDemoForm';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import type { getConversationDemo } from '@/libs/Demos';
 import { DEMO_STEPS } from '@/utils/DemoStats';
@@ -98,7 +99,7 @@ export const ConversationDemoCard = (props: {
             </div>
           ))}
         </dl>
-        <GenerateDemoButton conversationId={props.conversationId} rebuild />
+        <RebuildDemoForm conversationId={props.conversationId} guidance={demo.guidance} />
       </CardContent>
     </Card>
   );

@@ -63,7 +63,7 @@ const HeroSection = (props: {
   const t = useTranslations('DemoPage');
   const { data, reviews } = props;
   const hero = props.photo;
-  const portraitUrl = data.directory?.portraitUrl;
+  const portraitUrl = data.directory?.portraitUrl ?? data.images?.portraitUrl;
 
   return (
     <>
@@ -312,7 +312,7 @@ const ContactSection = (props: { data: DemoSnapshot }) => {
  * @param props Component props.
  * @param props.data The demo snapshot.
  * @param props.reviews Real reviews, already picked, with their source.
- * @param props.photos The business's photos, from Google then from its MioDottore profile.
+ * @param props.photos The business's photos: Google's, the copied ones, then its MioDottore profile's.
  * @param props.sections The sections revealed so far.
  * @returns The landing preview.
  */
@@ -328,7 +328,7 @@ export const LandingStep = (props: {
   const aboutPhoto = props.photos.at(1);
   const gallery = props.photos.slice(2, 2 + GALLERY_SIZE);
   // Without a logo, the professional's face stands for the business
-  const navImage = data.logoUrl ?? data.directory?.portraitUrl ?? null;
+  const navImage = data.logoUrl ?? data.directory?.portraitUrl ?? data.images?.portraitUrl ?? null;
   const latest = props.sections.at(-1);
   const host = data.website && URL.canParse(data.website) ? new URL(data.website).hostname : null;
 

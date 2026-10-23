@@ -5,9 +5,10 @@ import { getApiContext, notFound, unauthorized } from '@/libs/ApiAuth';
 import { db } from '@/libs/DB';
 import { demoUrl, ensureDemo, rebuildDemo } from '@/libs/Demos';
 import { conversationSchema } from '@/models/Schema';
+import { DemoRebuildValidation } from '@/validations/DemoValidation';
 
-// Building reads the business website and asks the AI for the texts
-export const maxDuration = 60;
+// Building reads the business's website, Instagram and linked pages, and asks the AI for the texts
+export const maxDuration = 120;
 
 export const POST = async (request: Request, props: { params: Promise<{ id: string }> }) => {
   const context = await getApiContext();
@@ -33,11 +34,20 @@ export const POST = async (request: Request, props: { params: Promise<{ id: stri
     return notFound();
   }
 
-  // Rebuilding reads the sources again and rewrites the texts, keeping the link
-  const demo =
-    new URL(request.url).searchParams.get('rebuild') === '1'
-      ? await rebuildDemo(conversation)
-      : await ensureDemo(conversation);
+  if (new URL(request.url).searchParams.get('rebuild') !== '1') {
+    const demo = await ensureDemo(conversation);
+
+    return NextResponse.json({ url: demoUrl(demo.slug) }, { status: 201 });
+  }
+
+  const parse = DemoRebuildValidation.safeParse(await request.json());
+
+  if (!parse.success) {
+    return NextResponse.json(z.treeifyError(parse.error), { status: 422 });
+  }
+
+  // Rebuilding reads the sources again with the new guidance and rewrites the texts
+  const demo = await rebuildDemo(conversation, parse.data.guidance || null);
 
   return NextResponse.json({ url: demoUrl(demo.slug) }, { status: 201 });
 };

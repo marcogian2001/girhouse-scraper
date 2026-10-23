@@ -7,6 +7,11 @@ const APIFY_API_URL = 'https://api.apify.com/v2';
 
 const MAPS_ACTOR_ID = 'compass~crawler-google-places';
 
+const INSTAGRAM_ACTOR_ID = 'apify~instagram-profile-scraper';
+
+/** Seconds Apify may take to read a profile before the call gives up. */
+const INSTAGRAM_TIMEOUT_SECONDS = 45;
+
 /**
  * List price of one scraped place on the Starter plan, in millionths of a US
  * dollar. Detail pages, contacts, reviews and images are all turned off.
@@ -51,6 +56,24 @@ const placeSchema = z.looseObject({
 });
 
 export type MapsPlace = z.infer<typeof placeSchema>;
+
+const instagramProfileSchema = z.looseObject({
+  username: z.string(),
+  url: z.string().nullish(),
+  fullName: z.string().nullish(),
+  biography: z.string().nullish(),
+  private: z.boolean().nullish(),
+  followersCount: z.number().nullish(),
+  businessCategoryName: z.string().nullish(),
+  externalUrl: z.string().nullish(),
+  profilePicUrlHD: z.string().nullish(),
+  profilePicUrl: z.string().nullish(),
+  latestPosts: z
+    .array(z.looseObject({ displayUrl: z.string().nullish(), caption: z.string().nullish() }))
+    .nullish(),
+});
+
+export type InstagramProfile = z.infer<typeof instagramProfileSchema>;
 
 export type MapsRunOutcome =
   | { state: 'succeeded'; places: MapsPlace[] }
@@ -191,6 +214,37 @@ export const startMapsRun = async (placeIds: string[]) => {
   });
 
   return runResponseSchema.parse(response).data.id;
+};
+
+/**
+ * Reads a public Instagram profile with its latest posts, waiting for the run to finish.
+ * Its image links are signed and expire within days, so a caller keeping them copies the files.
+ * @param handle The account's username.
+ * @returns The profile, or null when it does not exist or is private.
+ * @throws {Error} When the token is missing or Apify rejects the request.
+ */
+export const fetchInstagramProfile = async (handle: string) => {
+  const items = await request(
+    `/acts/${INSTAGRAM_ACTOR_ID}/run-sync-get-dataset-items?timeout=${INSTAGRAM_TIMEOUT_SECONDS}`,
+    { method: 'POST', body: JSON.stringify({ usernames: [handle] }) },
+  );
+  const [profile] = z
+    .array(z.unknown())
+    .parse(items)
+    .flatMap((item) => {
+      const parsed = instagramProfileSchema.safeParse(item);
+
+      return parsed.success ? [parsed.data] : [];
+    });
+
+  if (!profile || profile.private) {
+    return null;
+  }
+
+  // An account without a category reports it as the text "None"
+  return profile.businessCategoryName === 'None'
+    ? { ...profile, businessCategoryName: null }
+    : profile;
 };
 
 /**

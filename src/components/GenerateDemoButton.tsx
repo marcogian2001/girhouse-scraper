@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { useRouter } from '@/libs/I18nNavigation';
 
-export const GenerateDemoButton = (props: { conversationId: string; rebuild?: boolean }) => {
+export const GenerateDemoButton = (props: { conversationId: string }) => {
   const t = useTranslations('ConversationDemoCard');
   const router = useRouter();
   const [isBuilding, setIsBuilding] = useState(false);
@@ -23,10 +23,9 @@ export const GenerateDemoButton = (props: { conversationId: string; rebuild?: bo
           setIsBuilding(true);
           setHasError(false);
 
-          const response = await fetch(
-            `/api/replies/${props.conversationId}/demo${props.rebuild ? '?rebuild=1' : ''}`,
-            { method: 'POST' },
-          );
+          const response = await fetch(`/api/replies/${props.conversationId}/demo`, {
+            method: 'POST',
+          });
 
           setIsBuilding(false);
           setHasError(!response.ok);
@@ -38,7 +37,7 @@ export const GenerateDemoButton = (props: { conversationId: string; rebuild?: bo
       >
         {isBuilding && <Spinner />}
         {isBuilding && t('building')}
-        {!isBuilding && (props.rebuild ? t('button_rebuild') : t('button_generate'))}
+        {!isBuilding && t('button_generate')}
       </Button>
 
       {hasError && (

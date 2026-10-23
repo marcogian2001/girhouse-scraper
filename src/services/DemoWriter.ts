@@ -39,6 +39,8 @@ export type DemoTexts = z.infer<typeof demoTextsSchema>;
 /** What the demo texts may be written from: only facts already known about the business. */
 export type DemoSources = {
   company: string;
+  // The professional behind the business, when known
+  person: string | null;
   city: string | null;
   category: string | null;
   categories: string[];
@@ -51,6 +53,14 @@ export type DemoSources = {
   profileServices: { name: string; price: string | null }[];
   profileLocations: string[];
   reviewQuotes: string[];
+  // What the research on the person found: role, field, how they present themselves
+  research: string | null;
+  // From the business's Instagram profile, when one was found
+  socialBio: string | null;
+  socialPosts: string[];
+  // What the Girhouse team wrote about the business, and the pages it linked
+  teamNotes: string | null;
+  referencePages: string[];
 };
 
 const INSTRUCTIONS = [
@@ -59,12 +69,13 @@ const INSTRUCTIONS = [
   'Rules for every text:',
   '- Italian, plain and warm, written as the business speaking to its own customers. When the business is one professional, they speak in the first person singular ("ti aspetto", "il mio studio"), never "noi".',
   '- Use only facts in the sources below. Never invent services, prices, years, awards, numbers, staff names or claims.',
+  '- The notes from the Girhouse team are true facts about the business and say what to stress: follow them, and prefer them over the other sources when they disagree.',
   '- Never use em dashes or en dashes.',
   '',
   'Landing page:',
   '- `titolo`: the headline, at most 8 words, naming what the business does and where when the city is known.',
   '- `sottotitolo`: one sentence, at most 22 words, on why customers choose it (what the reviews praise, when there are any) or how they book, with no facts beyond the sources.',
-  '- `chi_siamo`: 3 or 4 sentences about the business, only from the description, profile or website text: who they are, their training and credentials, their approach, where they work. In the first person when the business is one professional. Null when the sources say nothing about it.',
+  '- `chi_siamo`: 3 or 4 sentences about the business, only from the notes, description, research, reference pages, profile, Instagram bio or posts, or website text: who they are, their training and credentials, their approach, where they work. In the first person when the business is one professional. Null when the sources say nothing about it.',
   '- `cta`: the main button, 2 to 4 words, fitting the business (for example "Prenota una visita", "Richiedi un preventivo").',
   '- `servizi`: up to 6 services the sources state explicitly, the ones a new customer books first, each with a one-sentence `descrizione` taken from the sources, or null when they give none, and its `prezzo` exactly as the sources state it (for example "100 €"), or null. An empty list when no services are stated; the category alone is not a service list.',
   '',
@@ -91,10 +102,16 @@ const INSTRUCTIONS = [
 export const renderDemoSources = (sources: DemoSources) =>
   [
     ['Business', sources.company],
+    ['Professional', sources.person],
+    ['Notes from the Girhouse team', sources.teamNotes],
     ['City', sources.city],
     ['Google Maps category', sources.category],
     ['Other categories', sources.categories.join(', ')],
     ['Description', sources.description],
+    ['What research on the professional found', sources.research],
+    ['Instagram bio', sources.socialBio],
+    ['Recent Instagram posts', sources.socialPosts.map((post) => `- ${post}`).join('\n')],
+    ['Reference pages about the business', sources.referencePages.join('\n\n---\n\n')],
     ['Website title', sources.websiteTitle],
     ['Website description', sources.websiteDescription],
     ['Website text', sources.websiteText],

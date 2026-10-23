@@ -26,3 +26,8 @@ export const DemoBookingValidation = z.object({
   sessionId,
   startTime: z.iso.datetime({ offset: true }),
 });
+
+export const DemoRebuildValidation = z.object({
+  // What the Girhouse team tells the demo to use, links to the business's pages included
+  guidance: z.string().trim().max(4000),
+});
