@@ -1,5 +1,7 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { ObjectionForm } from '@/components/ObjectionForm';
+import { PageHeader } from '@/components/PageHeader';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getApiContext } from '@/libs/ApiAuth';
 import { listObjections } from '@/libs/Objections';
@@ -15,13 +17,17 @@ export default async function ObjectionsPage(props: { params: Promise<{ locale: 
 
   return (
     <div className="max-w-4xl space-y-6">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">{t('title')}</h1>
-        <p className="text-sm text-muted-foreground">{t('subtitle')}</p>
-        {toReview > 0 && (
-          <p className="text-sm text-warning">{t('to_review', { count: toReview })}</p>
-        )}
-      </div>
+      <PageHeader
+        title={t('title')}
+        description={t('subtitle')}
+        actions={
+          toReview > 0 && (
+            <Badge variant="ghost" className="bg-warning/10 text-warning">
+              {t('to_review', { count: toReview })}
+            </Badge>
+          )
+        }
+      />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>

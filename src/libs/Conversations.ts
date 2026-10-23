@@ -1,4 +1,4 @@
-import { and, desc, eq, ilike, inArray, isNotNull, isNull, lte, not, or, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNotNull, isNull, lte, not, or, sql } from 'drizzle-orm';
 import {
   campaignSchema,
   contactSchema,
@@ -25,6 +25,12 @@ import {
 } from '@/services/Instantly';
 import type { ConversationState, ReplyCategory } from '@/utils/ReplyRouting';
 import { decideState, needsAnswer } from '@/utils/ReplyRouting';
+import {
+  ACCENTED_LETTERS,
+  PLAIN_LETTERS,
+  splitSearchTerms,
+  toLikePattern,
+} from '@/utils/SearchTerms';
 import { sha256Hex } from '@/utils/Secrets';
 import type { InstantlyWebhook } from '@/validations/InstantlyWebhookValidation';
 import { REPLY_EVENTS } from '@/validations/InstantlyWebhookValidation';
@@ -547,7 +553,7 @@ export const CONVERSATIONS_PAGE_SIZE = 25;
  * @param options The call options.
  * @param options.organizationId The organization to list.
  * @param options.states Only these states, when given.
- * @param options.search Text the lead's email, company, first or last name must contain.
+ * @param options.search Words the lead's email, company, first or last name must all contain.
  * @param options.answered Only conversations we did (true) or did not (false) reply to, when given.
  * @param options.botManaged Only conversations the bot does (true) or does not (false) handle, when given.
  * @param options.page The 1-based page to read.
@@ -561,12 +567,13 @@ export const listConversations = async (options: {
   botManaged?: boolean;
   page: number;
 }) => {
-  const pattern = options.search ? `%${options.search.replaceAll(/[\\%_]/gu, '\\$&')}%` : undefined;
+  const terms = splitSearchTerms(options.search ?? '');
   const firstName = sql<
     string | null
   >`coalesce(${contactSchema.firstName}, ${leadSchema.firstName})`;
   const lastName = sql<string | null>`coalesce(${contactSchema.lastName}, ${leadSchema.lastName})`;
   // Same rule as `isBotManaged`: simulated conversations always belong to the bot
+  const searchable = sql`translate(lower(concat_ws(' ', ${conversationSchema.leadEmail}, ${conversationSchema.company}, ${firstName}, ${lastName})), ${ACCENTED_LETTERS}, ${PLAIN_LETTERS})`;
   const isBotManagedSql = sql`(${conversationSchema.isTest} or coalesce(${campaignSchema.botManaged}, false))`;
 
   const where = and(
@@ -576,15 +583,9 @@ export const listConversations = async (options: {
     options.answered === false ? isNull(conversationSchema.lastOutboundAt) : undefined,
     options.botManaged === true ? isBotManagedSql : undefined,
     options.botManaged === false ? not(isBotManagedSql) : undefined,
-    pattern
-      ? or(
-          ilike(conversationSchema.leadEmail, pattern),
-          ilike(conversationSchema.company, pattern),
-          // Lets "Mario Rossi" match as well as "Mario" or "Rossi" alone
-          sql`concat_ws(' ', ${firstName}, ${lastName}) ilike ${pattern}`,
-          sql`concat_ws(' ', ${lastName}, ${firstName}) ilike ${pattern}`,
-        )
-      : undefined,
+    // Every word must appear somewhere, in any order and ignoring accents, so
+    // "gino trattoria" finds "Trattoria da Gino" and "caffe" finds "Caffè"
+    ...terms.map((term) => sql`${searchable} like ${toLikePattern(term)}`),
   );
 
   const rows = await db

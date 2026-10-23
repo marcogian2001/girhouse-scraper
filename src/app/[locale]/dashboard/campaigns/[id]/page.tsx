@@ -1,12 +1,13 @@
 import { and, asc, eq, inArray } from 'drizzle-orm';
-import { ArrowLeft, Download } from 'lucide-react';
+import { Download } from 'lucide-react';
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
+import { Suspense } from 'react';
 import * as z from 'zod';
 import { ArchiveCampaignButton } from '@/components/ArchiveCampaignButton';
 import { CampaignNameEditor } from '@/components/CampaignNameEditor';
 import { CampaignProgress } from '@/components/CampaignProgress';
-import { CampaignTestCard } from '@/components/CampaignTestCard';
+import { CampaignTestSection } from '@/components/CampaignTestSection';
 import type { ContactReview } from '@/components/ContactReviewList';
 import { ContactReviewList } from '@/components/ContactReviewList';
 import { DeleteCampaignButton } from '@/components/DeleteCampaignButton';
@@ -16,11 +17,10 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getApiContext } from '@/libs/ApiAuth';
-import { getCampaignTests } from '@/libs/CampaignTests';
 import { db } from '@/libs/DB';
-import { Link } from '@/libs/I18nNavigation';
 import { getUsageTotals } from '@/libs/Usage';
 import { campaignSchema, contactSchema, emailDraftSchema, enrichmentSchema } from '@/models/Schema';
 import { AppConfig } from '@/utils/AppConfig';
@@ -60,7 +60,7 @@ export default async function CampaignDetailPage(props: {
     .from(contactSchema)
     .where(eq(contactSchema.campaignId, campaign.id));
 
-  const [format, usage, contacts, enrichments, drafts, tests] = await Promise.all([
+  const [format, usage, contacts, enrichments, drafts] = await Promise.all([
     getFormatter({ locale }),
     getUsageTotals({ organizationId: campaign.organizationId, campaignId: campaign.id }),
     db
@@ -77,9 +77,6 @@ export default async function CampaignDetailPage(props: {
       .from(emailDraftSchema)
       .where(inArray(emailDraftSchema.contactId, campaignContactIds))
       .orderBy(asc(emailDraftSchema.stepIndex)),
-    campaign.instantlyCampaignId
-      ? getCampaignTests({ organizationId: campaign.organizationId, campaignId: campaign.id })
-      : [],
   ]);
   const usd = (micros: number) => format.number(microsToUsd(micros), USD_FORMAT);
 
@@ -122,19 +119,10 @@ export default async function CampaignDetailPage(props: {
   const approvedCount = contacts.filter((contact) => contact.status === 'approved').length;
 
   const isPushed = campaign.status === 'pushed';
-  const [test] = tests;
 
   return (
-    <div className="max-w-6xl space-y-6">
-      <div className="space-y-3">
-        <Link
-          href="/dashboard/campaigns/"
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeft className="size-3.5" />
-          {t('back_link')}
-        </Link>
-
+    <div className="space-y-6">
+      <div className="space-y-1.5">
         <div className="flex flex-wrap items-center gap-3">
           <CampaignNameEditor campaignId={campaign.id} name={campaign.name} />
           <StatusBadge kind="campaign" status={campaign.status} />
@@ -157,22 +145,26 @@ export default async function CampaignDetailPage(props: {
           </div>
         </div>
 
-        <p className="text-sm text-muted-foreground">
-          {t('meta_line', {
-            contacts: contacts.length,
-            emails: campaign.emailCount,
-            date: campaign.createdAt.toLocaleDateString(locale, { timeZone: AppConfig.timeZone }),
-          })}
-        </p>
-
-        <p className="text-sm text-muted-foreground">
-          {t('spend_line', {
-            total: usd(usage.totalCostMicros),
-            tokens: format.number(usage.copywritingTokens, COMPACT_FORMAT),
-            copywritingCost: usd(usage.copywritingCostMicros),
-            runs: usage.parallelRuns,
-            parallelCost: usd(usage.parallelCostMicros),
-          })}
+        <p className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-muted-foreground">
+          <span>
+            {t('meta_line', {
+              contacts: contacts.length,
+              emails: campaign.emailCount,
+              date: campaign.createdAt.toLocaleDateString(locale, {
+                timeZone: AppConfig.timeZone,
+              }),
+            })}
+          </span>
+          <span aria-hidden>·</span>
+          <span>
+            {t('spend_line', {
+              total: usd(usage.totalCostMicros),
+              tokens: format.number(usage.copywritingTokens, COMPACT_FORMAT),
+              copywritingCost: usd(usage.copywritingCostMicros),
+              runs: usage.parallelRuns,
+              parallelCost: usd(usage.parallelCostMicros),
+            })}
+          </span>
         </p>
       </div>
 
@@ -200,16 +192,20 @@ export default async function CampaignDetailPage(props: {
         </Alert>
       )}
 
-      {test && <CampaignTestCard test={test} />}
+      {campaign.instantlyCampaignId && (
+        <Suspense fallback={<Skeleton className="h-48 w-full rounded-xl" />}>
+          <CampaignTestSection organizationId={campaign.organizationId} campaignId={campaign.id} />
+        </Suspense>
+      )}
 
       <Tabs defaultValue="review">
-        <TabsList>
-          <TabsTrigger value="review">
+        <TabsList variant="line" className="w-full justify-start border-b">
+          <TabsTrigger value="review" className="flex-none">
             {t('tab_review')}
             <Badge variant="secondary">{contacts.length}</Badge>
           </TabsTrigger>
 
-          <TabsTrigger value="send" disabled={isPushed}>
+          <TabsTrigger value="send" disabled={isPushed} className="flex-none">
             {t('tab_send')}
           </TabsTrigger>
         </TabsList>

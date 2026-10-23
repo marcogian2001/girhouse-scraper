@@ -51,7 +51,7 @@ export const CampaignNameEditor = (props: { campaignId: string; name: string }) 
           <Input
             autoFocus
             aria-label={t('label_name')}
-            className="h-10 w-72 max-w-full text-2xl font-semibold tracking-tight md:text-2xl"
+            className="h-9 w-72 max-w-full text-xl font-semibold tracking-tight md:text-xl"
             defaultValue={name}
             disabled={isSaving}
             onFocus={(event) => {
@@ -75,7 +75,7 @@ export const CampaignNameEditor = (props: { campaignId: string; name: string }) 
           {isSaving && <Spinner />}
         </div>
       ) : (
-        <h1 className="text-2xl font-semibold tracking-tight">
+        <h1 className="text-xl font-semibold tracking-tight">
           <button
             type="button"
             className="cursor-text text-start"

@@ -1,5 +1,5 @@
 import { and, asc, eq, notInArray, sql } from 'drizzle-orm';
-import { ArrowLeft, Send } from 'lucide-react';
+import { Send } from 'lucide-react';
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { DeleteLeadSearchButton } from '@/components/DeleteLeadSearchButton';
@@ -88,35 +88,47 @@ export default async function LeadSearchPage(props: {
     search.locationPlaceId !== null && search.status === 'done' && readyCount < search.maxResults;
 
   return (
-    <div className="max-w-6xl space-y-6">
-      <div className="space-y-3">
-        <Link
-          href="/dashboard/leads/"
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeft className="size-3.5" />
-          {t('back_link')}
-        </Link>
-
+    <div className="space-y-6">
+      <div className="space-y-1.5">
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-2xl font-semibold tracking-tight">{search.name}</h1>
+          <h1 className="text-xl font-semibold tracking-tight">{search.name}</h1>
           <StatusBadge kind="leadSearch" status={search.status} />
+
+          <div className="ml-auto flex flex-wrap items-center gap-2">
+            {readyCount > 0 && (
+              <Button asChild>
+                <Link href={`/dashboard/campaigns/new/?leadSearchId=${search.id}`}>
+                  <Send />
+                  {t('button_campaign', { count: readyCount })}
+                </Link>
+              </Button>
+            )}
+
+            {retryableCount > 0 && (
+              <RetryNoEmailLeadsButton leadSearchId={search.id} count={retryableCount} />
+            )}
+
+            <DeleteLeadSearchButton leadSearchId={search.id} />
+          </div>
         </div>
 
-        <p className="text-sm text-muted-foreground">
-          {t('meta_line', {
-            terms: search.searchTerms.join(', '),
-            location: search.location,
-            filter: formT(`website_${search.websiteFilter}`),
-            date: search.createdAt.toLocaleDateString(locale, { timeZone: AppConfig.timeZone }),
-          })}
-        </p>
-
-        <p className="text-sm text-muted-foreground">
-          {t('spend_line', {
-            total: format.number(microsToUsd(usage.totalCostMicros), USD_FORMAT),
-          })}
-          {search.reserveClaimed > 0 && ` · ${t('reserve_line', { count: search.reserveClaimed })}`}
+        <p className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-muted-foreground">
+          <span>
+            {t('meta_line', {
+              terms: search.searchTerms.join(', '),
+              location: search.location,
+              filter: formT(`website_${search.websiteFilter}`),
+              date: search.createdAt.toLocaleDateString(locale, { timeZone: AppConfig.timeZone }),
+            })}
+          </span>
+          <span aria-hidden>·</span>
+          <span>
+            {t('spend_line', {
+              total: format.number(microsToUsd(usage.totalCostMicros), USD_FORMAT),
+            })}
+            {search.reserveClaimed > 0 &&
+              ` · ${t('reserve_line', { count: search.reserveClaimed })}`}
+          </span>
         </p>
       </div>
 
@@ -139,23 +151,6 @@ export default async function LeadSearchPage(props: {
           <AlertDescription>{search.errorMessage}</AlertDescription>
         </Alert>
       )}
-
-      <div className="flex flex-wrap gap-2">
-        {readyCount > 0 && (
-          <Button asChild>
-            <Link href={`/dashboard/campaigns/new/?leadSearchId=${search.id}`}>
-              <Send />
-              {t('button_campaign', { count: readyCount })}
-            </Link>
-          </Button>
-        )}
-
-        {retryableCount > 0 && (
-          <RetryNoEmailLeadsButton leadSearchId={search.id} count={retryableCount} />
-        )}
-
-        <DeleteLeadSearchButton leadSearchId={search.id} />
-      </div>
 
       {leads.length > 0 && <LeadTable leads={leads} />}
     </div>

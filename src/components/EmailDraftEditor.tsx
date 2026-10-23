@@ -43,7 +43,7 @@ export const EmailDraftEditor = (props: { draft: DraftView; delayDays: number | 
     <Card size="sm">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <span className="flex size-6 items-center justify-center rounded-md bg-primary/10 text-xs font-medium text-primary">
+          <span className="flex size-6 items-center justify-center rounded-md border bg-background text-xs font-medium text-muted-foreground">
             {props.draft.stepIndex}
           </span>
           {t('step_title', { step: props.draft.stepIndex })}

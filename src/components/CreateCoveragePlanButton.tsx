@@ -16,7 +16,6 @@ export const CreateCoveragePlanButton = () => {
   return (
     <div className="space-y-3">
       <Button
-        className="h-10 px-5"
         disabled={isBusy}
         onClick={async () => {
           setIsBusy(true);

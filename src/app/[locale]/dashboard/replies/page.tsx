@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, Download, Inbox } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CircleCheck, Clock, Download, Inbox } from 'lucide-react';
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 import { EmptyState } from '@/components/EmptyState';
 import { PageHeader } from '@/components/PageHeader';
@@ -91,17 +91,31 @@ export default async function RepliesPage(props: {
             <TableBody>
               {conversations.map((conversation) => (
                 <TableRow key={conversation.id} className="relative">
-                  <TableCell>
+                  {/* Capped and truncated, so one long company name cannot widen the whole table */}
+                  <TableCell className="max-w-64 lg:max-w-80">
                     <Link
                       href={`/dashboard/replies/${conversation.id}/`}
-                      className="font-medium after:absolute after:inset-0"
+                      title={conversation.company ?? conversation.leadEmail}
+                      className="block truncate font-medium after:absolute after:inset-0"
                     >
                       {conversation.company ?? conversation.leadEmail}
                     </Link>
-                    <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                      {conversation.leadName && <span>{conversation.leadName}</span>}
-                      {conversation.leadEmail}
-                      {conversation.isTest && <Badge variant="outline">{t('badge_test')}</Badge>}
+                    <div className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
+                      <span
+                        className="truncate"
+                        title={[conversation.leadName, conversation.leadEmail]
+                          .filter(Boolean)
+                          .join(' · ')}
+                      >
+                        {[conversation.leadName, conversation.leadEmail]
+                          .filter(Boolean)
+                          .join(' · ')}
+                      </span>
+                      {conversation.isTest && (
+                        <Badge variant="outline" className="shrink-0">
+                          {t('badge_test')}
+                        </Badge>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell>
@@ -109,8 +123,11 @@ export default async function RepliesPage(props: {
                   </TableCell>
                   <TableCell>
                     {conversation.lastOutboundAt ? (
-                      <div className="space-y-1">
-                        <Badge variant="secondary">{t('answered_yes')}</Badge>
+                      <div className="space-y-0.5">
+                        <span className="flex items-center gap-1.5 text-sm">
+                          <CircleCheck className="size-4 text-success" />
+                          {t('answered_yes')}
+                        </span>
                         <div className="text-xs text-muted-foreground">
                           {format.dateTime(conversation.lastOutboundAt, {
                             dateStyle: 'medium',
@@ -119,7 +136,10 @@ export default async function RepliesPage(props: {
                         </div>
                       </div>
                     ) : (
-                      <Badge variant="outline">{t('answered_no')}</Badge>
+                      <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                        <Clock className="size-4 text-warning" />
+                        {t('answered_no')}
+                      </span>
                     )}
                   </TableCell>
                   <TableCell className="hidden md:table-cell">

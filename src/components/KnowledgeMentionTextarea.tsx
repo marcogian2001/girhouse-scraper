@@ -216,7 +216,7 @@ export const KnowledgeMentionTextarea = (props: {
         <div
           ref={backdropRef}
           aria-hidden
-          className="pointer-events-none absolute inset-0 overflow-hidden rounded-lg border border-transparent bg-white px-2.5 py-2 text-base wrap-break-word whitespace-pre-wrap md:text-sm dark:bg-input/30"
+          className="pointer-events-none absolute inset-0 overflow-hidden rounded-lg border border-transparent bg-background px-3 py-2 text-base wrap-break-word whitespace-pre-wrap md:text-sm dark:bg-input/30"
         >
           {splitMentions(props.value).map((segment) =>
             segment.type === 'mention' && documentNames.has(segment.name) ? (
@@ -275,7 +275,7 @@ export const KnowledgeMentionTextarea = (props: {
 
         {isOpen && (
           <div
-            className="absolute z-50 mt-1 w-64 max-w-full rounded-lg bg-popover p-1 text-popover-foreground shadow-md ring-1 ring-foreground/10"
+            className="absolute z-50 mt-1 w-64 max-w-full rounded-lg border bg-popover p-1 text-popover-foreground shadow-md"
             style={{ top: mention.top, left: mention.left }}
           >
             {matches.length === 0 ? (

@@ -157,6 +157,15 @@ const toneOf = (props: StatusBadgeProps) => {
 };
 
 /**
+ * Shows only the colored dot of a status, for places where its label is already written out.
+ * @param props The status and the vocabulary it belongs to.
+ * @returns A small dot tinted with the status tone.
+ */
+export const StatusDot = (props: StatusBadgeProps) => (
+  <span aria-hidden className={cn('size-1.5 shrink-0 rounded-full', DOT_CLASS[toneOf(props)])} />
+);
+
+/**
  * Shows a campaign, contact, lead search, lead, conversation, reply or email status as a pill
  * with a colored dot.
  * @param props Component props.
@@ -206,7 +215,7 @@ export const StatusBadge = (props: StatusBadgeProps) => {
 
   return (
     <Badge variant="ghost" className={cn('gap-1.5 rounded-full pl-1.5', TONE_CLASS[tone])}>
-      <span aria-hidden className={cn('size-1.5 rounded-full', DOT_CLASS[tone])} />
+      <StatusDot {...props} />
       {label}
     </Badge>
   );

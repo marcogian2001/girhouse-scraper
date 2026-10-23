@@ -1,6 +1,7 @@
 import { desc, eq } from 'drizzle-orm';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { KnowledgeManager } from '@/components/KnowledgeManager';
+import { PageHeader } from '@/components/PageHeader';
 import { getApiContext } from '@/libs/ApiAuth';
 import { db } from '@/libs/DB';
 import { knowledgeAssetSchema } from '@/models/Schema';
@@ -27,10 +28,7 @@ export default async function KnowledgePage(props: { params: Promise<{ locale: s
 
   return (
     <div className="max-w-6xl space-y-6">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-semibold">{t('title')}</h1>
-        <p className="text-muted-foreground">{t('description')}</p>
-      </div>
+      <PageHeader title={t('title')} description={t('description')} />
 
       <KnowledgeManager assets={assets} />
     </div>

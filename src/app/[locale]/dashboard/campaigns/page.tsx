@@ -1,6 +1,7 @@
 import { count, desc, eq } from 'drizzle-orm';
 import { ChevronRight, Download, Megaphone, Plus } from 'lucide-react';
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
+import { LinkTabs } from '@/components/LinkTabs';
 import { ListSearch } from '@/components/ListSearch';
 import { NoCampaigns } from '@/components/NoCampaigns';
 import { PageHeader } from '@/components/PageHeader';
@@ -24,13 +25,13 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getApiContext } from '@/libs/ApiAuth';
 import { db } from '@/libs/DB';
 import { Link } from '@/libs/I18nNavigation';
 import { campaignCostMicros } from '@/libs/Usage';
 import { campaignSchema, contactSchema } from '@/models/Schema';
 import { AppConfig } from '@/utils/AppConfig';
+import { matchesAllTerms, splitSearchTerms } from '@/utils/SearchTerms';
 import { microsToUsd, USD_FORMAT } from '@/utils/UsageFormat';
 
 export default async function CampaignsPage(props: {
@@ -72,8 +73,9 @@ export default async function CampaignsPage(props: {
     (campaign) => Boolean(campaign.archivedAt) === isArchivedView,
   );
   // Few enough rows per organization to filter here rather than in SQL
+  const terms = splitSearchTerms(search);
   const campaigns = viewCampaigns.filter((campaign) =>
-    campaign.name.toLocaleLowerCase(locale).includes(search.toLocaleLowerCase(locale)),
+    matchesAllTerms({ text: campaign.name, terms }),
   );
   const emptyMessage = isArchivedView ? t('empty_archived') : t('empty_active');
   const usd = (micros: number) => format.number(microsToUsd(micros), USD_FORMAT);
@@ -95,21 +97,21 @@ export default async function CampaignsPage(props: {
 
       {allCampaigns.length > 0 && (
         <div className="flex flex-wrap items-center gap-2">
-          <Tabs value={isArchivedView ? 'archived' : 'active'}>
-            <TabsList>
-              <TabsTrigger value="active" asChild>
-                <Link href="/dashboard/campaigns/">
-                  {t('tab_active', { count: allCampaigns.length - archivedCount })}
-                </Link>
-              </TabsTrigger>
-
-              <TabsTrigger value="archived" asChild>
-                <Link href="/dashboard/campaigns/?view=archived">
-                  {t('tab_archived', { count: archivedCount })}
-                </Link>
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
+          <LinkTabs
+            value={isArchivedView ? 'archived' : 'active'}
+            tabs={[
+              {
+                value: 'active',
+                href: '/dashboard/campaigns/',
+                label: t('tab_active', { count: allCampaigns.length - archivedCount }),
+              },
+              {
+                value: 'archived',
+                href: '/dashboard/campaigns/?view=archived',
+                label: t('tab_archived', { count: archivedCount }),
+              },
+            ]}
+          />
 
           <ListSearch defaultValue={search} placeholder={t('search_placeholder')} />
 

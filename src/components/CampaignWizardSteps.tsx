@@ -41,8 +41,8 @@ export const CampaignWizardSteps = (props: {
                 <span
                   className={cn(
                     'flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-medium transition-colors',
-                    isDone && 'bg-primary text-primary-foreground',
-                    isCurrent && 'bg-primary/10 text-primary ring-2 ring-primary/25',
+                    isDone && 'bg-primary/10 text-primary',
+                    isCurrent && 'bg-primary text-primary-foreground ring-4 ring-primary/15',
                     !(isDone || isCurrent) && 'bg-muted text-muted-foreground',
                   )}
                 >

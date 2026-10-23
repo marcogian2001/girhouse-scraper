@@ -2,6 +2,7 @@ import { and, desc, eq, isNotNull, isNull } from 'drizzle-orm';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { AutomationSettingsForm } from '@/components/AutomationSettingsForm';
 import { BotCampaignsCard } from '@/components/BotCampaignsCard';
+import { PageHeader } from '@/components/PageHeader';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getApiContext } from '@/libs/ApiAuth';
 import { getAutomationSettings } from '@/libs/AutomationSettings';
@@ -40,11 +41,8 @@ export default async function AutomationPage(props: { params: Promise<{ locale: 
     : [null, []];
 
   return (
-    <div className="max-w-6xl space-y-6">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">{t('title')}</h1>
-        <p className="text-sm text-muted-foreground">{t('subtitle')}</p>
-      </div>
+    <div className="max-w-3xl space-y-6">
+      <PageHeader title={t('title')} description={t('subtitle')} />
 
       <Card>
         <CardHeader>

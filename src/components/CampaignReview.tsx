@@ -55,7 +55,7 @@ export const CampaignReview = (props: {
           {Array.from({ length: props.settings.emailCount }, (_unused, index) => index).map(
             (index) => (
               <span key={index} className="flex items-center gap-1.5">
-                <span className="flex size-6 items-center justify-center rounded-md bg-primary/10 text-xs font-medium text-primary">
+                <span className="flex size-6 items-center justify-center rounded-md border bg-background text-xs font-medium text-muted-foreground">
                   {index + 1}
                 </span>
 

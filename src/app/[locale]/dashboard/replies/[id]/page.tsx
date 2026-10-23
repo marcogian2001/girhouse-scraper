@@ -1,4 +1,3 @@
-import { ArrowLeft } from 'lucide-react';
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import * as z from 'zod';
@@ -13,7 +12,6 @@ import { getApiContext } from '@/libs/ApiAuth';
 import { EVENT_TYPES, getConversationDetail } from '@/libs/Conversations';
 import { getConversationDemo } from '@/libs/Demos';
 import { canRunNextActionNow, canSkipToWhatsapp } from '@/libs/FollowUps';
-import { Link } from '@/libs/I18nNavigation';
 import { conversationStateEnum, replyCategoryEnum } from '@/models/Schema';
 
 export default async function ReplyDetailPage(props: {
@@ -111,18 +109,10 @@ export default async function ReplyDetailPage(props: {
   ].filter(([, value]) => value);
 
   return (
-    <div className="max-w-6xl space-y-6">
-      <div className="space-y-3">
-        <Link
-          href="/dashboard/replies/"
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeft className="size-3.5" />
-          {t('back_link')}
-        </Link>
-
+    <div className="space-y-6">
+      <div>
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-2xl font-semibold tracking-tight">
+          <h1 className="text-xl font-semibold tracking-tight">
             {conversation.company ?? conversation.leadEmail}
           </h1>
           {conversation.isTest && <Badge variant="outline">{t('badge_test')}</Badge>}

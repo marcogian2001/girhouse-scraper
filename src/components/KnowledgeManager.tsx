@@ -87,8 +87,8 @@ export const KnowledgeManager = (props: { assets: KnowledgeAssetView[] }) => {
               <Empty>
                 <EmptyHeader>
                   <EmptyMedia>
-                    <span className="flex size-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                      <MessageSquareQuote className="size-5" />
+                    <span className="flex size-10 items-center justify-center rounded-lg border bg-background text-muted-foreground">
+                      <MessageSquareQuote className="size-4" />
                     </span>
                   </EmptyMedia>
 
@@ -225,9 +225,9 @@ export const KnowledgeManager = (props: { assets: KnowledgeAssetView[] }) => {
                 {/* The label is the drop target, so click and keyboard both work */}
                 <label
                   htmlFor="knowledge-file"
-                  className="flex min-h-36 cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed p-6 text-center transition-colors hover:border-primary/50 has-focus-visible:border-primary has-focus-visible:ring-3 has-focus-visible:ring-ring/50"
+                  className="flex min-h-36 cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border border-dashed p-6 text-center transition-colors hover:border-primary/50 has-focus-visible:border-primary has-focus-visible:ring-3 has-focus-visible:ring-ring/50"
                 >
-                  <span className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <span className="flex size-10 items-center justify-center rounded-lg border bg-background text-muted-foreground">
                     <UploadCloud className="size-4" />
                   </span>
 

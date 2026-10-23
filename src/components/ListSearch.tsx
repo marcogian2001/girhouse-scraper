@@ -24,13 +24,27 @@ export const ListSearch = (props: { defaultValue: string; placeholder: string })
   const [value, setValue] = useState(props.defaultValue);
   const timer = useRef<ReturnType<typeof setTimeout>>(null);
 
+  const search = (next: string) => {
+    const params = new URLSearchParams(searchParams);
+
+    if (next.trim()) {
+      params.set('q', next.trim());
+    } else {
+      params.delete('q');
+    }
+
+    const query = params.toString();
+    startTransition(() => {
+      router.replace(query ? `${pathname}?${query}` : pathname);
+    });
+  };
+
   return (
     <div className="flex w-full items-center gap-2 sm:w-auto">
       <SearchInput
         value={value}
         placeholder={props.placeholder}
-        onChange={(event) => {
-          const next = event.target.value;
+        onChange={(next) => {
           setValue(next);
 
           if (timer.current) {
@@ -38,19 +52,16 @@ export const ListSearch = (props: { defaultValue: string; placeholder: string })
           }
 
           timer.current = setTimeout(() => {
-            const params = new URLSearchParams(searchParams);
-
-            if (next.trim()) {
-              params.set('q', next.trim());
-            } else {
-              params.delete('q');
-            }
-
-            const query = params.toString();
-            startTransition(() => {
-              router.replace(query ? `${pathname}?${query}` : pathname);
-            });
+            search(next);
           }, SEARCH_DELAY_MS);
+        }}
+        onClear={() => {
+          if (timer.current) {
+            clearTimeout(timer.current);
+          }
+
+          setValue('');
+          search('');
         }}
       />
 

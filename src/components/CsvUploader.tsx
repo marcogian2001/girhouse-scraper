@@ -67,7 +67,7 @@ export const CsvUploader = (props: {
           keyboard working without putting listeners on a non-interactive element */}
       <div
         data-dragging={isDragging}
-        className="rounded-xl border-2 border-dashed transition-colors hover:border-primary/50 has-focus-visible:border-primary has-focus-visible:ring-3 has-focus-visible:ring-ring/50 data-[dragging=true]:border-primary data-[dragging=true]:bg-accent"
+        className="rounded-lg border border-dashed transition-colors hover:border-primary/50 has-focus-visible:border-primary has-focus-visible:ring-3 has-focus-visible:ring-ring/50 data-[dragging=true]:border-primary data-[dragging=true]:bg-accent"
         onDragOver={(event) => {
           event.preventDefault();
           setIsDragging(true);
@@ -85,7 +85,7 @@ export const CsvUploader = (props: {
           htmlFor="csv-file"
           className="flex min-h-44 cursor-pointer flex-col items-center justify-center gap-3 p-8 text-center"
         >
-          <span className="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+          <span className="flex size-10 items-center justify-center rounded-lg border bg-background text-muted-foreground">
             <UploadCloud className="size-5" />
           </span>
 

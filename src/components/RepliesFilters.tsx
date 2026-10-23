@@ -1,9 +1,11 @@
 'use client';
 
-import { X } from 'lucide-react';
+import { cn } from 'cn';
+import { Bot, CircleCheck, CircleDot, Clock, Reply, UserRound, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useRef, useState, useTransition } from 'react';
 import { SearchInput } from '@/components/SearchInput';
+import { StatusDot } from '@/components/StatusBadge';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -20,6 +22,9 @@ import type { ConversationState } from '@/utils/ReplyRouting';
 
 /** The select value that clears a filter, since an empty value is not allowed. */
 const ALL = 'all';
+
+/** Tints a filter that is narrowing the list, so active filters stand out at a glance. */
+const ACTIVE_FILTER_CLASS = 'border-primary/40 bg-primary/5 dark:bg-primary/10';
 
 /** How long typing has to pause before the list is searched. */
 const SEARCH_DELAY_MS = 300;
@@ -62,8 +67,8 @@ export const RepliesFilters = (props: {
     <div className="flex flex-wrap items-center gap-2">
       <SearchInput
         value={query.search}
-        onChange={(event) => {
-          const next = { ...query, search: event.target.value };
+        onChange={(search) => {
+          const next = { ...query, search };
 
           setQuery(next);
 
@@ -75,6 +80,9 @@ export const RepliesFilters = (props: {
             navigate(next);
           }, SEARCH_DELAY_MS);
         }}
+        onClear={() => {
+          apply({ ...query, search: '' });
+        }}
         placeholder={t('search_placeholder')}
       />
 
@@ -84,14 +92,23 @@ export const RepliesFilters = (props: {
           apply({ ...query, state: props.states.find((state) => state === value) });
         }}
       >
-        <SelectTrigger aria-label={t('filter_state_label')} className="w-full sm:w-48">
+        <SelectTrigger
+          aria-label={t('filter_state_label')}
+          className={cn('w-full sm:w-52', query.state && ACTIVE_FILTER_CLASS)}
+        >
           <SelectValue />
         </SelectTrigger>
 
         <SelectContent>
-          <SelectItem value={ALL}>{t('filter_state_all')}</SelectItem>
+          <SelectItem value={ALL}>
+            <CircleDot className="text-muted-foreground" />
+            {t('filter_state_all')}
+          </SelectItem>
           {props.states.map((state) => (
             <SelectItem key={state} value={state}>
+              <span className="flex size-4 items-center justify-center">
+                <StatusDot kind="conversation" status={state} />
+              </span>
               {tState(`status_${state}`)}
             </SelectItem>
           ))}
@@ -104,14 +121,26 @@ export const RepliesFilters = (props: {
           apply({ ...query, answered: YES_NO.find((option) => option === value) });
         }}
       >
-        <SelectTrigger aria-label={t('filter_answered_label')} className="w-full sm:w-48">
+        <SelectTrigger
+          aria-label={t('filter_answered_label')}
+          className={cn('w-full sm:w-56', query.answered && ACTIVE_FILTER_CLASS)}
+        >
           <SelectValue />
         </SelectTrigger>
 
         <SelectContent>
-          <SelectItem value={ALL}>{t('filter_answered_all')}</SelectItem>
-          <SelectItem value="yes">{t('filter_answered_yes')}</SelectItem>
-          <SelectItem value="no">{t('filter_answered_no')}</SelectItem>
+          <SelectItem value={ALL}>
+            <Reply className="text-muted-foreground" />
+            {t('filter_answered_all')}
+          </SelectItem>
+          <SelectItem value="yes">
+            <CircleCheck className="text-success" />
+            {t('filter_answered_yes')}
+          </SelectItem>
+          <SelectItem value="no">
+            <Clock className="text-warning" />
+            {t('filter_answered_no')}
+          </SelectItem>
         </SelectContent>
       </Select>
 
@@ -121,14 +150,26 @@ export const RepliesFilters = (props: {
           apply({ ...query, bot: YES_NO.find((option) => option === value) });
         }}
       >
-        <SelectTrigger aria-label={t('filter_bot_label')} className="w-full sm:w-48">
+        <SelectTrigger
+          aria-label={t('filter_bot_label')}
+          className={cn('w-full sm:w-48', query.bot && ACTIVE_FILTER_CLASS)}
+        >
           <SelectValue />
         </SelectTrigger>
 
         <SelectContent>
-          <SelectItem value={ALL}>{t('filter_bot_all')}</SelectItem>
-          <SelectItem value="yes">{t('filter_bot_yes')}</SelectItem>
-          <SelectItem value="no">{t('filter_bot_no')}</SelectItem>
+          <SelectItem value={ALL}>
+            <Bot className="text-muted-foreground" />
+            {t('filter_bot_all')}
+          </SelectItem>
+          <SelectItem value="yes">
+            <Bot className="text-primary" />
+            {t('filter_bot_yes')}
+          </SelectItem>
+          <SelectItem value="no">
+            <UserRound className="text-muted-foreground" />
+            {t('filter_bot_no')}
+          </SelectItem>
         </SelectContent>
       </Select>
 

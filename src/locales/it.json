@@ -224,7 +224,6 @@
     "column_status": "Stato"
   },
   "LeadSearchPage": {
-    "back_link": "Tutte le ricerche",
     "meta_line": "{terms} · {location} · {filter} · creata il {date}",
     "spend_line": "Spesa stimata {total}",
     "button_campaign": "Crea una campagna con {count, plural, one {# lead} other {# lead}}",
@@ -356,7 +355,6 @@
   },
   "CampaignDetailPage": {
     "badge_archived": "Archiviata",
-    "back_link": "Tutte le campagne",
     "meta_line": "{contacts, plural, one {# contatto} other {# contatti}} · {emails, plural, one {# email} other {# email}} · creata il {date}",
     "tab_review": "Revisione",
     "button_export": "Esporta CSV",
@@ -366,7 +364,7 @@
     "spend_line": "Spesa stimata {total}: Claude {tokens} token, {copywritingCost} · Parallel {runs, plural, one {# ricerca} other {# ricerche}}, ~{parallelCost}"
   },
   "KnowledgePage": {
-    "title": "Knowledge base",
+    "title": "Base di conoscenza",
     "description": "Prompt e documenti che l'AI legge prima di scrivere. Li scegli campagna per campagna."
   },
   "NewCampaignWizard": {
@@ -786,7 +784,6 @@
     "button_clear": "Azzera filtri"
   },
   "ReplyImportPage": {
-    "back_link": "Risposte",
     "title": "Importa risposte",
     "subtitle": "Porta qui la conversazione che un lead ha avuto su Instantly, per classificarla e preparargli la demo."
   },
@@ -1279,5 +1276,8 @@
     "never_synced": "Dati Instantly non ancora letti",
     "button_sync": "Aggiorna da Instantly",
     "error_sync": "Aggiornamento non riuscito."
+  },
+  "SearchInput": {
+    "label_clear": "Cancella ricerca"
   }
 }

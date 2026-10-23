@@ -1,5 +1,6 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { LeadSearchForm } from '@/components/LeadSearchForm';
+import { PageHeader } from '@/components/PageHeader';
 import { getApiContext } from '@/libs/ApiAuth';
 import { loadOrganizationEmailYield } from '@/libs/LeadJobs';
 import { PLACE_COST_MICROS } from '@/services/Apify';
@@ -20,10 +21,7 @@ export default async function NewLeadSearchPage(props: { params: Promise<{ local
 
   return (
     <div className="max-w-4xl space-y-6">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">{t('title')}</h1>
-        <p className="text-sm text-muted-foreground">{t('description')}</p>
-      </div>
+      <PageHeader title={t('title')} description={t('description')} />
 
       {/* Prices live in server-only service modules, so they are handed down */}
       <LeadSearchForm

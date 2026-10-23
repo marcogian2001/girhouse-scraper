@@ -1,6 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Check } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
@@ -278,16 +279,19 @@ export const AutomationSettingsForm = (props: { settings: AutomationSettingsInpu
           ))}
         </Accordion>
 
-        <Button type="submit" className="w-fit" disabled={form.formState.isSubmitting}>
-          {form.formState.isSubmitting && <Spinner />}
-          {t('button_save')}
-        </Button>
+        <div className="flex items-center gap-3">
+          <Button type="submit" disabled={form.formState.isSubmitting}>
+            {form.formState.isSubmitting && <Spinner />}
+            {t('button_save')}
+          </Button>
 
-        {outcome === 'saved' && (
-          <Alert>
-            <AlertDescription>{t('saved')}</AlertDescription>
-          </Alert>
-        )}
+          {outcome === 'saved' && (
+            <span className="flex items-center gap-1 text-sm text-success">
+              <Check className="size-3.5" />
+              {t('saved')}
+            </span>
+          )}
+        </div>
 
         {outcome === 'error' && (
           <Alert variant="destructive">

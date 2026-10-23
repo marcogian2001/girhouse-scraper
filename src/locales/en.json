@@ -224,7 +224,6 @@
     "column_status": "Status"
   },
   "LeadSearchPage": {
-    "back_link": "All searches",
     "meta_line": "{terms} · {location} · {filter} · created on {date}",
     "spend_line": "Estimated spend {total}",
     "button_campaign": "Create a campaign with {count, plural, one {# lead} other {# leads}}",
@@ -356,7 +355,6 @@
   },
   "CampaignDetailPage": {
     "badge_archived": "Archived",
-    "back_link": "All campaigns",
     "meta_line": "{contacts, plural, one {# contact} other {# contacts}} · {emails, plural, one {# email} other {# emails}} · created {date}",
     "tab_review": "Review",
     "button_export": "Export CSV",
@@ -786,7 +784,6 @@
     "button_clear": "Clear filters"
   },
   "ReplyImportPage": {
-    "back_link": "Replies",
     "title": "Import replies",
     "subtitle": "Brings in the conversation a lead had on Instantly, to classify it and prepare their demo."
   },
@@ -1279,5 +1276,8 @@
     "never_synced": "Instantly data not read yet",
     "button_sync": "Refresh from Instantly",
     "error_sync": "Refresh failed."
+  },
+  "SearchInput": {
+    "label_clear": "Clear search"
   }
 }

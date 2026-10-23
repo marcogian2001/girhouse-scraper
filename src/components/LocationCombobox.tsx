@@ -159,7 +159,7 @@ export const LocationCombobox = (props: {
       />
 
       {isOpen && (
-        <div className="absolute top-full z-50 mt-1 w-full rounded-lg bg-popover p-1 text-popover-foreground shadow-md ring-1 ring-foreground/10">
+        <div className="absolute top-full z-50 mt-1 w-full rounded-lg border bg-popover p-1 text-popover-foreground shadow-md">
           {message ? (
             <p className="px-1.5 py-1 text-sm text-muted-foreground">{message}</p>
           ) : (
