@@ -239,6 +239,13 @@
       "when": 1792790165627,
       "tag": "0033_campaign_tests_instantly",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1792791080940,
+      "tag": "0034_perf_indexes",
+      "breakpoints": true
     }
   ]
 }

@@ -335,7 +335,11 @@ export const contactSchema = pgTable(
     errorMessage: text('error_message'),
     ...timestamps,
   },
-  (table) => [index('contact_campaign_id_status_idx').on(table.campaignId, table.status)],
+  (table) => [
+    index('contact_campaign_id_status_idx').on(table.campaignId, table.status),
+    // Contacts are looked up by email, whatever its case, from replies and GHL events
+    index('contact_lower_email_idx').on(sql`lower(${table.email})`),
+  ],
 );
 
 /** Outcome of a Parallel AI task run for a single contact. */
@@ -570,6 +574,13 @@ export const leadSchema = pgTable(
   (table) => [
     unique('lead_organization_id_place_id_unique').on(table.organizationId, table.placeId),
     index('lead_lead_search_id_status_idx').on(table.leadSearchId, table.status),
+    // Organization-wide email outcome counts, run by every lead job
+    index('lead_organization_id_status_idx').on(table.organizationId, table.status),
+    // Matches replies and campaign contacts to leads by email, whatever its case
+    index('lead_organization_id_lower_email_idx').on(
+      table.organizationId,
+      sql`lower(${table.email})`,
+    ),
   ],
 );
 
@@ -599,6 +610,9 @@ export const jobSchema = pgTable(
     index('job_status_run_after_idx').on(table.status, table.runAfter),
     index('job_campaign_id_idx').on(table.campaignId),
     index('job_lead_search_id_idx').on(table.leadSearchId),
+    // Deleting a contact or a lead cascades to its jobs
+    index('job_contact_id_idx').on(table.contactId),
+    index('job_lead_id_idx').on(table.leadId),
   ],
 );
 
@@ -851,6 +865,16 @@ export const conversationSchema = pgTable(
       table.leadEmail,
     ),
     index('conversation_organization_id_state_idx').on(table.organizationId, table.state),
+    // The replies list, newest reply first: read backwards, it matches `DESC NULLS FIRST`
+    index('conversation_organization_id_last_inbound_at_idx').on(
+      table.organizationId,
+      table.lastInboundAt,
+      table.id,
+    ),
+    index('conversation_campaign_id_idx').on(table.campaignId),
+    // Deleting a contact or a lead clears it from its conversations
+    index('conversation_contact_id_idx').on(table.contactId),
+    index('conversation_lead_id_idx').on(table.leadId),
   ],
 );
 
@@ -1182,7 +1206,11 @@ export const demoSchema = pgTable(
     bookedAt: timestamp('booked_at', { mode: 'date' }),
     ...timestamps,
   },
-  (table) => [index('demo_organization_id_idx').on(table.organizationId)],
+  (table) => [
+    index('demo_organization_id_idx').on(table.organizationId),
+    // Deleting a lead clears it from its demos
+    index('demo_lead_id_idx').on(table.leadId),
+  ],
 );
 
 /** An image a demo shows whose source link expires, such as an Instagram photo, kept as a copy. */
