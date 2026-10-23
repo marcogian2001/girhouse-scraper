@@ -1,6 +1,7 @@
 import {
   and,
   asc,
+  count,
   desc,
   eq,
   getTableColumns,
@@ -21,12 +22,85 @@ import {
   leadSearchSchema,
 } from '@/models/Schema';
 import { toLeadCsv } from '@/utils/Leads';
+import { LIST_PAGE_SIZE } from '@/utils/Pagination';
+import {
+  ACCENTED_LETTERS,
+  PLAIN_LETTERS,
+  splitSearchTerms,
+  toLikePattern,
+} from '@/utils/SearchTerms';
 import type { CampaignInput } from '@/validations/CampaignValidation';
 import { enqueueWriting } from './CampaignWriting';
 import { db } from './DB';
 import { enqueue } from './JobQueue';
 import { findResearchedLeads } from './LeadResearch';
 import { logger } from './Logger';
+import { campaignCostMicros } from './Usage';
+
+/**
+ * Lists one page of an organization's campaigns, newest first, with their contact
+ * count and spend. Search and paging run in SQL, so only the page is loaded.
+ * @param options The listing.
+ * @param options.organizationId The organization.
+ * @param options.archived Whether to list the archived campaigns instead of the active ones.
+ * @param options.search Words the name must all contain, ignoring case and accents.
+ * @param options.page The 1-based page.
+ * @returns The page's campaigns, how many match in all, and the organization's
+ * campaign and archived totals for the tabs.
+ */
+export const listCampaigns = async (options: {
+  organizationId: string;
+  archived: boolean;
+  search: string;
+  page: number;
+}) => {
+  const terms = splitSearchTerms(options.search);
+  // Folds case and accents in SQL the same way `splitSearchTerms` does in JavaScript
+  const searchableName = sql`translate(lower(${campaignSchema.name}), ${ACCENTED_LETTERS}, ${PLAIN_LETTERS})`;
+
+  const [[totals], campaigns] = await Promise.all([
+    // `count(column)` skips NULLs, so `archived` counts the archived campaigns
+    db
+      .select({ total: count(), archived: count(campaignSchema.archivedAt) })
+      .from(campaignSchema)
+      .where(eq(campaignSchema.organizationId, options.organizationId)),
+    db
+      .select({
+        id: campaignSchema.id,
+        name: campaignSchema.name,
+        status: campaignSchema.status,
+        emailCount: campaignSchema.emailCount,
+        createdAt: campaignSchema.createdAt,
+        // Grouping by the primary key lets the other columns ride along
+        contacts: count(contactSchema.id),
+        costMicros: campaignCostMicros,
+        // Counted after grouping and before the limit, so it is every matching campaign
+        matching: sql<number>`count(*) over ()`.mapWith(Number),
+      })
+      .from(campaignSchema)
+      .leftJoin(contactSchema, eq(contactSchema.campaignId, campaignSchema.id))
+      .where(
+        and(
+          eq(campaignSchema.organizationId, options.organizationId),
+          options.archived
+            ? isNotNull(campaignSchema.archivedAt)
+            : isNull(campaignSchema.archivedAt),
+          ...terms.map((term) => sql`${searchableName} like ${toLikePattern(term)}`),
+        ),
+      )
+      .groupBy(campaignSchema.id)
+      .orderBy(desc(campaignSchema.createdAt), desc(campaignSchema.id))
+      .limit(LIST_PAGE_SIZE)
+      .offset((options.page - 1) * LIST_PAGE_SIZE),
+  ]);
+
+  return {
+    campaigns,
+    matching: campaigns[0]?.matching ?? 0,
+    total: totals?.total ?? 0,
+    archived: totals?.archived ?? 0,
+  };
+};
 
 /**
  * Loads the ready leads of a search as the contact list of a new campaign,

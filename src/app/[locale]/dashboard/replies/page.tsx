@@ -1,6 +1,7 @@
-import { ChevronLeft, ChevronRight, CircleCheck, Clock, Download, Inbox } from 'lucide-react';
+import { CircleCheck, Clock, Download, Inbox } from 'lucide-react';
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 import { EmptyState } from '@/components/EmptyState';
+import { ListPagination } from '@/components/ListPagination';
 import { PageHeader } from '@/components/PageHeader';
 import { RepliesFilters } from '@/components/RepliesFilters';
 import { StatusBadge } from '@/components/StatusBadge';
@@ -19,6 +20,7 @@ import { getApiContext } from '@/libs/ApiAuth';
 import { CONVERSATIONS_PAGE_SIZE, listConversations } from '@/libs/Conversations';
 import { Link } from '@/libs/I18nNavigation';
 import { conversationStateEnum } from '@/models/Schema';
+import { parsePage } from '@/utils/Pagination';
 import { hasRepliesFilters, parseRepliesQuery, repliesHref } from '@/utils/RepliesQuery';
 
 export default async function RepliesPage(props: {
@@ -31,10 +33,7 @@ export default async function RepliesPage(props: {
   const searchParams = await props.searchParams;
   const query = parseRepliesQuery(searchParams, conversationStateEnum.enumValues);
   const isFiltered = hasRepliesFilters(query);
-  const page =
-    typeof searchParams.page === 'string'
-      ? Math.max(1, Math.trunc(Number(searchParams.page)) || 1)
-      : 1;
+  const page = parsePage(searchParams.page);
 
   const t = await getTranslations({ locale, namespace: 'RepliesPage' });
   const format = await getFormatter({ locale });
@@ -162,41 +161,11 @@ export default async function RepliesPage(props: {
       )}
 
       {pageCount > 1 && (
-        <div className="flex items-center justify-between gap-4">
-          <p className="text-sm text-muted-foreground">
-            {t('pagination_summary', { page, pageCount, count: matching })}
-          </p>
-
-          <div className="flex items-center gap-2">
-            {page > 1 ? (
-              <Button asChild variant="outline">
-                <Link href={repliesHref(query, page - 1)}>
-                  <ChevronLeft />
-                  {t('button_previous')}
-                </Link>
-              </Button>
-            ) : (
-              <Button variant="outline" disabled>
-                <ChevronLeft />
-                {t('button_previous')}
-              </Button>
-            )}
-
-            {page < pageCount ? (
-              <Button asChild variant="outline">
-                <Link href={repliesHref(query, page + 1)}>
-                  {t('button_next')}
-                  <ChevronRight />
-                </Link>
-              </Button>
-            ) : (
-              <Button variant="outline" disabled>
-                {t('button_next')}
-                <ChevronRight />
-              </Button>
-            )}
-          </div>
-        </div>
+        <ListPagination
+          summary={t('pagination_summary', { page, pageCount, count: matching })}
+          previousHref={page > 1 ? repliesHref(query, page - 1) : undefined}
+          nextHref={page < pageCount ? repliesHref(query, page + 1) : undefined}
+        />
       )}
     </div>
   );

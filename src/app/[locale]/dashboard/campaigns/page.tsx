@@ -1,7 +1,7 @@
-import { count, desc, eq } from 'drizzle-orm';
 import { ChevronRight, Download, Megaphone, Plus } from 'lucide-react';
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 import { LinkTabs } from '@/components/LinkTabs';
+import { ListPagination } from '@/components/ListPagination';
 import { ListSearch } from '@/components/ListSearch';
 import { NoCampaigns } from '@/components/NoCampaigns';
 import { PageHeader } from '@/components/PageHeader';
@@ -26,13 +26,39 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { getApiContext } from '@/libs/ApiAuth';
-import { db } from '@/libs/DB';
+import { listCampaigns } from '@/libs/Campaigns';
 import { Link } from '@/libs/I18nNavigation';
-import { campaignCostMicros } from '@/libs/Usage';
-import { campaignSchema, contactSchema } from '@/models/Schema';
 import { AppConfig } from '@/utils/AppConfig';
-import { matchesAllTerms, splitSearchTerms } from '@/utils/SearchTerms';
+import { LIST_PAGE_SIZE, parsePage } from '@/utils/Pagination';
 import { microsToUsd, USD_FORMAT } from '@/utils/UsageFormat';
+
+/**
+ * Builds the link to a page of the campaign list, keeping its tab and search.
+ * @param options The list state.
+ * @param options.archived Whether the archived tab is open.
+ * @param options.search The search, if any.
+ * @param options.page The 1-based page.
+ * @returns The relative URL.
+ */
+const campaignsHref = (options: { archived: boolean; search: string; page: number }) => {
+  const params = new URLSearchParams();
+
+  if (options.archived) {
+    params.set('view', 'archived');
+  }
+
+  if (options.search) {
+    params.set('q', options.search);
+  }
+
+  if (options.page > 1) {
+    params.set('page', String(options.page));
+  }
+
+  const query = params.toString();
+
+  return `/dashboard/campaigns/${query ? `?${query}` : ''}`;
+};
 
 export default async function CampaignsPage(props: {
   params: Promise<{ locale: string }>;
@@ -45,38 +71,28 @@ export default async function CampaignsPage(props: {
   const isArchivedView = searchParams.view === 'archived';
   const search = typeof searchParams.q === 'string' ? searchParams.q.trim() : '';
 
-  const t = await getTranslations({ locale, namespace: 'CampaignsPage' });
-  const format = await getFormatter({ locale });
-  const context = await getApiContext();
+  const page = parsePage(searchParams.page);
 
-  const allCampaigns = context
-    ? await db
-        .select({
-          id: campaignSchema.id,
-          name: campaignSchema.name,
-          status: campaignSchema.status,
-          emailCount: campaignSchema.emailCount,
-          createdAt: campaignSchema.createdAt,
-          archivedAt: campaignSchema.archivedAt,
-          // Grouping by the primary key lets the other columns ride along
-          contacts: count(contactSchema.id),
-          costMicros: campaignCostMicros,
-        })
-        .from(campaignSchema)
-        .leftJoin(contactSchema, eq(contactSchema.campaignId, campaignSchema.id))
-        .where(eq(campaignSchema.organizationId, context.organizationId))
-        .groupBy(campaignSchema.id)
-        .orderBy(desc(campaignSchema.createdAt))
-    : [];
-  const archivedCount = allCampaigns.filter((campaign) => campaign.archivedAt).length;
-  const viewCampaigns = allCampaigns.filter(
-    (campaign) => Boolean(campaign.archivedAt) === isArchivedView,
-  );
-  // Few enough rows per organization to filter here rather than in SQL
-  const terms = splitSearchTerms(search);
-  const campaigns = viewCampaigns.filter((campaign) =>
-    matchesAllTerms({ text: campaign.name, terms }),
-  );
+  const [t, format, context] = await Promise.all([
+    getTranslations({ locale, namespace: 'CampaignsPage' }),
+    getFormatter({ locale }),
+    getApiContext(),
+  ]);
+
+  const listing = context
+    ? await listCampaigns({
+        organizationId: context.organizationId,
+        archived: isArchivedView,
+        search,
+        page,
+      })
+    : { campaigns: [], matching: 0, total: 0, archived: 0 };
+  const { campaigns, matching } = listing;
+  const totalCount = listing.total;
+  const archivedCount = listing.archived;
+  const pageCount = Math.ceil(matching / LIST_PAGE_SIZE);
+  const pageHref = (target: number) =>
+    campaignsHref({ archived: isArchivedView, search, page: target });
   const emptyMessage = isArchivedView ? t('empty_archived') : t('empty_active');
   const usd = (micros: number) => format.number(microsToUsd(micros), USD_FORMAT);
 
@@ -95,7 +111,7 @@ export default async function CampaignsPage(props: {
         }
       />
 
-      {allCampaigns.length > 0 && (
+      {totalCount > 0 && (
         <div className="flex flex-wrap items-center gap-2">
           <LinkTabs
             value={isArchivedView ? 'archived' : 'active'}
@@ -103,7 +119,7 @@ export default async function CampaignsPage(props: {
               {
                 value: 'active',
                 href: '/dashboard/campaigns/',
-                label: t('tab_active', { count: allCampaigns.length - archivedCount }),
+                label: t('tab_active', { count: totalCount - archivedCount }),
               },
               {
                 value: 'archived',
@@ -126,9 +142,9 @@ export default async function CampaignsPage(props: {
         </div>
       )}
 
-      {allCampaigns.length === 0 && <NoCampaigns />}
+      {totalCount === 0 && <NoCampaigns />}
 
-      {allCampaigns.length > 0 && campaigns.length === 0 && (
+      {totalCount > 0 && campaigns.length === 0 && (
         <p className="rounded-lg border border-dashed px-4 py-8 text-center text-sm text-muted-foreground">
           {search ? t('empty_search', { search }) : emptyMessage}
         </p>
@@ -237,6 +253,14 @@ export default async function CampaignsPage(props: {
             </ItemGroup>
           </TableFrame>
         </>
+      )}
+
+      {pageCount > 1 && (
+        <ListPagination
+          summary={t('pagination_summary', { page, pageCount, count: matching })}
+          previousHref={page > 1 ? pageHref(page - 1) : undefined}
+          nextHref={page < pageCount ? pageHref(page + 1) : undefined}
+        />
       )}
     </div>
   );

@@ -152,6 +152,7 @@
     "status_failed": "Fallito"
   },
   "LeadSearchesPage": {
+    "pagination_summary": "Pagina {page} di {pageCount} · {count, plural, one {# ricerca} other {# ricerche}}",
     "title": "Ricerca lead",
     "subtitle": "Attività trovate su Google Maps, con il decisore e un’email verificata.",
     "button_new": "Nuova ricerca",
@@ -318,6 +319,7 @@
     "button_cancel": "Annulla"
   },
   "CampaignsPage": {
+    "pagination_summary": "Pagina {page} di {pageCount} · {count, plural, one {# campagna} other {# campagne}}",
     "title": "Campagne",
     "subtitle": "Tutte le liste di contatti trasformate in sequenze.",
     "button_new": "Nuova campagna",
@@ -355,8 +357,6 @@
   },
   "CampaignDetailPage": {
     "pagination_summary": "Pagina {page} di {pageCount} · {count, plural, one {# contatto} other {# contatti}}",
-    "button_previous": "Precedente",
-    "button_next": "Successiva",
     "badge_archived": "Archiviata",
     "meta_line": "{contacts, plural, one {# contatto} other {# contatti}} · {emails, plural, one {# email} other {# email}} · creata il {date}",
     "tab_review": "Revisione",
@@ -752,6 +752,10 @@
     "hint_writingModel": "Scrive risposte, follow-up e messaggi WhatsApp.",
     "sequence_summary": "Con queste impostazioni: demo → {count, plural, =0 {nessun follow-up} one {# follow-up} other {# follow-up}} a distanza di {days, plural, one {# giorno lavorativo} other {# giorni lavorativi}} → email di chiusura → WhatsApp dopo {whatsappDays, plural, one {# giorno lavorativo} other {# giorni lavorativi}}. WhatsApp parte solo per chi ha detto sì, non ha prenotato e ha lasciato un cellulare; gli altri vengono chiusi."
   },
+  "ListPagination": {
+    "button_previous": "Precedente",
+    "button_next": "Successiva"
+  },
   "RepliesPage": {
     "title": "Risposte",
     "subtitle": "I lead che hanno risposto a una cold email, e a che punto è ognuno.",
@@ -767,8 +771,6 @@
     "answered_yes": "Sì",
     "answered_no": "No",
     "pagination_summary": "Pagina {page} di {pageCount} · {count} risposte",
-    "button_previous": "Precedente",
-    "button_next": "Successiva",
     "empty_filtered_title": "Nessun risultato",
     "empty_filtered_description": "Nessuna risposta corrisponde ai filtri scelti."
   },

@@ -152,6 +152,7 @@
     "status_failed": "Failed"
   },
   "LeadSearchesPage": {
+    "pagination_summary": "Page {page} of {pageCount} · {count, plural, one {# search} other {# searches}}",
     "title": "Lead search",
     "subtitle": "Businesses found on Google Maps, with their decision maker and a verified email.",
     "button_new": "New search",
@@ -318,6 +319,7 @@
     "button_cancel": "Cancel"
   },
   "CampaignsPage": {
+    "pagination_summary": "Page {page} of {pageCount} · {count, plural, one {# campaign} other {# campaigns}}",
     "title": "Campaigns",
     "subtitle": "Every contact list you have turned into a sequence.",
     "button_new": "New campaign",
@@ -355,8 +357,6 @@
   },
   "CampaignDetailPage": {
     "pagination_summary": "Page {page} of {pageCount} · {count, plural, one {# contact} other {# contacts}}",
-    "button_previous": "Previous",
-    "button_next": "Next",
     "badge_archived": "Archived",
     "meta_line": "{contacts, plural, one {# contact} other {# contacts}} · {emails, plural, one {# email} other {# emails}} · created {date}",
     "tab_review": "Review",
@@ -752,6 +752,10 @@
     "hint_writingModel": "Writes answers, follow-ups and WhatsApp messages.",
     "sequence_summary": "With these settings: demo → {count, plural, =0 {no follow-ups} one {# follow-up} other {# follow-ups}} {days, plural, one {# working day} other {# working days}} apart → closing email → WhatsApp after {whatsappDays, plural, one {# working day} other {# working days}}. WhatsApp goes only to leads who said yes, did not book and left a mobile number; the others are closed."
   },
+  "ListPagination": {
+    "button_previous": "Previous",
+    "button_next": "Next"
+  },
   "RepliesPage": {
     "title": "Replies",
     "subtitle": "Leads who answered a cold email, and where each one stands.",
@@ -767,8 +771,6 @@
     "answered_yes": "Yes",
     "answered_no": "No",
     "pagination_summary": "Page {page} of {pageCount} · {count} replies",
-    "button_previous": "Previous",
-    "button_next": "Next",
     "empty_filtered_title": "No results",
     "empty_filtered_description": "No reply matches the chosen filters."
   },

@@ -1,5 +1,5 @@
 import { and, asc, count, eq, inArray } from 'drizzle-orm';
-import { ChevronLeft, ChevronRight, Download } from 'lucide-react';
+import { Download } from 'lucide-react';
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
@@ -12,6 +12,7 @@ import type { ContactReview } from '@/components/ContactReviewList';
 import { ContactReviewList } from '@/components/ContactReviewList';
 import { DeleteCampaignButton } from '@/components/DeleteCampaignButton';
 import { InstantlyPushForm } from '@/components/InstantlyPushForm';
+import { ListPagination } from '@/components/ListPagination';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -21,10 +22,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getApiContext } from '@/libs/ApiAuth';
 import { db } from '@/libs/DB';
-import { Link } from '@/libs/I18nNavigation';
 import { getUsageTotals } from '@/libs/Usage';
 import { campaignSchema, contactSchema, emailDraftSchema, enrichmentSchema } from '@/models/Schema';
 import { AppConfig } from '@/utils/AppConfig';
+import { parsePage } from '@/utils/Pagination';
 import { COMPACT_FORMAT, microsToUsd, USD_FORMAT } from '@/utils/UsageFormat';
 import {
   EnrichmentBasisValidation,
@@ -42,10 +43,7 @@ export default async function CampaignDetailPage(props: {
   setRequestLocale(locale);
 
   const searchParams = await props.searchParams;
-  const page =
-    typeof searchParams.page === 'string'
-      ? Math.max(1, Math.trunc(Number(searchParams.page)) || 1)
-      : 1;
+  const page = parsePage(searchParams.page);
 
   const [t, context] = await Promise.all([
     getTranslations({ locale, namespace: 'CampaignDetailPage' }),
@@ -241,40 +239,12 @@ export default async function CampaignDetailPage(props: {
           />
 
           {pageCount > 1 && (
-            <div className="flex flex-wrap items-center justify-between gap-3 pt-4">
-              <p className="text-sm text-muted-foreground">
-                {t('pagination_summary', { page, pageCount, count: totalContacts })}
-              </p>
-
-              <div className="flex items-center gap-2">
-                {page > 1 ? (
-                  <Button asChild variant="outline">
-                    <Link href={pageHref(page - 1)}>
-                      <ChevronLeft />
-                      {t('button_previous')}
-                    </Link>
-                  </Button>
-                ) : (
-                  <Button variant="outline" disabled>
-                    <ChevronLeft />
-                    {t('button_previous')}
-                  </Button>
-                )}
-
-                {page < pageCount ? (
-                  <Button asChild variant="outline">
-                    <Link href={pageHref(page + 1)}>
-                      {t('button_next')}
-                      <ChevronRight />
-                    </Link>
-                  </Button>
-                ) : (
-                  <Button variant="outline" disabled>
-                    {t('button_next')}
-                    <ChevronRight />
-                  </Button>
-                )}
-              </div>
+            <div className="pt-4">
+              <ListPagination
+                summary={t('pagination_summary', { page, pageCount, count: totalContacts })}
+                previousHref={page > 1 ? pageHref(page - 1) : undefined}
+                nextHref={page < pageCount ? pageHref(page + 1) : undefined}
+              />
             </div>
           )}
         </TabsContent>

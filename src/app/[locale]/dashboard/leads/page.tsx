@@ -2,6 +2,7 @@ import { and, count, desc, eq, notInArray, sql } from 'drizzle-orm';
 import { ChevronRight, MapPin, Plus, Search } from 'lucide-react';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { EmptyState } from '@/components/EmptyState';
+import { ListPagination } from '@/components/ListPagination';
 import { PageHeader } from '@/components/PageHeader';
 import { StatusBadge } from '@/components/StatusBadge';
 import { TableFrame } from '@/components/TableFrame';
@@ -29,13 +30,29 @@ import { Link } from '@/libs/I18nNavigation';
 import { leadSchema, leadSearchSchema } from '@/models/Schema';
 import { AppConfig } from '@/utils/AppConfig';
 import { RESERVE_LEAD_STATUSES } from '@/utils/Leads';
+import { LIST_PAGE_SIZE, parsePage } from '@/utils/Pagination';
 
-export default async function LeadSearchesPage(props: { params: Promise<{ locale: string }> }) {
+/**
+ * Builds the link to a page of the lead search list.
+ * @param page The 1-based page.
+ * @returns The relative URL.
+ */
+const pageHref = (page: number) => `/dashboard/leads/${page > 1 ? `?page=${page}` : ''}`;
+
+export default async function LeadSearchesPage(props: {
+  params: Promise<{ locale: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const { locale } = await props.params;
   setRequestLocale(locale);
 
-  const t = await getTranslations({ locale, namespace: 'LeadSearchesPage' });
-  const context = await getApiContext();
+  const searchParams = await props.searchParams;
+  const page = parsePage(searchParams.page);
+
+  const [t, context] = await Promise.all([
+    getTranslations({ locale, namespace: 'LeadSearchesPage' }),
+    getApiContext(),
+  ]);
 
   const searches = context
     ? await db
@@ -51,6 +68,8 @@ export default async function LeadSearchesPage(props: { params: Promise<{ locale
             sql<number>`count(${leadSchema.id}) filter (where ${leadSchema.status} = 'ready')`.mapWith(
               Number,
             ),
+          // Counted after grouping and before the limit, so it is every search
+          matching: sql<number>`count(*) over ()`.mapWith(Number),
         })
         .from(leadSearchSchema)
         .leftJoin(
@@ -62,8 +81,12 @@ export default async function LeadSearchesPage(props: { params: Promise<{ locale
         )
         .where(eq(leadSearchSchema.organizationId, context.organizationId))
         .groupBy(leadSearchSchema.id)
-        .orderBy(desc(leadSearchSchema.createdAt))
+        .orderBy(desc(leadSearchSchema.createdAt), desc(leadSearchSchema.id))
+        .limit(LIST_PAGE_SIZE)
+        .offset((page - 1) * LIST_PAGE_SIZE)
     : [];
+  const matching = searches[0]?.matching ?? 0;
+  const pageCount = Math.ceil(matching / LIST_PAGE_SIZE);
 
   return (
     <div className="space-y-6">
@@ -171,6 +194,14 @@ export default async function LeadSearchesPage(props: { params: Promise<{ locale
             </ItemGroup>
           </TableFrame>
         </>
+      )}
+
+      {pageCount > 1 && (
+        <ListPagination
+          summary={t('pagination_summary', { page, pageCount, count: matching })}
+          previousHref={page > 1 ? pageHref(page - 1) : undefined}
+          nextHref={page < pageCount ? pageHref(page + 1) : undefined}
+        />
       )}
     </div>
   );
