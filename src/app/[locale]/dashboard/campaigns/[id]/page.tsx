@@ -6,6 +6,7 @@ import * as z from 'zod';
 import { ArchiveCampaignButton } from '@/components/ArchiveCampaignButton';
 import { CampaignNameEditor } from '@/components/CampaignNameEditor';
 import { CampaignProgress } from '@/components/CampaignProgress';
+import { CampaignTestCard } from '@/components/CampaignTestCard';
 import type { ContactReview } from '@/components/ContactReviewList';
 import { ContactReviewList } from '@/components/ContactReviewList';
 import { DeleteCampaignButton } from '@/components/DeleteCampaignButton';
@@ -17,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getApiContext } from '@/libs/ApiAuth';
+import { getCampaignTests } from '@/libs/CampaignTests';
 import { db } from '@/libs/DB';
 import { Link } from '@/libs/I18nNavigation';
 import { getUsageTotals } from '@/libs/Usage';
@@ -120,6 +122,9 @@ export default async function CampaignDetailPage(props: {
   const approvedCount = contacts.filter((contact) => contact.status === 'approved').length;
 
   const isPushed = campaign.status === 'pushed';
+  const [test] = campaign.instantlyCampaignId
+    ? await getCampaignTests({ organizationId: campaign.organizationId, campaignId: campaign.id })
+    : [];
 
   return (
     <div className="space-y-6">
@@ -196,6 +201,8 @@ export default async function CampaignDetailPage(props: {
           </AlertDescription>
         </Alert>
       )}
+
+      {test && <CampaignTestCard test={test} />}
 
       <Tabs defaultValue="review">
         <TabsList>

@@ -3,6 +3,7 @@
 import {
   BarChart3,
   BookOpen,
+  FlaskConical,
   Inbox,
   LayoutDashboard,
   Map as MapIcon,
@@ -71,6 +72,12 @@ export const SidebarNav = (props: { pathname: string }) => {
           href: '/dashboard/campaigns/',
           label: t('nav_campaigns'),
           icon: Send,
+          exact: false,
+        },
+        {
+          href: '/dashboard/tests/',
+          label: t('nav_tests'),
+          icon: FlaskConical,
           exact: false,
         },
         {

@@ -74,7 +74,8 @@
     "nav_replies": "Replies",
     "nav_metrics": "Metrics",
     "nav_objections": "Objections",
-    "nav_automation": "Automation"
+    "nav_automation": "Automation",
+    "nav_tests": "Campaign tests"
   },
   "OrganizationSwitcher": {
     "label": "Organizations",
@@ -933,6 +934,7 @@
     "event_ghl_dnd_set": "DND set on GHL",
     "event_ghl_dnd_failed": "GHL DND failed",
     "event_ghl_appointment_booked": "Call booked from GHL",
+    "event_ghl_deal_won": "Sale closed on GHL",
     "event_ghl_handover": "Handed to a salesperson from GHL",
     "event_ghl_dnd_received": "DND received from GHL",
     "event_follow_up_scheduled": "Follow-up scheduled",
@@ -1288,5 +1290,50 @@
     "column_booked": "Calls booked",
     "column_rate": "Call rate",
     "objection_deleted": "Deleted objection"
+  },
+  "CampaignTests": {
+    "card_title": "Campaign test",
+    "column_campaign": "Campaign",
+    "column_targeting": "Target and zone",
+    "column_structure": "Email structure",
+    "column_contacted": "Contacted",
+    "step_replied": "Replies",
+    "step_positive": "Positive",
+    "step_demo_completed": "Full demos",
+    "step_booked": "Calls booked",
+    "step_won": "Sales",
+    "badge_bot": "AI bot",
+    "badge_reps": "Sales reps",
+    "contacted_estimate": "estimate: approved contacts",
+    "bounced": "{rate} bounced",
+    "unclassified": "{count, plural, one {# unclassified} other {# unclassified}}",
+    "rate_line": "{ofContacted} of contacted · {ofBase} {base}",
+    "base_of_contacted": "of contacted",
+    "base_of_replied": "of replies",
+    "base_of_positive": "of positive",
+    "base_of_booked": "of calls",
+    "structure_missing": "Structure not analyzed yet.",
+    "button_analyze": "Analyze structure",
+    "button_reanalyze": "Analyze structure again",
+    "analyzing": "Analyzing",
+    "error_analyze": "Analysis failed.",
+    "label_target": "Target",
+    "label_zone": "Zone",
+    "label_hypothesis": "What you are testing",
+    "placeholder_hypothesis": "For example: subject with the city name instead of a question",
+    "hint_targeting": "An empty target or zone is read off the contacts or the campaign name.",
+    "button_save": "Save",
+    "saved": "Saved",
+    "error_save": "Saving failed."
+  },
+  "CampaignTestsPage": {
+    "title": "Campaign tests",
+    "subtitle": "Every campaign sent, with its target, zone, email structure and results, from the reply to the sale.",
+    "empty_title": "No campaign sent",
+    "empty_description": "Campaigns show up here once they are sent to Instantly.",
+    "label_base": "Percentages of",
+    "base_contacted": "Contacted",
+    "base_step": "Previous step",
+    "hint_step": "Positive of replies, full demos and calls of positive, sales of calls."
   }
 }

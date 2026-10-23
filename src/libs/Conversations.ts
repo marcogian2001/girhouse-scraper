@@ -75,6 +75,7 @@ export const EVENT_TYPES = [
   'ghl_dnd_set',
   'ghl_dnd_failed',
   'ghl_appointment_booked',
+  'ghl_deal_won',
   'ghl_handover',
   'ghl_dnd_received',
   'follow_up_scheduled',

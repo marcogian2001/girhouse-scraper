@@ -191,6 +191,8 @@ export const jobTypeEnum = pgEnum('job_type', [
   'conversation_tick',
   // Hands a bot-managed lead's GHL contact and opportunity to the "Bot AI" user
   'ghl_bot_assign',
+  // Sums up the structure of the emails a pushed campaign sends, for its test record
+  'campaign_analysis',
 ]);
 
 export const jobStatusEnum = pgEnum('job_status', ['queued', 'running', 'done', 'failed']);
@@ -274,6 +276,14 @@ export const knowledgeAssetSchema = pgTable(
   (table) => [index('knowledge_asset_organization_id_idx').on(table.organizationId)],
 );
 
+/** The structure of a campaign's emails, as the AI read it from the prompt and the drafts. */
+export type PromptAnalysis = {
+  summary: string;
+  points: string[];
+  model: string;
+  analyzedAt: string;
+};
+
 export const campaignSchema = pgTable(
   'campaign',
   {
@@ -299,6 +309,12 @@ export const campaignSchema = pgTable(
     instantlyCampaignId: text('instantly_campaign_id'),
     // Whether the reply bot answers this campaign's leads; when off they go to the sales reps
     botManaged: boolean('bot_managed').notNull().default(false),
+    // Who and where the campaign tests, typed by hand; null reads them off the contacts
+    target: text('target'),
+    zone: text('zone'),
+    // What the campaign is meant to prove, compared with the other tests
+    hypothesis: text('hypothesis'),
+    promptAnalysis: jsonb('prompt_analysis').$type<PromptAnalysis>(),
     errorMessage: text('error_message'),
     // Set while the campaign is hidden from the active list; null when active
     archivedAt: timestamp('archived_at', { mode: 'date' }),
@@ -964,6 +980,28 @@ export const emailSuppressionSchema = pgTable(
   },
   (table) => [
     unique('email_suppression_organization_id_email_unique').on(table.organizationId, table.email),
+  ],
+);
+
+/**
+ * What happened to a lead on GHL after the emails, so campaign tests count calls and
+ * sales even for leads who never replied by email.
+ */
+export const leadOutcomeSchema = pgTable(
+  'lead_outcome',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    organizationId: organizationId(),
+    // Lower-cased
+    email: text('email').notNull(),
+    callBookedAt: timestamp('call_booked_at', { mode: 'date' }),
+    wonAt: timestamp('won_at', { mode: 'date' }),
+    // The GHL opportunity's monetary value, in euros
+    wonValue: doublePrecision('won_value'),
+    ...timestamps,
+  },
+  (table) => [
+    unique('lead_outcome_organization_id_email_unique').on(table.organizationId, table.email),
   ],
 );
 

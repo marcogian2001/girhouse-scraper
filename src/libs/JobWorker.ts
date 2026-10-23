@@ -12,6 +12,7 @@ import {
 } from '@/services/Instantly';
 import { createTaskRun, fetchTaskRunResult } from '@/services/Parallel';
 import { EnrichmentContentValidation } from '@/validations/EnrichmentValidation';
+import { campaignTestJobHandlers, markCampaignAnalysisAbandoned } from './CampaignTests';
 import {
   enqueueWriting,
   loadKnowledgeAssets,
@@ -25,6 +26,7 @@ import { ghlBotJobHandlers, markGhlBotAssignAbandoned } from './GhlBotAssign';
 import {
   claimJobs,
   completeJob,
+  enqueue,
   failJob,
   pollDelaySeconds,
   releaseStaleJobs,
@@ -267,6 +269,8 @@ const runPushJob = async (job: Job) => {
     .set({ status: 'pushed', errorMessage: null })
     .where(eq(campaignSchema.id, campaign.id));
 
+  // The emails are final now, so their structure goes on the campaign's test record
+  await enqueue([{ type: 'campaign_analysis', campaignId: campaign.id }]);
   await completeJob(job.id);
 };
 
@@ -306,6 +310,12 @@ const markAbandoned = async (job: Job, message: string) => {
     return;
   }
 
+  if (job.type === 'campaign_analysis') {
+    markCampaignAnalysisAbandoned(job, message);
+
+    return;
+  }
+
   if (!job.campaignId) {
     await markLeadJobAbandoned(job, message);
 
@@ -340,6 +350,7 @@ const handlers = {
   ...outboundJobHandlers,
   ...followUpJobHandlers,
   ...ghlBotJobHandlers,
+  ...campaignTestJobHandlers,
 };
 
 /**

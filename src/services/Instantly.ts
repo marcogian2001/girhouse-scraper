@@ -82,6 +82,16 @@ export const MEETING_BOOKED_INTEREST = 2;
 /** Instantly's lead status while the campaign is still sending to the lead. */
 export const ACTIVE_LEAD_STATUS = 1;
 
+const campaignAnalyticsSchema = z.array(
+  z.looseObject({
+    campaign_id: z.string(),
+    // Leads that got at least the first email
+    new_leads_contacted_count: z.number().nullish(),
+    bounced_count: z.number().nullish(),
+    unsubscribed_count: z.number().nullish(),
+  }),
+);
+
 const campaignLeadsSchema = z.object({
   items: z.array(z.looseObject({ status: z.number().nullish() })),
 });
@@ -374,6 +384,26 @@ export const getCampaignLeadStatus = async (options: { email: string; campaignId
   );
 
   return payload.items[0]?.status ?? null;
+};
+
+/**
+ * Reads the sending totals of every campaign in the workspace, in one call.
+ * @returns The totals of each campaign, by Instantly campaign id.
+ * @throws {Error} When the API key is missing or Instantly rejects the request.
+ */
+export const getCampaignAnalytics = async () => {
+  const payload = campaignAnalyticsSchema.parse(await request('/campaigns/analytics'));
+
+  return new Map(
+    payload.map((campaign) => [
+      campaign.campaign_id,
+      {
+        contacted: campaign.new_leads_contacted_count ?? 0,
+        bounced: campaign.bounced_count ?? 0,
+        unsubscribed: campaign.unsubscribed_count ?? 0,
+      },
+    ]),
+  );
 };
 
 /**

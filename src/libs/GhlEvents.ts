@@ -4,6 +4,7 @@ import {
   campaignSchema,
   contactSchema,
   conversationSchema,
+  leadOutcomeSchema,
   whatsappMessageSchema,
 } from '@/models/Schema';
 import { MEETING_BOOKED_INTEREST, updateLeadInterest } from '@/services/Instantly';
@@ -97,18 +98,103 @@ const stopCampaignSequences = async (email: string) => {
 };
 
 /**
+ * Reads a sale's value as GHL sends it, "97" or "97,00" or a number.
+ * @param value The `value` custom field.
+ * @returns The value in euros, or null when it is missing or not a number.
+ */
+const parseValue = (value: GhlWebhook['customData']['value']) => {
+  const amount =
+    typeof value === 'string' && value.trim() ? Number(value.replace(',', '.')) : value;
+
+  return typeof amount === 'number' && Number.isFinite(amount) ? amount : null;
+};
+
+/**
+ * Records a booked call or a sale on the lead's outcome, which campaign tests count.
+ * The lead is the conversation's when there is one, else every organization that
+ * emailed the address. The first booking and the first sale are kept; a later sale
+ * only updates the value.
+ * @param options The delivery.
+ * @param options.webhook The GHL delivery.
+ * @param options.conversation The lead's conversation, if any.
+ */
+const recordLeadOutcome = async (options: {
+  webhook: GhlWebhook;
+  conversation: typeof conversationSchema.$inferSelect | null;
+}) => {
+  const email = (options.conversation?.leadEmail ?? options.webhook.email)?.toLowerCase();
+
+  if (!email) {
+    return;
+  }
+
+  const organizations = options.conversation
+    ? [{ organizationId: options.conversation.organizationId }]
+    : await db
+        .selectDistinct({ organizationId: campaignSchema.organizationId })
+        .from(contactSchema)
+        .innerJoin(campaignSchema, eq(campaignSchema.id, contactSchema.campaignId))
+        .where(eq(sql`lower(${contactSchema.email})`, email));
+
+  const now = new Date();
+  const isWon = options.webhook.customData.event === 'deal_won';
+  const wonValue = parseValue(options.webhook.customData.value);
+
+  for (const { organizationId } of organizations) {
+    // oxlint-disable-next-line no-await-in-loop
+    await db
+      .insert(leadOutcomeSchema)
+      .values({
+        organizationId,
+        email,
+        callBookedAt: isWon ? null : now,
+        wonAt: isWon ? now : null,
+        wonValue: isWon ? wonValue : null,
+      })
+      .onConflictDoUpdate({
+        target: [leadOutcomeSchema.organizationId, leadOutcomeSchema.email],
+        set: isWon
+          ? {
+              wonAt: sql`coalesce(${leadOutcomeSchema.wonAt}, ${now})`,
+              wonValue: sql`coalesce(${wonValue}, ${leadOutcomeSchema.wonValue})`,
+            }
+          : { callBookedAt: sql`coalesce(${leadOutcomeSchema.callBookedAt}, ${now})` },
+      });
+  }
+};
+
+/**
  * Applies what a GHL workflow reports about a lead: a call booked on GHL stops the
  * emails, a handover sends the conversation to a person, a Do Not Disturb stops it for
- * good, and a WhatsApp reply is recorded.
+ * good, and a WhatsApp reply is recorded. Bookings and sales also go on the lead's
+ * outcome, for the campaign tests.
  * Safe to receive twice, except a WhatsApp reply, which is simply recorded again.
  * @param webhook The GHL delivery.
  * @returns What happened to the delivery.
  */
 export const receiveGhlEvent = async (webhook: GhlWebhook) => {
   const conversation = await findConversation(webhook);
+  const { event, start_time: startTime } = webhook.customData;
+
+  if (event === 'appointment_booked' || event === 'deal_won') {
+    await recordLeadOutcome({ webhook, conversation });
+  }
+
+  // A sale changes nothing in the conversation, whatever its state
+  if (event === 'deal_won') {
+    if (conversation) {
+      await logEvent({
+        conversationId: conversation.id,
+        type: 'ghl_deal_won',
+        payload: { value: parseValue(webhook.customData.value) },
+      });
+    }
+
+    return { status: 'won' as const };
+  }
 
   // Booked by a setter before the lead ever replied: only Instantly has to stop
-  if (!conversation && webhook.customData.event === 'appointment_booked' && webhook.email) {
+  if (!conversation && event === 'appointment_booked' && webhook.email) {
     const campaigns = await stopCampaignSequences(webhook.email);
 
     return campaigns > 0
@@ -119,8 +205,6 @@ export const receiveGhlEvent = async (webhook: GhlWebhook) => {
   if (!conversation) {
     return { status: 'ignored' as const };
   }
-
-  const { event, start_time: startTime } = webhook.customData;
 
   if (webhook.contact_id && !conversation.ghlContactId) {
     await db

@@ -74,3 +74,21 @@ export const CampaignBotValidation = z.object({
   campaignIds: z.array(z.uuid()).min(1).max(500),
   botManaged: z.boolean(),
 });
+
+/**
+ * A free-text field where empty clears the value, so the record falls back to what it reads by itself.
+ * @param max The longest accepted text.
+ * @returns The field schema.
+ */
+const optionalText = (max: number) =>
+  z
+    .string()
+    .trim()
+    .max(max)
+    .transform((value) => value || null);
+
+export const CampaignTestValidation = z.object({
+  target: optionalText(120),
+  zone: optionalText(120),
+  hypothesis: optionalText(2000),
+});

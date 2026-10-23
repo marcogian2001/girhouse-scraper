@@ -74,7 +74,8 @@
     "nav_replies": "Risposte",
     "nav_metrics": "Metriche",
     "nav_objections": "Obiezioni",
-    "nav_automation": "Automazione"
+    "nav_automation": "Automazione",
+    "nav_tests": "Test campagne"
   },
   "OrganizationSwitcher": {
     "label": "Organizzazioni",
@@ -933,6 +934,7 @@
     "event_ghl_dnd_set": "DND attivato su GHL",
     "event_ghl_dnd_failed": "DND su GHL non riuscito",
     "event_ghl_appointment_booked": "Call prenotata da GHL",
+    "event_ghl_deal_won": "Vendita chiusa su GHL",
     "event_ghl_handover": "Passato a un venditore da GHL",
     "event_ghl_dnd_received": "DND ricevuto da GHL",
     "event_follow_up_scheduled": "Follow-up programmato",
@@ -1288,5 +1290,50 @@
     "column_booked": "Call prenotate",
     "column_rate": "Tasso call",
     "objection_deleted": "Obiezione eliminata"
+  },
+  "CampaignTests": {
+    "card_title": "Test della campagna",
+    "column_campaign": "Campagna",
+    "column_targeting": "Target e zona",
+    "column_structure": "Struttura email",
+    "column_contacted": "Contattati",
+    "step_replied": "Risposte",
+    "step_positive": "Positive",
+    "step_demo_completed": "Demo complete",
+    "step_booked": "Call prenotate",
+    "step_won": "Chiusure",
+    "badge_bot": "Bot AI",
+    "badge_reps": "Venditori",
+    "contacted_estimate": "stima: contatti approvati",
+    "bounced": "{rate} rimbalzi",
+    "unclassified": "{count, plural, one {# non classificata} other {# non classificate}}",
+    "rate_line": "{ofContacted} dei contattati · {ofBase} {base}",
+    "base_of_contacted": "dei contattati",
+    "base_of_replied": "delle risposte",
+    "base_of_positive": "delle positive",
+    "base_of_booked": "delle call",
+    "structure_missing": "Struttura non ancora analizzata.",
+    "button_analyze": "Analizza struttura",
+    "button_reanalyze": "Rianalizza struttura",
+    "analyzing": "Analisi in corso",
+    "error_analyze": "Analisi non riuscita.",
+    "label_target": "Target",
+    "label_zone": "Zona",
+    "label_hypothesis": "Cosa stai testando",
+    "placeholder_hypothesis": "Per esempio: oggetto con il nome della città al posto della domanda",
+    "hint_targeting": "Target e zona vuoti si leggono dai contatti o dal nome della campagna.",
+    "button_save": "Salva",
+    "saved": "Salvato",
+    "error_save": "Salvataggio non riuscito."
+  },
+  "CampaignTestsPage": {
+    "title": "Test campagne",
+    "subtitle": "Ogni campagna inviata con target, zona, struttura delle email e risultati, dalla risposta alla chiusura.",
+    "empty_title": "Nessuna campagna inviata",
+    "empty_description": "Le campagne compaiono qui dopo l'invio su Instantly.",
+    "label_base": "Percentuali su",
+    "base_contacted": "Contattati",
+    "base_step": "Passo prima",
+    "hint_step": "Positive sulle risposte, demo complete e call sulle positive, chiusure sulle call."
   }
 }

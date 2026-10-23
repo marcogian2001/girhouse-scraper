@@ -225,6 +225,13 @@
       "when": 1792763206931,
       "tag": "0031_demo_image",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1792787124513,
+      "tag": "0032_campaign_tests",
+      "breakpoints": true
     }
   ]
 }
