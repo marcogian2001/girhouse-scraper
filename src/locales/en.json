@@ -354,6 +354,9 @@
     "error_create": "The organization could not be created."
   },
   "CampaignDetailPage": {
+    "pagination_summary": "Page {page} of {pageCount} · {count, plural, one {# contact} other {# contacts}}",
+    "button_previous": "Previous",
+    "button_next": "Next",
     "badge_archived": "Archived",
     "meta_line": "{contacts, plural, one {# contact} other {# contacts}} · {emails, plural, one {# email} other {# emails}} · created {date}",
     "tab_review": "Review",

@@ -1,5 +1,5 @@
-import { and, asc, eq, inArray } from 'drizzle-orm';
-import { Download } from 'lucide-react';
+import { and, asc, count, eq, inArray } from 'drizzle-orm';
+import { ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
@@ -21,6 +21,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getApiContext } from '@/libs/ApiAuth';
 import { db } from '@/libs/DB';
+import { Link } from '@/libs/I18nNavigation';
 import { getUsageTotals } from '@/libs/Usage';
 import { campaignSchema, contactSchema, emailDraftSchema, enrichmentSchema } from '@/models/Schema';
 import { AppConfig } from '@/utils/AppConfig';
@@ -30,11 +31,21 @@ import {
   EnrichmentContentValidation,
 } from '@/validations/EnrichmentValidation';
 
+/** Contacts reviewed per page; each one carries its research and every email draft. */
+const CONTACTS_PAGE_SIZE = 50;
+
 export default async function CampaignDetailPage(props: {
   params: Promise<{ locale: string; id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { locale, id } = await props.params;
   setRequestLocale(locale);
+
+  const searchParams = await props.searchParams;
+  const page =
+    typeof searchParams.page === 'string'
+      ? Math.max(1, Math.trunc(Number(searchParams.page)) || 1)
+      : 1;
 
   const [t, context] = await Promise.all([
     getTranslations({ locale, namespace: 'CampaignDetailPage' }),
@@ -54,28 +65,34 @@ export default async function CampaignDetailPage(props: {
     notFound();
   }
 
-  // Enrichments and drafts are matched through the campaign, so nothing waits for the contacts
-  const campaignContactIds = db
+  // Only this page's contacts carry their research and drafts. The page is a subquery,
+  // so the enrichments and drafts do not wait for the contacts
+  const pageContactIds = db
     .select({ id: contactSchema.id })
     .from(contactSchema)
-    .where(eq(contactSchema.campaignId, campaign.id));
+    .where(eq(contactSchema.campaignId, campaign.id))
+    .orderBy(asc(contactSchema.rowIndex))
+    .limit(CONTACTS_PAGE_SIZE)
+    .offset((page - 1) * CONTACTS_PAGE_SIZE);
 
-  const [format, usage, contacts, enrichments, drafts] = await Promise.all([
+  const [format, usage, statusCounts, contacts, enrichments, drafts] = await Promise.all([
     getFormatter({ locale }),
     getUsageTotals({ organizationId: campaign.organizationId, campaignId: campaign.id }),
     db
-      .select()
+      .select({ status: contactSchema.status, total: count() })
       .from(contactSchema)
       .where(eq(contactSchema.campaignId, campaign.id))
-      .orderBy(asc(contactSchema.rowIndex)),
+      .groupBy(contactSchema.status),
     db
       .select()
-      .from(enrichmentSchema)
-      .where(inArray(enrichmentSchema.contactId, campaignContactIds)),
+      .from(contactSchema)
+      .where(inArray(contactSchema.id, pageContactIds))
+      .orderBy(asc(contactSchema.rowIndex)),
+    db.select().from(enrichmentSchema).where(inArray(enrichmentSchema.contactId, pageContactIds)),
     db
       .select()
       .from(emailDraftSchema)
-      .where(inArray(emailDraftSchema.contactId, campaignContactIds))
+      .where(inArray(emailDraftSchema.contactId, pageContactIds))
       .orderBy(asc(emailDraftSchema.stepIndex)),
   ]);
   const usd = (micros: number) => format.number(microsToUsd(micros), USD_FORMAT);
@@ -115,8 +132,14 @@ export default async function CampaignDetailPage(props: {
     };
   });
 
-  const readyCount = contacts.filter((contact) => contact.status === 'ready').length;
-  const approvedCount = contacts.filter((contact) => contact.status === 'approved').length;
+  const countOf = (status: (typeof statusCounts)[number]['status']) =>
+    statusCounts.find((row) => row.status === status)?.total ?? 0;
+  const totalContacts = statusCounts.reduce((sum, row) => sum + row.total, 0);
+  const readyCount = countOf('ready');
+  const approvedCount = countOf('approved');
+  const pageCount = Math.ceil(totalContacts / CONTACTS_PAGE_SIZE);
+  const pageHref = (target: number) =>
+    `/dashboard/campaigns/${campaign.id}/${target > 1 ? `?page=${target}` : ''}`;
 
   const isPushed = campaign.status === 'pushed';
 
@@ -129,7 +152,7 @@ export default async function CampaignDetailPage(props: {
           {campaign.archivedAt && <Badge variant="secondary">{t('badge_archived')}</Badge>}
 
           <div className="ml-auto flex items-center gap-2">
-            {contacts.length > 0 && (
+            {totalContacts > 0 && (
               <Button asChild variant="outline">
                 <a href={`/api/campaigns/${campaign.id}/export`} download>
                   <Download />
@@ -148,7 +171,7 @@ export default async function CampaignDetailPage(props: {
         <p className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-muted-foreground">
           <span>
             {t('meta_line', {
-              contacts: contacts.length,
+              contacts: totalContacts,
               emails: campaign.emailCount,
               date: campaign.createdAt.toLocaleDateString(locale, {
                 timeZone: AppConfig.timeZone,
@@ -172,7 +195,7 @@ export default async function CampaignDetailPage(props: {
         <CardContent>
           <CampaignProgress
             campaignId={campaign.id}
-            totalContacts={contacts.length}
+            totalContacts={totalContacts}
             initialStatus={campaign.status}
           />
         </CardContent>
@@ -202,7 +225,7 @@ export default async function CampaignDetailPage(props: {
         <TabsList variant="line" className="w-full justify-start border-b">
           <TabsTrigger value="review" className="flex-none">
             {t('tab_review')}
-            <Badge variant="secondary">{contacts.length}</Badge>
+            <Badge variant="secondary">{totalContacts}</Badge>
           </TabsTrigger>
 
           <TabsTrigger value="send" disabled={isPushed} className="flex-none">
@@ -216,6 +239,44 @@ export default async function CampaignDetailPage(props: {
             delaysDays={campaign.delaysDays}
             emailCount={campaign.emailCount}
           />
+
+          {pageCount > 1 && (
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-4">
+              <p className="text-sm text-muted-foreground">
+                {t('pagination_summary', { page, pageCount, count: totalContacts })}
+              </p>
+
+              <div className="flex items-center gap-2">
+                {page > 1 ? (
+                  <Button asChild variant="outline">
+                    <Link href={pageHref(page - 1)}>
+                      <ChevronLeft />
+                      {t('button_previous')}
+                    </Link>
+                  </Button>
+                ) : (
+                  <Button variant="outline" disabled>
+                    <ChevronLeft />
+                    {t('button_previous')}
+                  </Button>
+                )}
+
+                {page < pageCount ? (
+                  <Button asChild variant="outline">
+                    <Link href={pageHref(page + 1)}>
+                      {t('button_next')}
+                      <ChevronRight />
+                    </Link>
+                  </Button>
+                ) : (
+                  <Button variant="outline" disabled>
+                    {t('button_next')}
+                    <ChevronRight />
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="send" className="pt-4">
