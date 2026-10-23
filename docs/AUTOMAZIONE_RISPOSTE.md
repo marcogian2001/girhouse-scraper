@@ -193,6 +193,12 @@ Tutto il codice è committato su `main`. Restano fuori solo le modifiche `bg-whi
   - la conversazione passa da `demo_sent` a `demo_viewed`.
 - [x] La bozza per un lead "interessato" contiene il link vero alla demo.
 - [x] Riquadro **Demo** nel dettaglio conversazione: stato, passo raggiunto, tempo sulla pagina, pulsante "Genera demo".
+- [x] **Fonti più ricche (23/10)**, in `src/libs/DemoReferences.ts`:
+  - nome: se manca il nome dell'attività si usa quello della persona (ricerca Parallel sul contatto, poi nome e cognome del contatto); l'email solo come ultima risorsa. Una demo con l'indirizzo fatto dall'email, mai aperta, prende un indirizzo nuovo alla rigenerazione;
+  - la ricerca sul contatto (`enrichment`) va all'AI: ruolo, settore, come si presenta;
+  - **Instagram** via Apify (`apify~instagram-profile-scraper`, circa 0,002 $ a profilo, 15-20 secondi): l'account si trova nei link della ricerca o delle indicazioni; bio e didascalie vanno all'AI, foto profilo e post diventano ritratto e foto. Il link del profilo si legge come pagina di riferimento, mai per logo e colori. A ottobre 2026 l'actor spesso non restituisce i post;
+  - le foto di Instagram, del sito e dei link hanno link che scadono o cambiano: si copiano in `demo_image` (migrazione 0031) e si servono da `/api/demo-images/<id>`;
+  - **Indicazioni per la demo** nel riquadro Demo: testo libero con link (Instagram, sito, profili, articoli), salvato in `demo.guidance` e riusato alle rigenerazioni. L'AI le tratta come fatti veri; dai link prende testo e foto.
 - [x] **Verifica visiva della pagina nel browser**, fatta con Playwright su desktop e mobile.
 - [ ] **Colore dalle foto Maps:** non fatto, perché richiede la dipendenza `sharp` e l'installazione è fallita. Oggi il colore viene dal `theme-color` del sito, altrimenti è il blu della giacca della giraffa.
 
