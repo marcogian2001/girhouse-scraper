@@ -105,67 +105,67 @@
 
   --radius-4xl: calc(var(--radius) * 2.6);
 
-  /* Ink-tinted shadows instead of neutral black, so elevation stays in the
-     same cool family as the surfaces it sits on. */
-  --shadow-xs: 0 1px 2px 0 oklch(0.205 0.034 263 / 0.05);
+  /* Barely-there elevation: separation comes from borders, shadows only lift
+     floating layers such as menus and popovers. */
+  --shadow-xs: 0 1px 2px 0 oklch(0.21 0.028 265 / 0.04);
 
-  --shadow-sm:
-    0 1px 3px 0 oklch(0.205 0.034 263 / 0.06), 0 1px 2px -1px oklch(0.205 0.034 263 / 0.05);
+  --shadow-sm: 0 1px 2px 0 oklch(0.21 0.028 265 / 0.05);
 
   --shadow-md:
-    0 4px 12px -2px oklch(0.205 0.034 263 / 0.08), 0 2px 4px -2px oklch(0.205 0.034 263 / 0.05);
+    0 4px 8px -2px oklch(0.21 0.028 265 / 0.08), 0 2px 4px -2px oklch(0.21 0.028 265 / 0.04);
 
   --shadow-lg:
-    0 12px 32px -8px oklch(0.205 0.034 263 / 0.12), 0 4px 8px -4px oklch(0.205 0.034 263 / 0.06);
+    0 12px 24px -6px oklch(0.21 0.028 265 / 0.1), 0 4px 8px -4px oklch(0.21 0.028 265 / 0.05);
 }
 
 :root {
-  /* Page ground is off-white and faintly blue; cards sit on it as pure white. */
-  --background: oklch(0.979 0.005 259);
+  /* Work-tool palette: white surfaces, near-neutral cool grays and one blue
+     reserved for primary actions, the active nav item and focus. */
+  --background: oklch(1 0 0);
 
-  --foreground: oklch(0.205 0.034 263);
+  --foreground: oklch(0.21 0.028 265);
 
   --card: oklch(1 0 0);
 
-  --card-foreground: oklch(0.205 0.034 263);
+  --card-foreground: oklch(0.21 0.028 265);
 
   --popover: oklch(1 0 0);
 
-  --popover-foreground: oklch(0.205 0.034 263);
+  --popover-foreground: oklch(0.21 0.028 265);
 
-  --primary: oklch(0.545 0.235 259);
+  --primary: oklch(0.546 0.215 263);
 
-  --primary-foreground: oklch(0.995 0.005 259);
+  --primary-foreground: oklch(1 0 0);
 
-  --secondary: oklch(0.958 0.011 259);
+  --secondary: oklch(0.967 0.003 265);
 
-  --secondary-foreground: oklch(0.3 0.032 263);
+  --secondary-foreground: oklch(0.3 0.024 265);
 
-  --muted: oklch(0.966 0.008 259);
+  --muted: oklch(0.973 0.003 265);
 
-  --muted-foreground: oklch(0.503 0.034 266);
+  --muted-foreground: oklch(0.54 0.027 264);
 
-  /* Blue tint driving every hover and active surface, sidebar included */
-  --accent: oklch(0.953 0.021 262);
+  /* Gray, not blue: hovers and selected rows stay quiet */
+  --accent: oklch(0.962 0.004 265);
 
-  --accent-foreground: oklch(0.45 0.19 259);
+  --accent-foreground: oklch(0.21 0.028 265);
 
   --destructive: oklch(0.577 0.215 27.3);
 
-  --success: oklch(0.53 0.145 152);
+  --success: oklch(0.56 0.14 152);
 
-  --warning: oklch(0.54 0.14 60);
+  --warning: oklch(0.6 0.14 62);
 
-  --info: oklch(0.53 0.13 235);
+  --info: oklch(0.546 0.215 263);
 
-  --border: oklch(0.928 0.011 257);
+  --border: oklch(0.935 0.006 265);
 
   /* One step darker than the border so fields still read as fields */
-  --input: oklch(0.912 0.013 257);
+  --input: oklch(0.895 0.009 265);
 
-  --ring: oklch(0.62 0.165 259);
+  --ring: oklch(0.62 0.17 263);
 
-  --chart-1: oklch(0.545 0.235 259);
+  --chart-1: oklch(0.546 0.215 263);
 
   --chart-2: oklch(0.68 0.145 227);
 
@@ -175,63 +175,63 @@
 
   --chart-5: oklch(0.83 0.075 205);
 
-  --radius: 0.75rem;
+  --radius: 0.5rem;
 
   /* The sign-in brand panel is decorative and deliberately theme-independent:
      it is never redefined under `.dark`, so it does not invert into a glaring
      light slab next to the dark form. White on it clears AA. */
-  --brand-panel: oklch(0.44 0.185 259);
+  --brand-panel: oklch(0.44 0.185 263);
 
-  --brand-panel-foreground: oklch(0.99 0.005 259);
+  --brand-panel-foreground: oklch(0.99 0.005 263);
 
-  /* A white nav panel against the off-white canvas, not a darker rail */
-  --sidebar: oklch(1 0 0);
+  /* A faintly gray nav rail against the white canvas, separated by a border */
+  --sidebar: oklch(0.985 0.002 265);
 
-  --sidebar-foreground: oklch(0.34 0.028 263);
+  --sidebar-foreground: oklch(0.38 0.024 265);
 
-  --sidebar-primary: oklch(0.545 0.235 259);
+  --sidebar-primary: oklch(0.546 0.215 263);
 
-  --sidebar-primary-foreground: oklch(0.995 0.005 259);
+  --sidebar-primary-foreground: oklch(1 0 0);
 
-  --sidebar-accent: oklch(0.953 0.021 262);
+  --sidebar-accent: oklch(0.955 0.005 265);
 
-  --sidebar-accent-foreground: oklch(0.42 0.195 259);
+  --sidebar-accent-foreground: oklch(0.21 0.028 265);
 
-  --sidebar-border: oklch(0.928 0.011 257);
+  --sidebar-border: oklch(0.935 0.006 265);
 
-  --sidebar-ring: oklch(0.62 0.165 259);
+  --sidebar-ring: oklch(0.62 0.17 263);
 }
 
-/* Kept in step with the light palette for coherence. The app never sets this
-   class: it ships light-only. */
+/* Same structure as the light palette: neutral surfaces, blue only for
+   primary actions. Toggled by next-themes through the `dark` class. */
 .dark {
-  --background: oklch(0.17 0.02 263);
+  --background: oklch(0.165 0.006 265);
 
-  --foreground: oklch(0.975 0.006 259);
+  --foreground: oklch(0.965 0.003 265);
 
-  --card: oklch(0.215 0.022 263);
+  --card: oklch(0.19 0.006 265);
 
-  --card-foreground: oklch(0.975 0.006 259);
+  --card-foreground: oklch(0.965 0.003 265);
 
-  --popover: oklch(0.215 0.022 263);
+  --popover: oklch(0.2 0.006 265);
 
-  --popover-foreground: oklch(0.975 0.006 259);
+  --popover-foreground: oklch(0.965 0.003 265);
 
-  --primary: oklch(0.68 0.185 255);
+  --primary: oklch(0.68 0.17 258);
 
   --primary-foreground: oklch(0.16 0.03 263);
 
-  --secondary: oklch(0.28 0.024 263);
+  --secondary: oklch(0.25 0.006 265);
 
-  --secondary-foreground: oklch(0.965 0.006 259);
+  --secondary-foreground: oklch(0.95 0.003 265);
 
-  --muted: oklch(0.28 0.024 263);
+  --muted: oklch(0.235 0.006 265);
 
-  --muted-foreground: oklch(0.71 0.03 262);
+  --muted-foreground: oklch(0.7 0.012 265);
 
-  --accent: oklch(0.31 0.05 259);
+  --accent: oklch(0.255 0.007 265);
 
-  --accent-foreground: oklch(0.88 0.07 255);
+  --accent-foreground: oklch(0.965 0.003 265);
 
   --destructive: oklch(0.7 0.19 22);
 
@@ -239,15 +239,15 @@
 
   --warning: oklch(0.78 0.15 68);
 
-  --info: oklch(0.72 0.13 225);
+  --info: oklch(0.68 0.17 258);
 
-  --border: oklch(1 0 0 / 10%);
+  --border: oklch(1 0 0 / 9%);
 
-  --input: oklch(1 0 0 / 15%);
+  --input: oklch(1 0 0 / 14%);
 
-  --ring: oklch(0.58 0.16 259);
+  --ring: oklch(0.58 0.16 260);
 
-  --chart-1: oklch(0.68 0.185 255);
+  --chart-1: oklch(0.68 0.17 258);
 
   --chart-2: oklch(0.72 0.14 222);
 
@@ -257,21 +257,21 @@
 
   --chart-5: oklch(0.86 0.07 200);
 
-  --sidebar: oklch(0.19 0.021 263);
+  --sidebar: oklch(0.175 0.006 265);
 
-  --sidebar-foreground: oklch(0.85 0.012 259);
+  --sidebar-foreground: oklch(0.8 0.01 265);
 
-  --sidebar-primary: oklch(0.68 0.185 255);
+  --sidebar-primary: oklch(0.68 0.17 258);
 
   --sidebar-primary-foreground: oklch(0.16 0.03 263);
 
-  --sidebar-accent: oklch(0.29 0.045 259);
+  --sidebar-accent: oklch(0.245 0.007 265);
 
-  --sidebar-accent-foreground: oklch(0.9 0.06 255);
+  --sidebar-accent-foreground: oklch(0.965 0.003 265);
 
-  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-border: oklch(1 0 0 / 9%);
 
-  --sidebar-ring: oklch(0.58 0.16 259);
+  --sidebar-ring: oklch(0.58 0.16 260);
 }
 
 @layer base {

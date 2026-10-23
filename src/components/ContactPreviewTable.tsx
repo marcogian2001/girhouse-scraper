@@ -29,7 +29,7 @@ export const ContactPreviewTable = (props: { contacts: ContactRow[]; totalRows: 
 
       <div className="overflow-x-auto rounded-xl border">
         <Table>
-          <TableHeader className="bg-muted/50">
+          <TableHeader>
             <TableRow>
               <TableHead>{t('column_email')}</TableHead>
               <TableHead>{t('column_name')}</TableHead>

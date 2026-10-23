@@ -55,7 +55,7 @@ export const UsageTable = (props: { title: string; rows: UsageRow[]; total: Usag
     <>
       <Card className="hidden p-0 md:block">
         <Table>
-          <TableHeader className="bg-muted/50">
+          <TableHeader>
             <TableRow>
               <TableHead>{props.title}</TableHead>
               <TableHead className="text-right">{t('column_copywriting_tokens')}</TableHead>

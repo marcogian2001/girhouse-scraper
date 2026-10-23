@@ -110,7 +110,7 @@ export default async function LeadSearchesPage(props: { params: Promise<{ locale
         <>
           <Card className="hidden p-0 md:block">
             <Table>
-              <TableHeader className="bg-muted/50">
+              <TableHeader>
                 <TableRow>
                   <TableHead>{t('column_name')}</TableHead>
                   <TableHead>{t('column_location')}</TableHead>

@@ -96,7 +96,7 @@ export default async function EmailPollPage(props: {
         </CardHeader>
 
         <Table>
-          <TableHeader className="bg-muted/50">
+          <TableHeader>
             <TableRow>
               <TableHead>{t('column_model')}</TableHead>
               <TableHead className="text-right">{t('column_average')}</TableHead>
@@ -128,7 +128,7 @@ export default async function EmailPollPage(props: {
         </CardHeader>
 
         <Table>
-          <TableHeader className="bg-muted/50">
+          <TableHeader>
             <TableRow>
               <TableHead>{t('column_recipient')}</TableHead>
               <TableHead>{t('column_model')}</TableHead>

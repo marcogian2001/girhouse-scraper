@@ -96,7 +96,7 @@ export const CategoryStatsTable = (props: { rows: ReplyStats['byCategory'] }) =>
       </CardHeader>
 
       <Table>
-        <TableHeader className="bg-muted/50">
+        <TableHeader>
           <TableRow>
             <TableHead>{t('column_category')}</TableHead>
             <TableHead className="text-right">{t('column_leads')}</TableHead>
@@ -151,7 +151,7 @@ export const ObjectionStatsTable = (props: {
       </CardHeader>
 
       <Table>
-        <TableHeader className="bg-muted/50">
+        <TableHeader>
           <TableRow>
             <TableHead>{t('column_objection')}</TableHead>
             <TableHead className="text-right">{t('column_leads')}</TableHead>

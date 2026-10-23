@@ -100,7 +100,7 @@ export default async function RepliesPage(props: {
       ) : (
         <Card className="p-0">
           <Table>
-            <TableHeader className="bg-muted/50">
+            <TableHeader>
               <TableRow>
                 <TableHead>{t('column_lead')}</TableHead>
                 <TableHead>{t('column_state')}</TableHead>

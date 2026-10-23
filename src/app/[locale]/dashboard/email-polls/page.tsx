@@ -62,7 +62,7 @@ export default async function EmailPollsPage(props: { params: Promise<{ locale: 
       ) : (
         <Card className="p-0">
           <Table>
-            <TableHeader className="bg-muted/50">
+            <TableHeader>
               <TableRow>
                 <TableHead>{t('column_name')}</TableHead>
                 <TableHead className="text-right">{t('column_sequences')}</TableHead>

@@ -127,7 +127,7 @@ export default async function CampaignsPage(props: {
         <>
           <Card className="hidden p-0 md:block">
             <Table>
-              <TableHeader className="bg-muted/50">
+              <TableHeader>
                 <TableRow>
                   <TableHead>{t('column_name')}</TableHead>
                   <TableHead>{t('column_status')}</TableHead>

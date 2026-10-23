@@ -158,7 +158,7 @@ export const LeadTable = (props: { leads: LeadRowView[] }) => {
 
       <Card className="hidden p-0 md:block">
         <Table>
-          <TableHeader className="bg-muted/50">
+          <TableHeader>
             <TableRow>
               <TableHead>{t('column_company')}</TableHead>
               <TableHead>{t('column_website')}</TableHead>
