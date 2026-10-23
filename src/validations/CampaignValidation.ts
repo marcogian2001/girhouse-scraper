@@ -87,8 +87,11 @@ const optionalText = (max: number) =>
     .max(max)
     .transform((value) => value || null);
 
-export const CampaignTestValidation = z.object({
-  target: optionalText(120),
-  zone: optionalText(120),
-  hypothesis: optionalText(2000),
-});
+// Partial, so the tests table can save what was tested without touching the targeting
+export const CampaignTestValidation = z
+  .object({
+    target: optionalText(120),
+    zone: optionalText(120),
+    hypothesis: optionalText(2000),
+  })
+  .partial();

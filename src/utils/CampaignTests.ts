@@ -4,19 +4,145 @@ import { rateOf } from './ReplyStats';
 /** Categories an autoresponder gets: the lead did not write them. */
 const AUTOMATIC_CATEGORIES = new Set<ReplyCategory>(['auto_reply', 'out_of_office']);
 
-/** What happened to one lead of a campaign, as the test record counts it. */
-export type LeadFacts = {
-  // Every category the lead's replies got, empty when none was classified; null without replies
-  categories: ReplyCategory[] | null;
+/** Instantly's interest statuses, as labelled in its inbox. */
+const INSTANTLY_STATUS = {
+  outOfOffice: 0,
+  interested: 1,
+  meetingBooked: 2,
+  meetingCompleted: 3,
+  won: 4,
+  noShow: -4,
+} as const;
+
+/** Labels a lead only gets after saying yes. */
+const INSTANTLY_POSITIVE = new Set<number | null>([
+  INSTANTLY_STATUS.interested,
+  INSTANTLY_STATUS.meetingBooked,
+  INSTANTLY_STATUS.meetingCompleted,
+  INSTANTLY_STATUS.won,
+]);
+
+/** Labels a lead only gets once a call was booked. */
+const INSTANTLY_BOOKED = new Set<number | null>([
+  INSTANTLY_STATUS.meetingBooked,
+  INSTANTLY_STATUS.meetingCompleted,
+  INSTANTLY_STATUS.won,
+  INSTANTLY_STATUS.noShow,
+]);
+
+/** A lead's reply as the platform handled it. */
+export type PlatformFacts = {
+  // Every category the replies got, empty when none was classified
+  categories: ReplyCategory[];
   demoCompleted: boolean;
   booked: boolean;
+};
+
+/** A replied lead as Instantly labelled them. */
+type InstantlyFacts = {
+  // 1 for the first email of the sequence
+  repliedStep: number | null;
+  interestStatus: number | null;
+};
+
+/** What GHL reported about the lead. */
+type OutcomeFacts = {
+  callBooked: boolean;
+  noShow: boolean;
   won: boolean;
-  // Euros, 0 when the sale has no value on GHL
+  // Euros, null when the sale has no value on GHL
+  wonValue: number | null;
+};
+
+/** What happened to one lead of a campaign, as the test record counts it. */
+export type LeadFacts = {
+  replied: boolean;
+  positive: boolean;
+  repliedStep: number | null;
+  demoCompleted: boolean;
+  booked: boolean;
+  noShow: boolean;
+  won: boolean;
   wonValue: number;
 };
 
+/**
+ * Tells whether the lead wrote back themselves. The platform's classification wins,
+ * since it tells autoresponders apart; a reply nobody classified counts. Without it,
+ * Instantly's reply counts unless it was labelled out of office.
+ * @param platform The lead's conversation, if any.
+ * @param instantly The lead as Instantly labelled them, if any.
+ * @returns True once the lead replied.
+ */
+const hasReplied = (platform: PlatformFacts | null, instantly: InstantlyFacts | null) => {
+  if (platform) {
+    return (
+      platform.categories.length === 0 ||
+      platform.categories.some((category) => !AUTOMATIC_CATEGORIES.has(category))
+    );
+  }
+
+  return instantly !== null && instantly.interestStatus !== INSTANTLY_STATUS.outOfOffice;
+};
+
+/**
+ * Joins what the platform, Instantly and GHL know about one lead. The platform's
+ * classification wins on whether the lead wrote back, since it tells autoresponders
+ * apart; Instantly's labels cover the replies the platform never received; GHL and
+ * Instantly both report calls and sales.
+ * @param sources What each source knows, null when it knows nothing about the lead.
+ * @param sources.platform The lead's conversation.
+ * @param sources.instantly The lead as Instantly labelled them.
+ * @param sources.outcome What GHL reported.
+ * @returns The lead's facts.
+ */
+export const mergeLeadFacts = (sources: {
+  platform: PlatformFacts | null;
+  instantly: InstantlyFacts | null;
+  outcome: OutcomeFacts | null;
+}): LeadFacts => {
+  const { platform, instantly, outcome } = sources;
+  const status = instantly?.interestStatus ?? null;
+
+  const replied = hasReplied(platform, instantly);
+  const noShow = outcome?.noShow === true || status === INSTANTLY_STATUS.noShow;
+  const won = outcome?.won === true || status === INSTANTLY_STATUS.won;
+  // A sale or a missed call always had a call booked, even one nobody recorded
+  const booked = [
+    platform?.booked,
+    outcome?.callBooked,
+    INSTANTLY_BOOKED.has(status),
+    noShow,
+    won,
+  ].some(Boolean);
+  // An objection that ends in a call was a yes too
+  const saidYes = [
+    platform?.categories.includes('interested'),
+    INSTANTLY_POSITIVE.has(status),
+    booked,
+  ].some(Boolean);
+
+  return {
+    replied,
+    positive: replied && saidYes,
+    repliedStep: replied ? (instantly?.repliedStep ?? null) : null,
+    demoCompleted: platform?.demoCompleted === true,
+    booked,
+    noShow,
+    won,
+    wonValue: won ? (outcome?.wonValue ?? 0) : 0,
+  };
+};
+
 /** The steps a campaign test is measured on, in order. */
-export const TEST_STEPS = ['replied', 'positive', 'demo_completed', 'booked', 'won'] as const;
+export const TEST_STEPS = [
+  'replied',
+  'positive',
+  'demo_completed',
+  'booked',
+  'no_show',
+  'won',
+] as const;
 
 export type TestStep = (typeof TEST_STEPS)[number];
 
@@ -26,49 +152,57 @@ export const STEP_BASE = {
   positive: 'replied',
   demo_completed: 'positive',
   booked: 'positive',
+  no_show: 'booked',
   won: 'booked',
 } as const satisfies Record<TestStep, TestStep | 'contacted'>;
 
 /**
- * Tells whether the lead wrote back themselves. A reply nobody classified, as on a
- * campaign the sales reps answer, counts: only autoresponders are left out.
- * @param lead The lead.
- * @returns True once the lead replied.
+ * Divides a cost, for a cost per result.
+ * @param costMicros The cost.
+ * @param count The results it bought.
+ * @returns The cost of each, or null without results.
  */
-const hasReplied = (lead: LeadFacts) =>
-  lead.categories !== null &&
-  (lead.categories.length === 0 ||
-    lead.categories.some((category) => !AUTOMATIC_CATEGORIES.has(category)));
-
-/**
- * Tells whether the lead said yes: a reply classified as interested, or a call booked
- * after replying, since an objection that ends in a call was a yes too.
- * @param lead The lead.
- * @returns True for a positive reply.
- */
-const isPositive = (lead: LeadFacts) =>
-  hasReplied(lead) && (lead.categories?.includes('interested') === true || lead.booked);
+const costPer = (costMicros: number, count: number) =>
+  count === 0 ? null : Math.round(costMicros / count);
 
 /**
  * Counts how a campaign's leads went, from the reply to the sale.
  * @param options The campaign.
  * @param options.contacted How many leads the campaign emailed.
- * @param options.leads One entry per lead, only those something happened to are needed.
+ * @param options.replied How many replied according to Instantly, which saw every reply;
+ * null to count the leads instead.
+ * @param options.leads One entry per lead something happened to.
+ * @param options.costMicros What the campaign cost, in millionths of a dollar.
  * @returns Each step's count with its share of the leads contacted and of its base step,
- * the replies nobody classified and the value of the sales.
+ * the replies by email of the sequence, the value of the sales and the costs.
  */
-export const buildCampaignTest = (options: { contacted: number; leads: LeadFacts[] }) => {
+export const buildCampaignTest = (options: {
+  contacted: number;
+  replied: number | null;
+  leads: LeadFacts[];
+  costMicros: number;
+}) => {
   const count = (pick: (lead: LeadFacts) => boolean) => options.leads.filter(pick).length;
 
   const counts: Record<TestStep | 'contacted', number> = {
     contacted: options.contacted,
-    replied: count(hasReplied),
-    positive: count(isPositive),
+    replied: options.replied ?? count((lead) => lead.replied),
+    positive: count((lead) => lead.positive),
     demo_completed: count((lead) => lead.demoCompleted),
-    // A sale always went through a call, even one booked before the platform recorded it
-    booked: count((lead) => lead.booked || lead.won),
+    booked: count((lead) => lead.booked),
+    no_show: count((lead) => lead.noShow),
     won: count((lead) => lead.won),
   };
+
+  const byEmail = new Map<number, number>();
+
+  for (const lead of options.leads) {
+    if (lead.repliedStep !== null) {
+      byEmail.set(lead.repliedStep, (byEmail.get(lead.repliedStep) ?? 0) + 1);
+    }
+  }
+
+  const known = [...byEmail.values()].reduce((total, value) => total + value, 0);
 
   return {
     contacted: options.contacted,
@@ -78,8 +212,14 @@ export const buildCampaignTest = (options: { contacted: number; leads: LeadFacts
       ofContacted: rateOf(counts[step], options.contacted),
       ofBase: rateOf(counts[step], counts[STEP_BASE[step]]),
     })),
-    unclassified: count((lead) => lead.categories?.length === 0),
-    wonValue: options.leads.reduce((total, lead) => total + (lead.won ? lead.wonValue : 0), 0),
+    // Shares of the replies whose email is known
+    repliesByEmail: [...byEmail.entries()]
+      .toSorted(([a], [b]) => a - b)
+      .map(([email, value]) => ({ email, count: value, share: rateOf(value, known) })),
+    wonValue: options.leads.reduce((total, lead) => total + lead.wonValue, 0),
+    costMicros: options.costMicros,
+    costPerCallMicros: costPer(options.costMicros, counts.booked),
+    costPerWonMicros: costPer(options.costMicros, counts.won),
   };
 };
 
@@ -101,7 +241,7 @@ export const resolveTargeting = (options: {
   contactTarget: string | null;
   contactZone: string | null;
 }) => {
-  const parts = options.name.split(' · ').map((part) => part.trim());
+  const parts = options.name.split(/ [·-] /u).map((part) => part.trim());
   const fromName = parts.length >= 3 ? parts : [];
 
   return {

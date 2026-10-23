@@ -191,8 +191,8 @@ export const jobTypeEnum = pgEnum('job_type', [
   'conversation_tick',
   // Hands a bot-managed lead's GHL contact and opportunity to the "Bot AI" user
   'ghl_bot_assign',
-  // Sums up the structure of the emails a pushed campaign sends, for its test record
-  'campaign_analysis',
+  // Copies Instantly's sending totals and replied leads, for the campaign tests
+  'instantly_sync',
 ]);
 
 export const jobStatusEnum = pgEnum('job_status', ['queued', 'running', 'done', 'failed']);
@@ -276,14 +276,6 @@ export const knowledgeAssetSchema = pgTable(
   (table) => [index('knowledge_asset_organization_id_idx').on(table.organizationId)],
 );
 
-/** The structure of a campaign's emails, as the AI read it from the prompt and the drafts. */
-export type PromptAnalysis = {
-  summary: string;
-  points: string[];
-  model: string;
-  analyzedAt: string;
-};
-
 export const campaignSchema = pgTable(
   'campaign',
   {
@@ -312,9 +304,8 @@ export const campaignSchema = pgTable(
     // Who and where the campaign tests, typed by hand; null reads them off the contacts
     target: text('target'),
     zone: text('zone'),
-    // What the campaign is meant to prove, compared with the other tests
+    // What the campaign tested, written by hand to compare it with the other tests
     hypothesis: text('hypothesis'),
-    promptAnalysis: jsonb('prompt_analysis').$type<PromptAnalysis>(),
     errorMessage: text('error_message'),
     // Set while the campaign is hidden from the active list; null when active
     archivedAt: timestamp('archived_at', { mode: 'date' }),
@@ -995,6 +986,8 @@ export const leadOutcomeSchema = pgTable(
     // Lower-cased
     email: text('email').notNull(),
     callBookedAt: timestamp('call_booked_at', { mode: 'date' }),
+    // Set when the lead missed the call
+    noShowAt: timestamp('no_show_at', { mode: 'date' }),
     wonAt: timestamp('won_at', { mode: 'date' }),
     // The GHL opportunity's monetary value, in euros
     wonValue: doublePrecision('won_value'),
@@ -1002,6 +995,42 @@ export const leadOutcomeSchema = pgTable(
   },
   (table) => [
     unique('lead_outcome_organization_id_email_unique').on(table.organizationId, table.email),
+  ],
+);
+
+/**
+ * An Instantly campaign's sending totals, copied by the sync so the campaign tests read
+ * old campaigns too without waiting on Instantly. `updated_at` is when it was synced.
+ */
+export const instantlyCampaignStatSchema = pgTable('instantly_campaign_stat', {
+  instantlyCampaignId: text('instantly_campaign_id').primaryKey(),
+  // Leads that got at least the first email
+  contacted: integer('contacted').notNull(),
+  // Leads that replied, autoresponders left out
+  replied: integer('replied').notNull(),
+  bounced: integer('bounced').notNull(),
+  ...timestamps,
+});
+
+/** A lead who replied to an Instantly campaign, as Instantly labelled them. */
+export const instantlyLeadSchema = pgTable(
+  'instantly_lead',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    instantlyCampaignId: text('instantly_campaign_id').notNull(),
+    // Lower-cased
+    email: text('email').notNull(),
+    // 1 for the first email of the sequence; null when Instantly does not say
+    repliedStep: integer('replied_step'),
+    // Instantly's interest status: 1 interested, 2 meeting booked, 4 won, -4 no show...
+    interestStatus: integer('interest_status'),
+    ...timestamps,
+  },
+  (table) => [
+    unique('instantly_lead_instantly_campaign_id_email_unique').on(
+      table.instantlyCampaignId,
+      table.email,
+    ),
   ],
 );
 

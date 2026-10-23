@@ -110,10 +110,46 @@ const parseValue = (value: GhlWebhook['customData']['value']) => {
 };
 
 /**
- * Records a booked call or a sale on the lead's outcome, which campaign tests count.
- * The lead is the conversation's when there is one, else every organization that
- * emailed the address. The first booking and the first sale are kept; a later sale
- * only updates the value.
+ * What each outcome event sets on the lead's outcome. The first time of each is kept;
+ * a later sale only updates the value.
+ * @param options The event.
+ * @param options.event The GHL event.
+ * @param options.value The sale's value, for a sale.
+ * @param options.now When the event arrived.
+ * @returns The columns of a new outcome, and the update of an existing one.
+ */
+const outcomeChange = (options: {
+  event: 'appointment_booked' | 'appointment_noshow' | 'deal_won';
+  value: number | null;
+  now: Date;
+}) => {
+  const { now } = options;
+
+  if (options.event === 'deal_won') {
+    return {
+      insert: { wonAt: now, wonValue: options.value },
+      update: {
+        wonAt: sql`coalesce(${leadOutcomeSchema.wonAt}, ${now})`,
+        wonValue: sql`coalesce(${options.value}, ${leadOutcomeSchema.wonValue})`,
+      },
+    };
+  }
+
+  // A missed call was booked first, even when the booking never reached the platform
+  const callBookedAt = sql`coalesce(${leadOutcomeSchema.callBookedAt}, ${now})`;
+
+  return options.event === 'appointment_noshow'
+    ? {
+        insert: { callBookedAt: now, noShowAt: now },
+        update: { callBookedAt, noShowAt: sql`coalesce(${leadOutcomeSchema.noShowAt}, ${now})` },
+      }
+    : { insert: { callBookedAt: now }, update: { callBookedAt } };
+};
+
+/**
+ * Records a booked call, a missed call or a sale on the lead's outcome, which campaign
+ * tests count. The lead is the conversation's when there is one, else every
+ * organization that emailed the address.
  * @param options The delivery.
  * @param options.webhook The GHL delivery.
  * @param options.conversation The lead's conversation, if any.
@@ -121,6 +157,7 @@ const parseValue = (value: GhlWebhook['customData']['value']) => {
 const recordLeadOutcome = async (options: {
   webhook: GhlWebhook;
   conversation: typeof conversationSchema.$inferSelect | null;
+  event: 'appointment_booked' | 'appointment_noshow' | 'deal_won';
 }) => {
   const email = (options.conversation?.leadEmail ?? options.webhook.email)?.toLowerCase();
 
@@ -136,38 +173,58 @@ const recordLeadOutcome = async (options: {
         .innerJoin(campaignSchema, eq(campaignSchema.id, contactSchema.campaignId))
         .where(eq(sql`lower(${contactSchema.email})`, email));
 
-  const now = new Date();
-  const isWon = options.webhook.customData.event === 'deal_won';
-  const wonValue = parseValue(options.webhook.customData.value);
+  const change = outcomeChange({
+    event: options.event,
+    value: parseValue(options.webhook.customData.value),
+    now: new Date(),
+  });
 
   for (const { organizationId } of organizations) {
     // oxlint-disable-next-line no-await-in-loop
     await db
       .insert(leadOutcomeSchema)
-      .values({
-        organizationId,
-        email,
-        callBookedAt: isWon ? null : now,
-        wonAt: isWon ? now : null,
-        wonValue: isWon ? wonValue : null,
-      })
+      .values({ organizationId, email, ...change.insert })
       .onConflictDoUpdate({
         target: [leadOutcomeSchema.organizationId, leadOutcomeSchema.email],
-        set: isWon
-          ? {
-              wonAt: sql`coalesce(${leadOutcomeSchema.wonAt}, ${now})`,
-              wonValue: sql`coalesce(${wonValue}, ${leadOutcomeSchema.wonValue})`,
-            }
-          : { callBookedAt: sql`coalesce(${leadOutcomeSchema.callBookedAt}, ${now})` },
+        set: change.update,
       });
   }
 };
 
 /**
+ * Records a missed call or a sale. Neither changes the conversation, whatever its
+ * state: they only go on the lead's outcome and in the conversation log.
+ * @param options The delivery.
+ * @param options.webhook The GHL delivery.
+ * @param options.conversation The lead's conversation, if any.
+ * @param options.event The event.
+ * @returns What happened to the delivery.
+ */
+const receiveResult = async (options: {
+  webhook: GhlWebhook;
+  conversation: typeof conversationSchema.$inferSelect | null;
+  event: 'appointment_noshow' | 'deal_won';
+}) => {
+  const isWon = options.event === 'deal_won';
+
+  await recordLeadOutcome(options);
+
+  if (options.conversation) {
+    await logEvent({
+      conversationId: options.conversation.id,
+      type: isWon ? 'ghl_deal_won' : 'ghl_no_show',
+      payload: isWon ? { value: parseValue(options.webhook.customData.value) } : {},
+    });
+  }
+
+  return { status: isWon ? ('won' as const) : ('no_show' as const) };
+};
+
+/**
  * Applies what a GHL workflow reports about a lead: a call booked on GHL stops the
  * emails, a handover sends the conversation to a person, a Do Not Disturb stops it for
- * good, and a WhatsApp reply is recorded. Bookings and sales also go on the lead's
- * outcome, for the campaign tests.
+ * good, and a WhatsApp reply is recorded. Bookings, missed calls and sales also go on
+ * the lead's outcome, for the campaign tests.
  * Safe to receive twice, except a WhatsApp reply, which is simply recorded again.
  * @param webhook The GHL delivery.
  * @returns What happened to the delivery.
@@ -176,21 +233,12 @@ export const receiveGhlEvent = async (webhook: GhlWebhook) => {
   const conversation = await findConversation(webhook);
   const { event, start_time: startTime } = webhook.customData;
 
-  if (event === 'appointment_booked' || event === 'deal_won') {
-    await recordLeadOutcome({ webhook, conversation });
+  if (event === 'appointment_booked') {
+    await recordLeadOutcome({ webhook, conversation, event });
   }
 
-  // A sale changes nothing in the conversation, whatever its state
-  if (event === 'deal_won') {
-    if (conversation) {
-      await logEvent({
-        conversationId: conversation.id,
-        type: 'ghl_deal_won',
-        payload: { value: parseValue(webhook.customData.value) },
-      });
-    }
-
-    return { status: 'won' as const };
+  if (event === 'appointment_noshow' || event === 'deal_won') {
+    return await receiveResult({ webhook, conversation, event });
   }
 
   // Booked by a setter before the lead ever replied: only Instantly has to stop

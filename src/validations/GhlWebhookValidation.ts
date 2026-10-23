@@ -6,6 +6,8 @@ const GHL_EVENTS = [
   'handover',
   'dnd',
   'whatsapp_inbound',
+  // The lead missed the booked call
+  'appointment_noshow',
   // The lead's opportunity was marked won: a sale
   'deal_won',
 ] as const;

@@ -36,7 +36,6 @@ const campaign = (
   target: null,
   zone: null,
   hypothesis: null,
-  promptAnalysis: null,
   errorMessage: null,
   archivedAt: null,
   updatedAt: new Date(),

@@ -1,15 +1,16 @@
 import { useFormatter, useTranslations } from 'next-intl';
-import { AnalyzeCampaignButton } from '@/components/AnalyzeCampaignButton';
 import { CampaignTestForm } from '@/components/CampaignTestForm';
 import type { CampaignTest } from '@/components/CampaignTestsTable';
-import { PromptStructure } from '@/components/CampaignTestsTable';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ExampleEmailButton } from '@/components/ExampleEmailButton';
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { STEP_BASE } from '@/utils/CampaignTests';
+import { microsToUsd, USD_FORMAT } from '@/utils/UsageFormat';
 
 /**
  * A campaign's test record on its own page: each step with its share of the leads
- * contacted and of its base step, the structure of the emails and the editable targeting.
+ * contacted and of its base step, the replies by email, the costs and the editable
+ * targeting and notes.
  * @param props Component props.
  * @param props.test The campaign test.
  * @returns The card.
@@ -20,15 +21,20 @@ export const CampaignTestCard = (props: { test: CampaignTest }) => {
   const { test } = props;
   const percent = (rate: number | null) =>
     rate === null ? '–' : format.number(rate, { style: 'percent', maximumFractionDigits: 1 });
+  const usd = (micros: number | null) =>
+    micros === null ? '–' : format.number(microsToUsd(micros), USD_FORMAT);
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>{t('card_title')}</CardTitle>
+        <CardAction>
+          <ExampleEmailButton campaignName={test.name} email={test.exampleEmail} />
+        </CardAction>
       </CardHeader>
 
       <CardContent className="space-y-6">
-        <dl className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+        <dl className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-7">
           <div>
             <dt className="text-xs text-muted-foreground">{t('column_contacted')}</dt>
             <dd className="text-2xl font-semibold tabular-nums">{test.contacted}</dd>
@@ -52,24 +58,49 @@ export const CampaignTestCard = (props: { test: CampaignTest }) => {
           ))}
         </dl>
 
+        <dl className="grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
+          <div>
+            <dt className="text-xs text-muted-foreground">{t('column_replies_by_email')}</dt>
+            <dd className="tabular-nums">
+              {test.repliesByEmail.length === 0
+                ? '–'
+                : test.repliesByEmail
+                    .map(
+                      (item) =>
+                        `${t('email_number', { number: item.email })}: ${item.count} (${percent(item.share)})`,
+                    )
+                    .join(' · ')}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-xs text-muted-foreground">{t('column_cost')}</dt>
+            <dd className="tabular-nums">
+              {usd(test.costMicros)}{' '}
+              <span className="text-xs text-muted-foreground">
+                {t('cost_leads', { cost: usd(test.leadsCostMicros) })}
+              </span>
+            </dd>
+          </div>
+          <div>
+            <dt className="text-xs text-muted-foreground">{t('column_cost_per_call')}</dt>
+            <dd className="tabular-nums">{usd(test.costPerCallMicros)}</dd>
+          </div>
+          <div>
+            <dt className="text-xs text-muted-foreground">{t('column_cost_per_won')}</dt>
+            <dd className="tabular-nums">{usd(test.costPerWonMicros)}</dd>
+          </div>
+        </dl>
+
         <Separator />
 
-        <div className="grid gap-6 lg:grid-cols-2">
-          <div className="space-y-3">
-            <p className="font-medium">{t('column_structure')}</p>
-            <PromptStructure test={test} />
-            {test.promptAnalysis && <AnalyzeCampaignButton campaignId={test.id} isRedo />}
-          </div>
-
-          <CampaignTestForm
-            campaignId={test.id}
-            target={test.manualTarget}
-            zone={test.manualZone}
-            hypothesis={test.hypothesis}
-            autoTarget={test.auto.target}
-            autoZone={test.auto.zone}
-          />
-        </div>
+        <CampaignTestForm
+          campaignId={test.id}
+          target={test.manualTarget}
+          zone={test.manualZone}
+          hypothesis={test.hypothesis}
+          autoTarget={test.auto.target}
+          autoZone={test.auto.zone}
+        />
       </CardContent>
     </Card>
   );

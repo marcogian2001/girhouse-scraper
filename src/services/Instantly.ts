@@ -87,10 +87,30 @@ const campaignAnalyticsSchema = z.array(
     campaign_id: z.string(),
     // Leads that got at least the first email
     new_leads_contacted_count: z.number().nullish(),
+    // Leads that replied, autoresponders left out
+    reply_count_unique: z.number().nullish(),
     bounced_count: z.number().nullish(),
-    unsubscribed_count: z.number().nullish(),
   }),
 );
+
+/** Instantly sends at most this many leads per page. */
+const LEADS_PER_PAGE = 100;
+
+/** A safety stop for the replied leads listing, far above what the workspace holds. */
+const MAX_LEAD_PAGES = 100;
+
+const repliedLeadsSchema = z.object({
+  items: z.array(
+    z.looseObject({
+      email: z.string(),
+      campaign: z.string().nullish(),
+      // 0 for the first email of the sequence
+      email_replied_step: z.number().nullish(),
+      lt_interest_status: z.number().nullish(),
+    }),
+  ),
+  next_starting_after: z.string().nullish(),
+});
 
 const campaignLeadsSchema = z.object({
   items: z.array(z.looseObject({ status: z.number().nullish() })),
@@ -399,11 +419,63 @@ export const getCampaignAnalytics = async () => {
       campaign.campaign_id,
       {
         contacted: campaign.new_leads_contacted_count ?? 0,
+        replied: campaign.reply_count_unique ?? 0,
         bounced: campaign.bounced_count ?? 0,
-        unsubscribed: campaign.unsubscribed_count ?? 0,
       },
     ]),
   );
+};
+
+/**
+ * Lists every lead of the workspace that replied to a campaign, with the step they
+ * replied to and how they were labelled. Pages are read one after the other, since each
+ * one points to the next.
+ * @returns The replied leads; the step counts from 1 for the first email.
+ * @throws {Error} When the API key is missing or Instantly rejects the request.
+ */
+export const listRepliedLeads = async () => {
+  const leads: {
+    email: string;
+    campaignId: string;
+    repliedStep: number | null;
+    interestStatus: number | null;
+  }[] = [];
+  let cursor: string | null | undefined;
+
+  for (let page = 0; page < MAX_LEAD_PAGES; page += 1) {
+    const payload = repliedLeadsSchema.parse(
+      // Each page needs the cursor of the one before
+      // oxlint-disable-next-line no-await-in-loop
+      await request('/leads/list', {
+        method: 'POST',
+        body: JSON.stringify({
+          filter: 'FILTER_VAL_REPLIED',
+          limit: LEADS_PER_PAGE,
+          starting_after: cursor ?? undefined,
+        }),
+      }),
+    );
+
+    for (const lead of payload.items) {
+      if (lead.campaign) {
+        leads.push({
+          email: lead.email.toLowerCase(),
+          campaignId: lead.campaign,
+          repliedStep:
+            typeof lead.email_replied_step === 'number' ? lead.email_replied_step + 1 : null,
+          interestStatus: lead.lt_interest_status ?? null,
+        });
+      }
+    }
+
+    cursor = payload.next_starting_after;
+
+    if (!cursor || payload.items.length < LEADS_PER_PAGE) {
+      break;
+    }
+  }
+
+  return leads;
 };
 
 /**

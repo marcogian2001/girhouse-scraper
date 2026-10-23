@@ -64,7 +64,7 @@ Automatizzare tutto quello che succede dopo la risposta di un lead a una cold em
 Tutto il codice è committato su `main`. Restano fuori solo le modifiche `bg-white` del titolare in `src/components/ui/input.tsx`, `ui/select.tsx`, `ui/textarea.tsx` e `src/components/KnowledgeMentionTextarea.tsx`.
 
 **1. Database e deploy**
-- [ ] **Riavviare `bun run dev`.** Applica su Neon le migrazioni fino alla `0032`. Aggiungono tabelle e colonne, senza toccare i dati.
+- [ ] **Riavviare `bun run dev`.** Applica su Neon le migrazioni fino alla `0033`. Aggiungono tabelle e colonne, senza toccare i dati.
 - [ ] **Deploy su Vercel.** Le migrazioni partono da sole con la build.
 
 **2. Variabili d'ambiente su Vercel**, gli stessi valori del `.env` locale:
@@ -89,6 +89,7 @@ Tutto il codice è committato su `main`. Restano fuori solo le modifiche `bg-whi
 - [x] **Workflow "call prenotata"** con webhook `event = appointment_booked`: fatto dal titolare. Va bene anche per le call prenotate dai setter.
 - [ ] **Workflow "DND attivato"**: webhook con `event = dnd`.
 - [ ] **Workflow "Vendita chiusa"** (per la pagina Test campagne): trigger "Opportunity Status Changed" → stato **Won**; webhook con `event = deal_won` e `value = {{opportunity.monetary_value}}`.
+- [ ] **Workflow "No show"** (per la pagina Test campagne): trigger "Appointment Status" → **No Show** sul calendario "Call Demo - 30 min"; webhook con `event = appointment_noshow`.
 - [ ] **Workflow "WA Outreach"**:
   - trigger: tag `wa-outreach`;
   - azione: messaggio WhatsApp GoGHL (Drip Mode) con `{{contact.wa_primo_messaggio}}`, solo in orario lavorativo.
@@ -428,22 +429,27 @@ Richiesta del titolare, nata dalla dott.ssa Tallarico ("mi può contattare ad in
 
 Richiesta del titolare: tenere traccia di ogni campagna come un test, per confrontarle.
 
-- [x] **Pagina `/dashboard/tests`** ("Test campagne" nella barra laterale, sotto Campagne). Una riga per ogni campagna inviata su Instantly, archiviate comprese:
-  - **target e zona:** quelli scritti a mano, altrimenti la professione e la provincia (o città) più comuni tra i contatti, altrimenti le prime due parti del nome (`idraulico · Roma · #1`);
-  - **struttura email:** sintesi e 4-7 punti scritti dall'AI (`src/services/PromptAnalyzer.ts`) leggendo i prompt della campagna, il brief e due sequenze scritte. Parte da sola dopo l'invio su Instantly (job `campaign_analysis`); per le campagne vecchie c'è "Analizza struttura". Usa il modello di classificazione di Automazione e il costo va sulla campagna;
-  - **contattati:** `new_leads_contacted_count` di Instantly (una sola chiamata per tutte le campagne), con i rimbalzi. Se Instantly non risponde, i contatti approvati, segnati come stima;
-  - **risposte:** lead che hanno scritto, esclusi fuori ufficio e risposte automatiche. Le risposte non classificate (campagne dei venditori) contano, e sotto le positive compare quante sono;
-  - **positive:** almeno una risposta "interessato", oppure una call prenotata dopo la risposta (un'obiezione finita in call era un sì);
-  - **demo complete:** demo vista fino al passo 6;
-  - **call prenotate:** dalla demo, dall'email, da GHL (setter o WhatsApp), anche per lead che non hanno mai risposto per email;
-  - **chiusure:** opportunità GHL segnata "Won", con la somma dei valori. Una chiusura conta sempre anche come call.
-- [x] **Percentuali:** sui contattati oppure sul passo prima (positive sulle risposte, demo e call sulle positive, chiusure sulle call), con i pulsanti in alto.
-- [x] **Scheda della campagna:** riquadro "Test della campagna" con i numeri, la struttura (rianalizzabile) e i campi target, zona e "cosa stai testando" (ipotesi del test). Target e zona vuoti tornano automatici.
-- [x] **Esiti da GHL:** tabella `lead_outcome` (organizzazione + email): data della prima call prenotata, data della chiusura e valore. La scrive il webhook GHL con `appointment_booked` e il nuovo `deal_won` (`value` accetta "97", "97,00" o un numero). Una vendita compare nel log della conversazione ("Vendita chiusa su GHL") e non cambia lo stato.
-- [x] **Migrazione `0032`:** colonne `target`, `zone`, `hypothesis`, `prompt_analysis` su `campaign`, tabella `lead_outcome`, job `campaign_analysis`.
-- [x] **Verifica su PGlite:** 6 contatti, 4 conversazioni (interessato con demo completa, obiezione con call e vendita, non interessato, risposta automatica), vendita di un lead mai risposto. Numeri corretti; analisi AI vera della struttura.
-- [ ] **Workflow GHL "Vendita chiusa"** (titolare), vedi la sezione 3. Senza, le chiusure restano a zero.
-- [ ] **Le call prenotate prima del 24/10 da setter per lead che non avevano risposto** non sono contate: il webhook prima non le salvava.
+- [x] **Pagina `/dashboard/tests`** ("Test campagne" nella barra laterale, sotto Campagne). Una riga per ogni campagna inviata su Instantly, archiviate comprese. Colonne:
+  - **campagna** (fissa a sinistra), con data e bot o venditori;
+  - **cosa si è testato:** testo scritto a mano, modificabile direttamente dalla tabella;
+  - **target e zona:** scritti a mano dalla scheda campagna, altrimenti la professione e la provincia (o città) più comuni tra i contatti, altrimenti le prime due parti del nome (`idraulico · Roma · #1`, anche con i trattini);
+  - **email:** pulsante "Vedi email" con la prima email inviata al primo lead approvato, come esempio della struttura (decisione del 24/10: niente analisi AI);
+  - **contattati** e rimbalzi, da Instantly;
+  - **risposte:** risposte uniche di Instantly, escluse quelle automatiche, quindi anche quelle arrivate prima del webhook;
+  - **positive:** "interessato" per il bot, oppure etichetta Interessato, Meeting booked, Meeting completed o Closed su Instantly, oppure call prenotata dopo la risposta;
+  - **risposte per email:** a quale email della sequenza hanno risposto (`email_replied_step` di Instantly);
+  - **demo complete** (passo 6), **call prenotate** (demo, email, GHL, Meeting su Instantly), **no show** (GHL o etichetta No show), **chiusure** (Won su GHL o Closed su Instantly, con il valore). Una chiusura o un no show contano sempre anche come call;
+  - **costo, costo per call, costo per chiusura**, in dollari: spesa della campagna (ricerche e AI) più la sua quota delle ricerche lead, divisa in parti uguali tra i lead con email trovati da ogni ricerca. Le caselle Instantly non ci sono.
+- [x] **Percentuali:** menu a tendina "Sui contattati" o "Sul passo precedente" (positive sulle risposte, demo e call sulle positive, no show e chiusure sulle call), con la spiegazione dentro ogni voce. Il cambio e l'ordinamento (clic sulle intestazioni) avvengono nel browser, senza ricaricare. Ogni intestazione spiega la colonna al passaggio del mouse. Intestazione e prima colonna restano fisse durante lo scorrimento.
+- [x] **Copia di Instantly** (`src/libs/InstantlySync.ts`): tabelle `instantly_campaign_stat` (totali di ogni campagna) e `instantly_lead` (ogni lead che ha risposto, con step ed etichetta). Una lettura completa dura circa 5 secondi.
+  - La prima visita della pagina la fa subito; poi, se la copia ha più di 15 minuti, la visita accoda il job `instantly_sync` (lo esegue il cron) e mostra la copia attuale.
+  - "Aggiorna da Instantly" la rifà subito.
+- [x] **Scheda della campagna:** riquadro "Test della campagna" con gli stessi numeri (entrambe le percentuali), risposte per email, costi, "Vedi email" e i campi target, zona e cosa si è testato.
+- [x] **Esiti da GHL:** tabella `lead_outcome` (organizzazione + email) con prima call prenotata, no show, chiusura e valore. La scrive il webhook GHL con `appointment_booked`, `appointment_noshow` e `deal_won` (`value` accetta "97", "97,00" o un numero). No show e vendite compaiono nel log della conversazione e non cambiano lo stato.
+- [x] **Migrazioni:** `0032` (colonne `target`, `zone`, `hypothesis` su `campaign`, tabella `lead_outcome`) e `0033` (tabelle della copia di Instantly, `no_show_at`, via `prompt_analysis`, job rinominato da `campaign_analysis` a `instantly_sync`).
+- [x] **Verifica su PGlite** con migrazioni da zero e copia vera di Instantly: "nutrizionista · Roma · #2" passa da 1 a 57 risposte, 10 positive (9 interessati più 1 meeting), risposte per email 13/25/20; no show, chiusura e costi corretti.
+- [ ] **Workflow GHL "Vendita chiusa"** e **"No show"** (titolare), vedi la sezione 3. Senza, chiusure e no show vengono solo dalle etichette Instantly.
+- [ ] Le call prenotate prima del 24/10 da setter per lead che non avevano risposto contano solo se il lead ha l'etichetta Meeting su Instantly.
 
 ---
 
@@ -496,7 +502,7 @@ Per caricarle ci sono due strade:
 | Instantly | `src/services/Instantly.ts`: thread, risposta, blocklist |
 | Impostazioni e obiezioni | `src/libs/AutomationSettings.ts`, `src/libs/Objections.ts`, `src/validations/AutomationValidation.ts` |
 | Dashboard | `src/app/[locale]/dashboard/{replies,objections,automation}/` |
-| Test campagne | `src/libs/CampaignTests.ts`, `src/utils/CampaignTests.ts`, `src/services/PromptAnalyzer.ts`, `src/app/[locale]/dashboard/tests/` |
+| Test campagne | `src/libs/CampaignTests.ts`, `src/utils/CampaignTests.ts`, `src/libs/InstantlySync.ts`, `src/app/[locale]/dashboard/tests/` |
 | Worker | `src/libs/JobWorker.ts`, con i job `reply_process`, `reply_write` e `reply_send` |
 | Test | `*.test.ts` accanto al codice, `tests/integration/ReplyAutomationApi.integ.ts` |
 

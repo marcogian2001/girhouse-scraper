@@ -1,8 +1,7 @@
 import { FlaskConical } from 'lucide-react';
-import { getTranslations, setRequestLocale } from 'next-intl/server';
-import type { RateBase } from '@/components/CampaignTestsTable';
+import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 import { CampaignTestsTable } from '@/components/CampaignTestsTable';
-import { Button } from '@/components/ui/button';
+import { InstantlySyncButton } from '@/components/InstantlySyncButton';
 import {
   Empty,
   EmptyDescription,
@@ -12,27 +11,70 @@ import {
 } from '@/components/ui/empty';
 import { getApiContext } from '@/libs/ApiAuth';
 import { getCampaignTests } from '@/libs/CampaignTests';
-import { Link } from '@/libs/I18nNavigation';
+import {
+  getInstantlySyncedAt,
+  refreshInstantlyStatsIfStale,
+  syncInstantlyStats,
+} from '@/libs/InstantlySync';
+import { logger } from '@/libs/Logger';
+import { AppConfig } from '@/utils/AppConfig';
 
-export default async function CampaignTestsPage(props: {
-  params: Promise<{ locale: string }>;
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}) {
+/**
+ * Reads when Instantly was last copied, copying it first when it never was, so the
+ * first view already counts old campaigns; a stale copy is refreshed in the background.
+ * @returns When Instantly was last copied, or null when it could not be.
+ */
+const ensureInstantlyCopy = async () => {
+  const syncedAt = await getInstantlySyncedAt();
+
+  if (syncedAt) {
+    await refreshInstantlyStatsIfStale(syncedAt);
+
+    return syncedAt;
+  }
+
+  await syncInstantlyStats().catch((error: unknown) => {
+    logger.warn('The first Instantly sync failed: {error}', {
+      error: error instanceof Error ? error.message : String(error),
+    });
+  });
+
+  return await getInstantlySyncedAt();
+};
+
+export default async function CampaignTestsPage(props: { params: Promise<{ locale: string }> }) {
   const { locale } = await props.params;
   setRequestLocale(locale);
 
   const t = await getTranslations({ locale, namespace: 'CampaignTestsPage' });
+  const format = await getFormatter({ locale });
   const context = await getApiContext();
-  const { base: baseParam } = await props.searchParams;
-  const base: RateBase = baseParam === 'step' ? 'step' : 'contacted';
 
+  const syncedAt = context ? await ensureInstantlyCopy() : null;
   const tests = context ? await getCampaignTests({ organizationId: context.organizationId }) : [];
 
   return (
     <div className="space-y-6">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">{t('title')}</h1>
-        <p className="text-sm text-muted-foreground">{t('subtitle')}</p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight">{t('title')}</h1>
+          <p className="text-sm text-muted-foreground">{t('subtitle')}</p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="text-xs text-muted-foreground">
+            {syncedAt
+              ? t('synced_at', {
+                  date: format.dateTime(syncedAt, {
+                    dateStyle: 'short',
+                    timeStyle: 'short',
+                    timeZone: AppConfig.timeZone,
+                  }),
+                })
+              : t('never_synced')}
+          </span>
+          <InstantlySyncButton />
+        </div>
       </div>
 
       {tests.length === 0 ? (
@@ -49,26 +91,7 @@ export default async function CampaignTestsPage(props: {
           </EmptyHeader>
         </Empty>
       ) : (
-        <>
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="text-sm text-muted-foreground">{t('label_base')}</span>
-            {(['contacted', 'step'] as const).map((option) => (
-              <Button
-                key={option}
-                asChild
-                size="sm"
-                variant={option === base ? 'default' : 'outline'}
-              >
-                <Link href={`/dashboard/tests/?base=${option}`}>{t(`base_${option}`)}</Link>
-              </Button>
-            ))}
-            {base === 'step' && (
-              <span className="text-xs text-muted-foreground">{t('hint_step')}</span>
-            )}
-          </div>
-
-          <CampaignTestsTable tests={tests} base={base} />
-        </>
+        <CampaignTestsTable tests={tests} />
       )}
     </div>
   );
