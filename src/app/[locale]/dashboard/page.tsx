@@ -1,7 +1,6 @@
 import { and, count, desc, eq, isNull } from 'drizzle-orm';
 import { BookOpen, ChevronRight, Mail, Megaphone, Plus, Rocket, Users } from 'lucide-react';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { headers } from 'next/headers';
 import { NoCampaigns } from '@/components/NoCampaigns';
 import { StatCard } from '@/components/StatCard';
 import { StatusBadge } from '@/components/StatusBadge';
@@ -16,10 +15,9 @@ import {
   ItemMedia,
   ItemTitle,
 } from '@/components/ui/item';
-import { auth } from '@/libs/Auth';
+import { getApiContext, getSession } from '@/libs/ApiAuth';
 import { db } from '@/libs/DB';
 import { Link } from '@/libs/I18nNavigation';
-import { resolveOrganizationId } from '@/libs/Organization';
 import {
   campaignSchema,
   contactSchema,
@@ -35,10 +33,9 @@ export default async function DashboardHomePage(props: { params: Promise<{ local
   setRequestLocale(locale);
 
   const t = await getTranslations({ locale, namespace: 'DashboardHomePage' });
-  const session = await auth.api.getSession({ headers: await headers() });
-  const organizationId = session
-    ? await resolveOrganizationId(session.user.id, session.session.activeOrganizationId)
-    : null;
+  // Both are cached for the request, so the layout already paid for them
+  const [session, context] = await Promise.all([getSession(), getApiContext()]);
+  const organizationId = context?.organizationId ?? null;
 
   const [campaignStats, contactStats, draftStats, knowledgeStats, recent] = organizationId
     ? await Promise.all([

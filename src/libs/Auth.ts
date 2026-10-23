@@ -26,6 +26,13 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
   },
+  session: {
+    // Reads the session from a signed cookie, so most requests skip the database lookup
+    cookieCache: {
+      enabled: true,
+      maxAge: 5 * 60,
+    },
+  },
   databaseHooks: {
     user: {
       create: {

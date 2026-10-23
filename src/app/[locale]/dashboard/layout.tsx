@@ -1,14 +1,14 @@
 import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { cookies, headers } from 'next/headers';
+import { cookies } from 'next/headers';
 import { AppSidebar } from '@/components/AppSidebar';
 import { LocaleSwitcher } from '@/components/LocaleSwitcher';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { UsageSummary } from '@/components/UsageSummary';
-import { auth } from '@/libs/Auth';
-import { getUserOrganizations, resolveOrganizationId } from '@/libs/Organization';
+import { getApiContext, getSession } from '@/libs/ApiAuth';
+import { getUserOrganizations } from '@/libs/Organization';
 import { EMPTY_USAGE_TOTALS, getUsageTotals } from '@/libs/Usage';
 import { currentMonthRange } from '@/utils/DateRange';
 
@@ -37,21 +37,20 @@ export default async function DashboardLayout(props: DashboardLayoutProps) {
   const { locale } = await props.params;
   setRequestLocale(locale);
 
-  const [cookieStore, requestHeaders] = await Promise.all([cookies(), headers()]);
-  const session = await auth.api.getSession({ headers: requestHeaders });
-
-  const [organizationId, organizations] = session
-    ? await Promise.all([
-        resolveOrganizationId(session.user.id, session.session.activeOrganizationId),
-        getUserOrganizations(session.user.id),
-      ])
-    : [null, []];
+  // The page reads the same cached session and organization, so they are looked up once
+  const [cookieStore, session, context] = await Promise.all([
+    cookies(),
+    getSession(),
+    getApiContext(),
+  ]);
+  const organizationId = context?.organizationId ?? null;
 
   // Re-read on every `router.refresh()`, so it keeps up while a campaign runs
   const period = currentMonthRange();
-  const usageTotals = organizationId
-    ? await getUsageTotals({ organizationId, range: period })
-    : EMPTY_USAGE_TOTALS;
+  const [organizations, usageTotals] = await Promise.all([
+    session ? getUserOrganizations(session.user.id) : [],
+    organizationId ? getUsageTotals({ organizationId, range: period }) : EMPTY_USAGE_TOTALS,
+  ]);
 
   // Reading the cookie on the server keeps the collapsed state from flashing open
   const defaultOpen = cookieStore.get(SIDEBAR_COOKIE_NAME)?.value !== 'false';

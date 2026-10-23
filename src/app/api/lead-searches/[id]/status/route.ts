@@ -25,23 +25,27 @@ export const GET = async (_request: Request, props: { params: Promise<{ id: stri
     return notFound();
   }
 
-  const leadCounts = await db
-    .select({ status: leadSchema.status, total: count() })
-    .from(leadSchema)
-    .where(
-      and(
-        eq(leadSchema.leadSearchId, search.id),
-        notInArray(leadSchema.status, [...RESERVE_LEAD_STATUSES]),
+  const [leadCounts, [outstandingJobs]] = await Promise.all([
+    db
+      .select({ status: leadSchema.status, total: count() })
+      .from(leadSchema)
+      .where(
+        and(
+          eq(leadSchema.leadSearchId, search.id),
+          notInArray(leadSchema.status, [...RESERVE_LEAD_STATUSES]),
+        ),
+      )
+      .groupBy(leadSchema.status),
+    db
+      .select({ total: count() })
+      .from(jobSchema)
+      .where(
+        and(
+          eq(jobSchema.leadSearchId, search.id),
+          inArray(jobSchema.status, ['queued', 'running']),
+        ),
       ),
-    )
-    .groupBy(leadSchema.status);
-
-  const [outstandingJobs] = await db
-    .select({ total: count() })
-    .from(jobSchema)
-    .where(
-      and(eq(jobSchema.leadSearchId, search.id), inArray(jobSchema.status, ['queued', 'running'])),
-    );
+  ]);
 
   return NextResponse.json({
     status: search.status,

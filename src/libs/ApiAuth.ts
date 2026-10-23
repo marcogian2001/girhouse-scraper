@@ -1,19 +1,30 @@
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { cache } from 'react';
 import { auth } from './Auth';
 import { resolveOrganizationId } from './Organization';
+
+/**
+ * Reads the signed-in session once per render, however many server
+ * components ask for it.
+ * @returns The session, or null when the request is anonymous.
+ */
+export const getSession = cache(
+  async () => await auth.api.getSession({ headers: await headers() }),
+);
 
 /**
  * Reads the signed-in user and the organization they are working in.
  * `src/proxy.ts` does not run over `/api`, so every handler authenticates
  * itself and scopes its queries to the returned organization. This validates
- * the session against the database, unlike the cookie check the proxy uses to
- * redirect, and re-checks the membership behind the active organization.
+ * the session, unlike the cookie check the proxy uses to redirect, and
+ * re-checks the membership behind the active organization. A render shares
+ * one lookup between the layout and the page.
  * @returns The user and organization ids, or null when the request is
  * anonymous or the user belongs to no organization.
  */
-export const getApiContext = async () => {
-  const session = await auth.api.getSession({ headers: await headers() });
+export const getApiContext = cache(async () => {
+  const session = await getSession();
 
   if (!session) {
     return null;
@@ -25,7 +36,7 @@ export const getApiContext = async () => {
   );
 
   return organizationId ? { userId: session.user.id, organizationId } : null;
-};
+});
 
 /**
  * Builds the response for an unauthenticated API request.
