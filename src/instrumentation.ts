@@ -34,7 +34,8 @@ export async function register() {
     net.setDefaultAutoSelectFamilyAttemptTimeout(1000);
   }
 
-  if (!process.env.NEXT_PUBLIC_SENTRY_DISABLED) {
+  // Without a DSN nothing is sent, so tracing would only slow every request down
+  if (!process.env.NEXT_PUBLIC_SENTRY_DISABLED && process.env.NEXT_PUBLIC_SENTRY_DSN) {
     if (process.env.NEXT_RUNTIME === 'nodejs') {
       // Node.js Sentry configuration
       Sentry.init(sentryOptions);

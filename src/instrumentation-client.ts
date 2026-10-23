@@ -4,7 +4,9 @@
 // https://docs.sentry.io/platforms/javascript/guides/nextjs/
 import * as Sentry from '@sentry/nextjs';
 
-if (!process.env.NEXT_PUBLIC_SENTRY_DISABLED) {
+// Without a DSN nothing is sent, so the replay and tracing integrations would only cost every page.
+// The check is inlined at build time, so the bundler can drop them when no DSN is set.
+if (!process.env.NEXT_PUBLIC_SENTRY_DISABLED && process.env.NEXT_PUBLIC_SENTRY_DSN) {
   Sentry.init({
     dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
 
