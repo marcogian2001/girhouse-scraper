@@ -67,7 +67,6 @@
     "nav_leads": "Lead search",
     "nav_campaigns": "Campaigns",
     "nav_knowledge": "Knowledge base",
-    "nav_email_polls": "Email polls",
     "new_campaign": "New campaign",
     "sign_out": "Sign out",
     "nav_coverage": "Coverage",
@@ -589,93 +588,6 @@
     "row_total": "Total",
     "row_meta": "AI copywriting {tokens} tokens, {copywritingCost} · Parallel {runs, plural, one {# search} other {# searches}}, {parallelCost} · Lead search {leadsCost}",
     "column_leads_cost": "Lead search cost"
-  },
-  "EmailPollsPage": {
-    "title": "Email polls",
-    "subtitle": "Blind tests where anyone with the link scores sequences written by different models.",
-    "button_new": "New poll",
-    "empty_title": "No polls yet",
-    "empty_description": "Create a poll to compare how different models write the same sequence.",
-    "column_name": "Name",
-    "column_sequences": "Sequences",
-    "column_voters": "Voters",
-    "column_created": "Created"
-  },
-  "NewEmailPollPage": {
-    "title": "New poll",
-    "description": "Pick one campaign per model. The first contacts of each campaign are compared side by side."
-  },
-  "NewEmailPollForm": {
-    "label_name": "Name",
-    "hint_name": "Shown to voters, so leave model names out.",
-    "error_name": "Enter a name",
-    "label_campaigns": "Campaigns",
-    "hint_campaigns": "Only campaigns with written sequences can be picked.",
-    "campaign_meta": "· {model} · {written, plural, one {# sequence} other {# sequences}}",
-    "error_campaigns": "Pick at least one campaign",
-    "label_contacts": "Contacts per campaign",
-    "hint_contacts": "Taken in CSV order, skipping contacts without a sequence.",
-    "error_contacts": "Enter a number from 1 to {max}",
-    "button_create": "Create poll",
-    "error_create": "Could not create the poll"
-  },
-  "EmailPollPage": {
-    "back_link": "Email polls",
-    "share_title": "Share link",
-    "share_description": "Anyone with this link can vote without signing in. Each IP address votes once per sequence.",
-    "visibility_title": "What voters see",
-    "models_title": "Results by model",
-    "models_description": "{voters, plural, =0 {No votes yet} one {# voter so far} other {# voters so far}}",
-    "sequences_title": "Results by sequence",
-    "column_model": "Model",
-    "column_recipient": "Recipient",
-    "column_campaign": "Campaign",
-    "column_average": "Average",
-    "column_std_dev": "Std. dev.",
-    "column_votes": "Votes",
-    "column_cost": "Cost per sequence",
-    "campaign_deleted": "Deleted campaign"
-  },
-  "EmailPollShareLink": {
-    "label_link": "Poll link",
-    "button_copy": "Copy",
-    "button_copied": "Copied"
-  },
-  "EmailPollVisibilityForm": {
-    "label_model": "Show model",
-    "hint_model": "Voters see which model wrote each sequence.",
-    "label_cost": "Show cost",
-    "hint_cost": "Voters see what each sequence cost to write.",
-    "error_update": "Could not update the poll"
-  },
-  "DeleteEmailPollButton": {
-    "button": "Delete",
-    "dialog_title": "Delete this poll?",
-    "dialog_description": "The poll, its link and every vote are deleted. Campaigns are not affected."
-  },
-  "EmailPollVotePage": {
-    "meta_title": "Email poll",
-    "instructions": "Read each version and score it from 1 to 10. Your scores are saved as you go, and you can change them at any time."
-  },
-  "EmailPollBallot": {
-    "progress": "{voted} of {total} versions scored",
-    "progress_done": "All scored, thank you!",
-    "leads_count": "{count, plural, one {# lead} other {# leads}} to review",
-    "lead_title": "Lead {number} of {count}: {label}",
-    "page": "{page} / {pages}",
-    "button_previous": "Previous",
-    "button_next": "Next",
-    "error_vote": "Could not save your score"
-  },
-  "EmailPollVariantCard": {
-    "title": "Version {letter} of {count}",
-    "step_label": "Email {step}",
-    "subject_label": "Subject:"
-  },
-  "EmailPollScoreScale": {
-    "label": "Score",
-    "hint_low": "1 · I'd never reply",
-    "hint_high": "10 · I'd reply right away"
   },
   "NotFoundPage": {
     "code": "Error 404",

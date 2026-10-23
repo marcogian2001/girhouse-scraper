@@ -9,7 +9,6 @@ import {
   Search,
   Send,
   SlidersHorizontal,
-  Vote,
 } from 'lucide-react';
 
 /**
@@ -34,7 +33,6 @@ export const DASHBOARD_NAV = [
     items: [
       { href: '/dashboard/campaigns/', labelKey: 'nav_campaigns', icon: Send, exact: false },
       { href: '/dashboard/tests/', labelKey: 'nav_tests', icon: FlaskConical, exact: false },
-      { href: '/dashboard/email-polls/', labelKey: 'nav_email_polls', icon: Vote, exact: false },
     ],
   },
   {

@@ -67,7 +67,6 @@
     "nav_leads": "Ricerca lead",
     "nav_campaigns": "Campagne",
     "nav_knowledge": "Base di conoscenza",
-    "nav_email_polls": "Votazioni email",
     "new_campaign": "Nuova campagna",
     "sign_out": "Esci",
     "nav_coverage": "Copertura",
@@ -589,93 +588,6 @@
     "row_total": "Totale",
     "row_meta": "Copywriting AI {tokens} token, {copywritingCost} · Parallel {runs, plural, one {# ricerca} other {# ricerche}}, {parallelCost} · Ricerca lead {leadsCost}",
     "column_leads_cost": "Costo ricerca lead"
-  },
-  "EmailPollsPage": {
-    "title": "Votazioni email",
-    "subtitle": "Test alla cieca in cui chiunque abbia il link vota le sequenze scritte da modelli diversi.",
-    "button_new": "Nuova votazione",
-    "empty_title": "Nessuna votazione",
-    "empty_description": "Crea una votazione per confrontare come modelli diversi scrivono la stessa sequenza.",
-    "column_name": "Nome",
-    "column_sequences": "Sequenze",
-    "column_voters": "Votanti",
-    "column_created": "Creata"
-  },
-  "NewEmailPollPage": {
-    "title": "Nuova votazione",
-    "description": "Scegli una campagna per modello. I primi contatti di ogni campagna vengono confrontati tra loro."
-  },
-  "NewEmailPollForm": {
-    "label_name": "Nome",
-    "hint_name": "Visibile ai votanti, quindi non includere i nomi dei modelli.",
-    "error_name": "Inserisci un nome",
-    "label_campaigns": "Campagne",
-    "hint_campaigns": "Si possono scegliere solo campagne con sequenze scritte.",
-    "campaign_meta": "· {model} · {written, plural, one {# sequenza} other {# sequenze}}",
-    "error_campaigns": "Scegli almeno una campagna",
-    "label_contacts": "Contatti per campagna",
-    "hint_contacts": "Presi in ordine di CSV, saltando i contatti senza sequenza.",
-    "error_contacts": "Inserisci un numero da 1 a {max}",
-    "button_create": "Crea votazione",
-    "error_create": "Impossibile creare la votazione"
-  },
-  "EmailPollPage": {
-    "back_link": "Votazioni email",
-    "share_title": "Link da condividere",
-    "share_description": "Chiunque abbia questo link può votare senza accedere. Ogni indirizzo IP vota una volta per sequenza.",
-    "visibility_title": "Cosa vedono i votanti",
-    "models_title": "Risultati per modello",
-    "models_description": "{voters, plural, =0 {Ancora nessun voto} one {# votante finora} other {# votanti finora}}",
-    "sequences_title": "Risultati per sequenza",
-    "column_model": "Modello",
-    "column_recipient": "Destinatario",
-    "column_campaign": "Campagna",
-    "column_average": "Media",
-    "column_std_dev": "Dev. std.",
-    "column_votes": "Voti",
-    "column_cost": "Costo per sequenza",
-    "campaign_deleted": "Campagna eliminata"
-  },
-  "EmailPollShareLink": {
-    "label_link": "Link della votazione",
-    "button_copy": "Copia",
-    "button_copied": "Copiato"
-  },
-  "EmailPollVisibilityForm": {
-    "label_model": "Mostra modello",
-    "hint_model": "I votanti vedono quale modello ha scritto ogni sequenza.",
-    "label_cost": "Mostra costo",
-    "hint_cost": "I votanti vedono quanto è costato scrivere ogni sequenza.",
-    "error_update": "Impossibile aggiornare la votazione"
-  },
-  "DeleteEmailPollButton": {
-    "button": "Elimina",
-    "dialog_title": "Eliminare questa votazione?",
-    "dialog_description": "Vengono eliminati la votazione, il suo link e tutti i voti. Le campagne non vengono toccate."
-  },
-  "EmailPollVotePage": {
-    "meta_title": "Votazione email",
-    "instructions": "Leggi ogni versione e dalle un voto da 1 a 10. I voti vengono salvati subito e puoi cambiarli in qualsiasi momento."
-  },
-  "EmailPollBallot": {
-    "progress": "{voted} di {total} versioni votate",
-    "progress_done": "Tutte votate, grazie!",
-    "leads_count": "{count, plural, one {# lead} other {# lead}} da valutare",
-    "lead_title": "Lead {number} di {count}: {label}",
-    "page": "{page} / {pages}",
-    "button_previous": "Indietro",
-    "button_next": "Avanti",
-    "error_vote": "Impossibile salvare il voto"
-  },
-  "EmailPollVariantCard": {
-    "title": "Versione {letter} di {count}",
-    "step_label": "Email {step}",
-    "subject_label": "Oggetto:"
-  },
-  "EmailPollScoreScale": {
-    "label": "Voto",
-    "hint_low": "1 · Non risponderei mai",
-    "hint_high": "10 · Risponderei subito"
   },
   "NotFoundPage": {
     "code": "Errore 404",
