@@ -708,14 +708,13 @@
     "processing": "Processing"
   },
   "ReplyImportForm": {
-    "label_eaccount": "Sending mailbox",
-    "placeholder_eaccount": "Choose a mailbox",
-    "hint_eaccount": "Imports each lead's latest reply from the campaigns created here. The AI classifies it and prepares the demo for interested leads. No email is written or sent.",
-    "error_eaccount": "Choose a mailbox",
-    "button_import": "Import replies",
-    "error_import": "Could not import the replies",
-    "summary": "{imported, plural, one {# conversation imported} other {# conversations imported}}, {alreadyPresent} already here, {otherCampaigns} from other campaigns. Classification continues over the next few minutes.",
-    "link_replies": "Go to replies"
+    "label_email": "Lead email",
+    "hint_email": "The email of the lead who answered a campaign created here. We import their conversation from Instantly, the AI classifies it and prepares the demo if they are interested. No email is written or sent.",
+    "error_email": "Enter a valid email",
+    "button_import": "Import conversation",
+    "error_import": "Could not import the conversation",
+    "error_no_reply": "Instantly has no reply from this email",
+    "error_other_campaign": "The conversation belongs to a campaign not created here"
   },
   "ClassificationEditor": {
     "label_category": "Category",
@@ -836,7 +835,7 @@
     "subtitle": "Leads who answered a cold email, and where each one stands.",
     "button_import": "Import replies",
     "empty_title": "No replies yet",
-    "empty_description": "Replies arrive here from the Instantly webhook. Import the ones a mailbox already received.",
+    "empty_description": "Replies arrive here from the Instantly webhook. Import the ones already received with the lead's email.",
     "column_lead": "Lead",
     "column_state": "State",
     "column_category": "Last reply",
@@ -868,7 +867,7 @@
   "ReplyImportPage": {
     "back_link": "Replies",
     "title": "Import replies",
-    "subtitle": "Brings in the conversations a mailbox had on Instantly, to classify them and prepare the demo for old contacts."
+    "subtitle": "Brings in the conversation a lead had on Instantly, to classify it and prepare their demo."
   },
   "ReplyDetailPage": {
     "back_link": "Replies",

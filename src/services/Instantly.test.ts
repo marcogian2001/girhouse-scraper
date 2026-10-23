@@ -10,7 +10,6 @@ import {
   emailText,
   findManualReply,
   findReplyThread,
-  latestRepliesByLead,
   firstCampaignEmailAt,
   toHtmlBody,
   toInterestLabel,
@@ -323,34 +322,6 @@ describe('Instantly threads', () => {
       expect(
         findReplyThread({ emails: thread, knownEmailIds: new Set(['reply-1', 'other-thread']) }),
       ).toBeNull();
-    });
-  });
-
-  describe('Latest replies by lead', () => {
-    const reply = (overrides: Partial<InstantlyEmail> & { id: string }) =>
-      email({ ue_type: 2, lead: 'mario@studio.it', campaign_id: 'camp-1', ...overrides });
-
-    it('keeps the newest reply of each lead in each campaign', () => {
-      const latest = latestRepliesByLead([
-        reply({ id: 'new' }),
-        reply({ id: 'old' }),
-        reply({ id: 'other-campaign', campaign_id: 'camp-2' }),
-        reply({ id: 'other-lead', lead: 'Anna@Studio.it' }),
-      ]);
-
-      expect(latest.map((item) => item.id)).toStrictEqual(['new', 'other-campaign', 'other-lead']);
-      expect(latest[2]?.lead).toBe('anna@studio.it');
-    });
-
-    it('skips auto-replies and emails without a campaign or a lead', () => {
-      const latest = latestRepliesByLead([
-        reply({ id: 'auto', is_auto_reply: 1 }),
-        reply({ id: 'no-campaign', campaign_id: null }),
-        reply({ id: 'no-lead', lead: null }),
-        reply({ id: 'real' }),
-      ]);
-
-      expect(latest.map((item) => item.id)).toStrictEqual(['real']);
     });
   });
 

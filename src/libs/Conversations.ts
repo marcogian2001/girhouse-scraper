@@ -20,8 +20,8 @@ import {
   addToBlocklist,
   emailText,
   emailTimestamp,
-  latestRepliesByLead,
-  listAccountReplies,
+  findReplyThread,
+  listLeadEmails,
 } from '@/services/Instantly';
 import type { ConversationState, ReplyCategory } from '@/utils/ReplyRouting';
 import { decideState, needsAnswer } from '@/utils/ReplyRouting';
@@ -421,75 +421,64 @@ export const receiveInstantlyReply = async (webhook: InstantlyWebhook) => {
 /** Marks a reply imported from Instantly: it is classified, never answered. */
 export const IMPORTED_EVENT = 'imported';
 
-/** Seconds between the imported replies' jobs, which share Instantly's 20 email calls a minute. */
-const IMPORT_SPACING_SECONDS = 4;
-
 /**
- * Reads every reply a mailbox received on Instantly, newest first.
- * @param eaccount The mailbox.
- * @returns The received emails.
- * @throws {Error} When Instantly rejects a request, such as over its rate limit.
- */
-const listAllAccountReplies = async (eaccount: string) => {
-  const emails: Awaited<ReturnType<typeof listAccountReplies>>['items'] = [];
-  let startingAfter: string | undefined;
-
-  do {
-    // oxlint-disable-next-line no-await-in-loop
-    const page = await listAccountReplies({ eaccount, startingAfter });
-
-    emails.push(...page.items);
-    startingAfter = page.next ?? undefined;
-  } while (startingAfter);
-
-  return emails;
-};
-
-/**
- * Imports the conversations a mailbox had on Instantly before the platform answered them,
- * one per lead with their latest reply. Only campaigns created here count, and a lead that
- * already has a conversation is skipped, so importing again adds only what is new. Each
- * reply is then classified, and an interested lead gets a demo; nothing is written or sent.
+ * Imports the conversation a lead had on Instantly before the platform answered it, from
+ * their latest reply. Only campaigns created here count. The reply is then classified, and
+ * an interested lead gets a demo; nothing is written or sent.
  * @param options The call options.
  * @param options.organizationId The organization to import into.
  * @param options.userId The person importing, recorded in the log.
- * @param options.eaccount The mailbox to import from.
- * @returns How many conversations were imported, were already here, or belong to other campaigns.
- * @throws {Error} When Instantly rejects a request, such as over its rate limit.
+ * @param options.leadEmail The lead's address.
+ * @returns The conversation, imported now or already here, or why there is nothing to import.
+ * @throws {Error} When Instantly rejects the request, such as over its rate limit.
  */
-export const importInstantlyReplies = async (options: {
+export const importLeadConversation = async (options: {
   organizationId: string;
   userId: string;
-  eaccount: string;
+  leadEmail: string;
 }) => {
-  const replies = latestRepliesByLead(await listAllAccountReplies(options.eaccount));
-  const campaignIds = [...new Set(replies.map((reply) => reply.campaign_id))];
-  const campaigns =
-    campaignIds.length > 0
-      ? await db.query.campaignSchema.findMany({
-          where: and(
-            eq(campaignSchema.organizationId, options.organizationId),
-            inArray(campaignSchema.instantlyCampaignId, campaignIds),
-          ),
-        })
-      : [];
-  const campaignsById = new Map(
-    campaigns.map((campaign) => [campaign.instantlyCampaignId, campaign]),
-  );
-  const ownReplies = replies.flatMap((reply) => {
-    const campaign = campaignsById.get(reply.campaign_id);
-
-    return campaign ? [{ reply, campaign }] : [];
+  const leadEmail = options.leadEmail.toLowerCase();
+  // The same reply the processing job will read the thread of
+  const found = findReplyThread({
+    emails: await listLeadEmails(leadEmail),
+    knownEmailIds: new Set(),
   });
-  const jobs: Parameters<typeof enqueue>[0] = [];
 
-  for (const { reply, campaign } of ownReplies) {
-    const receivedAt = emailTimestamp(reply) ?? new Date();
-    // oxlint-disable-next-line no-await-in-loop
-    const { contact, lead } = await findReplyLinks({ campaign, leadEmail: reply.lead });
+  if (!found) {
+    return { status: 'no_reply' as const };
+  }
 
-    // oxlint-disable-next-line no-await-in-loop
-    const [conversation] = await db
+  const instantlyCampaignId = found.thread.find((email) => email.campaign_id)?.campaign_id;
+  const campaign = instantlyCampaignId
+    ? await db.query.campaignSchema.findFirst({
+        where: and(
+          eq(campaignSchema.organizationId, options.organizationId),
+          eq(campaignSchema.instantlyCampaignId, instantlyCampaignId),
+        ),
+      })
+    : undefined;
+
+  if (!campaign || !instantlyCampaignId) {
+    return { status: 'other_campaign' as const };
+  }
+
+  const existing = await db.query.conversationSchema.findFirst({
+    where: and(
+      eq(conversationSchema.organizationId, options.organizationId),
+      eq(conversationSchema.instantlyCampaignId, instantlyCampaignId),
+      eq(conversationSchema.leadEmail, leadEmail),
+    ),
+  });
+
+  if (existing) {
+    return { status: 'existing' as const, conversationId: existing.id };
+  }
+
+  const { contact, lead } = await findReplyLinks({ campaign, leadEmail });
+  const receivedAt = emailTimestamp(found.reply) ?? new Date();
+
+  const stored = await db.transaction(async (tx) => {
+    const [conversation] = await tx
       .insert(conversationSchema)
       .values({
         organizationId: campaign.organizationId,
@@ -497,65 +486,54 @@ export const importInstantlyReplies = async (options: {
         campaignId: campaign.id,
         contactId: contact?.id,
         leadId: lead?.id,
-        instantlyCampaignId: reply.campaign_id,
-        leadEmail: reply.lead,
+        instantlyCampaignId,
+        leadEmail,
         company: contact?.company ?? lead?.company,
-        eaccount: options.eaccount,
+        eaccount: found.reply.eaccount,
         lastInboundAt: receivedAt,
       })
-      .onConflictDoNothing()
       .returning();
 
     if (!conversation) {
-      continue;
+      throw new Error(`Conversation for ${leadEmail} could not be stored`);
     }
 
-    // oxlint-disable-next-line no-await-in-loop
-    const [message] = await db
+    const [message] = await tx
       .insert(inboundMessageSchema)
       .values({
         conversationId: conversation.id,
-        dedupeKey: `import:${reply.id}`,
-        instantlyEmailId: reply.id,
+        dedupeKey: `import:${found.reply.id}`,
+        instantlyEmailId: found.reply.id,
         eventType: IMPORTED_EVENT,
-        subject: reply.subject,
-        bodyText: emailText(reply),
+        subject: found.reply.subject,
+        bodyText: emailText(found.reply),
         receivedAt,
-        raw: reply,
+        raw: found.reply,
       })
-      .onConflictDoNothing()
       .returning();
 
-    // Another conversation already holds this email: the new one would only repeat it
     if (!message) {
-      // oxlint-disable-next-line no-await-in-loop
-      await db.delete(conversationSchema).where(eq(conversationSchema.id, conversation.id));
-
-      continue;
+      throw new Error(`Reply ${found.reply.id} could not be stored`);
     }
 
-    // oxlint-disable-next-line no-await-in-loop
-    await logEvent({
-      conversationId: conversation.id,
-      type: 'reply_imported',
-      payload: { inboundMessageId: message.id, eaccount: options.eaccount },
-      actorUserId: options.userId,
-    });
+    await logEvent(
+      {
+        conversationId: conversation.id,
+        type: 'reply_imported',
+        payload: { inboundMessageId: message.id },
+        actorUserId: options.userId,
+      },
+      tx,
+    );
 
-    jobs.push({
-      type: 'reply_process',
-      payload: { inboundMessageId: message.id },
-      runAfter: new Date(Date.now() + jobs.length * IMPORT_SPACING_SECONDS * 1000),
-    });
-  }
+    return { conversationId: conversation.id, inboundMessageId: message.id };
+  });
 
-  await enqueue(jobs);
+  await enqueue([
+    { type: 'reply_process', payload: { inboundMessageId: stored.inboundMessageId } },
+  ]);
 
-  return {
-    imported: jobs.length,
-    alreadyPresent: ownReplies.length - jobs.length,
-    otherCampaigns: replies.length - ownReplies.length,
-  };
+  return { status: 'imported' as const, conversationId: stored.conversationId };
 };
 
 /** How many conversations a page of the dashboard list shows. */

@@ -76,13 +76,13 @@ describe('Outbound approval validation', () => {
 });
 
 describe('Reply import validation', () => {
-  it('accepts a mailbox address', () => {
-    const parse = ReplyImportValidation.safeParse({ eaccount: 'gianmarco@girhouse.com' });
+  it('accepts a lead address', () => {
+    const parse = ReplyImportValidation.safeParse({ leadEmail: 'mario@studiorossi.it' });
 
     expect(parse.success).toBeTruthy();
   });
 
   it('rejects a value that is not an address', () => {
-    expect(ReplyImportValidation.safeParse({ eaccount: 'gianmarco' }).success).toBeFalsy();
+    expect(ReplyImportValidation.safeParse({ leadEmail: 'mario' }).success).toBeFalsy();
   });
 });

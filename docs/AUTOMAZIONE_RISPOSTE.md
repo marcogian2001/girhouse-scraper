@@ -135,13 +135,12 @@ Tutto il codice è committato su `main`. Restano fuori solo le modifiche `bg-whi
   - **Automazione**, con kill switch, modalità, soglie, offerta e modelli.
 - [x] ~~Simulazione di risposte~~: tolta il 23/10, sostituita da **Importa risposte**.
 - [x] **Importa risposte** (`/dashboard/replies/import`, 23/10), per i vecchi contatti che hanno risposto prima della piattaforma:
-  - si sceglie una casella di invio di Instantly; `importInstantlyReplies` (`src/libs/Conversations.ts`) legge tutte le sue email ricevute (`GET /emails?eaccount=…&email_type=received`, a pagine da 100);
-  - tiene l'ultima risposta di ogni lead per campagna, salta le auto-risposte e le campagne non create dalla piattaforma;
-  - salta i lead che hanno già una conversazione, quindi rilanciarlo aggiunge solo quelle nuove;
-  - crea conversazione e `inbound_message` con `event_type = 'imported'` e mette in coda `reply_process`, distanziati di 4 secondi (Instantly concede 20 chiamate al minuto su `/emails`);
-  - il job classifica anche se la campagna non è gestita dal bot o se un venditore aveva già risposto a mano; per chi è interessato genera la demo (`ensureDemo`);
+  - si inserisce l'email del lead; `importLeadConversation` (`src/libs/Conversations.ts`) legge le sue email su Instantly (`listLeadEmails`) e prende la sua ultima risposta, la stessa che poi legge il job;
+  - importa solo se la conversazione è di una campagna creata dalla piattaforma; se il lead ha già una conversazione, apre quella;
+  - crea conversazione e `inbound_message` con `event_type = 'imported'`, mette in coda `reply_process` e apre il dettaglio;
+  - il job classifica anche se la campagna non è gestita dal bot o se un venditore aveva già risposto a mano; se il lead è interessato genera la demo (`ensureDemo`);
   - **non scrive e non invia nulla**: niente bozza, niente follow-up, niente fuori ufficio, niente referral, niente GHL. Lo stop invece vale come sempre (blocklist e DND).
-  - Il link della demo si copia dal riquadro Demo del dettaglio.
+  - Il link della demo si copia dal riquadro Demo del dettaglio; per chi non è interessato c'è comunque "Genera demo".
 - [x] Le email in stop sono escluse dagli export CSV delle ricerche lead.
 
 ### Fase 2: risposte e invio [x]
@@ -496,8 +495,8 @@ Per caricarle ci sono due strade:
 2. In **Automazione**:
    - inserire il numero WhatsApp;
    - lasciare la modalità **bozza**.
-3. In **Risposte → Importa risposte**, scegliere una casella e controllare il riepilogo (importate, già presenti, di altre campagne).
-4. Nei minuti successivi, in ogni conversazione importata controllare:
+3. In **Risposte → Importa risposte**, inserire l'email di un lead che ha risposto a una campagna creata qui.
+4. Nel dettaglio che si apre, dopo qualche secondo, controllare:
    - classificazione;
    - nessuna bozza;
    - per gli interessati, riquadro Demo e "Apri anteprima" (la pagina);

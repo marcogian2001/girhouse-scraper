@@ -3,40 +3,33 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
-import { useForm, useWatch } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
-import { Link, useRouter } from '@/libs/I18nNavigation';
+import { useRouter } from '@/libs/I18nNavigation';
 import { ReplyImportValidation } from '@/validations/AutomationValidation';
 
-type ImportSummary = { imported: number; alreadyPresent: number; otherCampaigns: number };
+type ImportResult =
+  | { status: 'imported' | 'existing'; conversationId: string }
+  | { status: 'no_reply' | 'other_campaign' };
 
-export const ReplyImportForm = (props: { accounts: string[] }) => {
+type ImportError = 'error_import' | 'error_no_reply' | 'error_other_campaign';
+
+export const ReplyImportForm = () => {
   const t = useTranslations('ReplyImportForm');
   const router = useRouter();
-  const [hasError, setHasError] = useState(false);
-  const [summary, setSummary] = useState<ImportSummary | null>(null);
+  const [error, setError] = useState<ImportError | null>(null);
 
   const form = useForm({
     resolver: zodResolver(ReplyImportValidation),
-    defaultValues: { eaccount: '' },
+    defaultValues: { leadEmail: '' },
   });
 
-  // `useWatch` rather than `form.watch`: the React compiler caches `watch` results
-  const eaccount = useWatch({ control: form.control, name: 'eaccount' });
-
   const handleImport = form.handleSubmit(async (values) => {
-    setHasError(false);
-    setSummary(null);
+    setError(null);
 
     const response = await fetch('/api/replies/import', {
       method: 'POST',
@@ -45,44 +38,31 @@ export const ReplyImportForm = (props: { accounts: string[] }) => {
     });
 
     if (!response.ok) {
-      setHasError(true);
+      setError('error_import');
 
       return;
     }
 
-    const imported: ImportSummary = await response.json();
+    const result: ImportResult = await response.json();
 
-    setSummary(imported);
-    router.refresh();
+    if ('conversationId' in result) {
+      router.push(`/dashboard/replies/${result.conversationId}/`);
+      router.refresh();
+
+      return;
+    }
+
+    setError(`error_${result.status}`);
   });
 
   return (
     <form onSubmit={handleImport} className="max-w-2xl">
       <FieldGroup>
         <Field>
-          <FieldLabel htmlFor="import-eaccount">{t('label_eaccount')}</FieldLabel>
-
-          <Select
-            value={eaccount}
-            onValueChange={(value) => {
-              form.setValue('eaccount', value, { shouldValidate: true });
-            }}
-          >
-            <SelectTrigger id="import-eaccount" className="w-full">
-              <SelectValue placeholder={t('placeholder_eaccount')} />
-            </SelectTrigger>
-
-            <SelectContent>
-              {props.accounts.map((account) => (
-                <SelectItem key={account} value={account}>
-                  {account}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <FieldDescription>{t('hint_eaccount')}</FieldDescription>
-          {form.formState.errors.eaccount && <FieldError>{t('error_eaccount')}</FieldError>}
+          <FieldLabel htmlFor="import-lead-email">{t('label_email')}</FieldLabel>
+          <Input id="import-lead-email" type="email" {...form.register('leadEmail')} />
+          <FieldDescription>{t('hint_email')}</FieldDescription>
+          {form.formState.errors.leadEmail && <FieldError>{t('error_email')}</FieldError>}
         </Field>
 
         <Button type="submit" className="w-fit" disabled={form.formState.isSubmitting}>
@@ -90,20 +70,9 @@ export const ReplyImportForm = (props: { accounts: string[] }) => {
           {t('button_import')}
         </Button>
 
-        {hasError && (
+        {error && (
           <Alert variant="destructive">
-            <AlertDescription>{t('error_import')}</AlertDescription>
-          </Alert>
-        )}
-
-        {summary && (
-          <Alert>
-            <AlertDescription>
-              <p>{t('summary', summary)}</p>
-              <Link href="/dashboard/replies/" className="font-medium underline">
-                {t('link_replies')}
-              </Link>
-            </AlertDescription>
+            <AlertDescription>{t(error)}</AlertDescription>
           </Alert>
         )}
       </FieldGroup>

@@ -45,8 +45,7 @@ const emailSchema = z.object({
   // 1 sent by a campaign step, 2 received, 3 sent by hand or through the API, 4 scheduled
   ue_type: z.number().nullish(),
   eaccount: z.string().nullish(),
-  // The lead's address and the campaign the email belongs to, when it has one
-  lead: z.string().nullish(),
+  // The campaign the email belongs to, when it has one
   campaign_id: z.string().nullish(),
   subject: z.string().nullish(),
   timestamp_email: z.string().nullish(),
@@ -60,7 +59,6 @@ const sentEmailResponseSchema = z.object({ id: z.string() });
 
 const listEmailsResponseSchema = z.object({
   items: z.array(emailSchema),
-  next_starting_after: z.string().nullish(),
 });
 
 export type InstantlyEmail = z.infer<typeof emailSchema>;
@@ -335,27 +333,6 @@ export const listLeadEmails = async (leadEmail: string) => {
 };
 
 /**
- * Lists a page of the emails a mailbox received, newest first. Instantly allows only
- * 20 calls a minute to this endpoint, shared with every other email lookup.
- * @param options The call options.
- * @param options.eaccount The mailbox that received them.
- * @param options.startingAfter The cursor of the previous page, if any.
- * @returns Up to 100 emails and the cursor of the next page, null on the last one.
- * @throws {Error} When the API key is missing or Instantly rejects the request.
- */
-export const listAccountReplies = async (options: { eaccount: string; startingAfter?: string }) => {
-  const query = new URLSearchParams({
-    eaccount: options.eaccount,
-    email_type: 'received',
-    limit: '100',
-    ...(options.startingAfter ? { starting_after: options.startingAfter } : {}),
-  });
-  const payload = listEmailsResponseSchema.parse(await request(`/emails?${query.toString()}`));
-
-  return { items: payload.items, next: payload.next_starting_after ?? null };
-};
-
-/**
  * Sets a lead's interest status in one campaign. A positive status such as "meeting
  * booked" marks the campaign lead completed, which stops its sequence.
  * @param options The update.
@@ -450,27 +427,6 @@ export const emailText = (email: InstantlyEmail) => {
  */
 export const toInterestLabel = (status: number | null | undefined) =>
   status === null || status === undefined ? null : (INTEREST_LABELS[status] ?? `status_${status}`);
-
-/**
- * Keeps the latest reply of each lead in each campaign, skipping auto-replies and emails
- * that belong to no campaign.
- * @param emails Received emails, newest first.
- * @returns One email per campaign and lead, with the lead's address lower-cased.
- */
-export const latestRepliesByLead = (emails: InstantlyEmail[]) => {
-  const latest = new Map<string, InstantlyEmail & { lead: string; campaign_id: string }>();
-
-  for (const email of emails) {
-    const lead = email.lead?.toLowerCase();
-    const key = `${email.campaign_id}|${lead}`;
-
-    if (lead && email.campaign_id && email.is_auto_reply !== 1 && !latest.has(key)) {
-      latest.set(key, { ...email, lead, campaign_id: email.campaign_id });
-    }
-  }
-
-  return [...latest.values()];
-};
 
 /**
  * Finds the thread a reply belongs to: the latest received email not already stored.

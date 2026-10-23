@@ -58,7 +58,7 @@ export const ObjectionValidation = z.object({
 export type ObjectionInput = z.infer<typeof ObjectionValidation>;
 
 export const ReplyImportValidation = z.object({
-  eaccount: z.email(),
+  leadEmail: z.email(),
 });
 
 export const CATEGORY_VALUES = [

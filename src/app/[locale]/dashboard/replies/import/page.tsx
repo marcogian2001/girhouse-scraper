@@ -2,14 +2,12 @@ import { ArrowLeft } from 'lucide-react';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { ReplyImportForm } from '@/components/ReplyImportForm';
 import { Link } from '@/libs/I18nNavigation';
-import { listAccounts } from '@/services/Instantly';
 
 export default async function ReplyImportPage(props: { params: Promise<{ locale: string }> }) {
   const { locale } = await props.params;
   setRequestLocale(locale);
 
   const t = await getTranslations({ locale, namespace: 'ReplyImportPage' });
-  const accounts = await listAccounts();
 
   return (
     <div className="space-y-6">
@@ -28,7 +26,7 @@ export default async function ReplyImportPage(props: { params: Promise<{ locale:
         </div>
       </div>
 
-      <ReplyImportForm accounts={accounts.map((account) => account.email)} />
+      <ReplyImportForm />
     </div>
   );
 }

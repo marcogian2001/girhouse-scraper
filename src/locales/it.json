@@ -708,14 +708,13 @@
     "processing": "Elaborazione in corso"
   },
   "ReplyImportForm": {
-    "label_eaccount": "Casella di invio",
-    "placeholder_eaccount": "Scegli una casella",
-    "hint_eaccount": "Importa l'ultima risposta di ogni lead delle campagne create qui. L'AI la classifica e prepara la demo per chi è interessato. Nessuna email viene scritta o inviata.",
-    "error_eaccount": "Scegli una casella",
-    "button_import": "Importa risposte",
-    "error_import": "Impossibile importare le risposte",
-    "summary": "{imported, plural, one {# conversazione importata} other {# conversazioni importate}}, {alreadyPresent} già presenti, {otherCampaigns} di altre campagne. La classificazione prosegue nei prossimi minuti.",
-    "link_replies": "Vai alle risposte"
+    "label_email": "Email del lead",
+    "hint_email": "L'email del cliente che ha risposto a una campagna creata qui. Importiamo la sua conversazione da Instantly, l'AI la classifica e prepara la demo se è interessato. Nessuna email viene scritta o inviata.",
+    "error_email": "Inserisci un'email valida",
+    "button_import": "Importa conversazione",
+    "error_import": "Impossibile importare la conversazione",
+    "error_no_reply": "Su Instantly non c'è nessuna risposta da questa email",
+    "error_other_campaign": "La conversazione è di una campagna non creata qui"
   },
   "ClassificationEditor": {
     "label_category": "Categoria",
@@ -836,7 +835,7 @@
     "subtitle": "I lead che hanno risposto a una cold email, e a che punto è ognuno.",
     "button_import": "Importa risposte",
     "empty_title": "Ancora nessuna risposta",
-    "empty_description": "Le risposte arrivano qui dal webhook di Instantly. Importa quelle già ricevute da una casella.",
+    "empty_description": "Le risposte arrivano qui dal webhook di Instantly. Importa quelle già ricevute con l'email del lead.",
     "column_lead": "Lead",
     "column_state": "Stato",
     "column_category": "Ultima risposta",
@@ -868,7 +867,7 @@
   "ReplyImportPage": {
     "back_link": "Risposte",
     "title": "Importa risposte",
-    "subtitle": "Porta qui le conversazioni che una casella ha avuto su Instantly, per classificarle e preparare la demo ai vecchi contatti."
+    "subtitle": "Porta qui la conversazione che un lead ha avuto su Instantly, per classificarla e preparargli la demo."
   },
   "ReplyDetailPage": {
     "back_link": "Risposte",
