@@ -55,7 +55,7 @@ export default async function CoveragePage(props: { params: Promise<{ locale: st
 
   if (!plan) {
     return (
-      <div className="space-y-6">
+      <div className="max-w-6xl space-y-6">
         {header}
 
         <Empty className="rounded-xl border border-dashed">
@@ -93,7 +93,7 @@ export default async function CoveragePage(props: { params: Promise<{ locale: st
   ]);
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-6xl space-y-6">
       {header}
 
       <Tabs defaultValue="overview">

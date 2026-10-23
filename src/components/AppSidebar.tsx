@@ -1,13 +1,11 @@
 'use client';
 
-import { ChevronsUpDown, Plus } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { ChevronsUpDown } from 'lucide-react';
 import { BrandMark } from '@/components/BrandMark';
 import { OrganizationSwitcher } from '@/components/OrganizationSwitcher';
 import { SidebarNav } from '@/components/SidebarNav';
 import { SignOutButton } from '@/components/SignOutButton';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -48,7 +46,6 @@ export const AppSidebar = (props: {
   // Server-rendered by the layout and passed through, see `UsageSummary`
   usageSummary: React.ReactNode;
 }) => {
-  const t = useTranslations('AppSidebar');
   const pathname = usePathname();
 
   return (
@@ -58,9 +55,9 @@ export const AppSidebar = (props: {
             16px, which would shrink the mark below the menu buttons it sits above */}
         <Link
           href="/dashboard/"
-          className="flex items-center gap-2 rounded-md p-1 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0"
+          className="flex h-10 items-center gap-2 rounded-md px-1.5 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0"
         >
-          <BrandMark className="size-8" />
+          <BrandMark className="size-7" />
           <span className="truncate font-semibold group-data-[collapsible=icon]:hidden">
             {AppConfig.name}
           </span>
@@ -70,13 +67,6 @@ export const AppSidebar = (props: {
           organizations={props.organizations}
           activeOrganizationId={props.activeOrganizationId}
         />
-
-        <Button asChild className="mt-1 group-data-[collapsible=icon]:px-0">
-          <Link href="/dashboard/campaigns/new/">
-            <Plus />
-            <span className="group-data-[collapsible=icon]:hidden">{t('new_campaign')}</span>
-          </Link>
-        </Button>
       </SidebarHeader>
 
       <SidebarContent>
@@ -92,7 +82,7 @@ export const AppSidebar = (props: {
               <DropdownMenuTrigger asChild>
                 <SidebarMenuButton size="lg" tooltip={props.user.email}>
                   <Avatar className="size-8 rounded-lg">
-                    <AvatarFallback className="rounded-lg bg-primary/10 text-xs font-medium text-primary">
+                    <AvatarFallback className="rounded-lg bg-muted text-xs font-medium text-foreground">
                       {getInitials(props.user.name)}
                     </AvatarFallback>
                   </Avatar>

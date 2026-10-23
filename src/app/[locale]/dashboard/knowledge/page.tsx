@@ -26,7 +26,7 @@ export default async function KnowledgePage(props: { params: Promise<{ locale: s
     : [];
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-6xl space-y-6">
       <div className="space-y-1">
         <h1 className="text-2xl font-semibold">{t('title')}</h1>
         <p className="text-muted-foreground">{t('description')}</p>

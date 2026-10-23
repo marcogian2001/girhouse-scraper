@@ -125,7 +125,7 @@ export default async function CampaignDetailPage(props: {
   const [test] = tests;
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-6xl space-y-6">
       <div className="space-y-3">
         <Link
           href="/dashboard/campaigns/"

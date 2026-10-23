@@ -2,8 +2,10 @@ import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { cookies } from 'next/headers';
 import { AppSidebar } from '@/components/AppSidebar';
+import { DashboardBreadcrumb } from '@/components/DashboardBreadcrumb';
 import { LocaleSwitcher } from '@/components/LocaleSwitcher';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { Separator } from '@/components/ui/separator';
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { UsageSummary } from '@/components/UsageSummary';
@@ -67,8 +69,10 @@ export default async function DashboardLayout(props: DashboardLayoutProps) {
         />
 
         <SidebarInset>
-          <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b bg-background/80 px-4 backdrop-blur-sm">
-            <SidebarTrigger />
+          <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b bg-background px-4 md:px-6">
+            <SidebarTrigger className="-ml-1.5 text-muted-foreground" />
+            <Separator orientation="vertical" className="mr-1 data-vertical:h-4" />
+            <DashboardBreadcrumb />
 
             <div className="ml-auto flex items-center gap-1">
               <LocaleSwitcher />
@@ -76,8 +80,9 @@ export default async function DashboardLayout(props: DashboardLayoutProps) {
             </div>
           </header>
 
-          <div className="flex-1 p-4 md:p-6 lg:p-8">
-            <div className="mx-auto w-full max-w-6xl">{props.children}</div>
+          {/* Wide like a work tool, so tables get every column; capped only on very large screens */}
+          <div className="flex-1 p-4 md:p-6">
+            <div className="mx-auto w-full max-w-screen-2xl">{props.children}</div>
           </div>
         </SidebarInset>
       </SidebarProvider>

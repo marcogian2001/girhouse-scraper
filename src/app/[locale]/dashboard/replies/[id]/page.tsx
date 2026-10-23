@@ -111,7 +111,7 @@ export default async function ReplyDetailPage(props: {
   ].filter(([, value]) => value);
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-6xl space-y-6">
       <div className="space-y-3">
         <Link
           href="/dashboard/replies/"

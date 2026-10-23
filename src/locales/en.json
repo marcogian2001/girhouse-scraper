@@ -75,7 +75,13 @@
     "nav_metrics": "Metrics",
     "nav_objections": "Objections",
     "nav_automation": "Automation",
-    "nav_tests": "Campaign tests"
+    "nav_tests": "Campaign tests",
+    "nav_usage": "Usage",
+    "nav_organizations": "Organizations",
+    "crumb_new": "New",
+    "crumb_import": "Import",
+    "crumb_detail": "Details",
+    "label_breadcrumb": "Breadcrumb"
   },
   "OrganizationSwitcher": {
     "label": "Organizations",

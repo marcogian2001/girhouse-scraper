@@ -75,7 +75,13 @@
     "nav_metrics": "Metriche",
     "nav_objections": "Obiezioni",
     "nav_automation": "Automazione",
-    "nav_tests": "Test campagne"
+    "nav_tests": "Test campagne",
+    "nav_usage": "Consumi",
+    "nav_organizations": "Organizzazioni",
+    "crumb_new": "Nuovo",
+    "crumb_import": "Importa",
+    "crumb_detail": "Dettaglio",
+    "label_breadcrumb": "Percorso"
   },
   "OrganizationSwitcher": {
     "label": "Organizzazioni",

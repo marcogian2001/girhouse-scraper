@@ -10,7 +10,7 @@ export default async function ReplyImportPage(props: { params: Promise<{ locale:
   const t = await getTranslations({ locale, namespace: 'ReplyImportPage' });
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-4xl space-y-6">
       <div className="space-y-3">
         <Link
           href="/dashboard/replies/"

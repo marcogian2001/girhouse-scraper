@@ -88,7 +88,7 @@ export default async function LeadSearchPage(props: {
     search.locationPlaceId !== null && search.status === 'done' && readyCount < search.maxResults;
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-6xl space-y-6">
       <div className="space-y-3">
         <Link
           href="/dashboard/leads/"
