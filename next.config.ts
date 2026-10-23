@@ -21,6 +21,19 @@ const baseConfig: NextConfig = {
   outputFileTracingIncludes: {
     '/': ['./migrations/**/*'],
   },
+  // PostHog's API paths end in a slash, which a redirect would break
+  skipTrailingSlashRedirect: true,
+  // Demos send PostHog their events through the app's own domain, so ad blockers let them through
+  rewrites: () => [
+    {
+      source: '/ingest/static/:path*',
+      destination: 'https://eu-assets.i.posthog.com/static/:path*',
+    },
+    {
+      source: '/ingest/:path*',
+      destination: 'https://eu.i.posthog.com/:path*',
+    },
+  ],
 };
 
 // Initialize the Next-Intl plugin

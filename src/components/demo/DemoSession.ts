@@ -1,3 +1,5 @@
+import { captureDemoEvent } from './DemoAnalytics';
+
 const STORAGE_KEY = 'girhouse-demo-session';
 
 let fallback: string | undefined;
@@ -28,7 +30,8 @@ export const getDemoSessionId = () => {
 };
 
 /**
- * Reports one event of the demo page, surviving the tab being closed.
+ * Reports one event of the demo page, surviving the tab being closed, and mirrors
+ * it to PostHog; heartbeats stay out, PostHog times the visit itself.
  * @param slug The demo slug.
  * @param event The event, without the session id.
  */
@@ -36,4 +39,8 @@ export const sendDemoEvent = (slug: string, event: { type: string; step?: number
   const body = JSON.stringify({ ...event, sessionId: getDemoSessionId() });
 
   navigator.sendBeacon(`/api/demo/${slug}/events`, new Blob([body], { type: 'application/json' }));
+
+  if (event.type !== 'heartbeat') {
+    captureDemoEvent(`demo_${event.type}`, { step: event.step });
+  }
 };

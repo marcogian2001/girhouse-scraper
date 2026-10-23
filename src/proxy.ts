@@ -63,8 +63,8 @@ export default async function proxy(request: NextRequest) {
 
 export const config = {
   // Match all pathnames except for
-  // - … if they start with `/_next`, `/_vercel`, `monitoring` or `api`
+  // - … if they start with `/_next`, `/_vercel`, `monitoring`, `ingest` or `api`
   // - … the ones containing a dot (e.g. `favicon.ico`)
   // Better Auth needs no middleware: route handlers read the session directly
-  matcher: '/((?!_next|_vercel|monitoring|api|.*\\..*).*)',
+  matcher: '/((?!_next|_vercel|monitoring|ingest|api|.*\\..*).*)',
 };

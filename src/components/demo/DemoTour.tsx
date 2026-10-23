@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 import type { DemoSnapshot } from '@/models/Schema';
 import { HEARTBEAT_SECONDS } from '@/utils/DemoStats';
+import { captureDemoEvent, startDemoAnalytics } from './DemoAnalytics';
 import { sendDemoEvent } from './DemoSession';
 import { GigiBar } from './GigiBar';
 import { GigiVideoScene } from './GigiVideoScene';
@@ -109,11 +110,13 @@ const SceneVisual = (options: {
  * Renders nothing, and is left out of dashboard previews.
  * @param props Component props.
  * @param props.slug The demo slug.
+ * @param props.company The business the demo was built for.
  * @param props.initialStep The step a link opened the tour on, if any.
  * @returns Nothing visible.
  */
-const DemoTracking = (props: { slug: string; initialStep: number | null }) => {
+const DemoTracking = (props: { slug: string; company: string; initialStep: number | null }) => {
   useEffect(() => {
+    startDemoAnalytics({ slug: props.slug, company: props.company });
     sendDemoEvent(props.slug, { type: 'open' });
 
     if (props.initialStep) {
@@ -129,7 +132,7 @@ const DemoTracking = (props: { slug: string; initialStep: number | null }) => {
     return () => {
       clearInterval(heartbeat);
     };
-  }, [props.slug, props.initialStep]);
+  }, [props.slug, props.company, props.initialStep]);
 
   return null;
 };
@@ -186,6 +189,17 @@ export const DemoTour = (props: DemoTourProps) => {
       sendDemoEvent(props.slug, { type: 'step', step: target.step });
     }
 
+    // Finer than steps: shows which line of which step the lead stopped on
+    if (props.track) {
+      captureDemoEvent('demo_scene', {
+        scene: next,
+        step: target.step,
+        kind: target.kind,
+        line: target.line,
+        direction: next > index ? 'next' : 'back',
+      });
+    }
+
     setIndex(next);
 
     // Within a step the scene's own anchors scroll to what it reveals; from the price
@@ -216,7 +230,7 @@ export const DemoTour = (props: DemoTourProps) => {
   }
 
   const tracking = props.track ? (
-    <DemoTracking slug={props.slug} initialStep={props.initialStep} />
+    <DemoTracking slug={props.slug} company={company} initialStep={props.initialStep} />
   ) : null;
 
   if (scene.kind === 'intro') {

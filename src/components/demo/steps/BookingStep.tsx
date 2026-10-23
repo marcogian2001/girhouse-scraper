@@ -13,6 +13,7 @@ import { useFormatter, useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { AppConfig } from '@/utils/AppConfig';
 import { googleCalendarUrl } from '../CalendarLinks';
+import { captureDemoEvent } from '../DemoAnalytics';
 import { getDemoSessionId, sendDemoEvent } from '../DemoSession';
 import { PHONE_PREFIXES, withPrefix } from '../PhonePrefix';
 import { WhatsAppIcon } from '../WhatsAppIcon';
@@ -127,6 +128,7 @@ export const BookingStep = (props: {
       return;
     }
 
+    captureDemoEvent('demo_phone_submitted');
     await refreshSlots();
     setIsBusy(false);
   };
@@ -148,6 +150,7 @@ export const BookingStep = (props: {
     setIsBusy(false);
 
     if (response?.ok) {
+      captureDemoEvent('demo_booked');
       props.onPhase('booked');
 
       return;
