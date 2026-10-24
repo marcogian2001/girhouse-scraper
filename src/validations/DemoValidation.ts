@@ -1,4 +1,5 @@
 import * as z from 'zod';
+import { isCustomDemoSlug, normalizeCustomDemoSlug } from '@/utils/CustomDemoSlug';
 import { DEMO_STEPS } from '@/utils/DemoStats';
 
 /** A demo slug: a business name as a slug, numbered when taken (older ones end in a random suffix). */
@@ -30,4 +31,14 @@ export const DemoBookingValidation = z.object({
 export const DemoRebuildValidation = z.object({
   // What the Girhouse team tells the demo to use, links to the business's pages included
   guidance: z.string().trim().max(4000),
+});
+
+/** A new demo may use an exact custom slug; blank input keeps automatic generation. */
+export const DemoCreateValidation = z.object({
+  slug: z
+    .string()
+    .transform(normalizeCustomDemoSlug)
+    .refine((value) => !value || isCustomDemoSlug(value))
+    .transform((value) => value || undefined)
+    .optional(),
 });

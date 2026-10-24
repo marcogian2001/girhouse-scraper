@@ -12,6 +12,8 @@ const baseURL = `http://localhost:${PORT}`;
  */
 export default defineConfig({
   testDir: './tests',
+  // This isolated service suite uses Vitest, without starting the Next.js server.
+  testIgnore: '**/DemoSlug.integ.ts',
   // Look for files with the .integ.js or .e2e.js extension
   testMatch: '*.@(integ|e2e).?(c|m)[jt]s?(x)',
   // Timeout per test, test running locally are slower due to database connections with PGLite

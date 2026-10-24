@@ -173,7 +173,9 @@ Tutto il codice è committato su `main`. Restano fuori solo le modifiche `bg-whi
 ### Fase 3: demo personalizzata [x]
 
 - [x] Pagina pubblica `/it/demo/{slug}`:
-  - slug non indovinabile (circa 59 bit);
+  - slug automatico dal nome dell’attività, numerato se occupato; sono ancora validi i vecchi slug con suffisso casuale;
+  - prima della creazione manuale, campo facoltativo "Slug demo": massimo 60 caratteri, lettere senza accenti, numeri e trattini. Campo vuoto = automatico; slug manuale occupato = errore, senza rinomina;
+  - i prefissi riservati dal routing (`api`, `ingest`, `monitoring`) non sono ammessi per gli slug manuali;
   - `noindex`;
   - tema chiaro fisso;
   - la giraffa in `public/demo/`.
@@ -194,9 +196,10 @@ Tutto il codice è committato su `main`. Restano fuori solo le modifiche `bg-whi
   - con `?anteprima=1` niente tracking;
   - la conversazione passa da `demo_sent` a `demo_viewed`.
 - [x] La bozza per un lead "interessato" contiene il link vero alla demo.
+- [x] La scelta manuale dello slug vale prima della prima creazione. I flussi automatici di importazione e preparazione delle email restano automatici; una demo già creata mantiene il suo link.
 - [x] Riquadro **Demo** nel dettaglio conversazione: stato, passo raggiunto, tempo sulla pagina, pulsante "Genera demo".
 - [x] **Fonti più ricche (23/10)**, in `src/libs/DemoReferences.ts`:
-  - nome: se manca il nome dell'attività si usa quello della persona (ricerca Parallel sul contatto, poi nome e cognome del contatto); l'email solo come ultima risorsa. Una demo con l'indirizzo fatto dall'email, mai aperta, prende un indirizzo nuovo alla rigenerazione;
+  - nome: se manca il nome dell'attività si usa quello della persona (ricerca Parallel sul contatto, poi nome e cognome del contatto); l'email solo come ultima risorsa. Le rigenerazioni conservano sempre l’indirizzo esistente, anche quando era stato ricavato dall’email;
   - la ricerca sul contatto (`enrichment`) va all'AI: ruolo, settore, come si presenta;
   - **Instagram** via Apify (`apify~instagram-profile-scraper`, circa 0,002 $ a profilo, 15-20 secondi): l'account si trova nei link della ricerca o delle indicazioni; bio e didascalie vanno all'AI, foto profilo e post diventano ritratto e foto. Il link del profilo si legge come pagina di riferimento, mai per logo e colori. A ottobre 2026 l'actor spesso non restituisce i post;
   - le foto di Instagram, del sito e dei link hanno link che scadono o cambiano: si copiano in `demo_image` (migrazione 0031) e si servono da `/api/demo-images/<id>`;

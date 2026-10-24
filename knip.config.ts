@@ -6,7 +6,7 @@ const config: KnipConfig = {
   // its full public API whether or not this app uses every part of it
   ignore: ['src/libs/I18n.ts', 'src/types/I18n.ts', 'src/components/ui/**'],
   // One-off scripts run by hand with Bun
-  entry: ['scripts/*.ts'],
+  entry: ['scripts/*.ts', 'vitest.demo.config.ts'],
   // System tools the intro video script calls, installed outside npm
   ignoreBinaries: ['ffmpeg', 'ffprobe'],
   // Include custom Playwright test file suffixes
