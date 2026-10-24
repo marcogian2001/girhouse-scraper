@@ -39,8 +39,8 @@ export const Env = createEnv({
     // Set on Vercel, which sends it as a bearer token on every cron call
     CRON_SECRET: z.string().min(16).optional(),
     // Upstash Redis that caches dashboard queries; unset, every query reads the database
-    UPSTASH_REDIS_REST_URL: z.url().optional(),
-    UPSTASH_REDIS_REST_TOKEN: z.string().min(1).optional(),
+    UPSTASH_KV_REST_API_URL: z.url().optional(),
+    UPSTASH_KV_REST_API_TOKEN: z.string().min(1).optional(),
   },
   client: {
     NEXT_PUBLIC_APP_URL: z.string().optional(),
@@ -82,8 +82,8 @@ export const Env = createEnv({
     DEMO_URL: process.env.DEMO_URL,
     JOBS_SECRET: process.env.JOBS_SECRET,
     CRON_SECRET: process.env.CRON_SECRET,
-    UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
-    UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
+    UPSTASH_KV_REST_API_URL: process.env.UPSTASH_KV_REST_API_URL,
+    UPSTASH_KV_REST_API_TOKEN: process.env.UPSTASH_KV_REST_API_TOKEN,
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
     NEXT_PUBLIC_LOGGING_LEVEL: process.env.NEXT_PUBLIC_LOGGING_LEVEL,
     NEXT_PUBLIC_BETTER_STACK_SOURCE_TOKEN: process.env.NEXT_PUBLIC_BETTER_STACK_SOURCE_TOKEN,

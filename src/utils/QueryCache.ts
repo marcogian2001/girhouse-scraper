@@ -135,8 +135,8 @@ class SchemaAwareUpstashCache extends UpstashCache {
  * @returns The cache, or undefined to read the database every time.
  */
 export const createQueryCache = () => {
-  const url = Env.UPSTASH_REDIS_REST_URL;
-  const token = Env.UPSTASH_REDIS_REST_TOKEN;
+  const url = Env.UPSTASH_KV_REST_API_URL;
+  const token = Env.UPSTASH_KV_REST_API_TOKEN;
 
   return url && token
     ? new SchemaAwareUpstashCache(
