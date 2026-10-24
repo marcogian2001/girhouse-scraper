@@ -44,14 +44,14 @@ type SortKey =
   | 'contacted'
   | TestStep
   | 'cost'
-  | 'cost_per_lead'
+  | 'cost_per_positive'
   | 'cost_per_call'
   | 'cost_per_won';
 
 /** Costs read better low first; everything else high first. */
 const ASCENDING_FIRST = new Set<SortKey>([
   'cost',
-  'cost_per_lead',
+  'cost_per_positive',
   'cost_per_call',
   'cost_per_won',
 ]);
@@ -77,8 +77,8 @@ const sortValue = (test: CampaignTest, key: SortKey, base: RateBase) => {
     return test.costMicros;
   }
 
-  if (key === 'cost_per_lead') {
-    return test.costPerLeadMicros;
+  if (key === 'cost_per_positive') {
+    return test.costPerPositiveMicros;
   }
 
   if (key === 'cost_per_call') {
@@ -275,7 +275,11 @@ export const CampaignTestsTable = (props: { tests: CampaignTest[] }) => {
               <HintHead label={t('column_replies_by_email')} hint={t('hint_replies_by_email')} />
               {TEST_STEPS.slice(2).map((step) => head(step, t(`step_${step}`), t(`hint_${step}`)))}
               {head('cost', t('column_cost'), t('hint_cost'))}
-              {head('cost_per_lead', t('column_cost_per_lead'), t('hint_cost_per_lead'))}
+              {head(
+                'cost_per_positive',
+                t('column_cost_per_positive'),
+                t('hint_cost_per_positive'),
+              )}
               {head('cost_per_call', t('column_cost_per_call'), t('hint_cost_per_call'))}
               {head('cost_per_won', t('column_cost_per_won'), t('hint_cost_per_won'))}
             </TableRow>
@@ -354,7 +358,7 @@ export const CampaignTestsTable = (props: { tests: CampaignTest[] }) => {
                   {usd(test.costMicros)}
                 </TableCell>
                 <TableCell className="text-right font-medium tabular-nums">
-                  {usd(test.costPerLeadMicros)}
+                  {usd(test.costPerPositiveMicros)}
                 </TableCell>
                 <TableCell className="text-right font-medium tabular-nums">
                   {usd(test.costPerCallMicros)}

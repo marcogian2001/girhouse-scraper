@@ -77,8 +77,8 @@ export const CampaignTestCard = (props: { test: CampaignTest }) => {
             <dd className="tabular-nums">{usd(test.costMicros)}</dd>
           </div>
           <div>
-            <dt className="text-xs text-muted-foreground">{t('column_cost_per_lead')}</dt>
-            <dd className="tabular-nums">{usd(test.costPerLeadMicros)}</dd>
+            <dt className="text-xs text-muted-foreground">{t('column_cost_per_positive')}</dt>
+            <dd className="tabular-nums">{usd(test.costPerPositiveMicros)}</dd>
           </div>
           <div>
             <dt className="text-xs text-muted-foreground">{t('column_cost_per_call')}</dt>

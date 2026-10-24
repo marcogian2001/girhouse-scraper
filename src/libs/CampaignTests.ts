@@ -12,7 +12,9 @@ import {
   instantlyLeadSchema,
   leadOutcomeSchema,
   leadSchema,
+  memberSchema,
   replyClassificationSchema,
+  userSchema,
 } from '@/models/Schema';
 import type { PlatformFacts } from '@/utils/CampaignTests';
 import { buildCampaignTest, mergeLeadFacts, resolveTargeting } from '@/utils/CampaignTests';
@@ -321,11 +323,28 @@ const loadCosts = async (options: { organizationId: string; campaignIds: string[
 };
 
 /**
+ * Reads the addresses of the organization's own people, whose test replies to a
+ * campaign must not count as leads.
+ * @param organizationId The organization.
+ * @returns The members' emails, lower-cased.
+ */
+const loadTeamEmails = async (organizationId: string) => {
+  const rows = await db
+    .select({ email: userSchema.email })
+    .from(memberSchema)
+    .innerJoin(userSchema, eq(userSchema.id, memberSchema.userId))
+    .where(eq(memberSchema.organizationId, organizationId));
+
+  return new Set(rows.map((row) => row.email.toLowerCase()));
+};
+
+/**
  * Builds the test record of every campaign sent through Instantly, newest first:
  * who and where it targets, an example of its emails, how its leads went from the
  * reply to the sale and what it cost. Replies and labels come from the copy of
- * Instantly, so campaigns sent before the platform read replies count too. Archived
- * campaigns stay, since they are past tests.
+ * Instantly, so campaigns sent before the platform read replies count too. Replies
+ * from the organization's own people are left out. Archived campaigns stay, since they
+ * are past tests.
  * @param options The report.
  * @param options.organizationId The organization.
  * @param options.campaignId A single campaign, for its own page.
@@ -356,13 +375,14 @@ export const getCampaignTests = async (options: {
   const instantlyIds = campaigns.flatMap((campaign) =>
     campaign.instantlyCampaignId ? [campaign.instantlyCampaignId] : [],
   );
-  const [targeting, examples, conversations, outcomes, instantly, costs] = await Promise.all([
+  const [targeting, examples, conversations, outcomes, instantly, costs, team] = await Promise.all([
     loadContactTargeting(campaignIds),
     loadExampleEmails(campaignIds),
     loadConversations(campaignIds),
     loadOutcomes({ organizationId, campaignIds }),
     loadInstantly(instantlyIds),
     loadCosts({ organizationId, campaignIds }),
+    loadTeamEmails(organizationId),
   ]);
 
   return campaigns.map((campaign) => {
@@ -375,11 +395,15 @@ export const getCampaignTests = async (options: {
       instantly: instantly.leads.get(instantlyId) ?? new Map<string, InstantlyLead>(),
       outcome: outcomes.get(campaign.id) ?? new Map<string, LeadOutcome>(),
     };
-    const emails = new Set([
-      ...sources.platform.keys(),
-      ...sources.instantly.keys(),
-      ...sources.outcome.keys(),
-    ]);
+    const emails = new Set(
+      [...sources.platform.keys(), ...sources.instantly.keys(), ...sources.outcome.keys()].filter(
+        (email) => !team.has(email),
+      ),
+    );
+    // Instantly's reply total includes the team's own test replies, so they come off it
+    const teamReplies = [...sources.instantly.values()].filter(
+      (lead) => team.has(lead.email) && lead.interestStatus !== 0,
+    ).length;
     const leads = [...emails].map((email) => {
       const outcome = sources.outcome.get(email);
 
@@ -418,7 +442,7 @@ export const getCampaignTests = async (options: {
       bounced: stat?.bounced ?? null,
       ...buildCampaignTest({
         contacted: stat?.contacted ?? contacts?.approved ?? 0,
-        replied: stat?.replied ?? null,
+        replied: stat ? Math.max(stat.replied - teamReplies, 0) : null,
         leads,
         costMicros: cost.ownMicros + cost.leadsMicros,
       }),

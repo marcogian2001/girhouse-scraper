@@ -88,8 +88,8 @@ const hasReplied = (platform: PlatformFacts | null, instantly: InstantlyFacts | 
 /**
  * Joins what the platform, Instantly and GHL know about one lead. The platform's
  * classification wins on whether the lead wrote back, since it tells autoresponders
- * apart; Instantly's labels cover the replies the platform never received; GHL and
- * Instantly both report calls and sales.
+ * apart; Instantly's label wins on whether they said yes, since it is kept up to date;
+ * GHL and Instantly both report calls and sales.
  * @param sources What each source knows, null when it knows nothing about the lead.
  * @param sources.platform The lead's conversation.
  * @param sources.instantly The lead as Instantly labelled them.
@@ -115,12 +115,13 @@ export const mergeLeadFacts = (sources: {
     noShow,
     won,
   ].some(Boolean);
-  // An objection that ends in a call was a yes too
-  const saidYes = [
-    platform?.categories.includes('interested'),
-    INSTANTLY_POSITIVE.has(status),
-    booked,
-  ].some(Boolean);
+  // Instantly's label is the latest word on the lead, so it beats a yes the lead took
+  // back; without one, the platform's classification counts. A call is always a yes
+  const saidYes =
+    booked ||
+    (status === null
+      ? platform?.categories.includes('interested') === true
+      : INSTANTLY_POSITIVE.has(status));
 
   return {
     replied,
@@ -174,8 +175,8 @@ const costPer = (costMicros: number, count: number) =>
  * @param options.leads One entry per lead something happened to.
  * @param options.costMicros What the campaign cost, in millionths of a dollar.
  * @returns Each step's count with its share of the leads contacted and of its base step,
- * the replies by email of the sequence, the value of the sales and the costs per lead
- * contacted, per call and per sale.
+ * the replies by email of the sequence, the value of the sales and the costs per
+ * positive reply, per call and per sale.
  */
 export const buildCampaignTest = (options: {
   contacted: number;
@@ -219,7 +220,7 @@ export const buildCampaignTest = (options: {
       .map(([email, value]) => ({ email, count: value, share: rateOf(value, known) })),
     wonValue: options.leads.reduce((total, lead) => total + lead.wonValue, 0),
     costMicros: options.costMicros,
-    costPerLeadMicros: costPer(options.costMicros, options.contacted),
+    costPerPositiveMicros: costPer(options.costMicros, counts.positive),
     costPerCallMicros: costPer(options.costMicros, counts.booked),
     costPerWonMicros: costPer(options.costMicros, counts.won),
   };

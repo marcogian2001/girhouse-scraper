@@ -53,6 +53,16 @@ describe('Campaign tests', () => {
       ).toBeFalsy();
     });
 
+    it('follows the Instantly label over an earlier yes', () => {
+      expect(
+        mergeLeadFacts({
+          platform: platform({ categories: ['interested', 'not_now'] }),
+          instantly: { repliedStep: 1, interestStatus: -1 },
+          outcome: null,
+        }).positive,
+      ).toBeFalsy();
+    });
+
     it('counts a booked objection as a positive reply', () => {
       expect(
         mergeLeadFacts({
@@ -133,8 +143,8 @@ describe('Campaign tests', () => {
       ]);
     });
 
-    it('divides the cost by leads, calls and sales', () => {
-      expect(test.costPerLeadMicros).toBe(300_000);
+    it('divides the cost by positive replies, calls and sales', () => {
+      expect(test.costPerPositiveMicros).toBe(10_000_000);
       expect(test.costPerCallMicros).toBe(10_000_000);
       expect(test.costPerWonMicros).toBe(30_000_000);
       expect(test.wonValue).toBe(97);
