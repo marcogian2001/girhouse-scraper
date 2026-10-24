@@ -119,7 +119,7 @@ export default async function ReplyDetailPage(props: {
           {conversation.isTest && <Badge variant="outline">{t('badge_test')}</Badge>}
           <ConversationProgress
             conversationId={conversation.id}
-            initialState={conversation.state}
+            initialStatus={detail.status}
             initialPendingJobs={detail.pendingJobs}
           />
 

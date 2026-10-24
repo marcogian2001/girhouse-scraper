@@ -5,17 +5,14 @@ describe('RepliesQuery', () => {
   describe('Parsing', () => {
     it('reads every filter from the search params', () => {
       expect(
-        parseRepliesQuery({ q: ' rossi ', state: 'auto_reply', answered: 'no', bot: 'yes' }, [
-          'manual_review',
-          'auto_reply',
-        ]),
-      ).toStrictEqual({ search: 'rossi', state: 'auto_reply', answered: 'no', bot: 'yes' });
+        parseRepliesQuery({ q: ' rossi ', state: 'interested', answered: 'no', bot: 'yes' }),
+      ).toStrictEqual({ search: 'rossi', state: 'interested', answered: 'no', bot: 'yes' });
     });
 
-    it('drops unknown values', () => {
-      expect(
-        parseRepliesQuery({ state: 'nope', answered: 'maybe', bot: ['yes'] }, ['manual_review']),
-      ).toStrictEqual({ search: '', state: undefined, answered: undefined, bot: undefined });
+    it('drops unknown values and internal states', () => {
+      expect(parseRepliesQuery({ state: 'paused', answered: 'maybe', bot: ['yes'] })).toStrictEqual(
+        { search: '', state: undefined, answered: undefined, bot: undefined },
+      );
     });
   });
 

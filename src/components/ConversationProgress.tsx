@@ -6,14 +6,20 @@ import { StatusBadge } from '@/components/StatusBadge';
 import { Spinner } from '@/components/ui/spinner';
 import { useRouter } from '@/libs/I18nNavigation';
 import type { ConversationState } from '@/utils/ReplyRouting';
+import type { ReplyStatus } from '@/utils/ReplyStatus';
 
 const POLL_INTERVAL_MS = 3000;
 
-type StatusPayload = { state: ConversationState; updatedAt: string; pendingJobs: number };
+type StatusPayload = {
+  state: ConversationState;
+  status: ReplyStatus;
+  updatedAt: string;
+  pendingJobs: number;
+};
 
 export const ConversationProgress = (props: {
   conversationId: string;
-  initialState: ConversationState;
+  initialStatus: ReplyStatus;
   initialPendingJobs: number;
 }) => {
   const t = useTranslations('ConversationProgress');
@@ -69,12 +75,12 @@ export const ConversationProgress = (props: {
     };
   }, [props.conversationId, router]);
 
-  const state = payload?.state ?? props.initialState;
+  const status = payload?.status ?? props.initialStatus;
   const pendingJobs = payload?.pendingJobs ?? props.initialPendingJobs;
 
   return (
     <div className="flex items-center gap-2">
-      <StatusBadge kind="conversation" status={state} />
+      <StatusBadge kind="replyStatus" status={status} />
 
       {pendingJobs > 0 && (
         <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">

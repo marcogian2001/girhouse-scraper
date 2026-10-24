@@ -19,7 +19,6 @@ import {
 import { getApiContext } from '@/libs/ApiAuth';
 import { CONVERSATIONS_PAGE_SIZE, listConversations } from '@/libs/Conversations';
 import { Link } from '@/libs/I18nNavigation';
-import { conversationStateEnum } from '@/models/Schema';
 import { parsePage } from '@/utils/Pagination';
 import { hasRepliesFilters, parseRepliesQuery, repliesHref } from '@/utils/RepliesQuery';
 
@@ -31,7 +30,7 @@ export default async function RepliesPage(props: {
   setRequestLocale(locale);
 
   const searchParams = await props.searchParams;
-  const query = parseRepliesQuery(searchParams, conversationStateEnum.enumValues);
+  const query = parseRepliesQuery(searchParams);
   const isFiltered = hasRepliesFilters(query);
   const page = parsePage(searchParams.page);
 
@@ -42,7 +41,7 @@ export default async function RepliesPage(props: {
   const { conversations, total: matching } = context
     ? await listConversations({
         organizationId: context.organizationId,
-        states: query.state ? [query.state] : undefined,
+        status: query.state,
         search: query.search || undefined,
         answered: query.answered ? query.answered === 'yes' : undefined,
         botManaged: query.bot ? query.bot === 'yes' : undefined,
@@ -66,7 +65,7 @@ export default async function RepliesPage(props: {
         }
       />
 
-      <RepliesFilters query={query} states={conversationStateEnum.enumValues} />
+      <RepliesFilters query={query} />
 
       {conversations.length === 0 ? (
         <EmptyState
@@ -82,7 +81,6 @@ export default async function RepliesPage(props: {
                 <TableHead>{t('column_lead')}</TableHead>
                 <TableHead>{t('column_state')}</TableHead>
                 <TableHead>{t('column_answered')}</TableHead>
-                <TableHead className="hidden md:table-cell">{t('column_category')}</TableHead>
                 <TableHead className="hidden md:table-cell">{t('column_last_reply')}</TableHead>
               </TableRow>
             </TableHeader>
@@ -118,7 +116,7 @@ export default async function RepliesPage(props: {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <StatusBadge kind="conversation" status={conversation.state} />
+                    <StatusBadge kind="replyStatus" status={conversation.status} />
                   </TableCell>
                   <TableCell>
                     {conversation.lastOutboundAt ? (
@@ -139,11 +137,6 @@ export default async function RepliesPage(props: {
                         <Clock className="size-4 text-warning" />
                         {t('answered_no')}
                       </span>
-                    )}
-                  </TableCell>
-                  <TableCell className="hidden md:table-cell">
-                    {conversation.category && (
-                      <StatusBadge kind="replyCategory" status={conversation.category} />
                     )}
                   </TableCell>
                   <TableCell className="hidden text-muted-foreground md:table-cell">

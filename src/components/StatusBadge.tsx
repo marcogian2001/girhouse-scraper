@@ -8,7 +8,8 @@ import type {
   leadSearchSchema,
   outboundEmailSchema,
 } from '@/models/Schema';
-import type { ConversationState, ReplyCategory } from '@/utils/ReplyRouting';
+import type { ReplyCategory } from '@/utils/ReplyRouting';
+import type { ReplyStatus } from '@/utils/ReplyStatus';
 
 type CampaignStatus = (typeof campaignSchema.$inferSelect)['status'];
 type ContactStatus = (typeof contactSchema.$inferSelect)['status'];
@@ -57,9 +58,14 @@ const LEAD_TONE: Record<LeadStatus, Tone> = {
   failed: 'danger',
 };
 
-const CONVERSATION_TONE: Record<ConversationState, Tone> = {
-  replied: 'info',
-  classified: 'info',
+const REPLY_STATUS_TONE: Record<ReplyStatus, Tone> = {
+  pending: 'info',
+  interested: 'success',
+  question: 'info',
+  objection: 'warning',
+  not_now: 'neutral',
+  not_interested: 'neutral',
+  manual_review: 'warning',
   demo_sent: 'info',
   demo_viewed: 'info',
   follow_up: 'info',
@@ -68,10 +74,7 @@ const CONVERSATION_TONE: Record<ConversationState, Tone> = {
   nurturing: 'neutral',
   out_of_office: 'neutral',
   auto_reply: 'neutral',
-  paused: 'warning',
-  manual_review: 'warning',
-  closed_not_interested: 'neutral',
-  closed_no_reply: 'neutral',
+  no_reply: 'neutral',
   stop: 'danger',
   wrong_person: 'neutral',
 };
@@ -119,7 +122,7 @@ type StatusBadgeProps =
   | { kind: 'contact'; status: ContactStatus }
   | { kind: 'leadSearch'; status: LeadSearchStatus }
   | { kind: 'lead'; status: LeadStatus }
-  | { kind: 'conversation'; status: ConversationState }
+  | { kind: 'replyStatus'; status: ReplyStatus }
   | { kind: 'replyCategory'; status: ReplyCategory }
   | { kind: 'outbound'; status: OutboundStatus };
 
@@ -141,8 +144,8 @@ const toneOf = (props: StatusBadgeProps) => {
     return LEAD_SEARCH_TONE[props.status];
   }
 
-  if (props.kind === 'conversation') {
-    return CONVERSATION_TONE[props.status];
+  if (props.kind === 'replyStatus') {
+    return REPLY_STATUS_TONE[props.status];
   }
 
   if (props.kind === 'replyCategory') {
@@ -178,7 +181,7 @@ export const StatusBadge = (props: StatusBadgeProps) => {
   const contactT = useTranslations('ContactStatus');
   const leadSearchT = useTranslations('LeadSearchStatus');
   const leadT = useTranslations('LeadStatus');
-  const conversationT = useTranslations('ConversationState');
+  const replyStatusT = useTranslations('ReplyStatus');
   const categoryT = useTranslations('ReplyCategory');
   const outboundT = useTranslations('OutboundStatus');
 
@@ -195,8 +198,8 @@ export const StatusBadge = (props: StatusBadgeProps) => {
       return leadSearchT(`status_${props.status}`);
     }
 
-    if (props.kind === 'conversation') {
-      return conversationT(`status_${props.status}`);
+    if (props.kind === 'replyStatus') {
+      return replyStatusT(`status_${props.status}`);
     }
 
     if (props.kind === 'replyCategory') {

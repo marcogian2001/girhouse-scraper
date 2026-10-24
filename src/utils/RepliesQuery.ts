@@ -1,4 +1,5 @@
-import type { ConversationState } from './ReplyRouting';
+import type { ReplyStatus } from './ReplyStatus';
+import { REPLY_STATUSES } from './ReplyStatus';
 
 /** The answers a yes-or-no filter takes in the URL. */
 export const YES_NO = ['yes', 'no'] as const;
@@ -8,7 +9,7 @@ type YesNo = (typeof YES_NO)[number];
 /** The filters of the replies list, as kept in the URL. */
 export type RepliesQuery = {
   search: string;
-  state?: ConversationState;
+  state?: ReplyStatus;
   answered?: YesNo;
   bot?: YesNo;
 };
@@ -16,15 +17,13 @@ export type RepliesQuery = {
 /**
  * Reads the replies list filters from the page's search params, dropping unknown values.
  * @param params The page's search params.
- * @param states The conversation states a `state` filter may name.
  * @returns The filters.
  */
 export const parseRepliesQuery = (
   params: Record<string, string | string[] | undefined>,
-  states: readonly ConversationState[],
 ): RepliesQuery => ({
   search: typeof params.q === 'string' ? params.q.trim() : '',
-  state: states.find((state) => state === params.state),
+  state: REPLY_STATUSES.find((status) => status === params.state),
   answered: YES_NO.find((value) => value === params.answered),
   bot: YES_NO.find((value) => value === params.bot),
 });

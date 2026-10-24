@@ -509,6 +509,58 @@ const routeClassification = async (options: {
 };
 
 /**
+ * Records the classification of a reply on a paused conversation, which belongs to the sales
+ * reps: the category shows where the lead stands, but the state stays and nothing is written.
+ * A stop still blocks the lead, whoever handles the campaign.
+ * @param options The call options.
+ * @param options.conversation The paused conversation.
+ * @param options.message The reply being processed.
+ * @param options.classification Its classification.
+ */
+const recordPausedClassification = async (options: {
+  conversation: Conversation;
+  message: InboundMessage;
+  classification: Classification;
+}) => {
+  const { conversation, classification } = options;
+
+  await logEvent({
+    conversationId: conversation.id,
+    type: 'classified',
+    payload: {
+      inboundMessageId: options.message.id,
+      category: classification.category,
+      confidence: classification.confidence,
+      source: classification.source,
+      model: classification.model,
+    },
+  });
+
+  if (classification.category === 'stop') {
+    await applyStop({ conversation, reason: classification.source });
+    await markProcessed(options.message.id);
+
+    return;
+  }
+
+  // Counted like any reply, so the count holds if the bot takes the lead over later
+  await db.transaction(async (tx) => {
+    await tx
+      .update(conversationSchema)
+      .set({
+        negativeReplyCount:
+          classification.category === 'not_interested'
+            ? sql`${conversationSchema.negativeReplyCount} + 1`
+            : conversation.negativeReplyCount,
+        phoneE164: classification.phoneE164 ?? conversation.phoneE164,
+      })
+      .where(eq(conversationSchema.id, conversation.id));
+
+    await markProcessed(options.message.id, tx);
+  });
+};
+
+/**
  * Closes a reply that needs no classification, with the reason in the log.
  * @param options The call options.
  * @param options.conversation The conversation the reply belongs to.
@@ -531,8 +583,9 @@ const closeUnclassified = async (options: {
 };
 
 /**
- * Handles the replies that never reach the AI: stop requests, replies on an inactive
- * conversation and threads a salesperson already answered.
+ * Handles the replies that never reach the AI: stop requests and replies on a stopped
+ * conversation. A thread a salesperson already answered pauses the conversation, and its
+ * reply is still classified.
  * @param options The call options.
  * @param options.conversation The conversation the reply belongs to.
  * @param options.message The reply.
@@ -570,7 +623,7 @@ const handleWithoutAi = async (options: {
     return true;
   }
 
-  if (FINAL_STATES.has(conversation.state)) {
+  if (conversation.state === 'stop') {
     await closeUnclassified({
       conversation,
       message,
@@ -581,34 +634,34 @@ const handleWithoutAi = async (options: {
     return true;
   }
 
-  // An imported old reply may well have had a salesperson's answer, and is still classified
-  if (options.context.manualReply && message.eventType !== IMPORTED_EVENT) {
+  // An imported old reply may well have had a salesperson's answer, and is still routed
+  if (
+    options.context.manualReply &&
+    message.eventType !== IMPORTED_EVENT &&
+    conversation.state !== 'paused'
+  ) {
     await db
       .update(conversationSchema)
       .set({ pausedReason: 'manual_reply' })
       .where(eq(conversationSchema.id, conversation.id));
     await setConversationState({ conversation, state: 'paused' });
-    await closeUnclassified({
-      conversation,
-      message,
+    await logEvent({
+      conversationId: conversation.id,
       type: 'paused_manual_reply',
-      payload: { instantlyEmailId: options.context.manualReply.id },
+      payload: { inboundMessageId: message.id, instantlyEmailId: options.context.manualReply.id },
     });
-
-    return true;
   }
 
   return false;
 };
 
 /**
- * Leaves a reply to the sales reps when its campaign is not handled by the bot: the
- * conversation is paused and nothing is read or written. A stop request is not left
+ * Leaves a conversation to the sales reps when its campaign is not handled by the bot: it is
+ * paused, so its reply is only classified and nothing is written. A stop request is not left
  * here, since it is blocked whoever handles the campaign.
  * @param options The reply.
  * @param options.conversation The conversation.
  * @param options.message The reply.
- * @returns Whether the reply was left to the sales reps.
  */
 const leaveToSalesReps = async (options: {
   conversation: Conversation;
@@ -617,7 +670,7 @@ const leaveToSalesReps = async (options: {
   const { conversation, message } = options;
 
   if (conversation.state === 'paused' || (await isBotManaged(conversation))) {
-    return false;
+    return;
   }
 
   await db
@@ -625,9 +678,29 @@ const leaveToSalesReps = async (options: {
     .set({ pausedReason: 'unmanaged_campaign' })
     .where(eq(conversationSchema.id, conversation.id));
   await setConversationState({ conversation, state: 'paused' });
-  await closeUnclassified({ conversation, message, type: 'campaign_unmanaged' });
+  await logEvent({
+    conversationId: conversation.id,
+    type: 'campaign_unmanaged',
+    payload: { inboundMessageId: message.id },
+  });
+};
 
-  return true;
+/**
+ * Reads a conversation again, after a step that may have moved it.
+ * @param conversationId The conversation.
+ * @returns The conversation as it now stands.
+ * @throws {Error} When it no longer exists.
+ */
+const reloadConversation = async (conversationId: string) => {
+  const conversation = await db.query.conversationSchema.findFirst({
+    where: eq(conversationSchema.id, conversationId),
+  });
+
+  if (!conversation) {
+    throw new Error(`Conversation ${conversationId} no longer exists`);
+  }
+
+  return conversation;
 };
 
 /**
@@ -659,8 +732,8 @@ const loadReply = async (job: Job) => {
 };
 
 /**
- * Reads the thread, applies the stop guard, pauses on a salesperson's reply,
- * then classifies the reply and moves the conversation on.
+ * Reads the thread, applies the stop guard, pauses on a salesperson's reply or an unmanaged
+ * campaign, then classifies the reply and moves the conversation on unless it is paused.
  * @param job The reply job being processed.
  */
 const runReplyProcessJob = async (job: Job) => {
@@ -672,19 +745,15 @@ const runReplyProcessJob = async (job: Job) => {
     return;
   }
 
-  const { message, conversation } = loaded;
+  const { message } = loaded;
   const reply = stripQuotedReply(message.bodyText) || message.bodyText;
 
-  // An imported reply is classified whoever handles its campaign
-  if (
-    message.eventType !== IMPORTED_EVENT &&
-    !isStopRequest(reply) &&
-    (await leaveToSalesReps({ conversation, message }))
-  ) {
-    await completeJob(job.id);
-
-    return;
+  // An imported reply is routed whoever handles its campaign
+  if (message.eventType !== IMPORTED_EVENT && !isStopRequest(reply)) {
+    await leaveToSalesReps({ conversation: loaded.conversation, message });
   }
+
+  const conversation = await reloadConversation(loaded.conversation.id);
 
   const settings = await getAutomationSettings(conversation.organizationId);
 
@@ -720,8 +789,12 @@ const runReplyProcessJob = async (job: Job) => {
   if (!handled) {
     const classification =
       existing ?? (await classifyWithAi({ conversation, message, reply, context, settings }));
+    // A salesperson's answer in the thread may have just paused it
+    const current = await reloadConversation(conversation.id);
 
-    await routeClassification({ conversation, message, classification, settings });
+    await (current.state === 'paused'
+      ? recordPausedClassification({ conversation: current, message, classification })
+      : routeClassification({ conversation: current, message, classification, settings }));
   }
 
   await completeJob(job.id);

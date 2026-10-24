@@ -18,7 +18,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { useRouter } from '@/libs/I18nNavigation';
 import type { RepliesQuery } from '@/utils/RepliesQuery';
 import { hasRepliesFilters, repliesHref, YES_NO } from '@/utils/RepliesQuery';
-import type { ConversationState } from '@/utils/ReplyRouting';
+import { REPLY_STATUSES } from '@/utils/ReplyStatus';
 
 /** The select value that clears a filter, since an empty value is not allowed. */
 const ALL = 'all';
@@ -33,15 +33,11 @@ const SEARCH_DELAY_MS = 300;
  * Filters the replies list as the user types or picks, keeping the filters in the URL.
  * @param props The component props.
  * @param props.query The filters the page was rendered with.
- * @param props.states The conversation states to filter by.
  * @returns The filter bar.
  */
-export const RepliesFilters = (props: {
-  query: RepliesQuery;
-  states: readonly ConversationState[];
-}) => {
+export const RepliesFilters = (props: { query: RepliesQuery }) => {
   const t = useTranslations('RepliesFilters');
-  const tState = useTranslations('ConversationState');
+  const tStatus = useTranslations('ReplyStatus');
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [query, setQuery] = useState(props.query);
@@ -89,7 +85,7 @@ export const RepliesFilters = (props: {
       <Select
         value={query.state ?? ALL}
         onValueChange={(value) => {
-          apply({ ...query, state: props.states.find((state) => state === value) });
+          apply({ ...query, state: REPLY_STATUSES.find((status) => status === value) });
         }}
       >
         <SelectTrigger
@@ -104,12 +100,12 @@ export const RepliesFilters = (props: {
             <CircleDot className="text-muted-foreground" />
             {t('filter_state_all')}
           </SelectItem>
-          {props.states.map((state) => (
-            <SelectItem key={state} value={state}>
+          {REPLY_STATUSES.map((status) => (
+            <SelectItem key={status} value={status}>
               <span className="flex size-4 items-center justify-center">
-                <StatusDot kind="conversation" status={state} />
+                <StatusDot kind="replyStatus" status={status} />
               </span>
-              {tState(`status_${state}`)}
+              {tStatus(`status_${status}`)}
             </SelectItem>
           ))}
         </SelectContent>

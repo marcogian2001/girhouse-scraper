@@ -1,15 +1,18 @@
+import type { SQLWrapper } from 'drizzle-orm';
 import { and, desc, eq, inArray, isNotNull, isNull, lte, not, or, sql } from 'drizzle-orm';
 import {
   campaignSchema,
   contactSchema,
   conversationEventSchema,
   conversationSchema,
+  conversationStateEnum,
   emailSuppressionSchema,
   inboundMessageSchema,
   jobSchema,
   leadSchema,
   objectionSchema,
   outboundEmailSchema,
+  replyCategoryEnum,
   replyClassificationSchema,
   userSchema,
   whatsappHandoffSchema,
@@ -25,6 +28,8 @@ import {
 } from '@/services/Instantly';
 import type { ConversationState, ReplyCategory } from '@/utils/ReplyRouting';
 import { decideState, needsAnswer } from '@/utils/ReplyRouting';
+import type { ReplyStatus } from '@/utils/ReplyStatus';
+import { CATEGORY_STATES, replyStatusFilter, toReplyStatus } from '@/utils/ReplyStatus';
 import {
   ACCENTED_LETTERS,
   PLAIN_LETTERS,
@@ -548,11 +553,50 @@ export const importLeadConversation = async (options: {
 export const CONVERSATIONS_PAGE_SIZE = 25;
 
 /**
+ * The category of a conversation's latest reply, null while that reply is not classified.
+ * @param conversationId The conversation id column to correlate on.
+ * @returns The SQL expression.
+ */
+const latestCategorySql = (conversationId: SQLWrapper) =>
+  sql<ReplyCategory | null>`(
+    select ${replyClassificationSchema.category}
+    from ${inboundMessageSchema}
+    left join ${replyClassificationSchema}
+      on ${replyClassificationSchema.inboundMessageId} = ${inboundMessageSchema.id}
+    where ${inboundMessageSchema.conversationId} = ${conversationId}
+    order by ${inboundMessageSchema.receivedAt} desc
+    limit 1
+  )`;
+
+/**
+ * Builds the condition a conversation meets to show a status in the replies list.
+ * @param status The status to match.
+ * @returns The SQL condition.
+ */
+const replyStatusSql = (status: ReplyStatus) => {
+  const filter = replyStatusFilter({
+    status,
+    states: conversationStateEnum.enumValues,
+    categories: replyCategoryEnum.enumValues,
+  });
+  const latestCategory = latestCategorySql(conversationSchema.id);
+  const inCategoryState = inArray(conversationSchema.state, [...CATEGORY_STATES]);
+
+  return or(
+    filter.states.length > 0 ? inArray(conversationSchema.state, filter.states) : undefined,
+    filter.categories.length > 0
+      ? and(inCategoryState, inArray(latestCategory, filter.categories))
+      : undefined,
+    filter.unclassified ? and(inCategoryState, sql`${latestCategory} is null`) : undefined,
+  );
+};
+
+/**
  * Lists a page of an organization's conversations, latest reply first, with the lead's name
- * and the category of their latest reply.
+ * and the status shown for them.
  * @param options The call options.
  * @param options.organizationId The organization to list.
- * @param options.states Only these states, when given.
+ * @param options.status Only conversations showing this status, when given.
  * @param options.search Words the lead's email, company, first or last name must all contain.
  * @param options.answered Only conversations we did (true) or did not (false) reply to, when given.
  * @param options.botManaged Only conversations the bot does (true) or does not (false) handle, when given.
@@ -561,7 +605,7 @@ export const CONVERSATIONS_PAGE_SIZE = 25;
  */
 export const listConversations = async (options: {
   organizationId: string;
-  states?: ConversationState[];
+  status?: ReplyStatus;
   search?: string;
   answered?: boolean;
   botManaged?: boolean;
@@ -578,7 +622,7 @@ export const listConversations = async (options: {
 
   const where = and(
     eq(conversationSchema.organizationId, options.organizationId),
-    options.states ? inArray(conversationSchema.state, options.states) : undefined,
+    options.status ? replyStatusSql(options.status) : undefined,
     options.answered === true ? isNotNull(conversationSchema.lastOutboundAt) : undefined,
     options.answered === false ? isNull(conversationSchema.lastOutboundAt) : undefined,
     options.botManaged === true ? isBotManagedSql : undefined,
@@ -593,6 +637,7 @@ export const listConversations = async (options: {
       conversation: conversationSchema,
       firstName,
       lastName,
+      category: latestCategorySql(conversationSchema.id),
       total: sql<number>`count(*) over ()`.mapWith(Number),
     })
     .from(conversationSchema)
@@ -604,35 +649,11 @@ export const listConversations = async (options: {
     .limit(CONVERSATIONS_PAGE_SIZE)
     .offset((options.page - 1) * CONVERSATIONS_PAGE_SIZE);
 
-  if (rows.length === 0) {
-    return { conversations: [], total: 0 };
-  }
-
-  const latest = await db
-    .selectDistinctOn([inboundMessageSchema.conversationId], {
-      conversationId: inboundMessageSchema.conversationId,
-      category: replyClassificationSchema.category,
-    })
-    .from(inboundMessageSchema)
-    .leftJoin(
-      replyClassificationSchema,
-      eq(replyClassificationSchema.inboundMessageId, inboundMessageSchema.id),
-    )
-    .where(
-      inArray(
-        inboundMessageSchema.conversationId,
-        rows.map((row) => row.conversation.id),
-      ),
-    )
-    .orderBy(inboundMessageSchema.conversationId, desc(inboundMessageSchema.receivedAt));
-
-  const categories = new Map(latest.map((row) => [row.conversationId, row.category]));
-
   return {
     conversations: rows.map((row) => ({
       ...row.conversation,
       leadName: [row.firstName, row.lastName].filter(Boolean).join(' ') || null,
-      category: categories.get(row.conversation.id) ?? null,
+      status: toReplyStatus(row.conversation.state, row.category),
     })),
     total: rows[0]?.total ?? 0,
   };
@@ -710,8 +731,20 @@ export const getConversationStatus = async (options: {
     return null;
   }
 
+  const [latest] = await db
+    .select({ category: replyClassificationSchema.category })
+    .from(inboundMessageSchema)
+    .leftJoin(
+      replyClassificationSchema,
+      eq(replyClassificationSchema.inboundMessageId, inboundMessageSchema.id),
+    )
+    .where(eq(inboundMessageSchema.conversationId, conversation.id))
+    .orderBy(desc(inboundMessageSchema.receivedAt))
+    .limit(1);
+
   return {
     state: conversation.state,
+    status: toReplyStatus(conversation.state, latest?.category ?? null),
     updatedAt: conversation.updatedAt.toISOString(),
     pendingJobs: await countPendingJobs(conversation.id),
   };
@@ -776,6 +809,7 @@ export const getConversationDetail = async (options: {
 
   return {
     conversation,
+    status: toReplyStatus(conversation.state, messages.at(-1)?.classification?.category ?? null),
     messages,
     outbound,
     events,
@@ -860,6 +894,16 @@ export const overrideClassification = async (options: {
   // An older reply no longer decides where the conversation stands, and a stop
   // is permanent: the lead is suppressed and blocked whatever the correction
   if (latest?.id !== row.message.id || conversation.state === 'stop') {
+    return updated;
+  }
+
+  // A paused conversation belongs to the sales reps: the category is only recorded, and
+  // nothing is written, though a stop still blocks the lead
+  if (conversation.state === 'paused') {
+    if (options.category === 'stop') {
+      await applyStop({ conversation, reason: 'manual_override', actorUserId: options.userId });
+    }
+
     return updated;
   }
 
