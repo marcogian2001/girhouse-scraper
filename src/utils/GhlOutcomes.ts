@@ -5,6 +5,8 @@ export type GhlOutcome = {
   email: string;
   callBookedAt: Date | null;
   noShowAt: Date | null;
+  // Set when the lead booked again after missing a call
+  rescheduledAt: Date | null;
   wonAt: Date | null;
   wonValue: number | null;
 };
@@ -92,9 +94,54 @@ const appointmentOutcome = (appointment: CalendarAppointment) => {
 };
 
 /**
+ * Finds the contacts who booked again after missing a call: an appointment added after
+ * their first no show. It is a rescheduled call, not a second booking.
+ * @param appointments The calendar's appointments.
+ * @returns When each of them booked again, by GHL contact id.
+ */
+const rescheduleTimes = (appointments: CalendarAppointment[]) => {
+  const calls = appointments.flatMap((appointment) => {
+    const outcome = appointmentOutcome(appointment);
+
+    return appointment.contactId && outcome?.callBookedAt
+      ? [
+          {
+            contactId: appointment.contactId,
+            addedAt: outcome.callBookedAt,
+            isNoShow: outcome.noShowAt !== null,
+          },
+        ]
+      : [];
+  });
+  const firstNoShows = new Map<string, Date>();
+
+  for (const call of calls) {
+    const current = firstNoShows.get(call.contactId);
+
+    if (call.isNoShow && (!current || call.addedAt < current)) {
+      firstNoShows.set(call.contactId, call.addedAt);
+    }
+  }
+
+  const times = new Map<string, Date>();
+
+  for (const call of calls) {
+    const noShow = firstNoShows.get(call.contactId);
+    const current = times.get(call.contactId);
+
+    if (noShow && call.addedAt > noShow && (!current || call.addedAt < current)) {
+      times.set(call.contactId, call.addedAt);
+    }
+  }
+
+  return times;
+};
+
+/**
  * Turns the cold email pipeline and the calendar into each lead's outcome: who booked
- * a call, missed it or bought. Only the pipeline's contacts count, and a contact with
- * several opportunities or appointments keeps the earliest time of each.
+ * a call, missed it, booked again after missing it or bought. Only the pipeline's
+ * contacts count, and a contact with several opportunities or appointments keeps the
+ * earliest time of each.
  * @param options What GHL holds.
  * @param options.opportunities The pipeline's opportunities.
  * @param options.stageNames The name of each stage, by its id.
@@ -141,9 +188,18 @@ export const toGhlOutcomes = (options: {
       email,
       callBookedAt: earliest(current?.callBookedAt ?? null, fact.outcome.callBookedAt),
       noShowAt: earliest(current?.noShowAt ?? null, fact.outcome.noShowAt),
+      rescheduledAt: current?.rescheduledAt ?? null,
       wonAt: earliest(current?.wonAt ?? null, fact.outcome.wonAt),
       wonValue: fact.outcome.wonValue ?? current?.wonValue ?? null,
     });
+  }
+
+  for (const [contactId, rescheduledAt] of rescheduleTimes(options.appointments)) {
+    const outcome = outcomes.get(emails.get(contactId) ?? '');
+
+    if (outcome) {
+      outcome.rescheduledAt = earliest(outcome.rescheduledAt, rescheduledAt);
+    }
   }
 
   return outcomes;

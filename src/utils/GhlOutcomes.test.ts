@@ -46,6 +46,7 @@ describe('GHL outcomes', () => {
         email: 'lead@example.it',
         callBookedAt: new Date('2026-10-05T10:00:00.000Z'),
         noShowAt: null,
+        rescheduledAt: null,
         wonAt: null,
         wonValue: null,
       });
@@ -159,6 +160,49 @@ describe('GHL outcomes', () => {
       expect(outcomes.get('lead@example.it')?.callBookedAt).toStrictEqual(
         new Date('2026-10-02T10:00:00.000Z'),
       );
+    });
+
+    describe('rescheduled calls', () => {
+      const noShow = appointment({ appointmentStatus: 'noshow' });
+
+      it('marks a lead who booked again after a no show', () => {
+        const outcome = toGhlOutcomes({
+          opportunities: [opportunity({})],
+          stageNames,
+          appointments: [noShow, appointment({ dateAdded: '2026-10-07T10:00:00.000Z' })],
+        }).get('lead@example.it');
+
+        expect(outcome).toMatchObject({
+          callBookedAt: new Date('2026-10-03T10:00:00.000Z'),
+          rescheduledAt: new Date('2026-10-07T10:00:00.000Z'),
+        });
+      });
+
+      it('leaves out a second call without a no show before it', () => {
+        expect(
+          toGhlOutcomes({
+            opportunities: [opportunity({})],
+            stageNames,
+            appointments: [appointment({}), appointment({ dateAdded: '2026-10-07T10:00:00.000Z' })],
+          }).get('lead@example.it')?.rescheduledAt,
+        ).toBeNull();
+      });
+
+      it('leaves out a cancelled call after a no show', () => {
+        expect(
+          toGhlOutcomes({
+            opportunities: [opportunity({})],
+            stageNames,
+            appointments: [
+              noShow,
+              appointment({
+                appointmentStatus: 'cancelled',
+                dateAdded: '2026-10-07T10:00:00.000Z',
+              }),
+            ],
+          }).get('lead@example.it')?.rescheduledAt,
+        ).toBeNull();
+      });
     });
   });
 });

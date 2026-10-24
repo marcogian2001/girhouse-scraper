@@ -9,6 +9,7 @@ const lead = (overrides: Partial<LeadFacts>): LeadFacts => ({
   demoCompleted: false,
   booked: false,
   noShow: false,
+  rescheduled: false,
   won: false,
   wonValue: 0,
   ...overrides,
@@ -88,9 +89,47 @@ describe('Campaign tests', () => {
         mergeLeadFacts({
           platform: null,
           instantly: null,
-          outcome: { callBooked: false, noShow: false, won: true, wonValue: 97 },
+          outcome: {
+            callBooked: false,
+            noShow: false,
+            rescheduled: false,
+            won: true,
+            wonValue: 97,
+          },
         }),
       ).toMatchObject({ replied: false, booked: true, won: true, wonValue: 97 });
+    });
+
+    it('counts a call booked again after a no show as rescheduled', () => {
+      expect(
+        mergeLeadFacts({
+          platform: null,
+          instantly: null,
+          outcome: {
+            callBooked: true,
+            noShow: true,
+            rescheduled: true,
+            won: false,
+            wonValue: null,
+          },
+        }),
+      ).toMatchObject({ booked: true, noShow: true, rescheduled: true });
+    });
+
+    it('leaves out a reschedule without a no show', () => {
+      expect(
+        mergeLeadFacts({
+          platform: null,
+          instantly: null,
+          outcome: {
+            callBooked: true,
+            noShow: false,
+            rescheduled: true,
+            won: false,
+            wonValue: null,
+          },
+        }).rescheduled,
+      ).toBeFalsy();
     });
   });
 
@@ -108,7 +147,7 @@ describe('Campaign tests', () => {
           won: true,
           wonValue: 97,
         }),
-        lead({ positive: true, repliedStep: 2, booked: true, noShow: true }),
+        lead({ positive: true, repliedStep: 2, booked: true, noShow: true, rescheduled: true }),
         lead({ positive: true, repliedStep: 2 }),
         lead({ repliedStep: 3 }),
         lead({ replied: false, booked: true }),
@@ -133,6 +172,11 @@ describe('Campaign tests', () => {
     it('shares no shows and sales on the calls', () => {
       expect(step('no_show')?.ofBase).toBe(1 / 3);
       expect(step('won')?.ofBase).toBe(1 / 3);
+    });
+
+    it('counts a rescheduled lead once in the calls and shares it on the no shows', () => {
+      expect(step('booked')?.count).toBe(3);
+      expect(step('rescheduled')).toMatchObject({ count: 1, ofBase: 1 });
     });
 
     it('splits the replies by email of the sequence', () => {

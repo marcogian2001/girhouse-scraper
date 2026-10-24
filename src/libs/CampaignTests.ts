@@ -23,7 +23,7 @@ import { db } from './DB';
 
 type LeadOutcome = Pick<
   typeof leadOutcomeSchema.$inferSelect,
-  'email' | 'callBookedAt' | 'noShowAt' | 'wonAt' | 'wonValue'
+  'email' | 'callBookedAt' | 'noShowAt' | 'rescheduledAt' | 'wonAt' | 'wonValue'
 >;
 
 type InstantlyLead = Pick<
@@ -199,6 +199,7 @@ const loadOutcomes = async (options: { organizationId: string; campaignIds: stri
       email: leadOutcomeSchema.email,
       callBookedAt: leadOutcomeSchema.callBookedAt,
       noShowAt: leadOutcomeSchema.noShowAt,
+      rescheduledAt: leadOutcomeSchema.rescheduledAt,
       wonAt: leadOutcomeSchema.wonAt,
       wonValue: leadOutcomeSchema.wonValue,
     })
@@ -429,6 +430,7 @@ export const getCampaignTests = async (options: {
           ? {
               callBooked: outcome.callBookedAt !== null,
               noShow: outcome.noShowAt !== null,
+              rescheduled: outcome.rescheduledAt !== null,
               won: outcome.wonAt !== null,
               wonValue: outcome.wonValue,
             }

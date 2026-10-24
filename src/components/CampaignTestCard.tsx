@@ -43,19 +43,22 @@ export const CampaignTestCard = (props: { test: CampaignTest }) => {
             )}
           </div>
 
-          {test.steps.map((step) => (
-            <div key={step.step}>
-              <dt className="text-xs text-muted-foreground">{t(`step_${step.step}`)}</dt>
-              <dd className="text-2xl font-semibold tabular-nums">{step.count}</dd>
-              <dd className="text-xs text-muted-foreground">
-                {t('rate_line', {
-                  ofContacted: percent(step.ofContacted),
-                  ofBase: percent(step.ofBase),
-                  base: t(`base_of_${STEP_BASE[step.step]}`),
-                })}
-              </dd>
-            </div>
-          ))}
+          {/* Rescheduled calls only show in the campaign tests table, on demand */}
+          {test.steps
+            .filter((step) => step.step !== 'rescheduled')
+            .map((step) => (
+              <div key={step.step}>
+                <dt className="text-xs text-muted-foreground">{t(`step_${step.step}`)}</dt>
+                <dd className="text-2xl font-semibold tabular-nums">{step.count}</dd>
+                <dd className="text-xs text-muted-foreground">
+                  {t('rate_line', {
+                    ofContacted: percent(step.ofContacted),
+                    ofBase: percent(step.ofBase),
+                    base: t(`base_of_${STEP_BASE[step.step]}`),
+                  })}
+                </dd>
+              </div>
+            ))}
         </dl>
 
         <dl className="grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-5">

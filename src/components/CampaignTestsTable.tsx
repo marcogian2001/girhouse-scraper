@@ -7,6 +7,7 @@ import { ExampleEmailButton } from '@/components/ExampleEmailButton';
 import { TableFrame } from '@/components/TableFrame';
 import { TestedNoteEditor } from '@/components/TestedNoteEditor';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   Select,
   SelectContent,
@@ -150,7 +151,8 @@ const HintHead = (props: { label: string; hint: string }) => (
 /**
  * Every campaign sent, one row each: what it tested, who and where it targets, an
  * example email, how many leads made each step up to the sale and what each result
- * cost. The rate base and the sort change instantly, in the browser.
+ * cost. The rate base, the sort and the rescheduled calls column, hidden at first,
+ * change instantly, in the browser.
  * @param props Component props.
  * @param props.tests The campaign tests.
  * @returns The rate picker and the table.
@@ -159,6 +161,7 @@ export const CampaignTestsTable = (props: { tests: CampaignTest[] }) => {
   const t = useTranslations('CampaignTests');
   const format = useFormatter();
   const [base, setBase] = useState<RateBase>('contacted');
+  const [showRescheduled, setShowRescheduled] = useState(false);
   const [sort, setSort] = useState<{ key: SortKey; direction: 'asc' | 'desc' }>({
     key: 'created',
     direction: 'desc',
@@ -180,6 +183,8 @@ export const CampaignTestsTable = (props: { tests: CampaignTest[] }) => {
 
     return sort.direction === 'asc' ? left - right : right - left;
   });
+
+  const isShown = (step: TestStep) => showRescheduled || step !== 'rescheduled';
 
   const sortOn = (key: SortKey) => {
     setSort((current) => {
@@ -249,6 +254,21 @@ export const CampaignTestsTable = (props: { tests: CampaignTest[] }) => {
             ))}
           </SelectContent>
         </Select>
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            // A hidden column can't stay the sort
+            if (showRescheduled && sort.key === 'rescheduled') {
+              setSort({ key: 'created', direction: 'desc' });
+            }
+
+            setShowRescheduled(!showRescheduled);
+          }}
+        >
+          {showRescheduled ? t('button_hide_rescheduled') : t('button_show_rescheduled')}
+        </Button>
       </div>
 
       {/* The table scrolls inside its own box, so the header and the first column stay put */}
@@ -273,7 +293,9 @@ export const CampaignTestsTable = (props: { tests: CampaignTest[] }) => {
                 head(step, t(`step_${step}`), t(`hint_${step}`)),
               )}
               <HintHead label={t('column_replies_by_email')} hint={t('hint_replies_by_email')} />
-              {TEST_STEPS.slice(2).map((step) => head(step, t(`step_${step}`), t(`hint_${step}`)))}
+              {TEST_STEPS.slice(2)
+                .filter(isShown)
+                .map((step) => head(step, t(`step_${step}`), t(`hint_${step}`)))}
               {head('cost', t('column_cost'), t('hint_cost'))}
               {head(
                 'cost_per_positive',
@@ -352,7 +374,10 @@ export const CampaignTestsTable = (props: { tests: CampaignTest[] }) => {
                   )}
                 </TableCell>
 
-                {test.steps.slice(2).map((step) => stepCell(test, step))}
+                {test.steps
+                  .slice(2)
+                  .filter((step) => isShown(step.step))
+                  .map((step) => stepCell(test, step))}
 
                 <TableCell className="text-right font-medium tabular-nums">
                   {usd(test.costMicros)}

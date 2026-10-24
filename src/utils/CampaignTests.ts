@@ -49,6 +49,8 @@ type InstantlyFacts = {
 type OutcomeFacts = {
   callBooked: boolean;
   noShow: boolean;
+  // Booked again after missing the call
+  rescheduled: boolean;
   won: boolean;
   // Euros, null when the sale has no value on GHL
   wonValue: number | null;
@@ -62,6 +64,8 @@ export type LeadFacts = {
   demoCompleted: boolean;
   booked: boolean;
   noShow: boolean;
+  // Booked again after a no show: still one booked call, and still a no show
+  rescheduled: boolean;
   won: boolean;
   wonValue: number;
 };
@@ -86,6 +90,19 @@ const hasReplied = (platform: PlatformFacts | null, instantly: InstantlyFacts | 
 };
 
 /**
+ * Tells whether the lead missed a call, by GHL or Instantly's label, and whether they
+ * booked again after missing it.
+ * @param outcome What GHL reported, if anything.
+ * @param status Instantly's label, if any.
+ * @returns The no show and the reschedule.
+ */
+const missedCall = (outcome: OutcomeFacts | null, status: number | null) => {
+  const noShow = outcome?.noShow === true || status === INSTANTLY_STATUS.noShow;
+
+  return { noShow, rescheduled: noShow && outcome?.rescheduled === true };
+};
+
+/**
  * Joins what the platform, Instantly and GHL know about one lead. The platform's
  * classification wins on whether the lead wrote back, since it tells autoresponders
  * apart; Instantly's label wins on whether they said yes, since it is kept up to date;
@@ -105,7 +122,7 @@ export const mergeLeadFacts = (sources: {
   const status = instantly?.interestStatus ?? null;
 
   const replied = hasReplied(platform, instantly);
-  const noShow = outcome?.noShow === true || status === INSTANTLY_STATUS.noShow;
+  const { noShow, rescheduled } = missedCall(outcome, status);
   const won = outcome?.won === true || status === INSTANTLY_STATUS.won;
   // A sale or a missed call always had a call booked, even one nobody recorded
   const booked = [
@@ -130,6 +147,7 @@ export const mergeLeadFacts = (sources: {
     demoCompleted: platform?.demoCompleted === true,
     booked,
     noShow,
+    rescheduled,
     won,
     wonValue: won ? (outcome?.wonValue ?? 0) : 0,
   };
@@ -142,6 +160,7 @@ export const TEST_STEPS = [
   'demo_completed',
   'booked',
   'no_show',
+  'rescheduled',
   'won',
 ] as const;
 
@@ -154,6 +173,7 @@ export const STEP_BASE = {
   demo_completed: 'positive',
   booked: 'positive',
   no_show: 'booked',
+  rescheduled: 'no_show',
   won: 'booked',
 } as const satisfies Record<TestStep, TestStep | 'contacted'>;
 
@@ -193,6 +213,7 @@ export const buildCampaignTest = (options: {
     demo_completed: count((lead) => lead.demoCompleted),
     booked: count((lead) => lead.booked),
     no_show: count((lead) => lead.noShow),
+    rescheduled: count((lead) => lead.rescheduled),
     won: count((lead) => lead.won),
   };
 
