@@ -1160,6 +1160,12 @@
     "pricing_free_week_short": "First week free"
   },
   "ConversationDemoCard": {
+    "placeholder_slug": "studio-rossi",
+    "label_slug": "Demo slug (optional)",
+    "hint_slug": "Example: studio-rossi. Leave blank to generate it from the business name. Once created, the demo keeps its link.",
+    "error_slug_invalid": "Use 1 to 60 unaccented letters, numbers and hyphens between words. Spaces, full URLs and reserved prefixes (api, ingest, monitoring) are not allowed.",
+    "error_slug_taken": "This slug is already taken. Choose another one.",
+    "error_demo_exists": "The demo has already been created with another link. Refresh the page to view it.",
     "title": "Demo",
     "empty": "No demo yet. It is built on its own when the lead is interested, or you can build it now.",
     "button_generate": "Build demo",

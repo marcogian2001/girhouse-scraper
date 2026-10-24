@@ -1160,6 +1160,12 @@
     "pricing_free_week_short": "Prima settimana gratis"
   },
   "ConversationDemoCard": {
+    "placeholder_slug": "studio-rossi",
+    "label_slug": "Slug demo (facoltativo)",
+    "hint_slug": "Esempio: studio-rossi. Lascia vuoto per generarlo dal nome dell’attività. Una volta creata la demo, il link rimane invariato.",
+    "error_slug_invalid": "Usa da 1 a 60 lettere senza accenti, numeri e trattini fra le parole. Spazi, URL completi e prefissi riservati (api, ingest, monitoring) non sono ammessi.",
+    "error_slug_taken": "Questo slug è già occupato. Scegline un altro.",
+    "error_demo_exists": "La demo è già stata creata con un altro link. Aggiorna la pagina per visualizzarla.",
     "title": "Demo",
     "empty": "Nessuna demo ancora. Viene creata da sola quando il lead è interessato, oppure puoi generarla ora.",
     "button_generate": "Genera demo",

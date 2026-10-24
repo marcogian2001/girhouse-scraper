@@ -36,6 +36,17 @@ import {
 import { Env } from './Env';
 import { recordCopywritingUsage } from './Usage';
 
+/** A chosen URL is occupied, or a concurrent build already chose another URL. */
+export class DemoSlugConflictError extends Error {
+  readonly code: 'slug_taken' | 'demo_exists';
+
+  constructor(code: 'slug_taken' | 'demo_exists') {
+    super(code);
+    this.code = code;
+    this.name = 'DemoSlugConflictError';
+  }
+}
+
 type DemoEventType = (typeof demoEventSchema.$inferSelect)['type'];
 
 /** Beyond this many events an hour a demo is being hammered, not watched. */
@@ -394,6 +405,7 @@ const findFreeSlug = async (company: string) => {
  * @param options.conversation The conversation it is for.
  * @param options.data The snapshot.
  * @param options.guidance What the Girhouse team told it to use, if anything.
+ * @param options.slug The exact slug requested, or automatic naming when omitted.
  * @returns The stored demo, or the one a build running at the same time stored first.
  * @throws {Error} When no free slug could be taken.
  */
@@ -401,12 +413,13 @@ const insertDemo = async (options: {
   conversation: Conversation;
   data: DemoSnapshot;
   guidance: string | null;
+  slug?: string;
 }) => {
   const { conversation, data } = options;
 
   for (let attempt = 0; attempt < SLUG_ATTEMPTS; attempt += 1) {
     // oxlint-disable-next-line no-await-in-loop
-    const slug = await findFreeSlug(data.company);
+    const slug = options.slug ?? (await findFreeSlug(data.company));
     // oxlint-disable-next-line no-await-in-loop
     const [created] = await db
       .insert(demoSchema)
@@ -435,14 +448,22 @@ const insertDemo = async (options: {
     }
 
     // A build running at the same time for the same conversation may have stored it first;
-    // otherwise another demo took the slug in the meantime, and the next attempt numbers past it
+    // otherwise another demo took the slug. Automatic naming retries; a custom slug reports a conflict
     // oxlint-disable-next-line no-await-in-loop
     const stored = await db.query.demoSchema.findFirst({
       where: eq(demoSchema.conversationId, conversation.id),
     });
 
     if (stored) {
+      if (options.slug && stored.slug !== options.slug) {
+        throw new DemoSlugConflictError('demo_exists');
+      }
+
       return stored;
+    }
+
+    if (options.slug) {
+      throw new DemoSlugConflictError('slug_taken');
     }
   }
 
@@ -452,13 +473,30 @@ const insertDemo = async (options: {
 /**
  * Returns the demo of a conversation, building it on first use.
  * @param conversation The conversation the demo is for.
+ * @param slug The exact slug requested for a new demo, when supplied.
  * @returns The demo row.
  * @throws {Error} When the demo cannot be built or stored.
  */
-export const ensureDemo = async (conversation: Conversation) => {
+export const ensureDemo = async (conversation: Conversation, slug?: string) => {
   const existing = await db.query.demoSchema.findFirst({
     where: eq(demoSchema.conversationId, conversation.id),
   });
+
+  if (existing && slug && existing.slug !== slug) {
+    throw new DemoSlugConflictError('demo_exists');
+  }
+
+  if (!existing && slug) {
+    const taken = await db.query.demoSchema.findFirst({ where: eq(demoSchema.slug, slug) });
+
+    if (taken?.conversationId === conversation.id) {
+      return taken;
+    }
+
+    if (taken) {
+      throw new DemoSlugConflictError('slug_taken');
+    }
+  }
 
   if (existing?.data.version === DEMO_SNAPSHOT_VERSION) {
     return existing;
@@ -467,7 +505,7 @@ export const ensureDemo = async (conversation: Conversation) => {
   const data = await buildSnapshot(conversation, existing?.guidance ?? null);
 
   if (!existing) {
-    return await insertDemo({ conversation, data, guidance: null });
+    return await insertDemo({ conversation, data, guidance: null, slug });
   }
 
   const [rebuilt] = await db
@@ -479,28 +517,6 @@ export const ensureDemo = async (conversation: Conversation) => {
   await deleteUnusedImages(conversation.id, data.images);
 
   return rebuilt ?? existing;
-};
-
-/**
- * Picks the link of a rebuilt demo: the same one, unless it was made from the lead's email
- * because no name was known and nobody has opened it yet.
- * @param options The demo.
- * @param options.conversation The conversation it is for.
- * @param options.demo The demo before the rebuild.
- * @param options.company The business name the rebuild found.
- * @returns The slug to keep or the new one.
- */
-const rebuiltSlug = async (options: {
-  conversation: Conversation;
-  demo: typeof demoSchema.$inferSelect;
-  company: string;
-}) => {
-  const isEmailSlug = options.demo.slug.startsWith(createDemoSlug(options.conversation.leadEmail));
-  const hasName = options.company !== options.conversation.leadEmail;
-
-  return isEmailSlug && hasName && !options.demo.firstOpenedAt
-    ? await findFreeSlug(options.company)
-    : options.demo.slug;
 };
 
 /**
@@ -527,7 +543,6 @@ export const rebuildDemo = async (conversation: Conversation, guidance?: string 
     .set({
       data,
       guidance: kept,
-      slug: await rebuiltSlug({ conversation, demo: existing, company: data.company }),
     })
     .where(eq(demoSchema.id, existing.id))
     .returning();
