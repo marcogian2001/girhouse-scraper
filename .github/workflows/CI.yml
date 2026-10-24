@@ -9,6 +9,8 @@ on:
 # The real .env stays out of the repository; CI runs against its own in-memory PGlite
 env:
   DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:6543/postgres
+  # Auth.ts reads it when next build loads the API routes; it guards nothing real here
+  BETTER_AUTH_SECRET: ci-only-better-auth-secret-not-used-anywhere
 
 jobs:
   build:
