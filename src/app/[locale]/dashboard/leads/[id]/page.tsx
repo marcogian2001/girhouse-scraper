@@ -1,10 +1,11 @@
-import { and, asc, eq, notInArray, sql } from 'drizzle-orm';
+import { and, asc, count, eq, notInArray, sql } from 'drizzle-orm';
 import { Send } from 'lucide-react';
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { DeleteLeadSearchButton } from '@/components/DeleteLeadSearchButton';
 import { LeadSearchProgress } from '@/components/LeadSearchProgress';
 import { LeadTable } from '@/components/LeadTable';
+import { ListPagination } from '@/components/ListPagination';
 import { RetryNoEmailLeadsButton } from '@/components/RetryNoEmailLeadsButton';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -17,13 +18,83 @@ import { getUsageTotals } from '@/libs/Usage';
 import { leadSchema, leadSearchSchema } from '@/models/Schema';
 import { AppConfig } from '@/utils/AppConfig';
 import { RESERVE_LEAD_STATUSES } from '@/utils/Leads';
+import type { LeadWebsiteView } from '@/utils/LeadWebsiteView';
+import { parseLeadWebsiteView } from '@/utils/LeadWebsiteView';
+import { LIST_PAGE_SIZE, parsePage } from '@/utils/Pagination';
 import { microsToUsd, USD_FORMAT } from '@/utils/UsageFormat';
+
+/**
+ * Builds the link to a page of the leads of a search.
+ * @param options The call options.
+ * @param options.leadSearchId The lead search.
+ * @param options.websiteView Which leads the table shows.
+ * @param options.page The 1-based page.
+ * @returns The relative URL.
+ */
+const pageHref = (options: {
+  leadSearchId: string;
+  websiteView: LeadWebsiteView;
+  page: number;
+}) => {
+  const params = new URLSearchParams();
+
+  if (options.websiteView !== 'all') {
+    params.set('website', options.websiteView);
+  }
+
+  if (options.page > 1) {
+    params.set('page', String(options.page));
+  }
+
+  const query = params.toString();
+
+  return `/dashboard/leads/${options.leadSearchId}/${query ? `?${query}` : ''}`;
+};
+
+/**
+ * Selects the leads a search shows, leaving out those it keeps in reserve.
+ * @param leadSearchId The lead search.
+ * @returns The where condition.
+ */
+const searchLeadsOf = (leadSearchId: string) =>
+  and(
+    eq(leadSchema.leadSearchId, leadSearchId),
+    notInArray(leadSchema.status, [...RESERVE_LEAD_STATUSES]),
+  );
+
+/**
+ * Counts the leads of a search across every page.
+ * @param leadSearchId The lead search.
+ * @returns The totals behind the filter, the campaign and the retry buttons.
+ */
+const countSearchLeads = async (leadSearchId: string) => {
+  const [counts] = await db
+    .select({
+      total: count(),
+      withWebsite: sql<number>`count(*) filter (where ${leadSchema.hasWebsite})`.mapWith(Number),
+      ready: sql<number>`count(*) filter (where ${leadSchema.status} = 'ready')`.mapWith(Number),
+      // Leads settled before the website and info@ routes existed have no attempts on record
+      retryable:
+        sql<number>`count(*) filter (where ${leadSchema.status} = 'no_email' and ${leadSchema.emailAttempts} is null)`.mapWith(
+          Number,
+        ),
+    })
+    .from(leadSchema)
+    .where(searchLeadsOf(leadSearchId));
+
+  return counts ?? { total: 0, withWebsite: 0, ready: 0, retryable: 0 };
+};
 
 export default async function LeadSearchPage(props: {
   params: Promise<{ locale: string; id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { locale, id } = await props.params;
   setRequestLocale(locale);
+
+  const searchParams = await props.searchParams;
+  const page = parsePage(searchParams.page);
+  const websiteView = parseLeadWebsiteView(searchParams.website);
 
   const [t, formT, context] = await Promise.all([
     getTranslations({ locale, namespace: 'LeadSearchPage' }),
@@ -44,9 +115,10 @@ export default async function LeadSearchPage(props: {
     notFound();
   }
 
-  const [format, usage, leads] = await Promise.all([
+  const [format, usage, counts, leads] = await Promise.all([
     getFormatter({ locale }),
     getUsageTotals({ organizationId: search.organizationId, leadSearchId: search.id }),
+    countSearchLeads(search.id),
     // Only what the table shows: the raw scrape and research JSON stay on the server
     db
       .select({
@@ -66,23 +138,26 @@ export default async function LeadSearchPage(props: {
         emailSource: leadSchema.emailSource,
         emailVerification: leadSchema.emailVerification,
         status: leadSchema.status,
-        hasNoAttempts: sql<boolean>`${leadSchema.emailAttempts} is null`,
       })
       .from(leadSchema)
       .where(
         and(
-          eq(leadSchema.leadSearchId, search.id),
-          notInArray(leadSchema.status, [...RESERVE_LEAD_STATUSES]),
+          searchLeadsOf(search.id),
+          websiteView === 'all' ? undefined : eq(leadSchema.hasWebsite, websiteView === 'with'),
         ),
       )
-      .orderBy(asc(leadSchema.createdAt), asc(leadSchema.company)),
+      .orderBy(asc(leadSchema.createdAt), asc(leadSchema.company), asc(leadSchema.id))
+      .limit(LIST_PAGE_SIZE)
+      .offset((page - 1) * LIST_PAGE_SIZE),
   ]);
 
-  const readyCount = leads.filter((lead) => lead.status === 'ready').length;
-  // Leads settled before the website and info@ routes existed have no attempts on record
-  const retryableCount = leads.filter(
-    (lead) => lead.status === 'no_email' && lead.hasNoAttempts,
-  ).length;
+  const { total, ready: readyCount, retryable: retryableCount } = counts;
+  const matching = {
+    all: total,
+    with: counts.withWebsite,
+    without: total - counts.withWebsite,
+  }[websiteView];
+  const pageCount = Math.ceil(matching / LIST_PAGE_SIZE);
   // Only searches that scan their area know when it has run out of new businesses
   const isShort =
     search.locationPlaceId !== null && search.status === 'done' && readyCount < search.maxResults;
@@ -152,7 +227,25 @@ export default async function LeadSearchPage(props: {
         </Alert>
       )}
 
-      {leads.length > 0 && <LeadTable leads={leads} />}
+      {total > 0 && (
+        <LeadTable leads={leads} websiteView={websiteView} matching={matching} total={total} />
+      )}
+
+      {pageCount > 1 && (
+        <ListPagination
+          summary={t('pagination_summary', { page, pageCount, count: matching })}
+          previousHref={
+            page > 1
+              ? pageHref({ leadSearchId: search.id, websiteView, page: page - 1 })
+              : undefined
+          }
+          nextHref={
+            page < pageCount
+              ? pageHref({ leadSearchId: search.id, websiteView, page: page + 1 })
+              : undefined
+          }
+        />
+      )}
     </div>
   );
 }

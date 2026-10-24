@@ -225,6 +225,7 @@
     "column_status": "Stato"
   },
   "LeadSearchPage": {
+    "pagination_summary": "Pagina {page} di {pageCount} · {count, plural, one {# attività} other {# attività}}",
     "meta_line": "{terms} · {location} · {filter} · creata il {date}",
     "spend_line": "Spesa stimata {total}",
     "button_campaign": "Crea una campagna con {count, plural, one {# lead} other {# lead}}",

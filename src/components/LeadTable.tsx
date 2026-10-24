@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { useState } from 'react';
+import { useTransition } from 'react';
 import { StatusBadge } from '@/components/StatusBadge';
 import { TableFrame } from '@/components/TableFrame';
 import { Badge } from '@/components/ui/badge';
@@ -20,6 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Spinner } from '@/components/ui/spinner';
 import {
   Table,
   TableBody,
@@ -28,7 +29,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { usePathname, useRouter } from '@/libs/I18nNavigation';
 import type { leadSchema } from '@/models/Schema';
+import type { LeadWebsiteView } from '@/utils/LeadWebsiteView';
+import { LEAD_WEBSITE_VIEWS } from '@/utils/LeadWebsiteView';
 
 export type LeadRowView = Pick<
   typeof leadSchema.$inferSelect,
@@ -49,10 +53,6 @@ export type LeadRowView = Pick<
   | 'emailVerification'
   | 'status'
 >;
-
-type WebsiteView = 'all' | 'without' | 'with';
-
-const WEBSITE_VIEWS: WebsiteView[] = ['all', 'without', 'with'];
 
 /**
  * Joins the decision maker's name parts.
@@ -84,22 +84,30 @@ const phoneLink = (lead: LeadRowView) =>
  */
 const descriptionLine = (lead: LeadRowView) =>
   lead.description && (
-    <p
-      title={lead.description}
-      className="line-clamp-2 max-w-md text-xs whitespace-normal text-muted-foreground"
-    >
+    <p title={lead.description} className="line-clamp-2 text-xs text-muted-foreground">
       {lead.description}
     </p>
   );
 
-export const LeadTable = (props: { leads: LeadRowView[] }) => {
+/**
+ * One page of the leads of a search, with a filter by website kept in `?website=`.
+ * @param props Component props.
+ * @param props.leads The leads on this page.
+ * @param props.websiteView Which leads the page was rendered with.
+ * @param props.matching How many leads match the filter, across every page.
+ * @param props.total How many leads the search has.
+ * @returns The lead table, or a row list on phones.
+ */
+export const LeadTable = (props: {
+  leads: LeadRowView[];
+  websiteView: LeadWebsiteView;
+  matching: number;
+  total: number;
+}) => {
   const t = useTranslations('LeadTable');
-  const [websiteView, setWebsiteView] = useState<WebsiteView>('all');
-
-  const leads = props.leads.filter(
-    (lead) =>
-      websiteView === 'all' || (websiteView === 'with' ? lead.hasWebsite : !lead.hasWebsite),
-  );
+  const router = useRouter();
+  const pathname = usePathname();
+  const [isPending, startTransition] = useTransition();
 
   const websiteCell = (lead: LeadRowView) =>
     lead.hasWebsite && lead.website ? (
@@ -129,31 +137,38 @@ export const LeadTable = (props: { leads: LeadRowView[] }) => {
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">
-          {t('count', { shown: leads.length, total: props.leads.length })}
+          {t('count', { shown: props.matching, total: props.total })}
         </p>
 
-        <Select
-          value={websiteView}
-          onValueChange={(value) => {
-            const next = WEBSITE_VIEWS.find((option) => option === value);
+        <div className="flex items-center gap-2">
+          {isPending && <Spinner className="text-muted-foreground" />}
 
-            if (next) {
-              setWebsiteView(next);
-            }
-          }}
-        >
-          <SelectTrigger className="w-48" aria-label={t('filter_label')}>
-            <SelectValue />
-          </SelectTrigger>
+          <Select
+            value={props.websiteView}
+            onValueChange={(value) => {
+              const next = LEAD_WEBSITE_VIEWS.find((option) => option === value);
 
-          <SelectContent>
-            {WEBSITE_VIEWS.map((view) => (
-              <SelectItem key={view} value={view}>
-                {t(`filter_${view}`)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+              if (next) {
+                // A new filter starts again from its first page
+                startTransition(() => {
+                  router.replace(next === 'all' ? pathname : `${pathname}?website=${next}`);
+                });
+              }
+            }}
+          >
+            <SelectTrigger className="w-48" aria-label={t('filter_label')}>
+              <SelectValue />
+            </SelectTrigger>
+
+            <SelectContent>
+              {LEAD_WEBSITE_VIEWS.map((view) => (
+                <SelectItem key={view} value={view}>
+                  {t(`filter_${view}`)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <TableFrame className="hidden md:block">
@@ -169,15 +184,20 @@ export const LeadTable = (props: { leads: LeadRowView[] }) => {
           </TableHeader>
 
           <TableBody>
-            {leads.map((lead) => (
+            {props.leads.map((lead) => (
               <TableRow key={lead.id}>
                 <TableCell>
-                  <div className="font-medium">{lead.company}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {[lead.category, lead.city].filter(Boolean).join(' · ')}
+                  {/* Long names and descriptions wrap instead of widening the column */}
+                  <div className="w-xs whitespace-normal">
+                    <div title={lead.company} className="line-clamp-2 font-medium">
+                      {lead.company}
+                    </div>
+                    <div className="truncate text-xs text-muted-foreground">
+                      {[lead.category, lead.city].filter(Boolean).join(' · ')}
+                    </div>
+                    {phoneLink(lead)}
+                    {descriptionLine(lead)}
                   </div>
-                  {phoneLink(lead)}
-                  {descriptionLine(lead)}
                 </TableCell>
 
                 <TableCell>{websiteCell(lead)}</TableCell>
@@ -204,7 +224,7 @@ export const LeadTable = (props: { leads: LeadRowView[] }) => {
       {/* Five columns have nowhere to go on a phone, so they become rows */}
       <TableFrame className="md:hidden">
         <ItemGroup>
-          {leads.map((lead) => (
+          {props.leads.map((lead) => (
             <Item key={lead.id}>
               <ItemContent>
                 <ItemTitle>{lead.company}</ItemTitle>
