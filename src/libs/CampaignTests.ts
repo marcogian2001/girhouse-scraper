@@ -76,7 +76,8 @@ const loadContactTargeting = async (campaignIds: string[]) => {
     })
     .from(contactSchema)
     .where(inArray(contactSchema.campaignId, campaignIds))
-    .groupBy(contactSchema.campaignId);
+    .groupBy(contactSchema.campaignId)
+    .$withCache();
 
   return new Map(rows.map((row) => [row.campaignId, row]));
 };
@@ -103,7 +104,8 @@ const loadExampleEmails = async (campaignIds: string[]) => {
         eq(emailDraftSchema.stepIndex, 1),
       ),
     )
-    .orderBy(contactSchema.campaignId, asc(contactSchema.rowIndex));
+    .orderBy(contactSchema.campaignId, asc(contactSchema.rowIndex))
+    .$withCache();
 
   return new Map(rows.map((row) => [row.campaignId, { subject: row.subject, body: row.body }]));
 };
@@ -128,7 +130,8 @@ const loadConversations = async (campaignIds: string[]) => {
         inArray(conversationSchema.campaignId, campaignIds),
         eq(conversationSchema.isTest, false),
       ),
-    );
+    )
+    .$withCache();
 
   const ids = conversations.map((conversation) => conversation.id);
 
@@ -147,11 +150,13 @@ const loadConversations = async (campaignIds: string[]) => {
         inboundMessageSchema,
         eq(inboundMessageSchema.id, replyClassificationSchema.inboundMessageId),
       )
-      .where(inArray(inboundMessageSchema.conversationId, ids)),
+      .where(inArray(inboundMessageSchema.conversationId, ids))
+      .$withCache(),
     db
       .select({ conversationId: demoSchema.conversationId })
       .from(demoSchema)
-      .where(and(inArray(demoSchema.conversationId, ids), isNotNull(demoSchema.completedAt))),
+      .where(and(inArray(demoSchema.conversationId, ids), isNotNull(demoSchema.completedAt)))
+      .$withCache(),
     db
       .selectDistinct({ conversationId: conversationEventSchema.conversationId })
       .from(conversationEventSchema)
@@ -160,7 +165,8 @@ const loadConversations = async (campaignIds: string[]) => {
           inArray(conversationEventSchema.conversationId, ids),
           inArray(conversationEventSchema.type, ['call_booked', 'ghl_appointment_booked']),
         ),
-      ),
+      )
+      .$withCache(),
   ]);
 
   const completed = new Set(demos.map((demo) => demo.conversationId));
@@ -203,7 +209,8 @@ const loadOutcomes = async (options: { organizationId: string; campaignIds: stri
         eq(leadOutcomeSchema.organizationId, options.organizationId),
         inArray(contactSchema.campaignId, options.campaignIds),
       ),
-    );
+    )
+    .$withCache();
 
   return groupByEmail<LeadOutcome & { campaignId: string }>(rows, (row) => row.campaignId);
 };
@@ -218,7 +225,8 @@ const loadInstantly = async (instantlyCampaignIds: string[]) => {
     db
       .select()
       .from(instantlyCampaignStatSchema)
-      .where(inArray(instantlyCampaignStatSchema.instantlyCampaignId, instantlyCampaignIds)),
+      .where(inArray(instantlyCampaignStatSchema.instantlyCampaignId, instantlyCampaignIds))
+      .$withCache(),
     db
       .select({
         instantlyCampaignId: instantlyLeadSchema.instantlyCampaignId,
@@ -227,7 +235,8 @@ const loadInstantly = async (instantlyCampaignIds: string[]) => {
         interestStatus: instantlyLeadSchema.interestStatus,
       })
       .from(instantlyLeadSchema)
-      .where(inArray(instantlyLeadSchema.instantlyCampaignId, instantlyCampaignIds)),
+      .where(inArray(instantlyLeadSchema.instantlyCampaignId, instantlyCampaignIds))
+      .$withCache(),
   ]);
 
   return {
@@ -257,7 +266,8 @@ const loadCosts = async (options: { organizationId: string; campaignIds: string[
       })
       .from(apiUsageSchema)
       .where(inArray(apiUsageSchema.campaignId, options.campaignIds))
-      .groupBy(apiUsageSchema.campaignId),
+      .groupBy(apiUsageSchema.campaignId)
+      .$withCache(),
     db
       .select({
         leadSearchId: apiUsageSchema.leadSearchId,
@@ -270,14 +280,16 @@ const loadCosts = async (options: { organizationId: string; campaignIds: string[
           isNotNull(apiUsageSchema.leadSearchId),
         ),
       )
-      .groupBy(apiUsageSchema.leadSearchId),
+      .groupBy(apiUsageSchema.leadSearchId)
+      .$withCache(),
     db
       .select({ leadSearchId: leadSchema.leadSearchId, leads: sql<number>`count(*)::int` })
       .from(leadSchema)
       .where(
         and(eq(leadSchema.organizationId, options.organizationId), isNotNull(leadSchema.email)),
       )
-      .groupBy(leadSchema.leadSearchId),
+      .groupBy(leadSchema.leadSearchId)
+      .$withCache(),
     db
       .select({
         campaignId: contactSchema.campaignId,
@@ -293,7 +305,8 @@ const loadCosts = async (options: { organizationId: string; campaignIds: string[
         ),
       )
       .where(inArray(contactSchema.campaignId, options.campaignIds))
-      .groupBy(contactSchema.campaignId, leadSchema.leadSearchId),
+      .groupBy(contactSchema.campaignId, leadSchema.leadSearchId)
+      .$withCache(),
   ]);
 
   const searchCost = new Map(searchSpend.map((row) => [row.leadSearchId, row.costMicros]));
@@ -333,7 +346,8 @@ const loadTeamEmails = async (organizationId: string) => {
     .select({ email: userSchema.email })
     .from(memberSchema)
     .innerJoin(userSchema, eq(userSchema.id, memberSchema.userId))
-    .where(eq(memberSchema.organizationId, organizationId));
+    .where(eq(memberSchema.organizationId, organizationId))
+    .$withCache();
 
   return new Set(rows.map((row) => row.email.toLowerCase()));
 };
@@ -365,7 +379,8 @@ export const getCampaignTests = async (options: {
         options.campaignId ? eq(campaignSchema.id, options.campaignId) : undefined,
       ),
     )
-    .orderBy(desc(campaignSchema.createdAt));
+    .orderBy(desc(campaignSchema.createdAt))
+    .$withCache();
 
   if (campaigns.length === 0) {
     return [];

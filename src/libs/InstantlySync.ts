@@ -93,7 +93,8 @@ export const syncInstantlyStats = async () => {
 export const getInstantlySyncedAt = async () => {
   const [row] = await db
     .select({ syncedAt: max(instantlyCampaignStatSchema.updatedAt) })
-    .from(instantlyCampaignStatSchema);
+    .from(instantlyCampaignStatSchema)
+    .$withCache();
 
   return row?.syncedAt ?? null;
 };

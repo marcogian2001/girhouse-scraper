@@ -44,25 +44,29 @@ export default async function DashboardHomePage(props: { params: Promise<{ local
         db
           .select({ total: count(), live: count(campaignSchema.instantlyCampaignId) })
           .from(campaignSchema)
-          .where(eq(campaignSchema.organizationId, organizationId)),
+          .where(eq(campaignSchema.organizationId, organizationId))
+          .$withCache(),
 
         db
           .select({ total: count() })
           .from(contactSchema)
           .innerJoin(campaignSchema, eq(contactSchema.campaignId, campaignSchema.id))
-          .where(eq(campaignSchema.organizationId, organizationId)),
+          .where(eq(campaignSchema.organizationId, organizationId))
+          .$withCache(),
 
         db
           .select({ total: count() })
           .from(emailDraftSchema)
           .innerJoin(contactSchema, eq(emailDraftSchema.contactId, contactSchema.id))
           .innerJoin(campaignSchema, eq(contactSchema.campaignId, campaignSchema.id))
-          .where(eq(campaignSchema.organizationId, organizationId)),
+          .where(eq(campaignSchema.organizationId, organizationId))
+          .$withCache(),
 
         db
           .select({ total: count() })
           .from(knowledgeAssetSchema)
-          .where(eq(knowledgeAssetSchema.organizationId, organizationId)),
+          .where(eq(knowledgeAssetSchema.organizationId, organizationId))
+          .$withCache(),
 
         // Grouping by the primary key lets the other columns ride along
         db
@@ -83,7 +87,8 @@ export default async function DashboardHomePage(props: { params: Promise<{ local
           )
           .groupBy(campaignSchema.id)
           .orderBy(desc(campaignSchema.createdAt))
-          .limit(RECENT_CAMPAIGN_LIMIT),
+          .limit(RECENT_CAMPAIGN_LIMIT)
+          .$withCache(),
       ])
     : [[], [], [], [], []];
 

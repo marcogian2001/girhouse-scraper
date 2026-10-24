@@ -292,7 +292,8 @@ export const getAverageCopywritingCall = async (organizationId: string) => {
         eq(apiUsageSchema.organizationId, organizationId),
         inArray(apiUsageSchema.provider, COPYWRITING_PROVIDERS),
       ),
-    );
+    )
+    .$withCache();
 
   if (!row || row.calls === 0) {
     return null;
@@ -309,7 +310,11 @@ export const getAverageCopywritingCall = async (organizationId: string) => {
  * @returns The totals, zero when nothing was spent.
  */
 export const getUsageTotals = async (filter: UsageFilter) => {
-  const [totals] = await db.select(usageTotals).from(apiUsageSchema).where(matching(filter));
+  const [totals] = await db
+    .select(usageTotals)
+    .from(apiUsageSchema)
+    .where(matching(filter))
+    .$withCache();
 
   return totals ?? EMPTY_USAGE_TOTALS;
 };
@@ -325,7 +330,8 @@ export const getDailyUsage = async (filter: UsageFilter) =>
     .from(apiUsageSchema)
     .where(matching(filter))
     .groupBy(localDay)
-    .orderBy(desc(localDay));
+    .orderBy(desc(localDay))
+    .$withCache();
 
 /**
  * Breaks the spend in scope down by campaign and lead search, most expensive first.
@@ -352,4 +358,5 @@ export const getCampaignUsage = async (filter: UsageFilter) =>
       apiUsageSchema.leadSearchId,
       leadSearchSchema.name,
     )
-    .orderBy(desc(sql`sum(${apiUsageSchema.costMicros})`));
+    .orderBy(desc(sql`sum(${apiUsageSchema.costMicros})`))
+    .$withCache();

@@ -63,7 +63,8 @@ export const listCampaigns = async (options: {
     db
       .select({ total: count(), archived: count(campaignSchema.archivedAt) })
       .from(campaignSchema)
-      .where(eq(campaignSchema.organizationId, options.organizationId)),
+      .where(eq(campaignSchema.organizationId, options.organizationId))
+      .$withCache(),
     db
       .select({
         id: campaignSchema.id,
@@ -91,7 +92,8 @@ export const listCampaigns = async (options: {
       .groupBy(campaignSchema.id)
       .orderBy(desc(campaignSchema.createdAt), desc(campaignSchema.id))
       .limit(LIST_PAGE_SIZE)
-      .offset((options.page - 1) * LIST_PAGE_SIZE),
+      .offset((options.page - 1) * LIST_PAGE_SIZE)
+      .$withCache(),
   ]);
 
   return {

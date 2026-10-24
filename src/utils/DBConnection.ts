@@ -3,6 +3,7 @@ import { Pool } from 'pg';
 import { Env } from '@/libs/Env';
 import { logger } from '@/libs/Logger';
 import * as schema from '@/models/Schema';
+import { createQueryCache } from './QueryCache';
 
 export const createDbConnection = () => {
   const pool = new Pool({
@@ -16,5 +17,6 @@ export const createDbConnection = () => {
   return drizzle({
     client: pool,
     schema,
+    cache: createQueryCache(),
   });
 };

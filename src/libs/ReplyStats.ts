@@ -38,7 +38,8 @@ const loadBookingSources = async (conversationIds: string[]) => {
         inArray(conversationEventSchema.type, ['call_booked', 'ghl_appointment_booked']),
       ),
     )
-    .orderBy(asc(conversationEventSchema.createdAt));
+    .orderBy(asc(conversationEventSchema.createdAt))
+    .$withCache();
 
   const sources = new Map<string, BookingSource>();
 
@@ -72,7 +73,8 @@ const loadClassifications = async (conversationIds: string[]) => {
       eq(inboundMessageSchema.id, replyClassificationSchema.inboundMessageId),
     )
     .where(inArray(inboundMessageSchema.conversationId, conversationIds))
-    .orderBy(asc(inboundMessageSchema.receivedAt));
+    .orderBy(asc(inboundMessageSchema.receivedAt))
+    .$withCache();
 
   const byConversation = new Map<
     string,
@@ -109,7 +111,8 @@ const loadDemoFacts = async (conversationIds: string[]) => {
       completedAt: demoSchema.completedAt,
     })
     .from(demoSchema)
-    .where(inArray(demoSchema.conversationId, conversationIds));
+    .where(inArray(demoSchema.conversationId, conversationIds))
+    .$withCache();
 
   const sent = await db
     .select({ conversationId: outboundEmailSchema.conversationId, body: outboundEmailSchema.body })
@@ -119,7 +122,8 @@ const loadDemoFacts = async (conversationIds: string[]) => {
         inArray(outboundEmailSchema.conversationId, conversationIds),
         eq(outboundEmailSchema.status, 'sent'),
       ),
-    );
+    )
+    .$withCache();
 
   // A demo built for a draft nobody sent was never in front of the lead
   return new Map(
@@ -154,7 +158,8 @@ export const getReplyStats = async (options: { organizationId: string; range: Da
         eq(conversationSchema.isTest, false),
         withinLocalDays(conversationSchema.createdAt, options.range),
       ),
-    );
+    )
+    .$withCache();
 
   const ids = conversations.map((conversation) => conversation.id);
 
@@ -174,11 +179,13 @@ export const getReplyStats = async (options: { organizationId: string; range: Da
           inArray(whatsappHandoffSchema.conversationId, ids),
           eq(whatsappHandoffSchema.status, 'sent'),
         ),
-      ),
+      )
+      .$withCache(),
     db
       .select({ id: objectionSchema.id, title: objectionSchema.title })
       .from(objectionSchema)
-      .where(eq(objectionSchema.organizationId, options.organizationId)),
+      .where(eq(objectionSchema.organizationId, options.organizationId))
+      .$withCache(),
   ]);
 
   const handedOver = new Set(handoffs.map((handoff) => handoff.conversationId));
