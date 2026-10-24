@@ -7,6 +7,8 @@ const localePrefix: LocalePrefixMode = 'as-needed';
 /** Centralized application configuration */
 export const AppConfig = {
   name: 'Girhouse Scraper',
+  // What leads see on the demo pages, without the internal tool's name
+  brandName: 'Girhouse',
   // Where calendar months and days start for spend reports, and the hours Instantly sends in
   timeZone: 'Europe/Rome',
   i18n: {

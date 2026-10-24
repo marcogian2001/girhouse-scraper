@@ -43,7 +43,10 @@ export async function generateMetadata(props: DemoPageProps): Promise<Metadata> 
   const page = await requireDemo(slug);
 
   return {
-    title: t('meta_title', { company: page.demo.data.company }),
+    // Absolute, so the lead sees the brand rather than the dashboard's name
+    title: {
+      absolute: `${t('meta_title', { company: page.demo.data.company })} · ${AppConfig.brandName}`,
+    },
     robots: { index: false, follow: false },
   };
 }
