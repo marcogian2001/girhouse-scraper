@@ -14,6 +14,10 @@ const baseConfig: NextConfig = {
   experimental: {
     // Use the Rust version, instead of the OG Babel one
     turbopackRustReactCompiler: process.env.NODE_ENV === 'production',
+    // Reuse a visited dashboard page for a short while instead of refetching it on every click
+    staleTimes: {
+      dynamic: 30,
+    },
   },
   logging: {
     browserToTerminal: process.env.BROWSER_TO_TERMINAL_DISABLED !== 'true',
