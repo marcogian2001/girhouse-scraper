@@ -7,9 +7,10 @@ import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 /**
- * Shows what a campaign tested and edits it in place, from the tests table.
+ * Shows what a campaign tested, whole on hover, and edits it in place from the tests table.
  * @param props Component props.
  * @param props.campaignId The campaign.
  * @param props.note What was tested, if written.
@@ -25,7 +26,22 @@ export const TestedNoteEditor = (props: { campaignId: string; note: string | nul
 
   return (
     <div className="flex items-start gap-1">
-      {note && <p className="line-clamp-3 text-xs whitespace-pre-line">{note}</p>}
+      {note && (
+        // The cell shows three lines; hovering shows the whole note
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <p className="line-clamp-3 cursor-default text-xs whitespace-pre-line">{note}</p>
+          </TooltipTrigger>
+          <TooltipContent
+            side="bottom"
+            sideOffset={4}
+            align="start"
+            className="max-w-sm text-left whitespace-pre-line"
+          >
+            {note}
+          </TooltipContent>
+        </Tooltip>
+      )}
 
       <Popover open={isOpen} onOpenChange={setIsOpen}>
         <PopoverTrigger asChild>
