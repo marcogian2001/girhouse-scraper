@@ -133,7 +133,8 @@ describe('Campaign tests', () => {
       ]);
     });
 
-    it('divides the cost by calls and sales', () => {
+    it('divides the cost by leads, calls and sales', () => {
+      expect(test.costPerLeadMicros).toBe(300_000);
       expect(test.costPerCallMicros).toBe(10_000_000);
       expect(test.costPerWonMicros).toBe(30_000_000);
       expect(test.wonValue).toBe(97);

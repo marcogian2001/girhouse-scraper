@@ -174,7 +174,8 @@ const costPer = (costMicros: number, count: number) =>
  * @param options.leads One entry per lead something happened to.
  * @param options.costMicros What the campaign cost, in millionths of a dollar.
  * @returns Each step's count with its share of the leads contacted and of its base step,
- * the replies by email of the sequence, the value of the sales and the costs.
+ * the replies by email of the sequence, the value of the sales and the costs per lead
+ * contacted, per call and per sale.
  */
 export const buildCampaignTest = (options: {
   contacted: number;
@@ -218,6 +219,7 @@ export const buildCampaignTest = (options: {
       .map(([email, value]) => ({ email, count: value, share: rateOf(value, known) })),
     wonValue: options.leads.reduce((total, lead) => total + lead.wonValue, 0),
     costMicros: options.costMicros,
+    costPerLeadMicros: costPer(options.costMicros, options.contacted),
     costPerCallMicros: costPer(options.costMicros, counts.booked),
     costPerWonMicros: costPer(options.costMicros, counts.won),
   };

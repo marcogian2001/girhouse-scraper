@@ -39,10 +39,22 @@ type RateBase = 'contacted' | 'step';
 const RATE_BASES: RateBase[] = ['contacted', 'step'];
 
 /** The columns the table sorts on. */
-type SortKey = 'created' | 'contacted' | TestStep | 'cost' | 'cost_per_call' | 'cost_per_won';
+type SortKey =
+  | 'created'
+  | 'contacted'
+  | TestStep
+  | 'cost'
+  | 'cost_per_lead'
+  | 'cost_per_call'
+  | 'cost_per_won';
 
 /** Costs read better low first; everything else high first. */
-const ASCENDING_FIRST = new Set<SortKey>(['cost', 'cost_per_call', 'cost_per_won']);
+const ASCENDING_FIRST = new Set<SortKey>([
+  'cost',
+  'cost_per_lead',
+  'cost_per_call',
+  'cost_per_won',
+]);
 
 /**
  * Reads the value a column sorts on: a step sorts on the rate shown, so campaigns of
@@ -63,6 +75,10 @@ const sortValue = (test: CampaignTest, key: SortKey, base: RateBase) => {
 
   if (key === 'cost') {
     return test.costMicros;
+  }
+
+  if (key === 'cost_per_lead') {
+    return test.costPerLeadMicros;
   }
 
   if (key === 'cost_per_call') {
@@ -259,6 +275,7 @@ export const CampaignTestsTable = (props: { tests: CampaignTest[] }) => {
               <HintHead label={t('column_replies_by_email')} hint={t('hint_replies_by_email')} />
               {TEST_STEPS.slice(2).map((step) => head(step, t(`step_${step}`), t(`hint_${step}`)))}
               {head('cost', t('column_cost'), t('hint_cost'))}
+              {head('cost_per_lead', t('column_cost_per_lead'), t('hint_cost_per_lead'))}
               {head('cost_per_call', t('column_cost_per_call'), t('hint_cost_per_call'))}
               {head('cost_per_won', t('column_cost_per_won'), t('hint_cost_per_won'))}
             </TableRow>
@@ -333,11 +350,11 @@ export const CampaignTestsTable = (props: { tests: CampaignTest[] }) => {
 
                 {test.steps.slice(2).map((step) => stepCell(test, step))}
 
-                <TableCell className="text-right tabular-nums">
-                  <p className="font-medium">{usd(test.costMicros)}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {t('cost_leads', { cost: usd(test.leadsCostMicros) })}
-                  </p>
+                <TableCell className="text-right font-medium tabular-nums">
+                  {usd(test.costMicros)}
+                </TableCell>
+                <TableCell className="text-right font-medium tabular-nums">
+                  {usd(test.costPerLeadMicros)}
                 </TableCell>
                 <TableCell className="text-right font-medium tabular-nums">
                   {usd(test.costPerCallMicros)}

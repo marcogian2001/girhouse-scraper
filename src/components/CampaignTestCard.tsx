@@ -58,7 +58,7 @@ export const CampaignTestCard = (props: { test: CampaignTest }) => {
           ))}
         </dl>
 
-        <dl className="grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
+        <dl className="grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-5">
           <div>
             <dt className="text-xs text-muted-foreground">{t('column_replies_by_email')}</dt>
             <dd className="tabular-nums">
@@ -74,12 +74,11 @@ export const CampaignTestCard = (props: { test: CampaignTest }) => {
           </div>
           <div>
             <dt className="text-xs text-muted-foreground">{t('column_cost')}</dt>
-            <dd className="tabular-nums">
-              {usd(test.costMicros)}{' '}
-              <span className="text-xs text-muted-foreground">
-                {t('cost_leads', { cost: usd(test.leadsCostMicros) })}
-              </span>
-            </dd>
+            <dd className="tabular-nums">{usd(test.costMicros)}</dd>
+          </div>
+          <div>
+            <dt className="text-xs text-muted-foreground">{t('column_cost_per_lead')}</dt>
+            <dd className="tabular-nums">{usd(test.costPerLeadMicros)}</dd>
           </div>
           <div>
             <dt className="text-xs text-muted-foreground">{t('column_cost_per_call')}</dt>

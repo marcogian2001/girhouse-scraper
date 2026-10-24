@@ -416,7 +416,6 @@ export const getCampaignTests = async (options: {
       // Before the first copy of Instantly, the approved contacts are the best guess
       isContactedEstimate: !stat,
       bounced: stat?.bounced ?? null,
-      leadsCostMicros: cost.leadsMicros,
       ...buildCampaignTest({
         contacted: stat?.contacted ?? contacts?.approved ?? 0,
         replied: stat?.replied ?? null,
