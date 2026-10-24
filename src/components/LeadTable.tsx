@@ -203,8 +203,14 @@ export const LeadTable = (props: {
                 <TableCell>{websiteCell(lead)}</TableCell>
 
                 <TableCell>
-                  <div>{personOf(lead) ?? '—'}</div>
-                  {lead.role && <div className="text-xs text-muted-foreground">{lead.role}</div>}
+                  <div className="w-48 whitespace-normal">
+                    <div className="line-clamp-2">{personOf(lead) ?? '—'}</div>
+                    {lead.role && (
+                      <div title={lead.role} className="line-clamp-2 text-xs text-muted-foreground">
+                        {lead.role}
+                      </div>
+                    )}
+                  </div>
                 </TableCell>
 
                 <TableCell>
