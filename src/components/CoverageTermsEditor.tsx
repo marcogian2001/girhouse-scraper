@@ -132,7 +132,7 @@ export const CoverageTermsEditor = (props: { terms: CoverageTermView[] }) => {
 
       <div className="max-h-96 overflow-y-auto rounded-lg border">
         <Table>
-          <TableHeader className="bg-muted/50">
+          <TableHeader>
             <TableRow>
               <TableHead>{t('column_term')}</TableHead>
               <TableHead>{t('column_tier')}</TableHead>
