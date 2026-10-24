@@ -315,6 +315,11 @@
     "dialog_title": "Delete this campaign?",
     "dialog_description": "The campaign, its contacts and drafts are removed permanently. The Instantly campaign is not affected."
   },
+  "DeleteConversationButton": {
+    "button": "Delete conversation",
+    "dialog_title": "Delete this conversation?",
+    "dialog_description": "The conversation, its replies, emails, demo and log are removed permanently. Instantly is not affected and a new reply from the lead opens a new conversation."
+  },
   "ConfirmDeleteButton": {
     "button_cancel": "Cancel"
   },

@@ -315,6 +315,11 @@
     "dialog_title": "Eliminare questa campagna?",
     "dialog_description": "La campagna, i suoi contatti e le bozze vengono eliminati definitivamente. La campagna su Instantly non viene toccata."
   },
+  "DeleteConversationButton": {
+    "button": "Elimina conversazione",
+    "dialog_title": "Eliminare questa conversazione?",
+    "dialog_description": "La conversazione, le risposte, le email, la demo e lo storico vengono eliminati definitivamente. Instantly non viene toccato e una nuova risposta del lead apre una nuova conversazione."
+  },
   "ConfirmDeleteButton": {
     "button_cancel": "Annulla"
   },

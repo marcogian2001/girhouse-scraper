@@ -5,6 +5,7 @@ import { ConversationDemoCard } from '@/components/ConversationDemoCard';
 import { ConversationProgress } from '@/components/ConversationProgress';
 import { ConversationThread } from '@/components/ConversationThread';
 import { ConversationTimeline } from '@/components/ConversationTimeline';
+import { DeleteConversationButton } from '@/components/DeleteConversationButton';
 import { RunNextActionButton } from '@/components/RunNextActionButton';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -121,6 +122,10 @@ export default async function ReplyDetailPage(props: {
             initialState={conversation.state}
             initialPendingJobs={detail.pendingJobs}
           />
+
+          <div className="ml-auto">
+            <DeleteConversationButton conversationId={conversation.id} />
+          </div>
         </div>
       </div>
 
