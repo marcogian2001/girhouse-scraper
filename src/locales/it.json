@@ -763,7 +763,7 @@
     "hint_confidenceThreshold": "Se l'AI è meno sicura di così (0,75 = 75%), la risposta va a te in revisione, qualunque sia la categoria.",
     "hint_replyDelayMinMinutes": "La risposta parte a un orario casuale tra il minimo e il massimo dopo l'email del lead, così sembra scritta a mano. Se approvi più tardi, parte subito.",
     "hint_replyDelayMaxMinutes": "Uguale o maggiore del minimo.",
-    "hint_businessHourStart": "Ora italiana, da 0 a 23. Fuori orario, nel weekend e nei festivi gli invii aspettano l'apertura.",
+    "hint_businessHourStart": "Ora italiana, da 0 a 23. Fuori orario gli invii aspettano l'apertura; nel weekend e nei festivi parte solo l'email con la demo.",
     "hint_businessHourEnd": "Ora italiana, da 1 a 24.",
     "hint_monthlyPrice": "L'unico prezzo che le email citano, presentato come quasi un regalo per quello che include.",
     "hint_newMonthlyPrice": "Mostrato solo nella demo: le email non citano mai l'aumento.",

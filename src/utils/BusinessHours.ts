@@ -1,7 +1,10 @@
 import { AppConfig } from './AppConfig';
 
-/** The window emails may leave in, as whole hours of Italian wall-clock time. */
-export type BusinessHours = { startHour: number; endHour: number };
+/**
+ * The window emails may leave in, as whole hours of Italian wall-clock time, on working
+ * days only unless `everyDay` is set.
+ */
+export type BusinessHours = { startHour: number; endHour: number; everyDay?: boolean };
 
 type WallClock = {
   year: number;
@@ -163,22 +166,31 @@ const isBusinessDay = (clock: WallClock) => {
 };
 
 /**
+ * Tells whether emails may leave on a day.
+ * @param clock The day, as Italian wall-clock time.
+ * @param hours The business hours.
+ * @returns True on working days, or on any day when the hours allow every day.
+ */
+const isSendingDay = (clock: WallClock, hours: BusinessHours) =>
+  Boolean(hours.everyDay) || isBusinessDay(clock);
+
+/**
  * Tells whether an instant falls inside Italian business hours.
  * @param date The instant.
  * @param hours The business hours.
- * @returns True on a working day between the start and end hour.
+ * @returns True on a sending day between the start and end hour.
  */
 export const isBusinessTime = (date: Date, hours: BusinessHours) => {
   const clock = toWallClock(date);
 
-  return isBusinessDay(clock) && clock.hour >= hours.startHour && clock.hour < hours.endHour;
+  return isSendingDay(clock, hours) && clock.hour >= hours.startHour && clock.hour < hours.endHour;
 };
 
 /**
  * Finds the next opening of business hours after an instant.
  * @param date The instant.
  * @param hours The business hours.
- * @returns The start of the next working day's hours, or of today's if they have not begun.
+ * @returns The start of the next sending day's hours, or of today's if they have not begun.
  */
 const nextOpening = (date: Date, hours: BusinessHours) => {
   const today = toWallClock(date);
@@ -193,7 +205,7 @@ const nextOpening = (date: Date, hours: BusinessHours) => {
       hour: hours.startHour,
     });
 
-    if (opening > date && isBusinessDay(toWallClock(opening))) {
+    if (opening > date && isSendingDay(toWallClock(opening), hours)) {
       return opening;
     }
   }

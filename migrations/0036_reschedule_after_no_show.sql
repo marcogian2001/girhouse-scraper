@@ -1,0 +1,1 @@
+ALTER TABLE "lead_outcome" ADD COLUMN "rescheduled_at" timestamp;

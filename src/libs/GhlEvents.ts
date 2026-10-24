@@ -111,7 +111,8 @@ const parseValue = (value: GhlWebhook['customData']['value']) => {
 
 /**
  * What each outcome event sets on the lead's outcome. The first time of each is kept;
- * a later sale only updates the value.
+ * a later sale only updates the value, and a booking after a missed call marks the
+ * lead rescheduled without counting a second call.
  * @param options The event.
  * @param options.event The GHL event.
  * @param options.value The sale's value, for a sale.
@@ -143,7 +144,13 @@ const outcomeChange = (options: {
         insert: { callBookedAt: now, noShowAt: now },
         update: { callBookedAt, noShowAt: sql`coalesce(${leadOutcomeSchema.noShowAt}, ${now})` },
       }
-    : { insert: { callBookedAt: now }, update: { callBookedAt } };
+    : {
+        insert: { callBookedAt: now },
+        update: {
+          callBookedAt,
+          rescheduledAt: sql`case when ${leadOutcomeSchema.noShowAt} is not null then coalesce(${leadOutcomeSchema.rescheduledAt}, ${now}) else ${leadOutcomeSchema.rescheduledAt} end`,
+        },
+      };
 };
 
 /**

@@ -131,6 +131,34 @@ describe('BusinessHours', () => {
         '2026-10-21T07:00:00.000Z',
       );
     });
+
+    it('leaves on a Saturday when every day is allowed', () => {
+      // Reply on Saturday 24 October at 11:00 in Rome
+      expect(
+        scheduleReplySend({
+          repliedAt: new Date('2026-10-24T09:00:00Z'),
+          now: new Date('2026-10-24T09:01:00Z'),
+          hours: { ...hours, everyDay: true },
+          minDelayMinutes: 15,
+          maxDelayMinutes: 20,
+          random: 0,
+        }).toISOString(),
+      ).toBe('2026-10-24T09:15:00.000Z');
+    });
+
+    it('waits for Sunday morning when every day is allowed', () => {
+      // Reply on Saturday at 19:00 in Rome: Sunday at 9:00, plus the delay
+      expect(
+        scheduleReplySend({
+          repliedAt: new Date('2026-10-24T17:00:00Z'),
+          now: new Date('2026-10-24T17:01:00Z'),
+          hours: { ...hours, everyDay: true },
+          minDelayMinutes: 15,
+          maxDelayMinutes: 20,
+          random: 0,
+        }).toISOString(),
+      ).toBe('2026-10-25T08:15:00.000Z');
+    });
   });
 
   describe('Italian time', () => {

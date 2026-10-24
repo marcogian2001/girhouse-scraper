@@ -763,7 +763,7 @@
     "hint_confidenceThreshold": "When the AI is less sure than this (0.75 = 75%), the reply goes to you for review, whatever its category.",
     "hint_replyDelayMinMinutes": "The answer goes at a random time between the minimum and the maximum after the lead's email, so it looks handwritten. When you approve later, it goes at once.",
     "hint_replyDelayMaxMinutes": "Equal to or above the minimum.",
-    "hint_businessHourStart": "Italian time, from 0 to 23. Outside hours, at weekends and on holidays sends wait for opening.",
+    "hint_businessHourStart": "Italian time, from 0 to 23. Outside hours sends wait for opening; at weekends and on holidays only the demo email goes.",
     "hint_businessHourEnd": "Italian time, from 1 to 24.",
     "hint_monthlyPrice": "The only price emails quote, presented as almost a gift for what it includes.",
     "hint_newMonthlyPrice": "Shown in the demo only: emails never quote the increase.",

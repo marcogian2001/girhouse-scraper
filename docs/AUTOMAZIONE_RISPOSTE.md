@@ -156,7 +156,7 @@ Tutto il codice è committato su `main`. Restano fuori solo le modifiche `bg-whi
   - Se un controllo fallisce l'AI riscrive una volta, poi la risposta resta in bozza.
 - [x] Modalità **bozza**: approvi, modifichi o scarti dalla dashboard.
 - [x] Modalità **automatica**: parte da sola solo con classificazione sicura e nessun problema rilevato.
-- [x] **Invio** (job `reply_send`), solo in orario lavorativo italiano (lun-ven 9-18, festivi e Pasquetta esclusi).
+- [x] **Invio** (job `reply_send`), solo in orario lavorativo italiano (lun-ven 9-18, festivi e Pasquetta esclusi). L'email con la demo parte anche nel weekend e nei festivi, sempre dalle 9 alle 18.
   - Dal 20/10 la risposta parte **15-20 minuti dopo la risposta del lead** (campi in Automazione, default 15 e 20, migrazione 0023).
   - Una bozza approvata più tardi parte subito, o alla prossima apertura se l'ufficio è chiuso.
   - Gli orari nella dashboard sono in ora italiana: prima erano mostrati in UTC.

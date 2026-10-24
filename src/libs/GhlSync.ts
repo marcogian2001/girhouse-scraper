@@ -82,6 +82,7 @@ export const syncGhlOutcomes = async () => {
         set: {
           callBookedAt: sql`coalesce(${leadOutcomeSchema.callBookedAt}, excluded.call_booked_at)`,
           noShowAt: sql`coalesce(${leadOutcomeSchema.noShowAt}, excluded.no_show_at)`,
+          rescheduledAt: sql`coalesce(${leadOutcomeSchema.rescheduledAt}, excluded.rescheduled_at)`,
           wonAt: sql`coalesce(${leadOutcomeSchema.wonAt}, excluded.won_at)`,
           wonValue: sql`coalesce(excluded.won_value, ${leadOutcomeSchema.wonValue})`,
         },

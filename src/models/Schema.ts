@@ -1012,6 +1012,8 @@ export const leadOutcomeSchema = pgTable(
     callBookedAt: timestamp('call_booked_at', { mode: 'date' }),
     // Set when the lead missed the call
     noShowAt: timestamp('no_show_at', { mode: 'date' }),
+    // Set when the lead booked again after missing a call
+    rescheduledAt: timestamp('rescheduled_at', { mode: 'date' }),
     wonAt: timestamp('won_at', { mode: 'date' }),
     // The GHL opportunity's monetary value, in euros
     wonValue: doublePrecision('won_value'),

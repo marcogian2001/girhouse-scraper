@@ -73,17 +73,20 @@ const bookedPayloadSchema = z.object({ startTime: z.string() });
 /**
  * Picks when an email leaves. An answer leaves the configured delay after the lead's
  * reply, at once if that time has passed; other emails count the delay from now. Test
- * conversations send at once, so a simulation does not wait for business hours.
+ * conversations send at once, so a simulation does not wait for business hours. The
+ * demo leaves on weekends and holidays too, so an interested lead is not kept waiting.
  * @param options The email.
  * @param options.conversation The conversation the email belongs to.
  * @param options.settings The organization's automation settings.
  * @param options.repliedAt When the reply it answers arrived, for an answer.
+ * @param options.carriesDemo Whether the email carries the demo link.
  * @returns The send time.
  */
 export const sendTimeFor = (options: {
   conversation: Conversation;
   settings: AutomationSettings;
   repliedAt?: Date;
+  carriesDemo?: boolean;
 }) => {
   const now = new Date();
 
@@ -97,6 +100,7 @@ export const sendTimeFor = (options: {
     hours: {
       startHour: options.settings.businessHourStart,
       endHour: options.settings.businessHourEnd,
+      everyDay: options.carriesDemo,
     },
     minDelayMinutes: options.settings.replyDelayMinMinutes,
     maxDelayMinutes: options.settings.replyDelayMaxMinutes,
@@ -394,6 +398,7 @@ const replyWriterInput = async (options: {
  * @param options.written The checked body, its issues and model.
  * @param options.offeredSlots The call times the email offers.
  * @param options.isBooked Whether the email confirms a booked call.
+ * @param options.carriesDemo Whether the email carries the demo link.
  * @param options.sendAt When the lead asked to be contacted again, if they did: the send
  * time in automatic mode, the proposed one on a draft.
  */
@@ -404,6 +409,7 @@ const saveWrittenReply = async (options: {
   written: Awaited<ReturnType<typeof writeCheckedReply>>;
   offeredSlots: string[];
   isBooked: boolean;
+  carriesDemo: boolean;
   sendAt: Date | null;
 }) => {
   const { conversation, settings, written } = options;
@@ -426,7 +432,12 @@ const saveWrittenReply = async (options: {
       status: sendsItself ? 'scheduled' : 'draft',
       scheduledFor: sendsItself
         ? (options.sendAt ??
-          sendTimeFor({ conversation, settings, repliedAt: options.message.receivedAt }))
+          sendTimeFor({
+            conversation,
+            settings,
+            repliedAt: options.message.receivedAt,
+            carriesDemo: options.carriesDemo,
+          }))
         : options.sendAt,
       model: written.model,
     })
@@ -523,6 +534,7 @@ const runReplyWriteJob = async (job: Job) => {
     written,
     offeredSlots,
     isBooked,
+    carriesDemo: Boolean(demo),
     sendAt: isBooked ? null : sendAt,
   });
 
@@ -716,6 +728,8 @@ export const approveOutbound = async (options: {
           conversation: row.conversation,
           settings,
           repliedAt: answered?.receivedAt,
+          carriesDemo:
+            Boolean(demo && body.includes(demo.url)) && DEMO_SENT_FROM.has(row.conversation.state),
         });
 
   const [scheduled] = await db
