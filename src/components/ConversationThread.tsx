@@ -24,7 +24,8 @@ type InboundEntry = Detail['messages'][number];
 type ThreadItem = ThreadItemOf<
   InboundEntry,
   Detail['outbound'][number],
-  NonNullable<Detail['whatsappHandoff']>
+  NonNullable<Detail['whatsappHandoff']>,
+  Detail['instantlyEmails'][number]
 >;
 
 /**
@@ -121,6 +122,14 @@ const ItemHeader = (props: { item: ThreadItem; detail: Detail }) => {
       };
     }
 
+    if (item.kind === 'instantly') {
+      return {
+        sender: item.email.sender ?? t('thread_us'),
+        title: t(`thread_instantly_${item.email.kind}`),
+        preview: item.email.body,
+      };
+    }
+
     if (item.kind === 'outbound') {
       return {
         sender: props.detail.conversation.eaccount ?? t('thread_us'),
@@ -145,12 +154,13 @@ const ItemHeader = (props: { item: ThreadItem; detail: Detail }) => {
         className={cn(
           'flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-medium uppercase',
           item.kind === 'inbound' && 'bg-info/10 text-info',
-          item.kind === 'outbound' && 'bg-muted text-muted-foreground',
+          (item.kind === 'outbound' || item.kind === 'instantly') &&
+            'bg-muted text-muted-foreground',
           item.kind === 'whatsapp' && 'bg-success/10 text-success',
         )}
       >
         {item.kind === 'inbound' && header.sender.charAt(0)}
-        {item.kind === 'outbound' && <Mail className="size-4" />}
+        {(item.kind === 'outbound' || item.kind === 'instantly') && <Mail className="size-4" />}
         {item.kind === 'whatsapp' && <MessageCircle className="size-4" />}
       </span>
 
@@ -206,6 +216,9 @@ export const ConversationThread = (props: { detail: Detail }) => {
               <InboundBody entry={item.entry} isLatest={item.id === latestInboundId} />
             )}
             {item.kind === 'outbound' && <OutboundEmailEditor email={item.email} />}
+            {item.kind === 'instantly' && (
+              <p className="text-sm whitespace-pre-wrap">{item.email.body}</p>
+            )}
             {item.kind === 'whatsapp' && (
               <WhatsappHandoffPanel
                 conversationId={props.detail.conversation.id}

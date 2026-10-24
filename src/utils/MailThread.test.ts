@@ -23,6 +23,7 @@ describe('MailThread', () => {
           email({ id: 'answer', kind: 'reply', status: 'sent', sentAt: '09:30' }),
           email({ id: 'follow-up', kind: 'follow_up', status: 'sent', sentAt: '11:00' }),
         ],
+        instantlyEmails: [],
         whatsappHandoff: null,
       });
 
@@ -42,6 +43,7 @@ describe('MailThread', () => {
           email({ id: 'first', kind: 'follow_up', status: 'sent', sentAt: '10:00' }),
           email({ id: 'closing', kind: 'closing', status: 'draft' }),
         ],
+        instantlyEmails: [],
         whatsappHandoff: null,
       });
 
@@ -50,10 +52,25 @@ describe('MailThread', () => {
       ).toStrictEqual([null, 1, 2]);
     });
 
+    it('places the campaign steps and the team emails from Instantly in order', () => {
+      const thread = buildThread({
+        messages: [reply('lead', '10:00')],
+        outbound: [],
+        instantlyEmails: [
+          { id: 'team', sentAt: at('11:00') },
+          { id: 'cold', sentAt: at('08:00') },
+        ],
+        whatsappHandoff: null,
+      });
+
+      expect(thread.map((item) => item.id)).toStrictEqual(['cold', 'lead', 'team']);
+    });
+
     it('puts the WhatsApp hand-off after every email', () => {
       const thread = buildThread({
         messages: [reply('lead', '09:00')],
         outbound: [email({ id: 'closing', kind: 'closing', status: 'sent', sentAt: '15:00' })],
+        instantlyEmails: [],
         whatsappHandoff: {
           id: 'whatsapp',
           status: 'sent',
@@ -75,6 +92,7 @@ describe('MailThread', () => {
           email({ id: 'failed', kind: 'reply', status: 'failed', sentAt: '10:00' }),
           email({ id: 'sent', kind: 'reply', status: 'sent', sentAt: '11:00' }),
         ],
+        instantlyEmails: [],
         whatsappHandoff: null,
       });
 

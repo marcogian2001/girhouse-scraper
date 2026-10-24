@@ -39,6 +39,7 @@ import {
 import { sha256Hex } from '@/utils/Secrets';
 import type { InstantlyWebhook } from '@/validations/InstantlyWebhookValidation';
 import { REPLY_EVENTS } from '@/validations/InstantlyWebhookValidation';
+import { listInstantlyEmails } from './ConversationThread';
 import { db } from './DB';
 import { Env } from './Env';
 import { enqueue } from './JobQueue';
@@ -807,11 +808,18 @@ export const getConversationDetail = async (options: {
       countPendingJobs(conversation.id),
     ]);
 
+  // Read after the platform's own emails, so the ones it sent are not shown twice
+  const instantlyEmails = await listInstantlyEmails({
+    conversation,
+    ownEmailIds: new Set(outbound.flatMap((email) => email.instantlyEmailId ?? [])),
+  });
+
   return {
     conversation,
     status: toReplyStatus(conversation.state, messages.at(-1)?.classification?.category ?? null),
     messages,
     outbound,
+    instantlyEmails,
     events,
     whatsappHandoff: whatsappHandoff ?? null,
     whatsappMessages,

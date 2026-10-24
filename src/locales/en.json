@@ -907,6 +907,8 @@
     "event_test_skipped_referral_contact": "Referral not added (test)",
     "thread_inbound": "Lead's reply",
     "thread_us": "Girhouse",
+    "thread_instantly_campaign": "Campaign email",
+    "thread_instantly_team": "Team reply",
     "thread_follow_up": "Follow-up {number}",
     "thread_whatsapp": "WhatsApp message",
     "thread_whatsapp_sender": "WhatsApp through GHL",
