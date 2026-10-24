@@ -1,6 +1,6 @@
 # Automazione risposte cold email: stato dei lavori
 
-Ultimo aggiornamento: 24 ottobre 2026 (pagina Test campagne, con chiusure da GHL).
+Ultimo aggiornamento: 24 ottobre 2026 (pagina Test campagne, con chiusure e recupero delle call da GHL).
 
 Questo file serve a riprendere il lavoro anche senza la chat originale, da soli o con un altro assistente AI. Per ripartire basta dire all'AI: "leggi `docs/AUTOMAZIONE_RISPOSTE.md` e `AGENTS.md`, poi continuiamo dalla prima voce non spuntata".
 
@@ -449,7 +449,12 @@ Richiesta del titolare: tenere traccia di ogni campagna come un test, per confro
 - [x] **Migrazioni:** `0032` (colonne `target`, `zone`, `hypothesis` su `campaign`, tabella `lead_outcome`) e `0033` (tabelle della copia di Instantly, `no_show_at`, via `prompt_analysis`, job rinominato da `campaign_analysis` a `instantly_sync`).
 - [x] **Verifica su PGlite** con migrazioni da zero e copia vera di Instantly: "nutrizionista · Roma · #2" passa da 1 a 57 risposte, 10 positive (9 interessati più 1 meeting), risposte per email 13/25/20; no show, chiusura e costi corretti.
 - [ ] **Workflow GHL "Vendita chiusa"** e **"No show"** (titolare), vedi la sezione 3. Senza, chiusure e no show vengono solo dalle etichette Instantly.
-- [ ] Le call prenotate prima del 24/10 da setter per lead che non avevano risposto contano solo se il lead ha l'etichetta Meeting su Instantly.
+- [x] **Recupero da GHL (24/10)** (`src/libs/GhlSync.ts`, `src/utils/GhlOutcomes.ts`): ogni aggiornamento della copia di Instantly (visita della pagina dopo 15 minuti o "Aggiorna da Instantly e GHL") legge anche la pipeline "4. Cold Email | Instantly" e il calendario "Call Demo - 30 min", e scrive in `lead_outcome` le call prenotate prima del webhook o da un setter:
+  - **call:** opportunità nelle fasi Chiamata Schedulata, Chiamata Completata, No Show o Chiuso, oppure vinta, oppure un appuntamento non cancellato sul calendario (così conta anche chi poi è finito in Squalificato). "Interessato, Chiamata Non Schedulata" non conta;
+  - **no show:** fase No Show o appuntamento segnato "noshow"; **chiusura:** stato Won o fase Chiuso, con il valore dell'opportunità;
+  - contano solo i contatti della pipeline, per ogni organizzazione che li ha in una campagna. Le date già registrate dal webhook restano, GHL riempie solo quelle mancanti; nulla viene mai cancellato;
+  - le fasi si riconoscono dal nome: se si rinominano su GHL, va aggiornato `BOOKED_STAGES` in `src/utils/GhlOutcomes.ts`.
+  - Prova a secco del 24/10: 266 opportunità, 7 appuntamenti, 6 lead con call (1 no show), tutti abbinati a contatti di 4 campagne.
 
 ---
 

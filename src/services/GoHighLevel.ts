@@ -36,6 +36,42 @@ const opportunitySearchSchema = z.object({
   opportunities: z.array(z.object({ id: z.string(), assignedTo: z.string().nullish() })),
 });
 
+const pipelineListSchema = z.object({
+  pipelines: z.array(
+    z.object({
+      id: z.string(),
+      stages: z.array(z.object({ id: z.string(), name: z.string() })),
+    }),
+  ),
+});
+
+const pipelineOpportunitySchema = z.object({
+  contactId: z.string(),
+  pipelineStageId: z.string(),
+  status: z.string(),
+  monetaryValue: z.number().nullish(),
+  createdAt: z.string(),
+  lastStageChangeAt: z.string().nullish(),
+  lastStatusChangeAt: z.string().nullish(),
+  contact: z.object({ email: z.string().nullish() }).nullish(),
+});
+
+const opportunityPageSchema = z.object({
+  opportunities: z.array(pipelineOpportunitySchema),
+  // A number on the first page and text on the next ones
+  meta: z.object({ nextPage: z.coerce.number().nullish() }),
+});
+
+const calendarEventSchema = z.object({
+  contactId: z.string().nullish(),
+  appointmentStatus: z.string().nullish(),
+  dateAdded: z.string().nullish(),
+  dateUpdated: z.string().nullish(),
+  deleted: z.boolean().nullish(),
+});
+
+const calendarEventListSchema = z.object({ events: z.array(calendarEventSchema) });
+
 const customFieldSchema = z.object({ id: z.string(), name: z.string(), fieldKey: z.string() });
 
 const customFieldListSchema = z.object({ customFields: z.array(customFieldSchema) });
@@ -364,6 +400,83 @@ export const assignOpportunity = async (options: { opportunityId: string; userId
     method: 'PUT',
     body: { assignedTo: options.userId },
   });
+};
+
+/**
+ * Reads the names of the sales pipeline's stages.
+ * @returns Each stage's name, by its id.
+ * @throws {Error} When GHL or the pipeline is not configured, or GHL rejects the request.
+ */
+export const getPipelineStageNames = async () => {
+  const pipelineId = requireEnv('GHL_PIPELINE_ID', Env.GHL_PIPELINE_ID);
+  const query = new URLSearchParams({
+    locationId: requireEnv('GHL_LOCATION_ID', Env.GHL_LOCATION_ID),
+  });
+  const { pipelines } = pipelineListSchema.parse(
+    await request({
+      path: `/opportunities/pipelines?${query.toString()}`,
+      family: 'opportunities',
+    }),
+  );
+  const pipeline = pipelines.find((candidate) => candidate.id === pipelineId);
+
+  return new Map(pipeline?.stages.map((stage) => [stage.id, stage.name]));
+};
+
+/** An opportunity of the sales pipeline, with its contact's email. */
+export type PipelineOpportunity = z.infer<typeof pipelineOpportunitySchema>;
+
+/**
+ * Lists every opportunity of the sales pipeline, open, won, lost and abandoned.
+ * @returns The opportunities.
+ * @throws {Error} When GHL or the pipeline is not configured, or GHL rejects the request.
+ */
+export const listPipelineOpportunities = async () => {
+  const opportunities: PipelineOpportunity[] = [];
+  let page: number | null | undefined = 1;
+
+  while (page) {
+    const query = new URLSearchParams({
+      location_id: requireEnv('GHL_LOCATION_ID', Env.GHL_LOCATION_ID),
+      pipeline_id: requireEnv('GHL_PIPELINE_ID', Env.GHL_PIPELINE_ID),
+      limit: '100',
+      page: String(page),
+    });
+    const body = opportunityPageSchema.parse(
+      // oxlint-disable-next-line no-await-in-loop
+      await request({ path: `/opportunities/search?${query.toString()}`, family: 'opportunities' }),
+    );
+
+    opportunities.push(...body.opportunities);
+    page = body.meta.nextPage;
+  }
+
+  return opportunities;
+};
+
+/** An appointment on the calendar, with its status as GHL names it. */
+export type CalendarAppointment = z.infer<typeof calendarEventSchema>;
+
+/**
+ * Lists the calendar's appointments in a range, cancelled ones included.
+ * @param options The range.
+ * @param options.from The first start time to look at.
+ * @param options.to The last start time to look at.
+ * @returns The appointments.
+ * @throws {Error} When GHL is not configured or rejects the request.
+ */
+export const listCalendarAppointments = async (options: { from: Date; to: Date }) => {
+  const query = new URLSearchParams({
+    locationId: requireEnv('GHL_LOCATION_ID', Env.GHL_LOCATION_ID),
+    calendarId: requireEnv('GHL_CALENDAR_ID', Env.GHL_CALENDAR_ID),
+    startTime: String(options.from.getTime()),
+    endTime: String(options.to.getTime()),
+  });
+  const { events } = calendarEventListSchema.parse(
+    await request({ path: `/calendars/events?${query.toString()}`, family: 'calendars' }),
+  );
+
+  return events;
 };
 
 /** A custom field the platform writes on GHL contacts, by its key without the `contact.` prefix. */

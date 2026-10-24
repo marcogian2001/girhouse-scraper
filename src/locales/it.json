@@ -1279,7 +1279,7 @@
     "empty_description": "Le campagne compaiono qui dopo l'invio su Instantly.",
     "synced_at": "Dati Instantly del {date}",
     "never_synced": "Dati Instantly non ancora letti",
-    "button_sync": "Aggiorna da Instantly",
+    "button_sync": "Aggiorna da Instantly e GHL",
     "error_sync": "Aggiornamento non riuscito."
   },
   "SearchInput": {

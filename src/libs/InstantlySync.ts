@@ -1,7 +1,9 @@
 import { and, eq, inArray, max, sql } from 'drizzle-orm';
 import { instantlyCampaignStatSchema, instantlyLeadSchema, jobSchema } from '@/models/Schema';
+import { isGhlConfigured, isPipelineConfigured } from '@/services/GoHighLevel';
 import { getCampaignAnalytics, listRepliedLeads } from '@/services/Instantly';
 import { db } from './DB';
+import { syncGhlOutcomes } from './GhlSync';
 import { completeJob, enqueue } from './JobQueue';
 import { logger } from './Logger';
 
@@ -16,8 +18,9 @@ const INSERT_CHUNK = 500;
 /**
  * Copies Instantly's totals of every campaign and every lead that replied, so the
  * campaign tests read old campaigns too, replies the platform never received included.
- * @returns How many campaigns and replied leads were copied.
- * @throws {Error} When the API key is missing or Instantly rejects a request.
+ * Then, when GHL is configured, copies the calls booked in its cold email pipeline.
+ * @returns How many campaigns and replied leads were copied, and how many GHL leads booked.
+ * @throws {Error} When the API key is missing, or Instantly or GHL rejects a request.
  */
 export const syncInstantlyStats = async () => {
   const [totals, leads] = await Promise.all([getCampaignAnalytics(), listRepliedLeads()]);
@@ -77,7 +80,10 @@ export const syncInstantlyStats = async () => {
     leads: uniqueLeads.length,
   });
 
-  return { campaigns: stats.length, leads: uniqueLeads.length };
+  // After the Instantly copy is saved, so a GHL failure does not lose it
+  const ghl = isGhlConfigured() && isPipelineConfigured() ? await syncGhlOutcomes() : null;
+
+  return { campaigns: stats.length, leads: uniqueLeads.length, ghlBooked: ghl?.booked ?? null };
 };
 
 /**

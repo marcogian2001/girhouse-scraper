@@ -1279,7 +1279,7 @@
     "empty_description": "Campaigns show up here once they are sent to Instantly.",
     "synced_at": "Instantly data from {date}",
     "never_synced": "Instantly data not read yet",
-    "button_sync": "Refresh from Instantly",
+    "button_sync": "Refresh from Instantly and GHL",
     "error_sync": "Refresh failed."
   },
   "SearchInput": {
