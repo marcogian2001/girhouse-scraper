@@ -3,7 +3,7 @@ import { SidebarMenu, SidebarMenuItem } from '@/components/ui/sidebar';
 import { UsageSummaryLink } from '@/components/UsageSummaryLink';
 import type { UsageTotals } from '@/libs/Usage';
 import type { DateRange } from '@/utils/DateRange';
-import { COMPACT_FORMAT, microsToUsd, USD_FORMAT } from '@/utils/UsageFormat';
+import { microsToUsd, USD_FORMAT } from '@/utils/UsageFormat';
 
 /**
  * Shows this month's API spend above the account menu, linking to the full report.
@@ -24,13 +24,11 @@ export const UsageSummary = (props: { period: DateRange; totals: UsageTotals }) 
 
   const lines = [
     {
-      label: t('claude_line', {
-        tokens: format.number(props.totals.copywritingTokens, COMPACT_FORMAT),
-      }),
+      label: t('claude_line'),
       value: format.number(microsToUsd(props.totals.copywritingCostMicros), USD_FORMAT),
     },
     {
-      label: t('parallel_line', { runs: props.totals.parallelRuns }),
+      label: t('parallel_line'),
       value: t('parallel_cost', {
         cost: format.number(microsToUsd(props.totals.parallelCostMicros), USD_FORMAT),
       }),

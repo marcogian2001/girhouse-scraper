@@ -89,8 +89,8 @@
   },
   "UsageSummary": {
     "title": "{month} spend",
-    "claude_line": "Claude · {tokens} tokens",
-    "parallel_line": "Parallel · {runs, plural, one {# search} other {# searches}}",
+    "claude_line": "Claude",
+    "parallel_line": "Parallel",
     "parallel_cost": "~{cost}",
     "tooltip": "{month} spend: {total}",
     "apify_line": "Apify"
