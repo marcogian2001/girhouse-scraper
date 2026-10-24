@@ -49,6 +49,27 @@ export const getI18nPath = (url: string, locale: string) => {
  */
 export const textOrNull = (value: string | null | undefined) => (value?.trim() ? value : null);
 
+/** Words a person's name has at most; longer texts are sentences about it. */
+const MAX_NAME_WORDS = 5;
+
+/**
+ * Reads a person's name from research, which sometimes adds notes about how sure it is.
+ * @param value The name as the research wrote it, if any.
+ * @returns The name without notes in parentheses, or null when the text is a sentence, not a name.
+ */
+export const personNameOrNull = (value: string | null | undefined) => {
+  const name = value
+    ?.replaceAll(/\s*\([^)]*\)/gu, '')
+    .replace(/[\s.]+$/u, '')
+    .trim();
+
+  if (!name || /[;:]/u.test(name) || name.split(/\s+/u).length > MAX_NAME_WORDS) {
+    return null;
+  }
+
+  return name;
+};
+
 /**
  * Turns a display name into a URL segment.
  * @param name The name.

@@ -55,7 +55,11 @@ const ENRICHMENT_JSON_SCHEMA = {
       description:
         'One or two sentences explaining which signals tie the findings to this person, or why they could not be tied to them.',
     },
-    full_name: { type: 'string', description: 'Full name as published online, or "" if unknown.' },
+    full_name: {
+      type: 'string',
+      description:
+        'Full name as published online, or "" if unknown. Only the name: doubts and sources go in identity_match_reasoning.',
+    },
     current_role: { type: 'string', description: 'Current job title, or "" if unknown.' },
     current_company: { type: 'string', description: 'Current employer, or "" if unknown.' },
     company_description: {

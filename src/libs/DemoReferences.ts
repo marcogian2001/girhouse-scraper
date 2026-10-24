@@ -8,7 +8,7 @@ import { isMioDottoreUrl } from '@/services/MioDottore';
 import { downloadImage } from '@/services/RemoteImage';
 import type { WebsiteBrand } from '@/services/WebsiteBrand';
 import { fetchWebsiteBrand } from '@/services/WebsiteBrand';
-import { textOrNull } from '@/utils/Helpers';
+import { personNameOrNull, textOrNull } from '@/utils/Helpers';
 import { findInstagramHandle } from '@/utils/Instagram';
 import { db } from './DB';
 import { logger } from './Logger';
@@ -74,7 +74,7 @@ export const loadContactResearch = async (contact?: Contact) => {
   const contactName = [contact?.firstName, contact?.lastName].filter(Boolean).join(' ');
 
   return {
-    personName: textOrNull(content?.full_name) ?? textOrNull(contactName),
+    personName: personNameOrNull(content?.full_name) ?? textOrNull(contactName),
     research: researchLines(content),
     raw: content ? JSON.stringify([enrichment?.content, enrichment?.basis]) : null,
   };

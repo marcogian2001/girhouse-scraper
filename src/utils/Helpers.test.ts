@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { routing } from '@/libs/I18nRouting';
-import { createOrganizationSlug, getI18nPath, textOrNull } from './Helpers';
+import { createOrganizationSlug, getI18nPath, personNameOrNull, textOrNull } from './Helpers';
 
 describe('Helpers', () => {
   describe('I18n path helper', () => {
@@ -24,6 +24,36 @@ describe('Helpers', () => {
       expect(textOrNull('Roberta')).toBe('Roberta');
       expect(textOrNull('  ')).toBeNull();
       expect(textOrNull(null)).toBeNull();
+    });
+  });
+
+  describe('Person name or null', () => {
+    it('drops the research notes in parentheses', () => {
+      expect(
+        personNameOrNull(
+          'Timmy CoffeeMaster (public profile name; legal name not independently confirmed)',
+        ),
+      ).toBe('Timmy CoffeeMaster');
+      expect(personNameOrNull('Aurora Quaranta (the supplied name).')).toBe('Aurora Quaranta');
+    });
+
+    it('keeps a plain name', () => {
+      expect(personNameOrNull('Rossana Wilma Rita Gasbarra')).toBe('Rossana Wilma Rita Gasbarra');
+    });
+
+    it('returns null for a sentence about the name', () => {
+      expect(
+        personNameOrNull('Not established; no full name could be tied to this contact.'),
+      ).toBeNull();
+      expect(
+        personNameOrNull('The supplied name is Carlo Basile, no fuller published name was found'),
+      ).toBeNull();
+      expect(personNameOrNull('Alessandro; Frida Jeaneth Coen; Derme')).toBeNull();
+    });
+
+    it('returns null for a blank name', () => {
+      expect(personNameOrNull('  ')).toBeNull();
+      expect(personNameOrNull(null)).toBeNull();
     });
   });
 
