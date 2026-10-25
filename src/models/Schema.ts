@@ -1035,6 +1035,8 @@ export const instantlyCampaignStatSchema = pgTable('instantly_campaign_stat', {
   // Leads that replied, autoresponders left out
   replied: integer('replied').notNull(),
   bounced: integer('bounced').notNull(),
+  // Whether Instantly finished sending the whole sequence
+  completed: boolean('completed').notNull().default(false),
   ...timestamps,
 });
 

@@ -43,6 +43,7 @@ export const syncInstantlyStats = async () => {
           contacted: sql`excluded.contacted`,
           replied: sql`excluded.replied`,
           bounced: sql`excluded.bounced`,
+          completed: sql`excluded.completed`,
           updatedAt: now,
         },
       });

@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowDown, ArrowUp } from 'lucide-react';
+import { ArrowDown, ArrowUp, CircleCheck, Clock } from 'lucide-react';
 import { useFormatter, useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { ExampleEmailButton } from '@/components/ExampleEmailButton';
@@ -323,9 +323,20 @@ export const CampaignTestsTable = (props: { tests: CampaignTest[] }) => {
                       timeZone: AppConfig.timeZone,
                     })}
                   </p>
-                  <Badge variant="secondary" className="mt-1">
-                    {test.botManaged ? t('badge_bot') : t('badge_reps')}
-                  </Badge>
+                  {test.completed ? (
+                    <Badge
+                      variant="secondary"
+                      className="mt-1 bg-green-100 text-green-800 dark:bg-green-950/40 dark:text-green-300"
+                    >
+                      <CircleCheck />
+                      {t('badge_completed')}
+                    </Badge>
+                  ) : (
+                    <Badge variant="secondary" className="mt-1">
+                      <Clock />
+                      {t('badge_running')}
+                    </Badge>
+                  )}
                 </TableCell>
 
                 <TableCell className="max-w-64 min-w-44 whitespace-normal">

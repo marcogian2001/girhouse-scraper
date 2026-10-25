@@ -90,8 +90,13 @@ const campaignAnalyticsSchema = z.array(
     // Leads that replied, autoresponders left out
     reply_count_unique: z.number().nullish(),
     bounced_count: z.number().nullish(),
+    // 1 active, 2 paused, 3 completed...
+    campaign_status: z.number().nullish(),
   }),
 );
+
+/** Instantly's campaign status once the whole sequence was sent. */
+const COMPLETED_CAMPAIGN_STATUS = 3;
 
 /** Instantly sends at most this many leads per page. */
 const LEADS_PER_PAGE = 100;
@@ -421,6 +426,7 @@ export const getCampaignAnalytics = async () => {
         contacted: campaign.new_leads_contacted_count ?? 0,
         replied: campaign.reply_count_unique ?? 0,
         bounced: campaign.bounced_count ?? 0,
+        completed: campaign.campaign_status === COMPLETED_CAMPAIGN_STATUS,
       },
     ]),
   );

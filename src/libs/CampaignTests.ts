@@ -447,7 +447,7 @@ export const getCampaignTests = async (options: {
       id: campaign.id,
       name: campaign.name,
       createdAt: campaign.createdAt,
-      botManaged: campaign.botManaged,
+      completed: stat?.completed ?? false,
       hypothesis: campaign.hypothesis,
       exampleEmail: examples.get(campaign.id) ?? null,
       ...resolveTargeting({ ...targetingSources, target: campaign.target, zone: campaign.zone }),

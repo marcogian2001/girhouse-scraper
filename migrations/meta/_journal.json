@@ -260,6 +260,13 @@
       "when": 1792841338508,
       "tag": "0036_reschedule_after_no_show",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1792910584977,
+      "tag": "0037_campaign_completed",
+      "breakpoints": true
     }
   ]
 }
