@@ -1,5 +1,6 @@
 import { and, desc, eq, inArray, sql } from 'drizzle-orm';
 import type { AnyPgColumn } from 'drizzle-orm/pg-core';
+import { alias } from 'drizzle-orm/pg-core';
 import { apiUsageSchema, campaignSchema, leadSearchSchema } from '@/models/Schema';
 import { PLACE_COST_MICROS } from '@/services/Apify';
 import type { WrittenSequence } from '@/services/EmailPrompt';
@@ -12,6 +13,7 @@ import { AppConfig } from '@/utils/AppConfig';
 import type { DateRange } from '@/utils/DateRange';
 import { withinLocalDays } from '@/utils/DateRangeSql';
 import { db } from './DB';
+import { inSearchFamily } from './LeadSearches';
 
 type UsageProvider = (typeof apiUsageSchema.$inferSelect)['provider'];
 
@@ -112,7 +114,10 @@ const matching = (filter: UsageFilter) =>
     eq(apiUsageSchema.organizationId, filter.organizationId),
     filter.range ? withinLocalDays(apiUsageSchema.createdAt, filter.range) : undefined,
     filter.campaignId ? eq(apiUsageSchema.campaignId, filter.campaignId) : undefined,
-    filter.leadSearchId ? eq(apiUsageSchema.leadSearchId, filter.leadSearchId) : undefined,
+    // A search split by region is billed on its per-region searches
+    filter.leadSearchId
+      ? inSearchFamily(apiUsageSchema.leadSearchId, filter.leadSearchId)
+      : undefined,
   );
 
 /** Who a billed call was made for: a campaign, or a lead search. */
@@ -333,8 +338,12 @@ export const getDailyUsage = async (filter: UsageFilter) =>
     .orderBy(desc(localDay))
     .$withCache();
 
+/** The search the spend was billed to, which may be a per-region search. */
+const billedSearch = alias(leadSearchSchema, 'billed_search');
+
 /**
  * Breaks the spend in scope down by campaign and lead search, most expensive first.
+ * Spend of per-region searches is grouped under the search split by region.
  * Spend from deleted campaigns and searches is grouped under null ids and names.
  * @param filter The report scope.
  * @returns One row per campaign or lead search that had any spend.
@@ -344,18 +353,22 @@ export const getCampaignUsage = async (filter: UsageFilter) =>
     .select({
       campaignId: apiUsageSchema.campaignId,
       name: campaignSchema.name,
-      leadSearchId: apiUsageSchema.leadSearchId,
+      leadSearchId: leadSearchSchema.id,
       leadSearchName: leadSearchSchema.name,
       ...usageTotals,
     })
     .from(apiUsageSchema)
     .leftJoin(campaignSchema, eq(apiUsageSchema.campaignId, campaignSchema.id))
-    .leftJoin(leadSearchSchema, eq(apiUsageSchema.leadSearchId, leadSearchSchema.id))
+    .leftJoin(billedSearch, eq(apiUsageSchema.leadSearchId, billedSearch.id))
+    .leftJoin(
+      leadSearchSchema,
+      eq(leadSearchSchema.id, sql`coalesce(${billedSearch.parentSearchId}, ${billedSearch.id})`),
+    )
     .where(matching(filter))
     .groupBy(
       apiUsageSchema.campaignId,
       campaignSchema.name,
-      apiUsageSchema.leadSearchId,
+      leadSearchSchema.id,
       leadSearchSchema.name,
     )
     .orderBy(desc(sql`sum(${apiUsageSchema.costMicros})`))

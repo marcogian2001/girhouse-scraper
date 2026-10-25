@@ -4,6 +4,7 @@ import type { Rectangle } from '@/services/GooglePlaces';
 import type { EnrichmentContent } from '@/validations/EnrichmentValidation';
 import { DecisionMakerValidation } from '@/validations/LeadSearchValidation';
 import { ITALIAN_PROVINCES } from './ItalianProvinces';
+import { findRegionByPlaceId } from './ItalianRegions';
 
 type WebsiteFilter = (typeof leadSearchSchema.$inferSelect)['websiteFilter'];
 
@@ -113,6 +114,35 @@ export const countLeadsToTake = (options: {
     Math.ceil(Math.max(options.target - options.ready, 0) / options.emailYield) - options.pending,
     0,
   );
+
+/**
+ * Splits a number of leads evenly into shares, the first ones taking what does not divide.
+ * @param total How many leads to split.
+ * @param parts How many shares to split them into.
+ * @returns The shares, which add up to the total.
+ */
+export const splitEvenly = (total: number, parts: number) =>
+  Array.from(
+    { length: parts },
+    (_, index) => Math.floor(total / parts) + (index < total % parts ? 1 : 0),
+  );
+
+/**
+ * Tells the status of a search split by region from the statuses of its per-region searches.
+ * @param statuses The status of each per-region search.
+ * @returns Searching or qualifying while any region still is, failed when all failed, otherwise done.
+ */
+export const deriveFamilyStatus = (statuses: LeadSearch['status'][]): LeadSearch['status'] => {
+  if (statuses.includes('searching')) {
+    return 'searching';
+  }
+
+  if (statuses.includes('qualifying')) {
+    return 'qualifying';
+  }
+
+  return statuses.length > 0 && statuses.every((status) => status === 'failed') ? 'failed' : 'done';
+};
 
 /**
  * Splits a rectangle into its four quarters.
@@ -310,7 +340,7 @@ export const SEGMENT_VARIABLES = {
  */
 export const toLeadCsv = (options: {
   search: Pick<LeadSearch, 'name' | 'searchTerms' | 'locationPlaceId'>;
-  leads: Pick<
+  leads: (Pick<
     Lead,
     | 'email'
     | 'firstName'
@@ -327,11 +357,15 @@ export const toLeadCsv = (options: {
     | 'hasWebsite'
     | 'rating'
     | 'reviewsCount'
-  >[];
+  > & {
+    // The area of the search that found the lead, when the search was split by region
+    areaPlaceId?: string | null;
+  })[];
 }) => {
   const { search } = options;
-  // Only searches made in a province know their province and region
+  // Only searches made in a province know their province, and only those in a region their region
   const province = ITALIAN_PROVINCES.find((item) => item.placeId === search.locationPlaceId);
+  const searchRegion = province?.region ?? findRegionByPlaceId(search.locationPlaceId) ?? '';
   const seen = new Set<string>();
   // A business listed several times on Google Maps shares one address, and is written to once
   const leads = options.leads.filter((lead) => {
@@ -365,7 +399,9 @@ export const toLeadCsv = (options: {
     'Google reviews': lead.reviewsCount === null ? '' : String(lead.reviewsCount),
     Profession: search.searchTerms.join(', '),
     Province: province?.name ?? '',
-    Region: province?.region ?? '',
+    Region: lead.areaPlaceId
+      ? (findRegionByPlaceId(lead.areaPlaceId) ?? searchRegion)
+      : searchRegion,
   }));
 
   return {

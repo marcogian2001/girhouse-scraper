@@ -5,6 +5,7 @@ import { useFormatter, useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { LocationCombobox } from '@/components/LocationCombobox';
+import { RegionPicker } from '@/components/RegionPicker';
 import { SearchTermsInput } from '@/components/SearchTermsInput';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -20,8 +21,14 @@ import {
 import { Spinner } from '@/components/ui/spinner';
 import { useRouter } from '@/libs/I18nNavigation';
 import type { leadSearchSchema, parallelProcessorEnum } from '@/models/Schema';
+import type { ItalianRegionName } from '@/utils/ItalianRegions';
+import {
+  ITALIAN_REGION_NAMES,
+  ITALIAN_REGION_PLACE_IDS,
+  ITALY_PLACE_ID,
+} from '@/utils/ItalianRegions';
 import { microsToUsd, USD_FORMAT } from '@/utils/UsageFormat';
-import { LeadSearchValidation, MAX_LEADS_PER_SEARCH } from '@/validations/LeadSearchValidation';
+import { LeadSearchFormValidation, MAX_LEADS_PER_SEARCH } from '@/validations/LeadSearchValidation';
 
 type Processor = (typeof parallelProcessorEnum.enumValues)[number];
 
@@ -45,14 +52,16 @@ export const LeadSearchForm = (props: { pricing: LeadPricing; emailYield: number
   const format = useFormatter();
   const router = useRouter();
   const [hasError, setHasError] = useState(false);
+  const [isPickingRegions, setIsPickingRegions] = useState(false);
 
   const form = useForm({
-    resolver: zodResolver(LeadSearchValidation),
+    resolver: zodResolver(LeadSearchFormValidation),
     defaultValues: {
       name: '',
       searchTerms: [],
       location: '',
       locationPlaceId: '',
+      regions: [] as ItalianRegionName[],
       maxResults: 50,
       websiteFilter: 'any' as const,
       processor: 'base' as const,
@@ -65,6 +74,18 @@ export const LeadSearchForm = (props: { pricing: LeadPricing; emailYield: number
   const websiteFilter = useWatch({ control: form.control, name: 'websiteFilter' }) ?? 'any';
   const searchTerms = useWatch({ control: form.control, name: 'searchTerms' });
   const location = useWatch({ control: form.control, name: 'location' });
+  const regions = useWatch({ control: form.control, name: 'regions' });
+
+  // One region is an ordinary search in that region; several split the search
+  const selectRegions = (next: ItalianRegionName[]) => {
+    const options = { shouldValidate: form.formState.isSubmitted };
+    const [only] = next;
+    const single = next.length === 1 ? only : undefined;
+
+    form.setValue('regions', next, options);
+    form.setValue('location', single ?? '', options);
+    form.setValue('locationPlaceId', single ? ITALIAN_REGION_PLACE_IDS[single] : '', options);
+  };
 
   // Every place taken is researched, looked up on Prospeo and verified, and only part ends with an email
   const perPlaceMicros =
@@ -82,10 +103,16 @@ export const LeadSearchForm = (props: { pricing: LeadPricing; emailYield: number
   const handleCreate = form.handleSubmit(async (values) => {
     setHasError(false);
 
+    const { regions: picked, location: place, locationPlaceId, ...search } = values;
+    const body =
+      picked.length > 1
+        ? { ...search, regions: picked }
+        : { ...search, location: place, locationPlaceId };
+
     const response = await fetch('/api/lead-searches', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(values),
+      body: JSON.stringify(body),
     });
 
     if (!response.ok) {
@@ -124,22 +151,72 @@ export const LeadSearchForm = (props: { pricing: LeadPricing; emailYield: number
         </Field>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field>
-            <FieldLabel htmlFor="search-location">{t('label_location')}</FieldLabel>
-            <LocationCombobox
-              id="search-location"
-              value={location}
-              placeholder={t('placeholder_location')}
-              invalid={Boolean(form.formState.errors.location)}
-              onValueChange={(value) => {
-                const options = { shouldValidate: form.formState.isSubmitted };
+          {isPickingRegions ? (
+            <Field className="sm:col-span-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <FieldLabel>{t('label_location')}</FieldLabel>
+                <Button
+                  type="button"
+                  variant="link"
+                  size="sm"
+                  className="h-auto p-0"
+                  onClick={() => {
+                    selectRegions([]);
+                    setIsPickingRegions(false);
+                  }}
+                >
+                  {t('button_pick_place')}
+                </Button>
+              </div>
+              <RegionPicker
+                id="search-region"
+                selected={regions}
+                onSelectedChange={selectRegions}
+                maxResults={maxResults}
+              />
+              {form.formState.errors.location && <FieldError>{t('error_regions_none')}</FieldError>}
+              {form.formState.errors.regions && (
+                <FieldError>{t('error_regions_share', { count: regions.length })}</FieldError>
+              )}
+            </Field>
+          ) : (
+            <Field>
+              <FieldLabel htmlFor="search-location">{t('label_location')}</FieldLabel>
+              <LocationCombobox
+                id="search-location"
+                value={location}
+                placeholder={t('placeholder_location')}
+                invalid={Boolean(form.formState.errors.location)}
+                onValueChange={(value) => {
+                  // All of Italy is split by region, starting from every region
+                  if (value?.placeId === ITALY_PLACE_ID) {
+                    selectRegions([...ITALIAN_REGION_NAMES]);
+                    setIsPickingRegions(true);
 
-                form.setValue('location', value?.label ?? '', options);
-                form.setValue('locationPlaceId', value?.placeId ?? '', options);
-              }}
-            />
-            {form.formState.errors.location && <FieldError>{t('error_location')}</FieldError>}
-          </Field>
+                    return;
+                  }
+
+                  const options = { shouldValidate: form.formState.isSubmitted };
+
+                  form.setValue('location', value?.label ?? '', options);
+                  form.setValue('locationPlaceId', value?.placeId ?? '', options);
+                }}
+              />
+              <Button
+                type="button"
+                variant="link"
+                size="sm"
+                className="h-auto w-fit p-0"
+                onClick={() => {
+                  selectRegions([]);
+                  setIsPickingRegions(true);
+                }}
+              >
+                {t('button_pick_regions')}
+              </Button>
+              {form.formState.errors.location && <FieldError>{t('error_location')}</FieldError>}
+            </Field>
+          )}
 
           <Field>
             <FieldLabel htmlFor="search-max">{t('label_max_results')}</FieldLabel>

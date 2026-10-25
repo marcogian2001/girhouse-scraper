@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { getApiContext, notFound, unauthorized } from '@/libs/ApiAuth';
 import { db } from '@/libs/DB';
 import { retryNoEmailLeads } from '@/libs/LeadJobs';
+import { listSearchFamily } from '@/libs/LeadSearches';
 import { leadSearchSchema } from '@/models/Schema';
 
 export const POST = async (_request: Request, props: { params: Promise<{ id: string }> }) => {
@@ -26,5 +27,9 @@ export const POST = async (_request: Request, props: { params: Promise<{ id: str
     return notFound();
   }
 
-  return NextResponse.json({ queued: await retryNoEmailLeads(search.id) });
+  // A search split by region keeps its leads on its per-region searches
+  const family = await listSearchFamily(search.id);
+  const queued = await Promise.all(family.map(retryNoEmailLeads));
+
+  return NextResponse.json({ queued: queued.reduce((sum, count) => sum + count, 0) });
 };

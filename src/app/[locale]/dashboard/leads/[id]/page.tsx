@@ -6,6 +6,7 @@ import { DeleteLeadSearchButton } from '@/components/DeleteLeadSearchButton';
 import { LeadSearchProgress } from '@/components/LeadSearchProgress';
 import { LeadTable } from '@/components/LeadTable';
 import { ListPagination } from '@/components/ListPagination';
+import { RegionalSearchTable } from '@/components/RegionalSearchTable';
 import { RetryNoEmailLeadsButton } from '@/components/RetryNoEmailLeadsButton';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -14,6 +15,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { getApiContext } from '@/libs/ApiAuth';
 import { db } from '@/libs/DB';
 import { Link } from '@/libs/I18nNavigation';
+import { familyStatus, inSearchFamily, loadRegionalSearches } from '@/libs/LeadSearches';
 import { getUsageTotals } from '@/libs/Usage';
 import { leadSchema, leadSearchSchema } from '@/models/Schema';
 import { AppConfig } from '@/utils/AppConfig';
@@ -52,13 +54,13 @@ const pageHref = (options: {
 };
 
 /**
- * Selects the leads a search shows, leaving out those it keeps in reserve.
+ * Selects the leads a search shows, with those of its regions, leaving out those it keeps in reserve.
  * @param leadSearchId The lead search.
  * @returns The where condition.
  */
 const searchLeadsOf = (leadSearchId: string) =>
   and(
-    eq(leadSchema.leadSearchId, leadSearchId),
+    inSearchFamily(leadSchema.leadSearchId, leadSearchId),
     notInArray(leadSchema.status, [...RESERVE_LEAD_STATUSES]),
   );
 
@@ -115,8 +117,9 @@ export default async function LeadSearchPage(props: {
     notFound();
   }
 
-  const [format, usage, counts, leads] = await Promise.all([
+  const [format, regional, usage, counts, leads] = await Promise.all([
     getFormatter({ locale }),
+    loadRegionalSearches(search.id),
     getUsageTotals({ organizationId: search.organizationId, leadSearchId: search.id }),
     countSearchLeads(search.id),
     // Only what the table shows: the raw scrape and research JSON stay on the server
@@ -158,16 +161,24 @@ export default async function LeadSearchPage(props: {
     without: total - counts.withWebsite,
   }[websiteView];
   const pageCount = Math.ceil(matching / LIST_PAGE_SIZE);
+  const status = familyStatus(
+    search.status,
+    regional.map((region) => region.status),
+  );
+  const reserveClaimed =
+    search.reserveClaimed + regional.reduce((sum, region) => sum + region.reserveClaimed, 0);
   // Only searches that scan their area know when it has run out of new businesses
   const isShort =
-    search.locationPlaceId !== null && search.status === 'done' && readyCount < search.maxResults;
+    (search.locationPlaceId !== null || regional.length > 0) &&
+    status === 'done' &&
+    readyCount < search.maxResults;
 
   return (
     <div className="space-y-6">
       <div className="space-y-1.5">
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="text-xl font-semibold tracking-tight">{search.name}</h1>
-          <StatusBadge kind="leadSearch" status={search.status} />
+          <StatusBadge kind="leadSearch" status={status} />
 
           <div className="ml-auto flex flex-wrap items-center gap-2">
             {readyCount > 0 && (
@@ -201,17 +212,18 @@ export default async function LeadSearchPage(props: {
             {t('spend_line', {
               total: format.number(microsToUsd(usage.totalCostMicros), USD_FORMAT),
             })}
-            {search.reserveClaimed > 0 &&
-              ` · ${t('reserve_line', { count: search.reserveClaimed })}`}
+            {reserveClaimed > 0 && ` · ${t('reserve_line', { count: reserveClaimed })}`}
           </span>
         </p>
       </div>
 
       <Card size="sm">
         <CardContent>
-          <LeadSearchProgress leadSearchId={search.id} initialStatus={search.status} />
+          <LeadSearchProgress leadSearchId={search.id} initialStatus={status} />
         </CardContent>
       </Card>
+
+      {regional.length > 0 && <RegionalSearchTable regions={regional} />}
 
       {isShort && (
         <Alert>

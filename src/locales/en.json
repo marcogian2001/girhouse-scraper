@@ -191,7 +191,11 @@
     "label_processor": "Research depth",
     "estimate": "Estimated cost about {cost}, based on how many businesses usually have a valid email.",
     "button_create": "Start the search",
-    "error_create": "The search was not started."
+    "error_create": "The search was not started.",
+    "button_pick_regions": "Pick regions on the map",
+    "button_pick_place": "Search a specific place",
+    "error_regions_none": "Pick at least one region.",
+    "error_regions_share": "You need at least {count} valid emails, one per region."
   },
   "SearchTermsInput": {
     "placeholder_full": "Search limit reached",
@@ -201,6 +205,15 @@
     "searching": "Searching areas…",
     "no_results": "No area found.",
     "error_suggestions": "Suggestions unavailable."
+  },
+  "RegionPicker": {
+    "map_label": "Map of the Italian regions",
+    "button_all": "Select all",
+    "button_none": "None",
+    "summary_none": "No region selected.",
+    "summary_single": "Search only in {region}.",
+    "summary_even": "{count} regions, {share, plural, one {# email} other {# emails}} per region.",
+    "summary_range": "{count} regions, {low} to {high} emails per region."
   },
   "LeadSearchProgress": {
     "searching": "Searching Google Maps…",
@@ -233,6 +246,12 @@
     "button_retry_emails": "Look again for the email of {count, plural, one {# lead} other {# leads}}",
     "error_retry_emails": "Could not start the new lookup.",
     "short_alert": "Found {found} valid emails out of {max}: the area has no other new businesses. For more, try a wider area or other terms."
+  },
+  "RegionalSearchTable": {
+    "column_region": "Region",
+    "column_status": "Status",
+    "column_ready": "Ready emails",
+    "ready_of_share": "{ready} of {share}"
   },
   "CoveragePage": {
     "title": "Coverage",

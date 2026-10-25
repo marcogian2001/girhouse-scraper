@@ -1,4 +1,5 @@
 import { sql } from 'drizzle-orm';
+import type { AnyPgColumn } from 'drizzle-orm/pg-core';
 import {
   boolean,
   check,
@@ -453,12 +454,17 @@ export const leadSearchSchema = pgTable(
     coveragePlanId: uuid('coverage_plan_id').references(() => coveragePlanSchema.id, {
       onDelete: 'set null',
     }),
+    // Set on the per-region searches of a search split by region, which is the one shown
+    parentSearchId: uuid('parent_search_id').references((): AnyPgColumn => leadSearchSchema.id, {
+      onDelete: 'cascade',
+    }),
     errorMessage: text('error_message'),
     ...timestamps,
   },
   (table) => [
     index('lead_search_organization_id_idx').on(table.organizationId),
     index('lead_search_coverage_plan_id_idx').on(table.coveragePlanId),
+    index('lead_search_parent_search_id_idx').on(table.parentSearchId),
   ],
 );
 

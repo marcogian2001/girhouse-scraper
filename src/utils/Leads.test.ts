@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { autoDetectMapping } from './Csv';
 import { ITALIAN_PROVINCES } from './ItalianProvinces';
+import { ITALIAN_REGION_PLACE_IDS } from './ItalianRegions';
 import {
   countLeadsToTake,
+  deriveFamilyStatus,
   estimateEmailYield,
   isPecEmail,
   matchesWebsiteFilter,
@@ -10,6 +12,7 @@ import {
   pickEmailRoutes,
   readPublicEmail,
   scrapeBudget,
+  splitEvenly,
   splitRectangle,
   splitScrapedPlaces,
   toEnrichmentContent,
@@ -249,6 +252,34 @@ describe('Leads', () => {
     });
   });
 
+  describe('Even split', () => {
+    it('gives every region the same share when the total divides', () => {
+      expect(splitEvenly(100, 10)).toStrictEqual(Array.from({ length: 10 }, () => 10));
+    });
+
+    it('gives the first regions one more lead when the total does not divide', () => {
+      expect(splitEvenly(100, 3)).toStrictEqual([34, 33, 33]);
+    });
+  });
+
+  describe('Family status', () => {
+    it('stays searching while any region is searching', () => {
+      expect(deriveFamilyStatus(['done', 'searching', 'qualifying'])).toBe('searching');
+    });
+
+    it('stays qualifying while any region is qualifying', () => {
+      expect(deriveFamilyStatus(['done', 'qualifying', 'failed'])).toBe('qualifying');
+    });
+
+    it('turns done once every region settled, even when some failed', () => {
+      expect(deriveFamilyStatus(['done', 'failed'])).toBe('done');
+    });
+
+    it('turns failed only when every region failed', () => {
+      expect(deriveFamilyStatus(['failed', 'failed'])).toBe('failed');
+    });
+  });
+
   describe('Rectangle split', () => {
     it('returns four quarters meeting at the centre', () => {
       const quarters = splitRectangle({
@@ -380,6 +411,18 @@ describe('Leads', () => {
           'Studio commercialista specializzato in partite IVA e piccole imprese.',
       });
       expect(Object.values(autoDetectMapping(csv.headers))).not.toContain('Business description');
+    });
+
+    it('fills the region of each lead found by a search split by region', () => {
+      const csv = toLeadCsv({
+        search: { ...search, locationPlaceId: null },
+        leads: [
+          { ...lead, areaPlaceId: ITALIAN_REGION_PLACE_IDS.Lombardia },
+          { ...lead, email: 'anna@gmail.com', areaPlaceId: ITALIAN_REGION_PLACE_IDS.Lazio },
+        ],
+      });
+
+      expect(csv.rows.map((row) => row.Region)).toStrictEqual(['Lombardia', 'Lazio']);
     });
   });
 

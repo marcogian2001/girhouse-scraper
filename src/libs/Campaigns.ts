@@ -34,6 +34,7 @@ import { enqueueWriting } from './CampaignWriting';
 import { db } from './DB';
 import { enqueue } from './JobQueue';
 import { findResearchedLeads } from './LeadResearch';
+import { inSearchFamily } from './LeadSearches';
 import { logger } from './Logger';
 import { campaignCostMicros } from './Usage';
 
@@ -128,11 +129,13 @@ export const loadLeadSearchCsv = async (options: {
   }
 
   const leads = await db
-    .select()
+    .select({ ...getTableColumns(leadSchema), areaPlaceId: leadSearchSchema.locationPlaceId })
     .from(leadSchema)
+    // The search that found each lead, which is a region when the search was split by region
+    .innerJoin(leadSearchSchema, eq(leadSearchSchema.id, leadSchema.leadSearchId))
     .where(
       and(
-        eq(leadSchema.leadSearchId, search.id),
+        inSearchFamily(leadSchema.leadSearchId, search.id),
         eq(leadSchema.status, 'ready'),
         // Nobody is written to twice, whichever search found them first
         notExists(

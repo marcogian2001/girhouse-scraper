@@ -2,6 +2,7 @@ import { and, count, eq, inArray, notInArray } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 import { getApiContext, notFound, unauthorized } from '@/libs/ApiAuth';
 import { db } from '@/libs/DB';
+import { familyStatus, inSearchFamily, loadRegionalSearches } from '@/libs/LeadSearches';
 import { jobSchema, leadSchema, leadSearchSchema } from '@/models/Schema';
 import { RESERVE_LEAD_STATUSES } from '@/utils/Leads';
 
@@ -25,13 +26,14 @@ export const GET = async (_request: Request, props: { params: Promise<{ id: stri
     return notFound();
   }
 
-  const [leadCounts, [outstandingJobs]] = await Promise.all([
+  const [regional, leadCounts, [outstandingJobs]] = await Promise.all([
+    loadRegionalSearches(search.id),
     db
       .select({ status: leadSchema.status, total: count() })
       .from(leadSchema)
       .where(
         and(
-          eq(leadSchema.leadSearchId, search.id),
+          inSearchFamily(leadSchema.leadSearchId, search.id),
           notInArray(leadSchema.status, [...RESERVE_LEAD_STATUSES]),
         ),
       )
@@ -41,14 +43,17 @@ export const GET = async (_request: Request, props: { params: Promise<{ id: stri
       .from(jobSchema)
       .where(
         and(
-          eq(jobSchema.leadSearchId, search.id),
+          inSearchFamily(jobSchema.leadSearchId, search.id),
           inArray(jobSchema.status, ['queued', 'running']),
         ),
       ),
   ]);
 
   return NextResponse.json({
-    status: search.status,
+    status: familyStatus(
+      search.status,
+      regional.map((region) => region.status),
+    ),
     errorMessage: search.errorMessage,
     leads: Object.fromEntries(leadCounts.map((row) => [row.status, row.total])),
     // How many leads with a deliverable email the search wants

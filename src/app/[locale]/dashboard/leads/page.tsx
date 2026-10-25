@@ -1,4 +1,5 @@
-import { and, count, desc, eq, notInArray, sql } from 'drizzle-orm';
+import { and, count, desc, eq, isNotNull, notInArray, or, sql } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/pg-core';
 import { ChevronRight, MapPin, Plus, Search } from 'lucide-react';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { EmptyState } from '@/components/EmptyState';
@@ -27,6 +28,7 @@ import {
 import { getApiContext } from '@/libs/ApiAuth';
 import { db } from '@/libs/DB';
 import { Link } from '@/libs/I18nNavigation';
+import { familyStatus, isShownSearch } from '@/libs/LeadSearches';
 import { leadSchema, leadSearchSchema } from '@/models/Schema';
 import { AppConfig } from '@/utils/AppConfig';
 import { RESERVE_LEAD_STATUSES } from '@/utils/Leads';
@@ -38,6 +40,9 @@ import { LIST_PAGE_SIZE, parsePage } from '@/utils/Pagination';
  * @returns The relative URL.
  */
 const pageHref = (page: number) => `/dashboard/leads/${page > 1 ? `?page=${page}` : ''}`;
+
+/** A search counted with its leads: itself, or one of its per-region searches. */
+const member = alias(leadSearchSchema, 'member');
 
 export default async function LeadSearchesPage(props: {
   params: Promise<{ locale: string }>;
@@ -54,7 +59,7 @@ export default async function LeadSearchesPage(props: {
     getApiContext(),
   ]);
 
-  const searches = context
+  const rows = context
     ? await db
         .select({
           id: leadSearchSchema.id,
@@ -62,6 +67,9 @@ export default async function LeadSearchesPage(props: {
           location: leadSearchSchema.location,
           status: leadSearchSchema.status,
           createdAt: leadSearchSchema.createdAt,
+          // Empty for a search in one place
+          regionalStatuses: sql<(typeof leadSearchSchema.$inferSelect)['status'][]>`
+            coalesce(array_agg(distinct ${member.status}) filter (where ${isNotNull(member.parentSearchId)}), '{}')`,
           // Grouping by the primary key lets the other columns ride along
           leads: count(leadSchema.id),
           ready:
@@ -72,19 +80,27 @@ export default async function LeadSearchesPage(props: {
           matching: sql<number>`count(*) over ()`.mapWith(Number),
         })
         .from(leadSearchSchema)
+        .innerJoin(
+          member,
+          or(eq(member.id, leadSearchSchema.id), eq(member.parentSearchId, leadSearchSchema.id)),
+        )
         .leftJoin(
           leadSchema,
           and(
-            eq(leadSchema.leadSearchId, leadSearchSchema.id),
+            eq(leadSchema.leadSearchId, member.id),
             notInArray(leadSchema.status, [...RESERVE_LEAD_STATUSES]),
           ),
         )
-        .where(eq(leadSearchSchema.organizationId, context.organizationId))
+        .where(isShownSearch(context.organizationId))
         .groupBy(leadSearchSchema.id)
         .orderBy(desc(leadSearchSchema.createdAt), desc(leadSearchSchema.id))
         .limit(LIST_PAGE_SIZE)
         .offset((page - 1) * LIST_PAGE_SIZE)
     : [];
+  const searches = rows.map((row) => ({
+    ...row,
+    status: familyStatus(row.status, row.regionalStatuses),
+  }));
   const matching = searches[0]?.matching ?? 0;
   const pageCount = Math.ceil(matching / LIST_PAGE_SIZE);
 

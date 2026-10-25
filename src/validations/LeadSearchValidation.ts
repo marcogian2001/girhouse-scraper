@@ -1,4 +1,5 @@
 import * as z from 'zod';
+import { ITALIAN_REGION_NAMES } from '@/utils/ItalianRegions';
 import { MAX_CONTACTS_PER_CAMPAIGN } from './CampaignValidation';
 
 /** Matches the campaign contact cap, so one search always fits one campaign. */
@@ -8,7 +9,7 @@ export const MAX_SEARCH_TERMS = 10;
 
 export const MAX_SEARCH_TERM_LENGTH = 120;
 
-export const LeadSearchValidation = z.object({
+const LeadSearchValidation = z.object({
   name: z.string().trim().min(1).max(120),
   searchTerms: z
     .array(z.string().trim().min(1).max(MAX_SEARCH_TERM_LENGTH))
@@ -21,6 +22,36 @@ export const LeadSearchValidation = z.object({
   websiteFilter: z.enum(['any', 'without', 'with']).default('any'),
   processor: z.enum(['lite', 'base', 'core', 'pro']).default('base'),
 });
+
+/** A search split evenly across some regions, each searched on its own with its share. */
+export const RegionalLeadSearchValidation = LeadSearchValidation.omit({
+  location: true,
+  locationPlaceId: true,
+})
+  .extend({
+    // One region alone is an ordinary search in that region
+    regions: z.array(z.enum(ITALIAN_REGION_NAMES)).min(2).max(ITALIAN_REGION_NAMES.length),
+  })
+  .refine((search) => new Set(search.regions).size === search.regions.length)
+  .refine((search) => search.maxResults >= search.regions.length, { path: ['maxResults'] });
+
+/** A new search, in one place or split across regions. */
+export const NewLeadSearchValidation = z.union([
+  LeadSearchValidation,
+  RegionalLeadSearchValidation,
+]);
+
+/** The new search form: a place from the suggestions, or regions picked on the map. */
+export const LeadSearchFormValidation = LeadSearchValidation.extend({
+  location: z.string().trim().max(200),
+  locationPlaceId: z.string().trim().max(300),
+  regions: z.array(z.enum(ITALIAN_REGION_NAMES)).max(ITALIAN_REGION_NAMES.length),
+})
+  // One region picked on the map fills the place, so only several regions stand without one
+  .refine((search) => search.regions.length > 1 || search.locationPlaceId.length > 0, {
+    path: ['location'],
+  })
+  .refine((search) => search.maxResults >= search.regions.length, { path: ['regions'] });
 
 /** The decision maker research Parallel fills in for one business. */
 export const DecisionMakerValidation = z.object({

@@ -1,0 +1,3 @@
+ALTER TABLE "lead_search" ADD COLUMN "parent_search_id" uuid;--> statement-breakpoint
+ALTER TABLE "lead_search" ADD CONSTRAINT "lead_search_parent_search_id_lead_search_id_fk" FOREIGN KEY ("parent_search_id") REFERENCES "public"."lead_search"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+CREATE INDEX "lead_search_parent_search_id_idx" ON "lead_search" USING btree ("parent_search_id");
