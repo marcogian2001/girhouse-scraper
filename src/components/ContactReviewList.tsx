@@ -25,6 +25,8 @@ export type ContactReview = {
   company: string | null;
   status: ContactStatus;
   errorMessage: string | null;
+  pain: string | null;
+  painReason: string | null;
   enrichment: EnrichmentView | null;
   drafts: DraftView[];
 };
@@ -97,6 +99,15 @@ export const ContactReviewList = (props: {
 
             <section className="space-y-3">
               <h3 className="text-sm font-semibold">{t('section_emails')}</h3>
+
+              {contact.pain && (
+                <p className="text-sm">
+                  <span className="text-muted-foreground">{t('pain_label')}</span> {contact.pain}
+                  {contact.painReason && (
+                    <span className="text-muted-foreground"> · {contact.painReason}</span>
+                  )}
+                </p>
+              )}
 
               {contact.drafts.length === 0 ? (
                 <p className="text-sm text-muted-foreground">{t('no_drafts')}</p>

@@ -4,7 +4,7 @@ import { estimateCostMicros } from './Claude';
 import type { WrittenSequence } from './EmailPrompt';
 
 /** One AI call, billed like a copywriting call. */
-export type BilledCall = Omit<WrittenSequence, 'emails'>;
+export type BilledCall = Omit<WrittenSequence, 'emails' | 'angle'>;
 
 /** One email of the thread, as the AI reads it. */
 export type ThreadMessage = {

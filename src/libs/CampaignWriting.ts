@@ -146,7 +146,7 @@ export const saveSequence = async (options: {
     sequence: options.sequence,
   });
 
-  const { emails, model } = options.sequence;
+  const { emails, model, angle } = options.sequence;
 
   if (!emails) {
     return false;
@@ -173,7 +173,7 @@ export const saveSequence = async (options: {
 
   await db
     .update(contactSchema)
-    .set({ status: 'ready' })
+    .set({ status: 'ready', pain: angle?.pain ?? null, painReason: angle?.reason ?? null })
     .where(eq(contactSchema.id, options.contactId));
 
   return true;

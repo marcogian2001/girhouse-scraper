@@ -494,7 +494,8 @@
     "section_research": "Research",
     "section_emails": "Emails",
     "no_drafts": "Not written yet.",
-    "draft_count": "{written}/{total} emails"
+    "draft_count": "{written}/{total} emails",
+    "pain_label": "Pain:"
   },
   "EnrichmentCard": {
     "not_researched": "Research has not run for this contact yet.",
@@ -510,6 +511,9 @@
     "field_location": "Location",
     "field_recent_activity": "Recent activity",
     "field_hooks": "Hooks",
+    "field_positioning": "Positioning",
+    "field_website": "Website",
+    "field_customer_signals": "What customers say",
     "sources": "Sources"
   },
   "CampaignNameEditor": {

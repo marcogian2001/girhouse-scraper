@@ -159,7 +159,7 @@ const buildSequenceRequest = (options: WriteSequenceOptions) => {
  * @param options The conversion options.
  * @param options.message The message Claude returned.
  * @param options.model The model that served the call.
- * @param options.emails The emails parsed from the reply, when they parsed.
+ * @param options.output The emails and angle parsed from the reply, when they parsed.
  * @param options.emailCount How many emails the campaign asked for.
  * @param options.batch Whether the call went through the batch API.
  * @returns The written sequence with its usage and cost.
@@ -167,7 +167,7 @@ const buildSequenceRequest = (options: WriteSequenceOptions) => {
 const toWrittenSequence = (options: {
   message: Anthropic.Message;
   model: ClaudeModel;
-  emails: WrittenSequence['emails'] | undefined;
+  output: ReturnType<typeof parseSequenceText> | null;
   emailCount: number;
   batch: boolean;
 }): WrittenSequence => ({
@@ -185,7 +185,8 @@ const toWrittenSequence = (options: {
     model: options.model,
     batch: options.batch,
   }),
-  emails: normalizeSequence({ emails: options.emails, emailCount: options.emailCount }),
+  emails: normalizeSequence({ emails: options.output?.emails, emailCount: options.emailCount }),
+  angle: options.output?.angle ?? null,
 });
 
 /**
@@ -212,7 +213,7 @@ export const writeEmailSequence = async (
   return toWrittenSequence({
     message: response,
     model: request.model,
-    emails: response.parsed_output?.emails,
+    output: response.parsed_output,
     emailCount: options.campaign.emailCount,
     batch: false,
   });
@@ -282,7 +283,7 @@ export const fetchSequenceBatch = async (options: {
       sequence: toWrittenSequence({
         message,
         model,
-        emails: parseSequenceText(text),
+        output: parseSequenceText(text),
         emailCount: options.campaign.emailCount,
         batch: true,
       }),

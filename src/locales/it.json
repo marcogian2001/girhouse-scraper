@@ -494,7 +494,8 @@
     "section_research": "Ricerca",
     "section_emails": "Email",
     "no_drafts": "Non ancora scritte.",
-    "draft_count": "{written}/{total} email"
+    "draft_count": "{written}/{total} email",
+    "pain_label": "Pain:"
   },
   "EnrichmentCard": {
     "not_researched": "La ricerca non è ancora partita per questo contatto.",
@@ -510,6 +511,9 @@
     "field_location": "Sede",
     "field_recent_activity": "Attività recente",
     "field_hooks": "Spunti",
+    "field_positioning": "Posizionamento",
+    "field_website": "Sito",
+    "field_customer_signals": "Cosa dicono i clienti",
     "sources": "Fonti"
   },
   "CampaignNameEditor": {

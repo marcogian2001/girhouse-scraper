@@ -76,6 +76,8 @@ const contact = (): typeof contactSchema.$inferSelect => ({
   extra: { Segment: 'SMB' },
   status: 'enriched',
   errorMessage: null,
+  pain: null,
+  painReason: null,
   updatedAt: new Date(),
   createdAt: new Date(),
 });
@@ -159,6 +161,22 @@ describe('Email prompt', () => {
 
       expect(prompt).not.toContain('Linkedin');
     });
+
+    it('passes the business research through to the model', () => {
+      const prompt = buildContactPrompt({
+        contact: contact(),
+        enrichment: {
+          ...enrichment('high'),
+          business_positioning: 'Luxury villas, a few clients a year.',
+          website_assessment: 'No photos of finished work.',
+          customer_signals: '5 stars on 2 Google reviews.',
+        },
+      });
+
+      expect(prompt).toContain('- Positioning: Luxury villas, a few clients a year.');
+      expect(prompt).toContain('- Website: No photos of finished work.');
+      expect(prompt).toContain('- What customers say: 5 stars on 2 Google reviews.');
+    });
   });
 
   describe('Sequence', () => {
@@ -181,10 +199,19 @@ describe('Email prompt', () => {
   });
 
   describe('Raw reply', () => {
-    it('reads the emails from a JSON reply', () => {
+    it('reads the emails and the angle from a JSON reply', () => {
+      const output = {
+        angle: { pain: 'Quotes go cold', reason: 'High-value jobs on quote.' },
+        emails: [{ step: 1, subject: 'a', body: 'b' }],
+      };
+
+      expect(parseSequenceText(JSON.stringify(output))).toStrictEqual(output);
+    });
+
+    it('reads the emails from a batch reply written before the angle existed', () => {
       expect(
         parseSequenceText(JSON.stringify({ emails: [{ step: 1, subject: 'a', body: 'b' }] })),
-      ).toStrictEqual([{ step: 1, subject: 'a', body: 'b' }]);
+      ).toStrictEqual({ emails: [{ step: 1, subject: 'a', body: 'b' }] });
     });
 
     it('returns nothing for a reply cut off mid-JSON', () => {

@@ -112,6 +112,8 @@ export default async function CampaignDetailPage(props: {
       company: contact.company,
       status: contact.status,
       errorMessage: contact.errorMessage,
+      pain: contact.pain,
+      painReason: contact.painReason,
       enrichment: enrichment
         ? {
             content: parsed.success ? parsed.data : null,

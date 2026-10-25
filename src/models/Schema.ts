@@ -334,6 +334,9 @@ export const contactSchema = pgTable(
     extra: jsonb('extra').$type<Record<string, string>>().notNull().default({}),
     status: contactStatusEnum('status').notNull().default('pending'),
     errorMessage: text('error_message'),
+    // The pain the written sequence addresses and why, as the copywriting model chose it
+    pain: text('pain'),
+    painReason: text('pain_reason'),
     ...timestamps,
   },
   (table) => [

@@ -100,6 +100,7 @@ describe('OpenAI copywriting', () => {
           status_code: 200,
           body: body(
             JSON.stringify({
+              angle: { pain: 'Missed enquiries', reason: 'Only a phone number.' },
               emails: [
                 { step: 4, subject: 'a', body: 'one' },
                 { step: 7, subject: 'b', body: 'two' },
@@ -127,6 +128,7 @@ describe('OpenAI copywriting', () => {
             { step: 1, subject: 'a', body: 'one' },
             { step: 2, subject: 'b', body: 'two' },
           ],
+          angle: { pain: 'Missed enquiries', reason: 'Only a phone number.' },
         },
       });
     });

@@ -33,8 +33,9 @@ export type DecisionMakerTarget = Pick<
 >;
 
 /**
- * The research fields Parallel is asked to fill in. Sized for the `core`
- * processor, which covers roughly ten fields per run.
+ * The research fields Parallel is asked to fill in. More than the roughly ten
+ * fields the `core` processor covers well: when the business fields come back
+ * thin, run the campaign on `pro`.
  */
 const ENRICHMENT_JSON_SCHEMA = {
   type: 'object',
@@ -79,6 +80,21 @@ const ENRICHMENT_JSON_SCHEMA = {
       description:
         'Two or three concrete, checkable details a cold email could reference. Leave "" rather than inventing anything.',
     },
+    business_positioning: {
+      type: 'string',
+      description:
+        'Price tier and size of the business, only as the sources show it: luxury, premium or mid-market, typical value of a job or visit, kind of clientele, team size, number of locations, and whether it serves few high-value clients or many small ones. "" if nothing was found.',
+    },
+    website_assessment: {
+      type: 'string',
+      description:
+        'Checkable facts about the business\'s own website: whether it shows photos or a portfolio of real work, whether services are explained, whether visitors can book online, use a WhatsApp button or a contact form or only find a phone number, concrete signs of neglect such as an old copyright year, broken pages or a layout unusable on a phone, and whether it matches the business\'s positioning. Without a website of its own, where the business appears online instead. "" if unknown.',
+    },
+    customer_signals: {
+      type: 'string',
+      description:
+        'What reviews and public comments say about reaching and dealing with the business: response times, trouble getting through, quotes, bookings, praise. Include the Google rating and number of reviews when found. "" if nothing was found.',
+    },
   },
   required: [
     'person_found',
@@ -93,6 +109,9 @@ const ENRICHMENT_JSON_SCHEMA = {
     'linkedin_url',
     'recent_activity',
     'personalization_hooks',
+    'business_positioning',
+    'website_assessment',
+    'customer_signals',
   ],
 } as const;
 
@@ -227,6 +246,7 @@ export const buildTaskInput = (contact: EnrichmentTarget) => {
     `- The email domain (${emailDomain ?? 'unknown'}) is the strongest signal for the employer. Prefer sources that corroborate it.`,
     '- Only report findings you can tie to this exact person. Namesakes are common.',
     '- Set identity_match_confidence to "low" when the only link is a common name, "medium" when one independent signal corroborates, "high" when several do.',
+    "- Research the business as well as the person: its positioning, its website and what its customers say, so the email can address the business's real problem. Report only facts a source supports.",
     '- Leave a field as an empty string rather than guessing. An empty field is more useful than a wrong one.',
   ].join('\n');
 };

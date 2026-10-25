@@ -14,6 +14,10 @@ export const EnrichmentContentValidation = z.object({
   linkedin_url: z.string(),
   recent_activity: z.string(),
   personalization_hooks: z.string(),
+  // Optional because research saved before these fields existed lacks them
+  business_positioning: z.string().optional(),
+  website_assessment: z.string().optional(),
+  customer_signals: z.string().optional(),
 });
 
 export type EnrichmentContent = z.infer<typeof EnrichmentContentValidation>;

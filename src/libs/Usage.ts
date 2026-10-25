@@ -140,7 +140,7 @@ export const recordCopywritingUsage = async (options: {
   userId: string;
   organizationId: string;
   campaignId: string | null;
-  sequence: Omit<WrittenSequence, 'emails'>;
+  sequence: Omit<WrittenSequence, 'emails' | 'angle'>;
 }) => {
   await db
     .insert(apiUsageSchema)

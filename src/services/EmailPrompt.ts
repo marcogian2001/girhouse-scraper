@@ -8,7 +8,15 @@ import type {
 import { extractMentionNames } from '@/utils/KnowledgeMentions';
 import type { EnrichmentContent } from '@/validations/EnrichmentValidation';
 
+const sequenceAngleSchema = z.object({
+  pain: z
+    .string()
+    .describe('The main problem of the business this sequence addresses, in a few words.'),
+  reason: z.string().describe('Why this problem, citing the research detail that shows it.'),
+});
+
 export const emailSequenceSchema = z.object({
+  angle: sequenceAngleSchema,
   emails: z.array(
     z.object({
       step: z.number(),
@@ -42,6 +50,8 @@ export type WrittenSequence = {
   costMicros: number;
   // Null when the response did not parse; left to the caller to reject, so the billed tokens are recorded first
   emails: z.infer<typeof emailSequenceSchema>['emails'] | null;
+  // The pain the sequence was written around, null when the response did not carry one
+  angle: z.infer<typeof sequenceAngleSchema> | null;
 };
 
 /** One contact's request in a batch, keyed so its result can be matched back. */
@@ -166,6 +176,9 @@ export const buildContactPrompt = (options: {
     ['Location', options.enrichment.location],
     ['Recent activity', options.enrichment.recent_activity],
     ['Hooks worth referencing', options.enrichment.personalization_hooks],
+    ['Positioning', options.enrichment.business_positioning],
+    ['Website', options.enrichment.website_assessment],
+    ['What customers say', options.enrichment.customer_signals],
   ]
     .filter((entry): entry is [string, string] => Boolean(entry[1]))
     .map(([label, value]) => `- ${label}: ${value}`)
@@ -212,11 +225,14 @@ const parseJson = (text: string): unknown => {
   }
 };
 
+// Batches submitted before the angle was asked for come back without it
+const batchSequenceSchema = emailSequenceSchema.extend({ angle: sequenceAngleSchema.nullish() });
+
 /**
  * Reads the sequence out of a structured-output reply that the SDK did not parse,
  * as batch results come back as raw text.
  * @param text The model's JSON reply.
- * @returns The emails, or undefined when the reply is missing or malformed.
+ * @returns The emails and angle, or undefined when the reply is missing or malformed.
  */
 export const parseSequenceText = (text: string | undefined) =>
-  emailSequenceSchema.safeParse(text ? parseJson(text) : null).data?.emails;
+  batchSequenceSchema.safeParse(text ? parseJson(text) : null).data;

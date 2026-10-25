@@ -21,6 +21,8 @@ const makeContact = (
   extra: {},
   status: 'ready',
   errorMessage: null,
+  pain: null,
+  painReason: null,
   createdAt: now,
   updatedAt: now,
   ...overrides,

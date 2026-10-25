@@ -57,6 +57,8 @@ const contact = (): typeof contactSchema.$inferSelect => ({
   extra: {},
   status: 'approved',
   errorMessage: null,
+  pain: null,
+  painReason: null,
   updatedAt: new Date(),
   createdAt: new Date(),
 });

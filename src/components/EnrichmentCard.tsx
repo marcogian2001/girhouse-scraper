@@ -46,6 +46,9 @@ export const EnrichmentCard = (props: { enrichment: EnrichmentView | null }) => 
           ['field_location', content.location],
           ['field_recent_activity', content.recent_activity],
           ['field_hooks', content.personalization_hooks],
+          ['field_positioning', content.business_positioning],
+          ['field_website', content.website_assessment],
+          ['field_customer_signals', content.customer_signals],
         ] as const
       ).filter(([, value]) => Boolean(value))
     : [];

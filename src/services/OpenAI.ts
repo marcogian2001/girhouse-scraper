@@ -210,6 +210,7 @@ export const writeEmailSequence = async (
       emails: response.output_parsed?.emails,
       emailCount: options.campaign.emailCount,
     }),
+    angle: response.output_parsed?.angle ?? null,
   };
 };
 
@@ -246,6 +247,8 @@ export const parseBatchLine = (options: {
     .map((part) => part.text ?? '')
     .join('');
 
+  const output = parseSequenceText(text);
+
   return {
     customId: entry.custom_id,
     sequence: {
@@ -254,10 +257,8 @@ export const parseBatchLine = (options: {
       externalId: body.data.id,
       usage: splitUsage(body.data.usage),
       costMicros: estimateCostMicros({ usage: body.data.usage, model: options.model, batch: true }),
-      emails: normalizeSequence({
-        emails: parseSequenceText(text),
-        emailCount: options.emailCount,
-      }),
+      emails: normalizeSequence({ emails: output?.emails, emailCount: options.emailCount }),
+      angle: output?.angle ?? null,
     },
   };
 };
