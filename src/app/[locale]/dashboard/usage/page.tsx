@@ -1,4 +1,4 @@
-import { Coins, Hash, MapPin, Receipt, Search, Sparkles } from 'lucide-react';
+import { Coins, MapPin, Receipt, Sparkles, Wallet } from 'lucide-react';
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 import { DatePicker } from '@/components/DatePicker';
 import { EmptyState } from '@/components/EmptyState';
@@ -11,7 +11,7 @@ import { getApiContext } from '@/libs/ApiAuth';
 import { Link } from '@/libs/I18nNavigation';
 import { EMPTY_USAGE_TOTALS, getCampaignUsage, getDailyUsage, getUsageTotals } from '@/libs/Usage';
 import { currentMonthRange, parseDateRange, previousMonthRange } from '@/utils/DateRange';
-import { COMPACT_FORMAT, microsToUsd, USD_FORMAT } from '@/utils/UsageFormat';
+import { microsToUsd, USD_FORMAT } from '@/utils/UsageFormat';
 
 export default async function UsagePage(props: {
   params: Promise<{ locale: string }>;
@@ -37,7 +37,6 @@ export default async function UsagePage(props: {
     : [EMPTY_USAGE_TOTALS, [], []];
 
   const usd = (micros: number) => format.number(microsToUsd(micros), USD_FORMAT);
-  const tokens = (count: number) => format.number(count, COMPACT_FORMAT);
   // Days are bare dates, parsed as UTC midnight, so they are read back in UTC
   const day = (value: string) =>
     format.dateTime(new Date(value), { dateStyle: 'medium', timeZone: 'UTC' });
@@ -70,31 +69,21 @@ export default async function UsagePage(props: {
 
   const stats = [
     {
+      label: t('stat_total'),
+      value: usd(totals.totalCostMicros),
+      icon: <Wallet className="size-4" />,
+      description: t('stat_total_range', { from: day(range.from), to: day(range.to) }),
+    },
+    {
       label: t('stat_copywriting_cost'),
       value: usd(totals.copywritingCostMicros),
       icon: <Sparkles className="size-4" />,
-    },
-    {
-      label: t('stat_copywriting_tokens'),
-      value: tokens(totals.copywritingTokens),
-      icon: <Hash className="size-4" />,
-      description: t('stat_tokens_breakdown', {
-        input: tokens(totals.copywritingInputTokens),
-        output: tokens(totals.copywritingOutputTokens),
-        cacheWrite: tokens(totals.copywritingCacheWriteTokens),
-        cacheRead: tokens(totals.copywritingCacheReadTokens),
-      }),
     },
     {
       label: t('stat_parallel_cost'),
       value: usd(totals.parallelCostMicros),
       icon: <Coins className="size-4" />,
       description: t('stat_parallel_note'),
-    },
-    {
-      label: t('stat_parallel_runs'),
-      value: totals.parallelRuns,
-      icon: <Search className="size-4" />,
     },
     {
       label: t('stat_leads_cost'),
@@ -138,15 +127,7 @@ export default async function UsagePage(props: {
         </div>
       </form>
 
-      <p className="text-sm text-muted-foreground">
-        {t('total_line', {
-          from: day(range.from),
-          to: day(range.to),
-          total: usd(totals.totalCostMicros),
-        })}
-      </p>
-
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {stats.map((stat) => (
           <StatCard
             key={stat.label}
