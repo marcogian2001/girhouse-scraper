@@ -514,6 +514,9 @@
     "field_positioning": "Positioning",
     "field_website": "Website",
     "field_customer_signals": "What customers say",
+    "field_website_check": "Website check",
+    "website_check_summary": "Form {form, select, true {yes} other {no}} · WhatsApp {whatsapp, select, true {yes} other {no}} · online booking {booking, select, true {yes} other {no}}",
+    "website_check_unreadable": "Website not readable: the emails will not say anything is missing",
     "sources": "Sources"
   },
   "CampaignNameEditor": {

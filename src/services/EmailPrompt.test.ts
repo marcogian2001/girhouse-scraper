@@ -177,6 +177,49 @@ describe('Email prompt', () => {
       expect(prompt).toContain('- Website: No photos of finished work.');
       expect(prompt).toContain('- What customers say: 5 stars on 2 Google reviews.');
     });
+
+    it('lists the contact channels the website check found', () => {
+      const prompt = buildContactPrompt({
+        contact: contact(),
+        enrichment: enrichment('high'),
+        websiteCheck: {
+          read: true,
+          pages: ['https://analytical.com/', 'https://analytical.com/contatti'],
+          contactForm: true,
+          whatsapp: false,
+          booking: false,
+          phone: true,
+        },
+      });
+
+      expect(prompt).toContain('- Contact form: yes');
+      expect(prompt).toContain('- WhatsApp link: no');
+      expect(prompt).toContain('Only call a contact channel missing when it reads "no" here.');
+    });
+
+    it('forbids calling anything missing when the website could not be read', () => {
+      const prompt = buildContactPrompt({
+        contact: contact(),
+        enrichment: null,
+        websiteCheck: {
+          read: false,
+          pages: [],
+          contactForm: false,
+          whatsapp: false,
+          booking: false,
+          phone: false,
+        },
+      });
+
+      expect(prompt).toContain('Never say a contact form, WhatsApp or online booking is missing');
+      expect(prompt).not.toContain('- Contact form: no');
+    });
+
+    it('omits the website check for a business without a website', () => {
+      const prompt = buildContactPrompt({ contact: contact(), enrichment: enrichment('high') });
+
+      expect(prompt).not.toContain('## Website check');
+    });
   });
 
   describe('Sequence', () => {

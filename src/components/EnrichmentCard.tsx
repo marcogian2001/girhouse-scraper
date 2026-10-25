@@ -4,7 +4,11 @@ import { ExternalLink } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { Badge } from '@/components/ui/badge';
 import type { confidenceLevelEnum } from '@/models/Schema';
-import type { EnrichmentBasis, EnrichmentContent } from '@/validations/EnrichmentValidation';
+import type {
+  EnrichmentBasis,
+  EnrichmentContent,
+  WebsiteCheck,
+} from '@/validations/EnrichmentValidation';
 
 type ConfidenceLevel = (typeof confidenceLevelEnum.enumValues)[number];
 
@@ -13,6 +17,7 @@ export type EnrichmentView = {
   basis: EnrichmentBasis[];
   identityConfidence: ConfidenceLevel | null;
   identityReasoning: string | null;
+  websiteCheck: WebsiteCheck | null;
   error: string | null;
 };
 
@@ -34,7 +39,7 @@ export const EnrichmentCard = (props: { enrichment: EnrichmentView | null }) => 
     return <p className="text-sm text-destructive">{props.enrichment.error}</p>;
   }
 
-  const { content, identityConfidence, identityReasoning } = props.enrichment;
+  const { content, identityConfidence, identityReasoning, websiteCheck } = props.enrichment;
 
   const findings = content
     ? (
@@ -79,7 +84,7 @@ export const EnrichmentCard = (props: { enrichment: EnrichmentView | null }) => 
 
       {identityReasoning && <p className="text-sm">{identityReasoning}</p>}
 
-      {findings.length > 0 && (
+      {(findings.length > 0 || websiteCheck) && (
         <dl className="grid gap-x-4 gap-y-1 text-sm sm:grid-cols-[max-content_1fr]">
           {findings.map(([label, value]) => (
             <div key={label} className="contents">
@@ -87,6 +92,21 @@ export const EnrichmentCard = (props: { enrichment: EnrichmentView | null }) => 
               <dd>{value}</dd>
             </div>
           ))}
+
+          {websiteCheck && (
+            <div className="contents">
+              <dt className="text-muted-foreground">{t('field_website_check')}</dt>
+              <dd>
+                {websiteCheck.read
+                  ? t('website_check_summary', {
+                      form: String(websiteCheck.contactForm),
+                      whatsapp: String(websiteCheck.whatsapp),
+                      booking: String(websiteCheck.booking),
+                    })
+                  : t('website_check_unreadable')}
+              </dd>
+            </div>
+          )}
         </dl>
       )}
 

@@ -22,6 +22,19 @@ export const EnrichmentContentValidation = z.object({
 
 export type EnrichmentContent = z.infer<typeof EnrichmentContentValidation>;
 
+/** What reading the business's own website directly showed, which the research may get wrong. */
+export const WebsiteCheckValidation = z.object({
+  // False when the site could not be read well enough to trust that something is missing
+  read: z.boolean(),
+  pages: z.array(z.string()),
+  contactForm: z.boolean(),
+  whatsapp: z.boolean(),
+  booking: z.boolean(),
+  phone: z.boolean(),
+});
+
+export type WebsiteCheck = z.infer<typeof WebsiteCheckValidation>;
+
 const EnrichmentCitationValidation = z.object({
   url: z.string(),
   title: z.string().nullish(),

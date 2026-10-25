@@ -190,6 +190,36 @@ export const rankEmails = (options: { emails: string[]; domain: string | null })
 };
 
 /**
+ * Downloads a business's homepage, falling back to plain http.
+ * @param website The website as listed on Google Maps, with or without a scheme.
+ * @returns The homepage source and final URL, or null when the site could not be read.
+ */
+export const fetchHomepage = async (website: string) => {
+  const url = /^https?:\/\//iu.test(website) ? website : `https://${website}`;
+
+  // Small business sites often run on a broken certificate, but still answer over plain http
+  return (
+    (await fetchHtml(url)) ??
+    (/^https:/iu.test(url) ? await fetchHtml(url.replace(/^https:/iu, 'http:')) : null)
+  );
+};
+
+/**
+ * Lists the pages worth reading besides the homepage: the ones it links to, or the usual paths.
+ * @param home The homepage source and URL.
+ * @param home.html The homepage source.
+ * @param home.url The homepage URL.
+ * @returns Absolute URLs, contact pages first.
+ */
+export const findExtraPages = (home: { html: string; url: string }) => {
+  const links = findContactLinks(home.html, home.url);
+
+  return links.length > 0
+    ? links
+    : FALLBACK_PATHS.flatMap((path) => resolveUrl(path, home.url) ?? []);
+};
+
+/**
  * Reads a business's website for the addresses it publishes: the homepage, then
  * its contact, about and privacy pages.
  * @param options The call options.
@@ -198,22 +228,13 @@ export const rankEmails = (options: { emails: string[]; domain: string | null })
  * @returns The addresses to try, best first, empty when the site could not be read.
  */
 export const findWebsiteEmails = async (options: { website: string; domain: string | null }) => {
-  const url = /^https?:\/\//iu.test(options.website)
-    ? options.website
-    : `https://${options.website}`;
-  // Small business sites often run on a broken certificate, but still answer over plain http
-  const home =
-    (await fetchHtml(url)) ??
-    (/^https:/iu.test(url) ? await fetchHtml(url.replace(/^https:/iu, 'http:')) : null);
+  const home = await fetchHomepage(options.website);
 
   if (!home) {
     return [];
   }
 
-  const links = findContactLinks(home.html, home.url);
-  const extraUrls =
-    links.length > 0 ? links : FALLBACK_PATHS.flatMap((path) => resolveUrl(path, home.url) ?? []);
-  const pages = await Promise.all(extraUrls.map(fetchHtml));
+  const pages = await Promise.all(findExtraPages(home).map(fetchHtml));
 
   const emails = [home, ...pages].flatMap((page) => (page ? extractEmails(page.html) : []));
 

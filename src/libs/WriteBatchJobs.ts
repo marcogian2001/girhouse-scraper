@@ -7,7 +7,10 @@ import {
   writeEmailSequence,
 } from '@/services/Copywriting';
 import type { Campaign } from '@/services/EmailPrompt';
-import { EnrichmentContentValidation } from '@/validations/EnrichmentValidation';
+import {
+  EnrichmentContentValidation,
+  WebsiteCheckValidation,
+} from '@/validations/EnrichmentValidation';
 import {
   loadKnowledgeAssets,
   requireCampaign,
@@ -136,6 +139,7 @@ const submitBatch = async (options: {
           campaign: options.campaign,
           contact,
           enrichment: parsedEnrichment.success ? parsedEnrichment.data : null,
+          websiteCheck: WebsiteCheckValidation.safeParse(enrichment?.websiteCheck).data ?? null,
           knowledgeAssets,
         },
       };

@@ -6,7 +6,7 @@ import type {
   CopywritingTokens,
 } from '@/utils/CopywritingModels';
 import { extractMentionNames } from '@/utils/KnowledgeMentions';
-import type { EnrichmentContent } from '@/validations/EnrichmentValidation';
+import type { EnrichmentContent, WebsiteCheck } from '@/validations/EnrichmentValidation';
 
 const sequenceAngleSchema = z.object({
   pain: z
@@ -37,6 +37,7 @@ export type WriteSequenceOptions = {
   campaign: Campaign;
   contact: Contact;
   enrichment: EnrichmentContent | null;
+  websiteCheck: WebsiteCheck | null;
   knowledgeAssets: KnowledgeAsset[];
 };
 
@@ -130,18 +131,52 @@ export const buildCampaignBrief = (options: {
     .join('\n\n');
 };
 
+const yesNo = (found: boolean) => (found ? 'yes' : 'no');
+
 /**
- * Renders the per-contact half of the prompt: what the CSV said and what the
- * research turned up, including how much to trust it.
+ * Renders what reading the business's website showed, so the email only calls
+ * missing a contact channel the site really lacks.
+ * @param check The website check, null when the business has no website of its own.
+ * @returns The prompt section, or an empty string without a check.
+ */
+const renderWebsiteCheck = (check: WebsiteCheck | null) => {
+  if (!check) {
+    return '';
+  }
+
+  if (!check.read) {
+    return [
+      '## Website check',
+      'The website could not be read reliably. Never say a contact form, WhatsApp or online booking is missing from it.',
+    ].join('\n');
+  }
+
+  return [
+    '## Website check (read directly from the site, more reliable than the research)',
+    `- Pages read: ${check.pages.join(', ')}`,
+    `- Contact form: ${yesNo(check.contactForm)}`,
+    `- WhatsApp link: ${yesNo(check.whatsapp)}`,
+    `- Online booking: ${yesNo(check.booking)}`,
+    `- Clickable phone link: ${yesNo(check.phone)}`,
+    'Only call a contact channel missing when it reads "no" here.',
+  ].join('\n');
+};
+
+/**
+ * Renders the per-contact half of the prompt: what the CSV said, what the
+ * research turned up, including how much to trust it, and what the website check found.
  * @param options The call options.
  * @param options.contact The contact being written to.
  * @param options.enrichment The research output, when it parsed cleanly.
+ * @param options.websiteCheck What reading the business's website showed, when it was read.
  * @returns The prompt text for this contact.
  */
 export const buildContactPrompt = (options: {
   contact: Contact;
   enrichment: EnrichmentContent | null;
+  websiteCheck?: WebsiteCheck | null;
 }) => {
+  const websiteCheck = renderWebsiteCheck(options.websiteCheck ?? null);
   const fromCsv = [
     ['Email', options.contact.email],
     ['First name', options.contact.firstName],
@@ -162,6 +197,7 @@ export const buildContactPrompt = (options: {
       '',
       '## Research',
       'No research is available for this contact. Write from the company and the industry only, and keep it short.',
+      ...(websiteCheck ? ['', websiteCheck] : []),
     ].join('\n');
   }
 
@@ -194,6 +230,7 @@ export const buildContactPrompt = (options: {
     options.enrichment.identity_match_confidence === 'low'
       ? 'The research may describe a different person with the same name. Do not reference anything personal from it.'
       : 'Use at most two of these details, and only the ones a stranger could verify.',
+    ...(websiteCheck ? ['', websiteCheck] : []),
   ].join('\n');
 };
 

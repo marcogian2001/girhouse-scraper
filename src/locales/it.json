@@ -514,6 +514,9 @@
     "field_positioning": "Posizionamento",
     "field_website": "Sito",
     "field_customer_signals": "Cosa dicono i clienti",
+    "field_website_check": "Controllo sito",
+    "website_check_summary": "Modulo {form, select, true {sì} other {no}} · WhatsApp {whatsapp, select, true {sì} other {no}} · prenotazione online {booking, select, true {sì} other {no}}",
+    "website_check_unreadable": "Sito non leggibile: le email non diranno che manca qualcosa",
     "sources": "Fonti"
   },
   "CampaignNameEditor": {

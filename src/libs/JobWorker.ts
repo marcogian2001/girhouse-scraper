@@ -11,7 +11,11 @@ import {
   createCampaign,
 } from '@/services/Instantly';
 import { createTaskRun, fetchTaskRunResult } from '@/services/Parallel';
-import { EnrichmentContentValidation } from '@/validations/EnrichmentValidation';
+import { checkWebsite } from '@/services/WebsiteCheck';
+import {
+  EnrichmentContentValidation,
+  WebsiteCheckValidation,
+} from '@/validations/EnrichmentValidation';
 import {
   enqueueWriting,
   loadKnowledgeAssets,
@@ -85,7 +89,12 @@ const runEnrichJob = async (job: Job) => {
   });
 
   if (!existing?.parallelRunId) {
-    const run = await createTaskRun({ contact, processor: campaign.processor });
+    // A page listed as the website on Google Maps, such as a Facebook profile, is not the business's own site
+    const ownWebsite = contact.extra['Has own website'] === 'no' ? null : contact.website;
+    const [run, websiteCheck] = await Promise.all([
+      createTaskRun({ contact, processor: campaign.processor }),
+      ownWebsite ? checkWebsite(ownWebsite) : null,
+    ]);
     const startedAt = new Date();
 
     await db
@@ -94,11 +103,12 @@ const runEnrichJob = async (job: Job) => {
         contactId: contact.id,
         processor: campaign.processor,
         parallelRunId: run.run_id,
+        websiteCheck,
         startedAt,
       })
       .onConflictDoUpdate({
         target: enrichmentSchema.contactId,
-        set: { parallelRunId: run.run_id, startedAt, error: null },
+        set: { parallelRunId: run.run_id, websiteCheck, startedAt, error: null },
       });
 
     await db
@@ -184,6 +194,7 @@ const runWriteJob = async (job: Job) => {
     campaign,
     contact,
     enrichment: parsedEnrichment.success ? parsedEnrichment.data : null,
+    websiteCheck: WebsiteCheckValidation.safeParse(enrichment?.websiteCheck).data ?? null,
     knowledgeAssets,
   });
 

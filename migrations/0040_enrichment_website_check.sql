@@ -1,0 +1,1 @@
+ALTER TABLE "enrichment" ADD COLUMN "website_check" jsonb;

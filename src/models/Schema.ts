@@ -15,6 +15,7 @@ import {
   unique,
   uuid,
 } from 'drizzle-orm/pg-core';
+import type { WebsiteCheck } from '@/validations/EnrichmentValidation';
 
 // This file defines the structure of your database tables using the Drizzle ORM.
 
@@ -363,6 +364,8 @@ export const enrichmentSchema = pgTable(
     personFound: boolean('person_found'),
     identityConfidence: confidenceLevelEnum('identity_confidence'),
     identityReasoning: text('identity_reasoning'),
+    // Contact channels read directly off the business's own website; null without one
+    websiteCheck: jsonb('website_check').$type<WebsiteCheck>(),
     error: text('error'),
     startedAt: timestamp('started_at', { mode: 'date' }),
     completedAt: timestamp('completed_at', { mode: 'date' }),

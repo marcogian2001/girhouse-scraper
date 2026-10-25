@@ -69,6 +69,7 @@ const enrichment: typeof enrichmentSchema.$inferSelect = {
   personFound: true,
   identityConfidence: 'high',
   identityReasoning: null,
+  websiteCheck: null,
   error: null,
   startedAt: null,
   completedAt: null,

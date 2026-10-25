@@ -30,6 +30,7 @@ import { COMPACT_FORMAT, microsToUsd, USD_FORMAT } from '@/utils/UsageFormat';
 import {
   EnrichmentBasisValidation,
   EnrichmentContentValidation,
+  WebsiteCheckValidation,
 } from '@/validations/EnrichmentValidation';
 
 /** Contacts reviewed per page; each one carries its research and every email draft. */
@@ -120,6 +121,8 @@ export default async function CampaignDetailPage(props: {
             basis: basis.success ? basis.data : [],
             identityConfidence: enrichment.identityConfidence,
             identityReasoning: enrichment.identityReasoning,
+            // Stored as raw JSON, so it is re-validated like the basis
+            websiteCheck: WebsiteCheckValidation.safeParse(enrichment.websiteCheck).data ?? null,
             error: enrichment.error,
           }
         : null,
