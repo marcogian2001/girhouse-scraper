@@ -67,9 +67,9 @@ export default async function LeadSearchesPage(props: {
           location: leadSearchSchema.location,
           status: leadSearchSchema.status,
           createdAt: leadSearchSchema.createdAt,
-          // Empty for a search in one place
+          // Empty for a search in one place. Cast to text: the driver returns enum arrays as a raw string
           regionalStatuses: sql<(typeof leadSearchSchema.$inferSelect)['status'][]>`
-            coalesce(array_agg(distinct ${member.status}) filter (where ${isNotNull(member.parentSearchId)}), '{}')`,
+            coalesce(array_agg(distinct ${member.status}::text) filter (where ${isNotNull(member.parentSearchId)}), '{}'::text[])`,
           // Grouping by the primary key lets the other columns ride along
           leads: count(leadSchema.id),
           ready:
