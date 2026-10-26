@@ -62,6 +62,17 @@ describe('ReplyWriter', () => {
       expect(prompt).not.toContain('{{orari}}');
     });
 
+    it('shares the demo after a no with its 24 hour expiry in version B', () => {
+      const prompt = buildWriterPrompt({
+        ...options,
+        category: 'not_interested',
+        notInterestedVersion: 'b',
+      });
+
+      expect(prompt).toContain('{{link_demo}}');
+      expect(prompt).toContain('La pagina resta attiva 24 ore');
+    });
+
     it('confirms a booked call instead of the category guidance', () => {
       const prompt = buildWriterPrompt({
         ...options,

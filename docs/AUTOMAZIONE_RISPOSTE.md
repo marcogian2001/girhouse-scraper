@@ -38,6 +38,7 @@ Automatizzare tutto quello che succede dopo la risposta di un lead a una cold em
 - 3-6 righe, una sola call to action.
 - Niente trattini lunghi.
 - Mai dati, risultati o scadenze inventati.
+- Ogni email che contiene il link della demo dice che la pagina resta attiva 24 ore, perché tenerla online ha un costo per noi (decisione del 26/10). È l'unica scadenza ammessa nelle email.
 
 ---
 

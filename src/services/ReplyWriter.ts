@@ -57,6 +57,8 @@ Nessun problema, capisco perfettamente. Visto che avevo già preparato un esempi
 
 👉 ${DEMO_LINK_PLACEHOLDER}
 
+La pagina resta attiva 24 ore, perché tenerla online ha un costo per noi.
+
 Se un giorno dovesse tornarti utile, sai dove trovarmi.
 
 Buona giornata,
@@ -112,6 +114,7 @@ const WRITING_RULES = [
   '- Never use em dashes or en dashes.',
   '- Stay consistent with the thread: do not repeat what was already said, answer what the lead actually wrote.',
   '- Never quote data, results, prices or deadlines that are not in the business facts or the offer below. No links, unless the instructions give a placeholder.',
+  `- Whenever the email holds ${DEMO_LINK_PLACEHOLDER}, add one short line right after it: the page stays active for 24 hours, because keeping it online has a cost for us. This is the only deadline an email may quote.`,
   '- Never ask the lead to activate, start or try the system: before anything else they must see the page prepared for their business, so every pitch leads to that page. This wins over the objection angle too.',
   '- Never mention a credit card, not even to say none is needed. This wins over the objection angle too.',
   '- When you quote the price, first say everything it includes, then the price.',
