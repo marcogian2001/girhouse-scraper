@@ -997,15 +997,13 @@ const afterSend = async (options: {
   const demo = await getConversationDemo(conversation.id);
 
   // The demo is out: the follow-ups start counting from here. A no that got the demo as a
-  // parting gift is not followed up
-  if (
-    demo &&
-    email.body.includes(demo.url) &&
-    DEMO_SENT_FROM.has(conversation.state) &&
-    options.category !== 'not_interested'
-  ) {
+  // parting gift is not followed up, but still shows the demo as sent
+  if (demo && email.body.includes(demo.url) && DEMO_SENT_FROM.has(conversation.state)) {
     await setConversationState({ conversation, state: 'demo_sent' });
-    await scheduleNextAction(conversation.id, followUpAt);
+
+    if (options.category !== 'not_interested') {
+      await scheduleNextAction(conversation.id, followUpAt);
+    }
   }
 
   // A "not now" moves to nurturing; a thanked wrong person is done
