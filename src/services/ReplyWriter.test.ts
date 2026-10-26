@@ -100,6 +100,7 @@ describe('ReplyWriter', () => {
 
       expect(prompt).toContain('it was never opened');
       expect(prompt).toContain('{{link_demo}}');
+      expect(prompt).toContain('reactivated the page for another 24 hours');
       expect(prompt).toContain("## The lead's last reply, a while ago");
     });
 

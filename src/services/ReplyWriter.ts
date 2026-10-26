@@ -33,10 +33,14 @@ export type CallPlan = { kind: 'booked'; when: string } | { kind: 'taken' };
 
 const SLOT_RULE = `the two free times are filled in for you, so never write a day or a time yourself`;
 
+// The first link expired after 24 hours, so a follow-up sending it again says it is live once more
+const REACTIVATED_RULE =
+  'say in the line right after it that you reactivated the page for another 24 hours, instead of saying it stays active for 24 hours';
+
 /** What each follow-up to a silent lead does. */
 const FOLLOW_UP_GUIDANCE: Record<FollowUpKind, string> = {
-  demo_not_opened: `You sent the link to the page prepared for their business a few days ago and it was never opened. Ask lightly whether it arrived, put ${DEMO_LINK_PLACEHOLDER} alone on its own line again, and ask nothing else. No guilt, no pressure.`,
-  demo_partial: `The lead opened the page prepared for their business but stopped halfway. Say in a few words that the most useful part comes next, put ${DEMO_LINK_PLACEHOLDER} alone on its own line (it opens where they stopped), and ask nothing else: the page itself proposes the call at its end.`,
+  demo_not_opened: `You sent the link to the page prepared for their business a few days ago and it was never opened. Ask lightly whether it arrived, put ${DEMO_LINK_PLACEHOLDER} alone on its own line again, ${REACTIVATED_RULE}, and ask nothing else. No guilt, no pressure.`,
+  demo_partial: `The lead opened the page prepared for their business but stopped halfway. Say in a few words that the most useful part comes next, put ${DEMO_LINK_PLACEHOLDER} alone on its own line (it opens where they stopped), ${REACTIVATED_RULE}, and ask nothing else: the page itself proposes the call at its end.`,
   demo_complete:
     'The lead watched the whole page prepared for their business but did not book the call. Ask simply, without pressure, what held them back. That question is the only call to action: no link.',
   closing: `This is the last email of the sequence. Say you will not write again about this, recall the real scarcity below in one line, and propose a short call in one line ending with ${SLOTS_PLACEHOLDER}: ${SLOT_RULE}. No link.`,
@@ -114,7 +118,7 @@ const WRITING_RULES = [
   '- Never use em dashes or en dashes.',
   '- Stay consistent with the thread: do not repeat what was already said, answer what the lead actually wrote.',
   '- Never quote data, results, prices or deadlines that are not in the business facts or the offer below. No links, unless the instructions give a placeholder.',
-  `- Whenever the email holds ${DEMO_LINK_PLACEHOLDER}, add one short line right after it: the page stays active for 24 hours, because keeping it online has a cost for us. This is the only deadline an email may quote.`,
+  `- Whenever the email holds ${DEMO_LINK_PLACEHOLDER}, add one short line right after it: the page stays active for 24 hours, because keeping it online has a cost for us, unless "What this reply does" says otherwise. This is the only deadline an email may quote.`,
   '- Never ask the lead to activate, start or try the system: before anything else they must see the page prepared for their business, so every pitch leads to that page. This wins over the objection angle too.',
   '- Never mention a credit card, not even to say none is needed. This wins over the objection angle too.',
   '- When you quote the price, first say everything it includes, then the price.',
