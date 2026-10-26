@@ -550,6 +550,24 @@ export const importLeadConversation = async (options: {
   return { status: 'imported' as const, conversationId: stored.conversationId };
 };
 
+/**
+ * Lists the organization's campaigns that received at least one reply, newest first, to
+ * filter the replies list by.
+ * @param organizationId The organization.
+ * @returns The campaigns' ids and names.
+ */
+export const listReplyCampaigns = (organizationId: string) =>
+  db
+    .selectDistinct({
+      id: campaignSchema.id,
+      name: campaignSchema.name,
+      createdAt: campaignSchema.createdAt,
+    })
+    .from(campaignSchema)
+    .innerJoin(conversationSchema, eq(conversationSchema.campaignId, campaignSchema.id))
+    .where(eq(campaignSchema.organizationId, organizationId))
+    .orderBy(desc(campaignSchema.createdAt));
+
 /** How many conversations a page of the dashboard list shows. */
 export const CONVERSATIONS_PAGE_SIZE = 25;
 
@@ -601,6 +619,7 @@ const replyStatusSql = (status: ReplyStatus) => {
  * @param options.search Words the lead's email, company, first or last name must all contain.
  * @param options.answered Only conversations we did (true) or did not (false) reply to, when given.
  * @param options.botManaged Only conversations the bot does (true) or does not (false) handle, when given.
+ * @param options.campaignIds Only conversations of these campaigns, when not empty.
  * @param options.page The 1-based page to read.
  * @returns The page of conversations and how many match in all.
  */
@@ -610,6 +629,7 @@ export const listConversations = async (options: {
   search?: string;
   answered?: boolean;
   botManaged?: boolean;
+  campaignIds?: string[];
   page: number;
 }) => {
   const terms = splitSearchTerms(options.search ?? '');
@@ -628,6 +648,9 @@ export const listConversations = async (options: {
     options.answered === false ? isNull(conversationSchema.lastOutboundAt) : undefined,
     options.botManaged === true ? isBotManagedSql : undefined,
     options.botManaged === false ? not(isBotManagedSql) : undefined,
+    options.campaignIds?.length
+      ? inArray(conversationSchema.campaignId, options.campaignIds)
+      : undefined,
     // Every word must appear somewhere, in any order and ignoring accents, so
     // "gino trattoria" finds "Trattoria da Gino" and "caffe" finds "Caffè"
     ...terms.map((term) => sql`${searchable} like ${toLikePattern(term)}`),

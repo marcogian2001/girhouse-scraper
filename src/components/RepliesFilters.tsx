@@ -4,6 +4,7 @@ import { cn } from 'cn';
 import { Bot, CircleCheck, CircleDot, Clock, Reply, UserRound, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useRef, useState, useTransition } from 'react';
+import { CampaignsFilter } from '@/components/CampaignsFilter';
 import { SearchInput } from '@/components/SearchInput';
 import { StatusDot } from '@/components/StatusBadge';
 import { Button } from '@/components/ui/button';
@@ -33,9 +34,13 @@ const SEARCH_DELAY_MS = 300;
  * Filters the replies list as the user types or picks, keeping the filters in the URL.
  * @param props The component props.
  * @param props.query The filters the page was rendered with.
+ * @param props.campaigns The campaigns the list can be narrowed to.
  * @returns The filter bar.
  */
-export const RepliesFilters = (props: { query: RepliesQuery }) => {
+export const RepliesFilters = (props: {
+  query: RepliesQuery;
+  campaigns: { id: string; name: string }[];
+}) => {
   const t = useTranslations('RepliesFilters');
   const tStatus = useTranslations('ReplyStatus');
   const router = useRouter();
@@ -168,6 +173,15 @@ export const RepliesFilters = (props: { query: RepliesQuery }) => {
           </SelectItem>
         </SelectContent>
       </Select>
+
+      <CampaignsFilter
+        campaigns={props.campaigns}
+        selected={query.campaigns ?? []}
+        onSelectedChange={(campaigns) => {
+          apply({ ...query, campaigns });
+        }}
+        className={cn('w-full sm:w-56', (query.campaigns?.length ?? 0) > 0 && ACTIVE_FILTER_CLASS)}
+      />
 
       {hasRepliesFilters(query) && (
         <Button

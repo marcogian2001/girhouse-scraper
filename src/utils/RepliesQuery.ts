@@ -6,12 +6,16 @@ export const YES_NO = ['yes', 'no'] as const;
 
 type YesNo = (typeof YES_NO)[number];
 
+/** The shape of a campaign id, so a mangled link cannot reach the database. */
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu;
+
 /** The filters of the replies list, as kept in the URL. */
 export type RepliesQuery = {
   search: string;
   state?: ReplyStatus;
   answered?: YesNo;
   bot?: YesNo;
+  campaigns?: string[];
 };
 
 /**
@@ -26,6 +30,8 @@ export const parseRepliesQuery = (
   state: REPLY_STATUSES.find((status) => status === params.state),
   answered: YES_NO.find((value) => value === params.answered),
   bot: YES_NO.find((value) => value === params.bot),
+  // Repeated in the URL, one `campaign` per picked campaign
+  campaigns: [...new Set([params.campaign ?? []].flat())].filter((id) => UUID_PATTERN.test(id)),
 });
 
 /**
@@ -37,7 +43,8 @@ export const hasRepliesFilters = (query: RepliesQuery) =>
   query.search.trim() !== '' ||
   query.state !== undefined ||
   query.answered !== undefined ||
-  query.bot !== undefined;
+  query.bot !== undefined ||
+  (query.campaigns?.length ?? 0) > 0;
 
 /**
  * Builds the link to the replies list with the given filters.
@@ -63,6 +70,10 @@ export const repliesHref = (query: RepliesQuery, page = 1) => {
 
   if (query.bot) {
     params.set('bot', query.bot);
+  }
+
+  for (const campaignId of query.campaigns ?? []) {
+    params.append('campaign', campaignId);
   }
 
   if (page > 1) {

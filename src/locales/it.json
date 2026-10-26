@@ -835,6 +835,12 @@
     "filter_bot_all": "Gestione: tutti",
     "filter_bot_yes": "Gestiti dal bot",
     "filter_bot_no": "Non gestiti dal bot",
+    "filter_campaign_label": "Campagne",
+    "filter_campaign_all": "Tutte le campagne",
+    "filter_campaign_many": "{count} campagne",
+    "filter_campaign_search": "Cerca campagna",
+    "filter_campaign_empty": "Nessuna campagna trovata",
+    "filter_campaign_clear": "Deseleziona tutte",
     "button_clear": "Azzera filtri"
   },
   "ReplyImportPage": {

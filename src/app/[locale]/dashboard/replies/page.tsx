@@ -17,7 +17,11 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { getApiContext } from '@/libs/ApiAuth';
-import { CONVERSATIONS_PAGE_SIZE, listConversations } from '@/libs/Conversations';
+import {
+  CONVERSATIONS_PAGE_SIZE,
+  listConversations,
+  listReplyCampaigns,
+} from '@/libs/Conversations';
 import { Link } from '@/libs/I18nNavigation';
 import { parsePage } from '@/utils/Pagination';
 import { hasRepliesFilters, parseRepliesQuery, repliesHref } from '@/utils/RepliesQuery';
@@ -38,16 +42,20 @@ export default async function RepliesPage(props: {
   const format = await getFormatter({ locale });
   const context = await getApiContext();
 
-  const { conversations, total: matching } = context
-    ? await listConversations({
-        organizationId: context.organizationId,
-        status: query.state,
-        search: query.search || undefined,
-        answered: query.answered ? query.answered === 'yes' : undefined,
-        botManaged: query.bot ? query.bot === 'yes' : undefined,
-        page,
-      })
-    : { conversations: [], total: 0 };
+  const [{ conversations, total: matching }, campaigns] = context
+    ? await Promise.all([
+        listConversations({
+          organizationId: context.organizationId,
+          status: query.state,
+          search: query.search || undefined,
+          answered: query.answered ? query.answered === 'yes' : undefined,
+          botManaged: query.bot ? query.bot === 'yes' : undefined,
+          campaignIds: query.campaigns,
+          page,
+        }),
+        listReplyCampaigns(context.organizationId),
+      ])
+    : [{ conversations: [], total: 0 }, []];
   const pageCount = Math.ceil(matching / CONVERSATIONS_PAGE_SIZE);
 
   return (
@@ -65,7 +73,7 @@ export default async function RepliesPage(props: {
         }
       />
 
-      <RepliesFilters query={query} />
+      <RepliesFilters query={query} campaigns={campaigns} />
 
       {conversations.length === 0 ? (
         <EmptyState

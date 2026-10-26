@@ -835,6 +835,12 @@
     "filter_bot_all": "Handling: all",
     "filter_bot_yes": "Handled by the bot",
     "filter_bot_no": "Not handled by the bot",
+    "filter_campaign_label": "Campaigns",
+    "filter_campaign_all": "All campaigns",
+    "filter_campaign_many": "{count} campaigns",
+    "filter_campaign_search": "Search campaigns",
+    "filter_campaign_empty": "No campaigns found",
+    "filter_campaign_clear": "Clear selection",
     "button_clear": "Clear filters"
   },
   "ReplyImportPage": {
