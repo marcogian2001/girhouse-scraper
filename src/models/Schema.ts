@@ -828,8 +828,6 @@ export const automationSettingsSchema = pgTable('automation_settings', {
   writingModel: text('writing_model').notNull().default('claude-opus-5-5'),
   // Where "no time works? write to me" sends the lead, in E.164
   whatsappBusinessNumber: text('whatsapp_business_number'),
-  // How the one answer to a "not interested" reads
-  notInterestedVersion: notInterestedVersionEnum('not_interested_version').notNull().default('a'),
   ...timestamps,
 });
 
@@ -1125,6 +1123,8 @@ export const outboundEmailSchema = pgTable(
     }),
     model: text('model'),
     errorMessage: text('error_message'),
+    // Set only on the answer to a "not interested", where a person picks the version
+    notInterestedVersion: notInterestedVersionEnum('not_interested_version'),
     ...timestamps,
   },
   (table) => [index('outbound_email_conversation_id_idx').on(table.conversationId)],

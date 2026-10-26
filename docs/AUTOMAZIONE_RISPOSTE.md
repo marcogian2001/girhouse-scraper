@@ -458,12 +458,13 @@ Richiesta del titolare: tenere traccia di ogni campagna come un test, per confro
 
 ### Risposta ai non interessati, versione A o B [x] (26/10)
 
-Richiesta del titolare: una seconda versione dell'unica email a chi risponde di no.
+Richiesta del titolare: una seconda versione dell'unica email a chi risponde di no, da scegliere **lead per lead** nel dettaglio della conversazione (non un'impostazione generale: la prima versione, migrazione `0041`, la metteva in Automazione ed è stata tolta con la `0042`).
 
-- [x] **Scelta in Automazione**, sezione "Lead non interessati": colonna `automation_settings.not_interested_version` (`a` di default, migrazione `0041`).
+- [x] **Scelta sulla bozza:** sopra il testo della bozza che risponde a un "non interessato" compaiono le tab "Versione A / Versione B". Cambiare tab riscrive la bozza con l'AI in quella versione. La versione sta in `outbound_email.not_interested_version`: `a` per ogni nuova risposta a un no, null per tutte le altre email. La `0042` mette `a` anche sulle risposte a un no già esistenti.
   - **A** (com'era): ringrazia, presenta l'offerta come quasi un regalo e chiede il permesso di mandare la demo. Nessun link.
   - **B**: "visto che avevo già preparato un esempio pratico per {azienda}, mi sembrava un peccato non condividerlo", poi 👉 link alla demo e "se un giorno dovesse tornarti utile, sai dove trovarmi". Il modello del testo è `NOT_INTERESTED_SHARE_GUIDANCE` in `src/services/ReplyWriter.ts`.
-- [x] **Con la B** la demo si costruisce alla scrittura della risposta (come per un interessato) e l'email deve contenere il link. Dopo l'invio lo stato **non** passa a `demo_sent`: nessun follow-up. Un secondo no chiude la conversazione come prima.
+- [x] **Con la B** la demo si costruisce al cambio di versione e l'email deve contenere il link. Dopo l'invio lo stato **non** passa a `demo_sent`: nessun follow-up. Un secondo no chiude la conversazione come prima.
+- [x] **In modalità automatica** la risposta a un no parte in versione A senza aspettare: la B si può scegliere solo su una bozza.
 - [x] **Filtro per campagna** nella pagina Risposte (26/10): selezione multipla, nell'URL come `campaign` ripetuto.
 
 ---

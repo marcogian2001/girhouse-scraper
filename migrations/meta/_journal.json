@@ -295,6 +295,13 @@
       "when": 1793003755130,
       "tag": "0041_not_interested_version",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1793004607450,
+      "tag": "0042_not_interested_version_per_email",
+      "breakpoints": true
     }
   ]
 }

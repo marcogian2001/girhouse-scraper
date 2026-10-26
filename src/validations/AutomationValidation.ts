@@ -39,7 +39,6 @@ export const AutomationSettingsValidation = z
       .trim()
       .regex(/^\+[1-9]\d{7,14}$/u)
       .nullable(),
-    notInterestedVersion: z.enum(NOT_INTERESTED_VERSIONS),
   })
   .refine((value) => value.replyDelayMinMinutes <= value.replyDelayMaxMinutes, {
     error: 'The minimum delay cannot exceed the maximum',
@@ -113,4 +112,7 @@ export const OutboundApprovalValidation = z.object({
   scheduledFor: scheduledForField,
 });
 
-export const OutboundRewriteValidation = z.object({ scheduledFor: scheduledForField });
+export const OutboundRewriteValidation = z.object({
+  scheduledFor: scheduledForField,
+  notInterestedVersion: z.enum(NOT_INTERESTED_VERSIONS).optional(),
+});

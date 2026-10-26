@@ -10,11 +10,14 @@ import { Button } from '@/components/ui/button';
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useRouter } from '@/libs/I18nNavigation';
 import type { outboundEmailSchema } from '@/models/Schema';
 import { REPLY_ISSUES } from '@/utils/ReplyGuard';
 import { slotKey } from '@/utils/Slots';
+import type { NotInterestedVersion } from '@/validations/AutomationValidation';
+import { NOT_INTERESTED_VERSIONS } from '@/validations/AutomationValidation';
 
 type OutboundEmail = typeof outboundEmailSchema.$inferSelect;
 
@@ -76,6 +79,8 @@ export const OutboundEmailEditor = (props: { email: OutboundEmail }) => {
   const isEditable =
     isScheduled || props.email.status === 'draft' || props.email.status === 'failed';
   const canRewrite = props.email.status === 'draft' && props.email.kind === 'reply';
+  // Only the answer to a "not interested" comes in two versions
+  const [version, setVersion] = useState(props.email.notInterestedVersion);
 
   const sendAtHint = () => {
     if (!sendAt) {
@@ -93,7 +98,7 @@ export const OutboundEmailEditor = (props: { email: OutboundEmail }) => {
     return sendAt ? t('button_approve_schedule') : t('button_approve');
   };
 
-  const rewrite = async () => {
+  const rewrite = async (notInterestedVersion?: NotInterestedVersion) => {
     setIsBusy(true);
     setFailure(null);
 
@@ -101,13 +106,14 @@ export const OutboundEmailEditor = (props: { email: OutboundEmail }) => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       // The AI writes for the chosen day, as a recontact when it is a later one
-      body: JSON.stringify({ scheduledFor: sendAt || null }),
+      body: JSON.stringify({ scheduledFor: sendAt || null, notInterestedVersion }),
     });
 
     setIsBusy(false);
 
     if (!response.ok) {
       setFailure('rewrite');
+      setVersion(props.email.notInterestedVersion);
 
       return;
     }
@@ -153,6 +159,32 @@ export const OutboundEmailEditor = (props: { email: OutboundEmail }) => {
 
       {isEditable ? (
         <FieldGroup className="gap-3">
+          {canRewrite && version && (
+            <Field>
+              <FieldLabel>{t('label_version')}</FieldLabel>
+              <Tabs
+                value={version}
+                onValueChange={async (value) => {
+                  const next = NOT_INTERESTED_VERSIONS.find((option) => option === value);
+
+                  if (next && next !== version) {
+                    setVersion(next);
+                    await rewrite(next);
+                  }
+                }}
+              >
+                <TabsList>
+                  {NOT_INTERESTED_VERSIONS.map((option) => (
+                    <TabsTrigger key={option} value={option} disabled={isBusy}>
+                      {t(`version_${option}`)}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </Tabs>
+              <FieldDescription>{t(`hint_version_${version}`)}</FieldDescription>
+            </Field>
+          )}
+
           <Field>
             <FieldLabel htmlFor={`subject-${props.email.id}`}>{t('label_subject')}</FieldLabel>
             <Input

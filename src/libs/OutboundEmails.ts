@@ -29,6 +29,7 @@ import type { ReplyCategory } from '@/utils/ReplyRouting';
 import { FINAL_STATES } from '@/utils/ReplyRouting';
 import { stripQuotedReply } from '@/utils/ReplyText';
 import { dayLabel, joinSlotLabels, matchSlot, slotKey, slotLabel } from '@/utils/Slots';
+import type { NotInterestedVersion } from '@/validations/AutomationValidation';
 import { getAutomationSettings } from './AutomationSettings';
 import type { Conversation } from './Conversations';
 import { isBotManaged, logEvent, setConversationState } from './Conversations';
@@ -71,15 +72,26 @@ const BOOKING_CATEGORIES = new Set<ReplyCategory>(['interested', 'question']);
 const bookedPayloadSchema = z.object({ startTime: z.string() });
 
 /**
- * Tells whether the answer to a reply carries the demo link: a yes always does, a no only
- * when the organization picked version B of that answer.
+ * Picks the version of an answer to a reply: only a "not interested" has one, A until a
+ * person picks another on the draft.
  * @param category The category of the reply.
- * @param settings The organization's automation settings.
+ * @param picked The version a person picked, if any.
+ * @returns The version, or null for any other answer.
+ */
+const notInterestedVersionFor = (
+  category: ReplyCategory,
+  picked: NotInterestedVersion | null | undefined,
+) => (category === 'not_interested' ? (picked ?? 'a') : null);
+
+/**
+ * Tells whether the answer to a reply carries the demo link: a yes always does, a no only
+ * in version B.
+ * @param category The category of the reply.
+ * @param version The version of the answer to a "not interested".
  * @returns True when the answer shares the demo.
  */
-const answerSharesDemo = (category: ReplyCategory, settings: AutomationSettings) =>
-  category === 'interested' ||
-  (category === 'not_interested' && settings.notInterestedVersion === 'b');
+const answerSharesDemo = (category: ReplyCategory, version: NotInterestedVersion | null) =>
+  category === 'interested' || version === 'b';
 
 /**
  * Picks when an email leaves. An answer leaves the configured delay after the lead's
@@ -360,6 +372,7 @@ const planCall = async (options: {
  * @param options.offeredSlots The call times the answer offers.
  * @param options.demoUrl The demo link the answer carries, if any.
  * @param options.recontactOn The later day the answer leaves, when the lead asked for it.
+ * @param options.notInterestedVersion The version of the answer to a "not interested".
  * @returns The writer inputs.
  */
 const replyWriterInput = async (options: {
@@ -371,6 +384,7 @@ const replyWriterInput = async (options: {
   offeredSlots: string[];
   demoUrl: string | null;
   recontactOn?: string;
+  notInterestedVersion: NotInterestedVersion | null;
 }) => {
   const { message, settings, classification } = options;
   const objection = classification.objectionId
@@ -396,7 +410,7 @@ const replyWriterInput = async (options: {
     demoUrl: options.demoUrl,
     offeredSlots: options.offeredSlots,
     recontactOn: options.recontactOn,
-    notInterestedVersion: settings.notInterestedVersion,
+    notInterestedVersion: options.notInterestedVersion ?? undefined,
   };
 };
 
@@ -411,6 +425,7 @@ const replyWriterInput = async (options: {
  * @param options.offeredSlots The call times the email offers.
  * @param options.isBooked Whether the email confirms a booked call.
  * @param options.carriesDemo Whether the email carries the demo link.
+ * @param options.notInterestedVersion The version of the answer to a "not interested".
  * @param options.sendAt When the lead asked to be contacted again, if they did: the send
  * time in automatic mode, the proposed one on a draft.
  */
@@ -422,6 +437,7 @@ const saveWrittenReply = async (options: {
   offeredSlots: string[];
   isBooked: boolean;
   carriesDemo: boolean;
+  notInterestedVersion: NotInterestedVersion | null;
   sendAt: Date | null;
 }) => {
   const { conversation, settings, written } = options;
@@ -452,6 +468,7 @@ const saveWrittenReply = async (options: {
           }))
         : options.sendAt,
       model: written.model,
+      notInterestedVersion: options.notInterestedVersion,
     })
     .onConflictDoNothing()
     .returning();
@@ -518,10 +535,12 @@ const runReplyWriteJob = async (job: Job) => {
   const { call, offeredSlots } = await planCall({ conversation, classification });
   const isBooked = call?.kind === 'booked';
 
-  // An interested lead, or a no with version B, gets the link to their demo, built here on
-  // first use; a booking or a taken time is answered about the call alone
+  const notInterestedVersion = notInterestedVersionFor(classification.category, null);
+
+  // An interested lead gets the link to their demo, built here on first use; a booking or a
+  // taken time is answered about the call alone
   const demo =
-    answerSharesDemo(classification.category, settings) &&
+    answerSharesDemo(classification.category, notInterestedVersion) &&
     call?.kind !== 'booked' &&
     call?.kind !== 'taken'
       ? await ensureDemo(conversation)
@@ -537,6 +556,7 @@ const runReplyWriteJob = async (job: Job) => {
       offeredSlots,
       demoUrl: demo ? demoUrl(demo.slug) : null,
       recontactOn: isBooked ? undefined : recontactDay(sendAt),
+      notInterestedVersion,
     }),
     conversation,
   );
@@ -549,6 +569,7 @@ const runReplyWriteJob = async (job: Job) => {
     offeredSlots,
     isBooked,
     carriesDemo: Boolean(demo),
+    notInterestedVersion,
     sendAt: isBooked ? null : sendAt,
   });
 
@@ -586,6 +607,8 @@ const findOutbound = async (options: { organizationId: string; outboundEmailId: 
  * @param options.outboundEmailId The draft.
  * @param options.scheduledFor The send time chosen in the dashboard, in Italian time, or null
  * to send as soon as possible; the draft's own proposal when omitted.
+ * @param options.notInterestedVersion The version to write an answer to a "not interested"
+ * in; the draft's own when omitted.
  * @returns The rewritten draft, or null when it is not a draft answer that can be rewritten.
  * @throws {Error} When the writer returns nothing usable.
  */
@@ -594,6 +617,7 @@ export const rewriteOutbound = async (options: {
   userId: string;
   outboundEmailId: string;
   scheduledFor?: string | null;
+  notInterestedVersion?: NotInterestedVersion;
 }) => {
   const row = await findOutbound(options);
   const message = row?.email.inboundMessageId
@@ -620,8 +644,12 @@ export const rewriteOutbound = async (options: {
 
   const { conversation } = row;
   const settings = await getAutomationSettings(conversation.organizationId);
-  // Built here when version B was picked after the draft was written
-  const demo = answerSharesDemo(classification.category, settings)
+  const notInterestedVersion = notInterestedVersionFor(
+    classification.category,
+    options.notInterestedVersion ?? row.email.notInterestedVersion,
+  );
+  // Built here when version B is picked after the draft was written
+  const demo = answerSharesDemo(classification.category, notInterestedVersion)
     ? await ensureDemo(conversation)
     : null;
   const sendAt = chosenSendTime(options.scheduledFor, row.email.scheduledFor);
@@ -637,6 +665,7 @@ export const rewriteOutbound = async (options: {
       offeredSlots: [],
       demoUrl: demo ? demoUrl(demo.slug) : null,
       recontactOn,
+      notInterestedVersion,
     }),
     conversation,
   );
@@ -649,6 +678,7 @@ export const rewriteOutbound = async (options: {
       offeredSlots: [],
       model: written.model,
       scheduledFor: sendAt,
+      notInterestedVersion,
     })
     .where(and(eq(outboundEmailSchema.id, row.email.id), eq(outboundEmailSchema.status, 'draft')))
     .returning();

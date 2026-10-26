@@ -778,13 +778,6 @@
     "section_follow_up_description": "Cosa succede quando il lead riceve la demo ma non prenota.",
     "section_nurturing_title": "Lead \"non ora\"",
     "section_nurturing_description": "Le email periodiche a chi ha risposto che adesso non è il momento.",
-    "label_not_interested_version": "Versione della risposta",
-    "not_interested_version_a": "Versione A: offre la demo, se la vuole",
-    "not_interested_version_b": "Versione B: manda subito il link alla demo",
-    "hint_not_interested_version_a": "Ringrazia, rispetta il no, presenta l'offerta in due righe e chiede se può mandare la pagina preparata per la sua attività. Nessun link.",
-    "hint_not_interested_version_b": "Ringrazia, rispetta il no e condivide subito il link alla pagina preparata per la sua attività, \"visto che era già pronta\". Niente prezzo, niente domande e nessun follow-up dopo.",
-    "section_not_interested_title": "Lead non interessati",
-    "section_not_interested_description": "L'unica email che riceve chi risponde di no. Al secondo no la conversazione si chiude.",
     "section_offer_title": "Offerta",
     "section_offer_description": "Il prezzo e i posti disponibili che l'AI cita nelle email. Devono essere veri.",
     "section_demo_title": "Demo",
@@ -1004,7 +997,12 @@
     "button_approve_schedule": "Approva e programma",
     "button_update_schedule": "Aggiorna programmazione",
     "label_send_time": "Ora di invio",
-    "button_clear_send_at": "Togli la data"
+    "button_clear_send_at": "Togli la data",
+    "label_version": "Versione della risposta",
+    "version_a": "Versione A",
+    "version_b": "Versione B",
+    "hint_version_a": "Rispetta il no, presenta l'offerta in due righe e chiede se può mandare la demo. Nessun link.",
+    "hint_version_b": "Rispetta il no e condivide subito il link alla demo, \"visto che era già pronta\". Niente prezzo e nessun follow-up dopo."
   },
   "DemoPage": {
     "meta_title": "La demo per {company}",

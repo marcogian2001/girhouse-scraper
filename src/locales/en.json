@@ -778,13 +778,6 @@
     "section_follow_up_description": "What happens when the lead gets the demo but does not book.",
     "section_nurturing_title": "\"Not now\" leads",
     "section_nurturing_description": "The periodic emails to leads who said now is not the right time.",
-    "label_not_interested_version": "Reply version",
-    "not_interested_version_a": "Version A: offers the demo, if they want it",
-    "not_interested_version_b": "Version B: sends the demo link right away",
-    "hint_not_interested_version_a": "Thanks them, respects the no, presents the offer in two lines and asks whether to send the page prepared for their business. No link.",
-    "hint_not_interested_version_b": "Thanks them, respects the no and shares the link to the page prepared for their business right away, \"since it was already ready\". No price, no questions and no follow-ups afterwards.",
-    "section_not_interested_title": "Not interested leads",
-    "section_not_interested_description": "The one email sent to whoever says no. A second no closes the conversation.",
     "section_offer_title": "Offer",
     "section_offer_description": "The price and open slots the AI quotes in emails. They must be true.",
     "section_demo_title": "Demo",
@@ -1004,7 +997,12 @@
     "button_approve_schedule": "Approve and schedule",
     "button_update_schedule": "Update schedule",
     "label_send_time": "Send time",
-    "button_clear_send_at": "Remove the date"
+    "button_clear_send_at": "Remove the date",
+    "label_version": "Reply version",
+    "version_a": "Version A",
+    "version_b": "Version B",
+    "hint_version_a": "Respects the no, presents the offer in two lines and asks whether to send the demo. No link.",
+    "hint_version_b": "Respects the no and shares the demo link right away, \"since it was already ready\". No price and no follow-ups afterwards."
   },
   "DemoPage": {
     "meta_title": "The demo for {company}",
