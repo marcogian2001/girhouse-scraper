@@ -1,0 +1,2 @@
+CREATE TYPE "public"."not_interested_version" AS ENUM('a', 'b');--> statement-breakpoint
+ALTER TABLE "automation_settings" ADD COLUMN "not_interested_version" "not_interested_version" DEFAULT 'a' NOT NULL;

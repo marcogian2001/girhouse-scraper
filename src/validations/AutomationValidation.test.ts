@@ -25,6 +25,7 @@ const settings = {
   classificationModel: 'claude-sonnet-5-5',
   writingModel: 'claude-opus-5-5',
   whatsappBusinessNumber: '+393331234567',
+  notInterestedVersion: 'a',
 };
 
 describe('Automation settings validation', () => {

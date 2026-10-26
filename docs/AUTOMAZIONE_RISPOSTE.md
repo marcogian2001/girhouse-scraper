@@ -456,6 +456,16 @@ Richiesta del titolare: tenere traccia di ogni campagna come un test, per confro
   - le fasi si riconoscono dal nome: se si rinominano su GHL, va aggiornato `BOOKED_STAGES` in `src/utils/GhlOutcomes.ts`.
   - Prova a secco del 24/10: 266 opportunità, 7 appuntamenti, 6 lead con call (1 no show), tutti abbinati a contatti di 4 campagne.
 
+### Risposta ai non interessati, versione A o B [x] (26/10)
+
+Richiesta del titolare: una seconda versione dell'unica email a chi risponde di no.
+
+- [x] **Scelta in Automazione**, sezione "Lead non interessati": colonna `automation_settings.not_interested_version` (`a` di default, migrazione `0041`).
+  - **A** (com'era): ringrazia, presenta l'offerta come quasi un regalo e chiede il permesso di mandare la demo. Nessun link.
+  - **B**: "visto che avevo già preparato un esempio pratico per {azienda}, mi sembrava un peccato non condividerlo", poi 👉 link alla demo e "se un giorno dovesse tornarti utile, sai dove trovarmi". Il modello del testo è `NOT_INTERESTED_SHARE_GUIDANCE` in `src/services/ReplyWriter.ts`.
+- [x] **Con la B** la demo si costruisce alla scrittura della risposta (come per un interessato) e l'email deve contenere il link. Dopo l'invio lo stato **non** passa a `demo_sent`: nessun follow-up. Un secondo no chiude la conversazione come prima.
+- [x] **Filtro per campagna** nella pagina Risposte (26/10): selezione multipla, nell'URL come `campaign` ripetuto.
+
 ---
 
 ## 5. Punti da verificare

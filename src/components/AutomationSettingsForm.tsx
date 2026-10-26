@@ -35,7 +35,10 @@ import { Spinner } from '@/components/ui/spinner';
 import { useRouter } from '@/libs/I18nNavigation';
 import { COPYWRITING_MODELS } from '@/utils/CopywritingModels';
 import type { AutomationSettingsInput } from '@/validations/AutomationValidation';
-import { AutomationSettingsValidation } from '@/validations/AutomationValidation';
+import {
+  AutomationSettingsValidation,
+  NOT_INTERESTED_VERSIONS,
+} from '@/validations/AutomationValidation';
 
 const CLAUDE_MODELS = COPYWRITING_MODELS.filter((model) => model.provider === 'anthropic');
 
@@ -45,7 +48,15 @@ type NumberField = {
   [Key in SettingName]: AutomationSettingsInput[Key] extends number ? Key : never;
 }[SettingName];
 
-type SectionId = 'general' | 'sending' | 'follow_up' | 'nurturing' | 'offer' | 'demo' | 'ai';
+type SectionId =
+  | 'general'
+  | 'sending'
+  | 'follow_up'
+  | 'nurturing'
+  | 'not_interested'
+  | 'offer'
+  | 'demo'
+  | 'ai';
 
 /** The numeric settings of each section that is only numbers, as the form shows them. */
 const NUMBER_SECTIONS = {
@@ -63,6 +74,7 @@ const SECTIONS: { id: SectionId; fields: SettingName[] }[] = [
   { id: 'sending', fields: NUMBER_SECTIONS.sending },
   { id: 'follow_up', fields: NUMBER_SECTIONS.follow_up },
   { id: 'nurturing', fields: NUMBER_SECTIONS.nurturing },
+  { id: 'not_interested', fields: ['notInterestedVersion'] },
   { id: 'offer', fields: NUMBER_SECTIONS.offer },
   { id: 'demo', fields: ['whatsappBusinessNumber'] },
   { id: 'ai', fields: ['confidenceThreshold', ...MODEL_FIELDS] },
@@ -78,17 +90,19 @@ export const AutomationSettingsForm = (props: { settings: AutomationSettingsInpu
     resolver: zodResolver(AutomationSettingsValidation),
     defaultValues: props.settings,
   });
-  const [enabled, mode, followUps, followUpDays, whatsappDays, ...models] = useWatch({
-    control: form.control,
-    name: [
-      'enabled',
-      'mode',
-      'maxFollowUps',
-      'demoNotOpenedBusinessDays',
-      'whatsappAfterBusinessDays',
-      ...MODEL_FIELDS,
-    ],
-  });
+  const [enabled, mode, notInterestedVersion, followUps, followUpDays, whatsappDays, ...models] =
+    useWatch({
+      control: form.control,
+      name: [
+        'enabled',
+        'mode',
+        'notInterestedVersion',
+        'maxFollowUps',
+        'demoNotOpenedBusinessDays',
+        'whatsappAfterBusinessDays',
+        ...MODEL_FIELDS,
+      ],
+    });
 
   const handleSave = form.handleSubmit(
     async (values) => {
@@ -191,6 +205,37 @@ export const AutomationSettingsForm = (props: { settings: AutomationSettingsInpu
       </div>
     ),
     nurturing: numberInputs(NUMBER_SECTIONS.nurturing),
+    not_interested: (
+      <Field>
+        <FieldLabel htmlFor="not-interested-version">
+          {t('label_not_interested_version')}
+        </FieldLabel>
+        <Select
+          value={notInterestedVersion}
+          onValueChange={(value) => {
+            const version = NOT_INTERESTED_VERSIONS.find((option) => option === value);
+
+            if (version) {
+              form.setValue('notInterestedVersion', version, { shouldDirty: true });
+            }
+          }}
+        >
+          <SelectTrigger id="not-interested-version" className="w-full sm:w-96">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {NOT_INTERESTED_VERSIONS.map((version) => (
+              <SelectItem key={version} value={version}>
+                {t(`not_interested_version_${version}`)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <FieldDescription>
+          {t(`hint_not_interested_version_${notInterestedVersion}`)}
+        </FieldDescription>
+      </Field>
+    ),
     offer: numberInputs(NUMBER_SECTIONS.offer),
     demo: (
       <Field>

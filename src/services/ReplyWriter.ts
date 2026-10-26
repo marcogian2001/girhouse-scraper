@@ -5,6 +5,7 @@ import { requireCopywritingModel } from '@/utils/CopywritingModels';
 import type { FollowUpKind } from '@/utils/FollowUps';
 import { DEMO_LINK_PLACEHOLDER, SLOTS_PLACEHOLDER } from '@/utils/ReplyGuard';
 import type { ReplyCategory } from '@/utils/ReplyRouting';
+import type { NotInterestedVersion } from '@/validations/AutomationValidation';
 import { getClient, reasoningFor } from './Claude';
 import type { LeadContext, ThreadMessage } from './ReplyPrompt';
 import { renderLeadFacts, renderThread, toBilledCall } from './ReplyPrompt';
@@ -45,6 +46,22 @@ const FOLLOW_UP_GUIDANCE: Record<FollowUpKind, string> = {
     'The lead said "not now" a while ago and asked to be contacted later. Write a short, warm check-in: one line on what the system does for a business like theirs, the real scarcity, and one light question asking whether now is a better time. No link.',
 };
 
+/** Version B of the answer to a no: the demo was ready anyway, so its link is shared as a parting gift. */
+const NOT_INTERESTED_SHARE_GUIDANCE = `The lead said no. This is the only email after a no: no sales pitch, no price, no scarcity, no question. Follow this model closely, changing only what the thread and the business require:
+
+Ciao {first name},
+
+grazie per avermi risposto, lo apprezzo davvero.
+
+Nessun problema, capisco perfettamente. Visto che avevo già preparato un esempio pratico pensato per {business name}, mi sembrava un peccato non condividerlo: qui sotto trovi la pagina che mostra come funzionerebbe il nostro sistema nel vostro caso, già pronta.
+
+👉 ${DEMO_LINK_PLACEHOLDER}
+
+Se un giorno dovesse tornarti utile, sai dove trovarmi.
+
+Buona giornata,
+{signature}`;
+
 /** What a "not now" answer does when it leaves days after the reply, picking the talk up again. */
 const RECONTACT_NOT_NOW_GUIDANCE =
   "This email leaves days after the lead's reply and picks the conversation up again. Recall in one line what Girhouse proposes for a business like theirs, mention the real scarcity below, and end with one light question: whether they want to see the page prepared for their business. No link.";
@@ -56,7 +73,10 @@ const RECONTACT_NOT_NOW_GUIDANCE =
  * @returns The guidance for this reply.
  */
 const guidanceFor = (
-  options: Pick<WriteReplyOptions, 'category' | 'call' | 'followUp' | 'recontactOn'>,
+  options: Pick<
+    WriteReplyOptions,
+    'category' | 'call' | 'followUp' | 'recontactOn' | 'notInterestedVersion'
+  >,
 ) => {
   if (options.followUp) {
     return FOLLOW_UP_GUIDANCE[options.followUp];
@@ -74,6 +94,10 @@ const guidanceFor = (
   // The answer leaves on a later day: it picks the talk up again rather than promising to
   if (options.recontactOn && options.category === 'not_now') {
     return RECONTACT_NOT_NOW_GUIDANCE;
+  }
+
+  if (options.category === 'not_interested' && options.notInterestedVersion === 'b') {
+    return NOT_INTERESTED_SHARE_GUIDANCE;
   }
 
   return REPLY_GUIDANCE[options.category] ?? '';
@@ -131,6 +155,8 @@ export type WriteReplyOptions = {
   followUp?: FollowUpKind;
   // The day the email leaves, when the lead asked to be contacted again then
   recontactOn?: string;
+  // How the answer to a "not interested" reads, version A when not given
+  notInterestedVersion?: NotInterestedVersion;
   // Rules a previous attempt broke, so the next one avoids them
   issues: string[];
 };

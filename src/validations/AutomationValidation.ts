@@ -9,6 +9,11 @@ const claudeModel = z.string().refine((id) => findCopywritingModel(id)?.provider
 const minutes = z.number().int().min(0).max(240);
 const days = z.number().int().min(1).max(365);
 
+/** How the one answer to a "not interested" reads: A offers the demo, B shares its link. */
+export const NOT_INTERESTED_VERSIONS = ['a', 'b'] as const;
+
+export type NotInterestedVersion = (typeof NOT_INTERESTED_VERSIONS)[number];
+
 export const AutomationSettingsValidation = z
   .object({
     enabled: z.boolean(),
@@ -34,6 +39,7 @@ export const AutomationSettingsValidation = z
       .trim()
       .regex(/^\+[1-9]\d{7,14}$/u)
       .nullable(),
+    notInterestedVersion: z.enum(NOT_INTERESTED_VERSIONS),
   })
   .refine((value) => value.replyDelayMinMinutes <= value.replyDelayMaxMinutes, {
     error: 'The minimum delay cannot exceed the maximum',

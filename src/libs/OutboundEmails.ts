@@ -71,6 +71,17 @@ const BOOKING_CATEGORIES = new Set<ReplyCategory>(['interested', 'question']);
 const bookedPayloadSchema = z.object({ startTime: z.string() });
 
 /**
+ * Tells whether the answer to a reply carries the demo link: a yes always does, a no only
+ * when the organization picked version B of that answer.
+ * @param category The category of the reply.
+ * @param settings The organization's automation settings.
+ * @returns True when the answer shares the demo.
+ */
+const answerSharesDemo = (category: ReplyCategory, settings: AutomationSettings) =>
+  category === 'interested' ||
+  (category === 'not_interested' && settings.notInterestedVersion === 'b');
+
+/**
  * Picks when an email leaves. An answer leaves the configured delay after the lead's
  * reply, at once if that time has passed; other emails count the delay from now. Test
  * conversations send at once, so a simulation does not wait for business hours. The
@@ -172,8 +183,8 @@ export const writeCheckedReply = async (
   const slotWords = joinSlotLabels(offeredSlots);
 
   /**
-   * Fills the demo link and the call times, then checks the rules, flagging an interested
-   * reply that left the link or the times out.
+   * Fills the demo link and the call times, then checks the rules, flagging an email that
+   * left out the link or the times it was given.
    * @param draft The cleaned body.
    * @returns The body to keep and the rules it breaks.
    */
@@ -182,8 +193,8 @@ export const writeCheckedReply = async (
     const body = slotWords ? fillSlots(linked, slotWords) : linked;
     const issues = checkReply({ body, prices, allowedLinks });
 
-    // A follow-up gets a link only when it must carry one
-    if (link && (options.followUp || options.category === 'interested') && !body.includes(link)) {
+    // An email gets a link only when it must carry one
+    if (link && !body.includes(link)) {
       issues.push('demo_link_missing');
     }
 
@@ -385,6 +396,7 @@ const replyWriterInput = async (options: {
     demoUrl: options.demoUrl,
     offeredSlots: options.offeredSlots,
     recontactOn: options.recontactOn,
+    notInterestedVersion: settings.notInterestedVersion,
   };
 };
 
@@ -506,10 +518,12 @@ const runReplyWriteJob = async (job: Job) => {
   const { call, offeredSlots } = await planCall({ conversation, classification });
   const isBooked = call?.kind === 'booked';
 
-  // An interested lead gets the link to their demo, built here on first use; a booking or a
-  // taken time is answered about the call alone
+  // An interested lead, or a no with version B, gets the link to their demo, built here on
+  // first use; a booking or a taken time is answered about the call alone
   const demo =
-    classification.category === 'interested' && call?.kind !== 'booked' && call?.kind !== 'taken'
+    answerSharesDemo(classification.category, settings) &&
+    call?.kind !== 'booked' &&
+    call?.kind !== 'taken'
       ? await ensureDemo(conversation)
       : null;
 
@@ -606,8 +620,10 @@ export const rewriteOutbound = async (options: {
 
   const { conversation } = row;
   const settings = await getAutomationSettings(conversation.organizationId);
-  const demo =
-    classification.category === 'interested' ? await getConversationDemo(conversation.id) : null;
+  // Built here when version B was picked after the draft was written
+  const demo = answerSharesDemo(classification.category, settings)
+    ? await ensureDemo(conversation)
+    : null;
   const sendAt = chosenSendTime(options.scheduledFor, row.email.scheduledFor);
   const recontactOn = recontactDay(sendAt);
 
@@ -619,7 +635,7 @@ export const rewriteOutbound = async (options: {
       settings,
       call: null,
       offeredSlots: [],
-      demoUrl: demo?.url ?? null,
+      demoUrl: demo ? demoUrl(demo.slug) : null,
       recontactOn,
     }),
     conversation,
@@ -950,8 +966,14 @@ const afterSend = async (options: {
 
   const demo = await getConversationDemo(conversation.id);
 
-  // The demo is out: the follow-ups start counting from here
-  if (demo && email.body.includes(demo.url) && DEMO_SENT_FROM.has(conversation.state)) {
+  // The demo is out: the follow-ups start counting from here. A no that got the demo as a
+  // parting gift is not followed up
+  if (
+    demo &&
+    email.body.includes(demo.url) &&
+    DEMO_SENT_FROM.has(conversation.state) &&
+    options.category !== 'not_interested'
+  ) {
     await setConversationState({ conversation, state: 'demo_sent' });
     await scheduleNextAction(conversation.id, followUpAt);
   }

@@ -792,6 +792,9 @@ export const classificationSourceEnum = pgEnum('classification_source', [
 
 export const automationModeEnum = pgEnum('automation_mode', ['draft', 'auto']);
 
+// A asks whether the lead wants the demo; B shares the demo link straight away
+export const notInterestedVersionEnum = pgEnum('not_interested_version', ['a', 'b']);
+
 export const objectionStatusEnum = pgEnum('objection_status', ['active', 'needs_review']);
 
 /** How an organization's reply automation behaves, editable from the dashboard. */
@@ -825,6 +828,8 @@ export const automationSettingsSchema = pgTable('automation_settings', {
   writingModel: text('writing_model').notNull().default('claude-opus-5-5'),
   // Where "no time works? write to me" sends the lead, in E.164
   whatsappBusinessNumber: text('whatsapp_business_number'),
+  // How the one answer to a "not interested" reads
+  notInterestedVersion: notInterestedVersionEnum('not_interested_version').notNull().default('a'),
   ...timestamps,
 });
 
