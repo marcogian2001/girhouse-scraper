@@ -7,7 +7,7 @@ import { useNow } from './useTimedSequence';
 const UNITS = ['days', 'hours', 'minutes', 'seconds'] as const;
 
 /**
- * Splits the time left before the price goes up.
+ * Splits the time left before the countdown ends.
  * @param ms Milliseconds left.
  * @returns Days, hours, minutes and seconds.
  */
@@ -23,30 +23,26 @@ const splitDuration = (ms: number) => {
 };
 
 /**
- * Whether the lower price still holds for this business.
- * @param increaseOn When the price goes up, ISO, if known.
+ * Whether the demo's reserved price countdown is still running.
+ * @param increaseOn When the countdown ends, ISO.
  * @param now The current time.
- * @returns True until the increase date.
+ * @returns True until that date.
  */
-export const isPriceLocked = (increaseOn: string | null, now: Date) =>
-  increaseOn !== null && new Date(increaseOn) > now;
+export const isPriceLocked = (increaseOn: string, now: Date) => new Date(increaseOn) > now;
 
 /**
- * A live countdown to the real date the price goes up for this business. Shows nothing
- * once the date has passed, so there is never a fake deadline.
+ * A live countdown to the real date the demo's reserved price ends. Shows nothing once
+ * the date has passed, so there is never a fake deadline.
  * @param props Component props.
- * @param props.increaseOn When the price goes up, ISO, if known.
- * @param props.increaseLabel The increase date, formatted.
+ * @param props.increaseOn When the countdown ends, ISO.
+ * @param props.increaseLabel That date, formatted.
  * @returns The countdown, or nothing.
  */
-export const PriceCountdown = (props: {
-  increaseOn: string | null;
-  increaseLabel: string | null;
-}) => {
+export const PriceCountdown = (props: { increaseOn: string; increaseLabel: string }) => {
   const t = useTranslations('DemoPage');
   const now = useNow(1000);
 
-  if (!isPriceLocked(props.increaseOn, now) || !props.increaseOn || !props.increaseLabel) {
+  if (!isPriceLocked(props.increaseOn, now)) {
     return null;
   }
 

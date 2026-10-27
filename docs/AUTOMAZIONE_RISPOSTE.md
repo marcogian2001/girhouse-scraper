@@ -1,6 +1,6 @@
 # Automazione risposte cold email: stato dei lavori
 
-Ultimo aggiornamento: 24 ottobre 2026 (pagina Test campagne, con chiusure e recupero delle call da GHL).
+Ultimo aggiornamento: 27 ottobre 2026 (conto alla rovescia della demo di 7 giorni dalla generazione, prezzo sempre a 97€).
 
 Questo file serve a riprendere il lavoro anche senza la chat originale, da soli o con un altro assistente AI. Per ripartire basta dire all'AI: "leggi `docs/AUTOMAZIONE_RISPOSTE.md` e `AGENTS.md`, poi continuiamo dalla prima voce non spuntata".
 
@@ -28,7 +28,7 @@ Automatizzare tutto quello che succede dopo la risposta di un lead a una cold em
 - **Prova:** prima settimana gratis, senza contratto. Le email non parlano mai di carta (decisione del 23/10: non è vero che non serve).
 - **Scarcity reale:**
   - 10 nuove attività al mese, una cifra fissa e non un conteggio dei posti rimasti;
-  - 15 giorni dopo la prima email il prezzo sale a 197€: questo compare **solo nella demo**, mai nelle email (decisione del 20/10, sembrava una spinta commerciale).
+  - nella demo il 97€ compare accanto al 197€ barrato, con un conto alla rovescia di 7 giorni da quando la demo viene generata; rigenerarla lo fa ripartire. Finiti i 7 giorni il conto alla rovescia sparisce e il prezzo resta 97€ (decisione del 27/10). Tutto questo compare **solo nella demo**, mai nelle email (decisione del 20/10, sembrava una spinta commerciale).
 - **Come si presenta il prezzo nelle email:** quasi un regalo per quello che include, mai una promozione a tempo. Prima si dice tutto quello che include, poi il prezzo.
 - **Niente attivazione prima della demo (23/10):** le email non chiedono mai di attivare o provare il sistema; il lead deve prima vedere la demo, quindi ogni pitch porta alla demo. Vale anche sopra l'angolo dell'obiezione.
 

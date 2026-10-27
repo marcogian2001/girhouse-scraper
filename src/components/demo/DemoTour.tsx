@@ -38,8 +38,8 @@ export type DemoTourProps = {
     price: number;
     newPrice: number;
     slots: number;
-    increaseOn: string | null;
-    increaseLabel: string | null;
+    increaseOn: string;
+    increaseLabel: string;
   };
   whatsappNumber: string | null;
 };

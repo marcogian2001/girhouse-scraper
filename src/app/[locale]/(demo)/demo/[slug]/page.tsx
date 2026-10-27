@@ -56,7 +56,7 @@ export default async function DemoPage(props: DemoPageProps) {
   setRequestLocale(locale);
 
   const format = await getFormatter({ locale });
-  const { demo, conversation, settings } = await requireDemo(slug);
+  const { demo, settings } = await requireDemo(slug);
   const { data } = demo;
   const searchParams = await props.searchParams;
   // Opened from the dashboard: nothing is tracked
@@ -84,9 +84,8 @@ export default async function DemoPage(props: DemoPageProps) {
           })),
         };
 
-  const increaseOn = conversation.firstEmailSentAt
-    ? new Date(conversation.firstEmailSentAt.getTime() + settings.priceIncreaseDays * 86_400_000)
-    : null;
+  // Every build or rebuild of the demo starts its countdown again
+  const increaseOn = new Date(demo.generatedAt.getTime() + settings.priceIncreaseDays * 86_400_000);
 
   // The business's colour tints every step through these variables
   const brandStyle: Record<string, string> = {
@@ -117,14 +116,12 @@ export default async function DemoPage(props: DemoPageProps) {
           price: settings.monthlyPrice,
           newPrice: settings.newMonthlyPrice,
           slots: settings.onboardingSlotsPerMonth,
-          increaseOn: increaseOn?.toISOString() ?? null,
-          increaseLabel: increaseOn
-            ? format.dateTime(increaseOn, {
-                day: 'numeric',
-                month: 'long',
-                timeZone: AppConfig.timeZone,
-              })
-            : null,
+          increaseOn: increaseOn.toISOString(),
+          increaseLabel: format.dateTime(increaseOn, {
+            day: 'numeric',
+            month: 'long',
+            timeZone: AppConfig.timeZone,
+          }),
         }}
         whatsappNumber={settings.whatsappBusinessNumber}
       />

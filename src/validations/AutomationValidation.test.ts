@@ -15,7 +15,7 @@ const settings = {
   businessHourEnd: 18,
   monthlyPrice: 97,
   newMonthlyPrice: 197,
-  priceIncreaseDays: 15,
+  priceIncreaseDays: 7,
   onboardingSlotsPerMonth: 10,
   demoNotOpenedBusinessDays: 2,
   maxFollowUps: 3,

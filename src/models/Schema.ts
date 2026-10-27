@@ -815,8 +815,8 @@ export const automationSettingsSchema = pgTable('automation_settings', {
   // The offer every generated text is grounded in
   monthlyPrice: integer('monthly_price').notNull().default(97),
   newMonthlyPrice: integer('new_monthly_price').notNull().default(197),
-  // Days after the first cold email when the price goes up for that lead
-  priceIncreaseDays: integer('price_increase_days').notNull().default(15),
+  // Days from a demo's build or rebuild during which it shows the reserved price countdown
+  priceIncreaseDays: integer('price_increase_days').notNull().default(7),
   onboardingSlotsPerMonth: integer('onboarding_slots_per_month').notNull().default(10),
   demoNotOpenedBusinessDays: integer('demo_not_opened_business_days').notNull().default(1),
   maxFollowUps: integer('max_follow_ups').notNull().default(2),
@@ -1225,6 +1225,8 @@ export const demoSchema = pgTable(
     completedAt: timestamp('completed_at', { mode: 'date' }),
     // Set once the lead books the call from the demo
     bookedAt: timestamp('booked_at', { mode: 'date' }),
+    // Set when the demo is built or rebuilt: its reserved price countdown starts here
+    generatedAt: timestamp('generated_at', { mode: 'date' }).defaultNow().notNull(),
     ...timestamps,
   },
   (table) => [

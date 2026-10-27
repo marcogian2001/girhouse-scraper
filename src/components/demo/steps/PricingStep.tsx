@@ -36,15 +36,15 @@ const HEADLINE_SHADOW =
 /**
  * The price for this business, laid out like a promo flyer on the blue page: the logo,
  * a big headline, Gigi with the package, the reserved price with a live countdown to the
- * real increase date, what is included and the guarantees along the bottom.
+ * real end of the demo's countdown, what is included and the guarantees along the bottom.
  * @param props Component props.
  * @param props.part How much this scene shows, from 1 to 3.
  * @param props.company The business name.
- * @param props.price The monthly price now.
- * @param props.newPrice The monthly price after the increase.
+ * @param props.price The monthly price, still shown once the countdown ends.
+ * @param props.newPrice The struck-through monthly price shown during the countdown.
  * @param props.slots How many new businesses are taken each month.
- * @param props.increaseOn When the price goes up for this business, ISO, if known.
- * @param props.increaseLabel The increase date, formatted.
+ * @param props.increaseOn When the countdown ends, ISO.
+ * @param props.increaseLabel That date, formatted.
  * @returns The pricing flyer.
  */
 export const PricingStep = (props: {
@@ -53,18 +53,16 @@ export const PricingStep = (props: {
   price: number;
   newPrice: number;
   slots: number;
-  increaseOn: string | null;
-  increaseLabel: string | null;
+  increaseOn: string;
+  increaseLabel: string;
 }) => {
   const t = useTranslations('DemoPage');
   const now = useNow(1000);
   const isLocked = isPriceLocked(props.increaseOn, now);
   const frame = useTimedSequence({ target: isLocked ? PRICE_FRAMES : 0, intervalMs: 70 });
-  // Without a known first email there is no increase to announce, so the current price stands
-  const settledPrice = props.increaseOn === null ? props.price : props.newPrice;
   const shownPrice = isLocked
     ? Math.round(props.newPrice - ((props.newPrice - props.price) * frame) / PRICE_FRAMES)
-    : settledPrice;
+    : props.price;
   const included = useTimedSequence({
     target: props.part >= 2 ? INCLUDED.length : 0,
     intervalMs: 350,

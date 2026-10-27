@@ -528,6 +528,7 @@ export const rebuildDemo = async (conversation: Conversation, guidance?: string 
       data,
       guidance: kept,
       slug: await rebuiltSlug({ conversation, demo: existing, company: data.company }),
+      generatedAt: new Date(),
     })
     .where(eq(demoSchema.id, existing.id))
     .returning();
