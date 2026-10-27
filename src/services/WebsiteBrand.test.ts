@@ -45,10 +45,33 @@ describe('WebsiteBrand', () => {
     ]);
   });
 
+  it('collects the brand colours of the styles, the most frequent first, without greys', () => {
+    const page = parseBrandHtml(
+      `<style>.a { color: #2E7D32 } .b { background: #fff } .c { border-color: #2e7d32 }</style>
+      <div style="color: #C0392B; background: #333333"></div>`,
+      'https://www.studio.it/',
+      '.btn { background: #2e7d32 } .x { color: #f4f4f4 }',
+    );
+
+    expect(page.colors).toStrictEqual(['#2e7d32', '#c0392b']);
+  });
+
+  it('reads the fonts the site loads or declares, skipping generic and icon fonts', () => {
+    const page = parseBrandHtml(
+      `<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&amp;family=Lato&amp;display=swap">
+      <style>body { font-family: "Lato", sans-serif } i { font-family: 'Font Awesome 6 Free' } h1 { font-family: var(--x) }</style>`,
+      'https://www.studio.it/',
+    );
+
+    expect(page.fonts).toStrictEqual(['Lato', 'Playfair Display']);
+  });
+
   it('ignores a site that only has a tiny favicon', () => {
     const tiny = parseBrandHtml('<link rel="icon" href="/favicon.ico">', 'https://example.com/');
 
     expect(tiny.logoUrl).toBeNull();
     expect(tiny.themeColor).toBeNull();
+    expect(tiny.colors).toStrictEqual([]);
+    expect(tiny.fonts).toStrictEqual([]);
   });
 });

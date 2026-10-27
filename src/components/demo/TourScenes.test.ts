@@ -58,6 +58,36 @@ describe('TourScenes', () => {
     it('adds the reviews when Google returned some', () => {
       expect(landingSectionsFor({ data: data(), hasReviews: true })).toContain('reviews');
     });
+
+    it('orders the body sections as the design picked, skipping empty ones', () => {
+      const designed = data({
+        landing: {
+          ...data().landing,
+          about: 'Sono osteopata dal 2010.',
+          faqs: [{ question: 'Dove ricevi?', answer: 'A Roma.' }],
+          highlights: [],
+        },
+        design: {
+          fonts: 'warm',
+          accentColor: '#c8a96b',
+          surface: 'warm',
+          corners: 'round',
+          hero: 'split',
+          services: 'list',
+          sectionOrder: ['about', 'highlights', 'reviews', 'faq', 'services', 'steps'],
+        },
+      });
+
+      expect(landingSectionsFor({ data: designed, hasReviews: true })).toStrictEqual([
+        'hero',
+        'about',
+        'reviews',
+        'faq',
+        'services',
+        'funnel',
+        'contact',
+      ]);
+    });
   });
 
   describe('Tour', () => {

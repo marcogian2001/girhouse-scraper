@@ -1,7 +1,18 @@
 import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';
 import * as z from 'zod';
 import { logger } from '@/libs/Logger';
+import { isUsableBrandColor, normalizeHex } from '@/utils/Colors';
 import { requireCopywritingModel } from '@/utils/CopywritingModels';
+import type { LandingBodySection } from '@/utils/DemoDesign';
+import {
+  DEFAULT_SECTION_ORDER,
+  DEMO_CORNERS,
+  DEMO_FONT_PAIRINGS,
+  DEMO_HEROES,
+  DEMO_SERVICE_LAYOUTS,
+  DEMO_SURFACES,
+  LANDING_BODY_SECTIONS,
+} from '@/utils/DemoDesign';
 import { cleanReply } from '@/utils/ReplyGuard';
 import { getClient, reasoningFor } from './Claude';
 import { toBilledCall } from './ReplyPrompt';
@@ -20,6 +31,19 @@ const demoTextsSchema = z.object({
       prezzo: z.string().nullable(),
     }),
   ),
+  perche_sceglierci: z.array(z.object({ titolo: z.string(), testo: z.string() })),
+  percorso: z.array(z.object({ titolo: z.string(), testo: z.string() })),
+  faq: z.array(z.object({ domanda: z.string(), risposta: z.string() })),
+  design: z.object({
+    font: z.enum(DEMO_FONT_PAIRINGS),
+    hero: z.enum(DEMO_HEROES),
+    servizi: z.enum(DEMO_SERVICE_LAYOUTS),
+    sfondo: z.enum(DEMO_SURFACES),
+    angoli: z.enum(DEMO_CORNERS),
+    colore_principale: z.string().nullable(),
+    colore_accento: z.string().nullable(),
+    ordine_sezioni: z.array(z.enum(LANDING_BODY_SECTIONS)),
+  }),
   chat: z.object({
     nome_cliente: z.string(),
     servizio: z.string().nullable(),
@@ -48,6 +72,12 @@ export type DemoSources = {
   websiteTitle: string | null;
   websiteDescription: string | null;
   websiteText: string | null;
+  // Hex colours and font families the website's styles use, the most frequent first
+  websiteColors: string[];
+  websiteFonts: string[];
+  // Roughly how many photos of the business the page can show, and whether one is a portrait
+  photoCount: number;
+  hasPortrait: boolean;
   // From the professional's MioDottore profile, when one was found
   profileAbout: string | null;
   profileServices: { name: string; price: string | null }[];
@@ -78,6 +108,20 @@ const INSTRUCTIONS = [
   '- `chi_siamo`: 3 or 4 sentences about the business, only from the notes, description, research, reference pages, profile, Instagram bio or posts, or website text: who they are, their training and credentials, their approach, where they work. In the first person when the business is one professional. Null when the sources say nothing about it.',
   '- `cta`: the main button, 2 to 4 words, fitting the business (for example "Prenota una visita", "Richiedi un preventivo").',
   '- `servizi`: up to 6 services the sources state explicitly, the ones a new customer books first, each with a one-sentence `descrizione` taken from the sources, or null when they give none, and its `prezzo` exactly as the sources state it (for example "100 €"), or null. An empty list when no services are stated; the category alone is not a service list.',
+  '- `perche_sceglierci`: 3 or 4 reasons customers pick the business, each a `titolo` of 2 to 5 words and a `testo` of one sentence, drawn from what reviews praise, credentials, approach or what the notes stress. Never generic claims any business could make ("professionalità", "cortesia") unless the reviews say them in their own words. An empty list when the sources do not give at least 3 real reasons.',
+  '- `percorso`: 3 or 4 steps of how working with the business goes (for example first contact, first visit, treatment, follow-up), each a `titolo` of 2 to 4 words and a `testo` of one sentence, only when the sources describe the process or the service makes it plain. An empty list otherwise.',
+  '- `faq`: 3 to 5 questions a new customer of this business would ask, each answered in one or two sentences with facts from the sources only (where, how to book, who it is for, what to bring when the sources say it). Never answer with prices, durations or policies the sources do not state; leave such questions out. An empty list when fewer than 3 can be answered.',
+  '',
+  'Design (`design`): pick a look made for this business, so the page does not feel like a template. Two businesses of different kinds should rarely get the same choices.',
+  '- `font`: the font pair matching its character. `classic` (Playfair Display serif titles: established, formal, law, dentistry), `editorial` (Fraunces soft serif: artisan, food, wine, crafts), `refined` (Cormorant Garamond: luxury, beauty, weddings, spa), `warm` (Lora serif with rounded Nunito: psychology, midwifery, family care), `modern` (Plus Jakarta Sans: studios, design, consultants), `friendly` (Nunito rounded: children, pets, schools), `bold` (Bricolage Grotesque: gyms, barbers, workshops, energetic brands), `clinical` (Outfit: medicine, physiotherapy, labs). When the website fonts are a serif or a sans, stay close to them.',
+  '- `colore_principale`: the brand colour as hex. The first website colour when there are any; otherwise a colour fitting the business and its city, never the default blue of every template (for example sage green for a herbalist, terracotta for a trattoria, deep teal for a physiotherapist). Never near white, black or grey.',
+  '- `colore_accento`: a second hex colour that goes with it, for details: the second website colour when it suits, else a complementary or harmonious tone.',
+  '- `sfondo`: `white` for clean, clinical or modern brands, `warm` (cream) for artisan, food, family or wellness ones, `tinted` (a pale wash of the brand colour) for bold or playful ones.',
+  '- `angoli`: `sharp` for formal or editorial brands, `soft` for most, `round` for friendly, children or wellness ones.',
+  '- `hero`: `photo` (headline over a full-width photo) when there are several photos, `split` (headline beside a large photo or portrait) when there is a portrait or one strong photo, `editorial` (large serif headline over a photo strip) for refined or artisan brands with photos, `centered` (headline on the brand colour) when there are no photos.',
+  '- `servizi`: `cards` for up to 4 services with descriptions, `list` (a menu with prices on the right) when most have prices, `numbered` for treatments or packages that read best as a sequence.',
+  "- `ordine_sezioni`: the order of `services`, `highlights` (perche_sceglierci), `about` (chi_siamo), `steps` (percorso), `reviews` and `faq` that tells this business's story best: lead with what convinces its customers most (for example reviews early when they are strong, about early for a single professional, services early for a shop).",
+  '- The notes from the Girhouse team win over these rules when they ask for a colour, font or feel.',
   '',
   'Example WhatsApp chat (`chat`), clearly an example:',
   '- `nome_cliente`: a common Italian first name for the invented customer.',
@@ -115,6 +159,12 @@ export const renderDemoSources = (sources: DemoSources) =>
     ['Website title', sources.websiteTitle],
     ['Website description', sources.websiteDescription],
     ['Website text', sources.websiteText],
+    ['Website colours', sources.websiteColors.join(', ')],
+    ['Website fonts', sources.websiteFonts.join(', ')],
+    [
+      'Photos available for the page',
+      `${sources.photoCount}${sources.hasPortrait ? ', plus a portrait of the professional' : ''}`,
+    ],
     ['Professional profile', sources.profileAbout],
     [
       'Services and prices',
@@ -159,11 +209,38 @@ const MAX_SERVICES = 6;
 
 const MAX_MESSAGES = 10;
 
+const MAX_HIGHLIGHTS = 4;
+
+const MAX_STEPS = 4;
+
+const MAX_FAQS = 5;
+
 /**
- * Turns the AI's texts into the landing and chat a demo stores, cleaned of the
+ * Reads a colour the AI picked.
+ * @param value The hex the AI wrote, if any.
+ * @returns The colour as six-digit hex, or null when it is not one a page can be tinted with.
+ */
+const usableColor = (value: string | null) => {
+  const hex = normalizeHex(value);
+
+  return hex && isUsableBrandColor(hex) ? hex : null;
+};
+
+/**
+ * Puts the body sections in the AI's order, then any it left out in the default one, so a
+ * section with content always has a place.
+ * @param order The order the AI picked.
+ * @returns Every body section once.
+ */
+const completeSectionOrder = (order: LandingBodySection[]) => [
+  ...new Set([...order, ...DEFAULT_SECTION_ORDER]),
+];
+
+/**
+ * Turns the AI's texts into the landing, chat and design a demo stores, cleaned of the
  * dashes the writing rules forbid and trimmed to what the page has room for.
  * @param texts The parsed AI answer.
- * @returns The landing and chat of the snapshot.
+ * @returns The landing, chat and design of the snapshot, and the colours the AI picked.
  */
 export const toDemoContent = (texts: DemoTexts) => ({
   landing: {
@@ -176,6 +253,30 @@ export const toDemoContent = (texts: DemoTexts) => ({
       description: service.descrizione ? cleanReply(service.descrizione) : null,
       price: service.prezzo ? cleanReply(service.prezzo) : null,
     })),
+    highlights: texts.perche_sceglierci.slice(0, MAX_HIGHLIGHTS).map((item) => ({
+      title: cleanReply(item.titolo),
+      text: cleanReply(item.testo),
+    })),
+    steps: texts.percorso.slice(0, MAX_STEPS).map((item) => ({
+      title: cleanReply(item.titolo),
+      text: cleanReply(item.testo),
+    })),
+    faqs: texts.faq.slice(0, MAX_FAQS).map((item) => ({
+      question: cleanReply(item.domanda),
+      answer: cleanReply(item.risposta),
+    })),
+  },
+  design: {
+    fonts: texts.design.font,
+    surface: texts.design.sfondo,
+    corners: texts.design.angoli,
+    hero: texts.design.hero,
+    services: texts.design.servizi,
+    sectionOrder: completeSectionOrder(texts.design.ordine_sezioni),
+  },
+  colors: {
+    primary: usableColor(texts.design.colore_principale),
+    accent: usableColor(texts.design.colore_accento),
   },
   chat: {
     customerName: cleanReply(texts.chat.nome_cliente),

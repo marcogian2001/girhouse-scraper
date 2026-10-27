@@ -29,6 +29,7 @@ import {
   deleteUnusedImages,
   instagramSources,
   loadContactResearch,
+  MAX_COPIED_PHOTOS,
   readOutsideSources,
   renderReferences,
   socialFacts,
@@ -213,17 +214,33 @@ const directoryFacts = (profile: MioDottoreProfile | null) =>
     : null;
 
 /**
- * Picks the logo and colour a demo is tinted with.
- * @param brand What the business website says, if it could be read.
- * @returns The logo, if any, and a usable colour.
+ * Picks the colours a demo is tinted with: the website's own when it has any, else the ones
+ * the AI picked for the business, else the giraffe's navy.
+ * @param options The colours known.
+ * @param options.brand What the business website says, if it could be read.
+ * @param options.picked The usable colours the AI picked.
+ * @param options.picked.primary The AI's brand colour, if usable.
+ * @param options.picked.accent The AI's detail colour, if usable.
+ * @returns The primary and accent colours.
  */
-const brandFacts = (brand: WebsiteBrand | null) => ({
-  logoUrl: brand?.logoUrl ?? null,
-  primaryColor:
-    brand?.themeColor && isUsableBrandColor(brand.themeColor)
-      ? brand.themeColor
-      : DEFAULT_BRAND_COLOR,
-});
+const pickColors = (options: {
+  brand: WebsiteBrand | null;
+  picked: { primary: string | null; accent: string | null };
+}) => {
+  const themeColor =
+    options.brand?.themeColor && isUsableBrandColor(options.brand.themeColor)
+      ? options.brand.themeColor
+      : null;
+  const siteColors = [
+    ...new Set([...(themeColor ? [themeColor] : []), ...(options.brand?.colors ?? [])]),
+  ];
+  const primary = siteColors.at(0) ?? options.picked.primary ?? DEFAULT_BRAND_COLOR;
+  const accent = [options.picked.accent, siteColors.at(1)].find(
+    (color) => color && color !== primary,
+  );
+
+  return { primary, accent: accent ?? primary };
+};
 
 /**
  * Reads the business's own website.
@@ -286,7 +303,36 @@ const websiteSources = (brand: WebsiteBrand | null) => ({
   websiteTitle: brand?.title ?? null,
   websiteDescription: brand?.description ?? null,
   websiteText: brand?.text ?? null,
+  websiteColors: brand?.colors ?? [],
+  websiteFonts: brand?.fonts ?? [],
 });
+
+/**
+ * Counts roughly how many photos the page will show, before they are copied, so the AI
+ * can pick a layout that suits them.
+ * @param sources What was read about the business.
+ * @returns The photo count, and whether a portrait of the professional is known.
+ */
+const photoSources = (sources: GatheredSources) => {
+  const { lead, profile, own, instagram, references } = sources;
+  const posts = (instagram?.latestPosts ?? []).filter((post) => post.displayUrl);
+
+  return {
+    photoCount:
+      Math.min(
+        references.flatMap((page) => page.images).length +
+          (own.brand?.images.length ?? 0) +
+          posts.length,
+        MAX_COPIED_PHOTOS,
+      ) +
+      (profile?.photos.length ?? 0) +
+      // The page shows up to two Google photos of a place
+      (lead?.placeId ? 2 : 0),
+    hasPortrait: Boolean(
+      profile?.portraitUrl ?? instagram?.profilePicUrlHD ?? instagram?.profilePicUrl,
+    ),
+  };
+};
 
 /**
  * Builds the snapshot a demo page shows from every source it can read, with texts the AI
@@ -330,6 +376,7 @@ const buildSnapshot = async (
         teamNotes: textOrNull(guidance),
         referencePages: renderReferences(references),
         ...websiteSources(own.brand),
+        ...photoSources(sources),
         ...profileSources(profile),
         ...instagramSources(instagram),
       },
@@ -358,6 +405,9 @@ const buildSnapshot = async (
     throw new Error(`${call.model} returned no parsable demo texts for ${conversation.id}`);
   }
 
+  const { landing, chat, design, colors: picked } = toDemoContent(texts);
+  const colors = pickColors({ brand: own.brand, picked });
+
   return {
     version: DEMO_SNAPSHOT_VERSION,
     ...facts,
@@ -365,11 +415,14 @@ const buildSnapshot = async (
     website: own.website,
     categories: extras.categories,
     openingHours: extras.openingHours,
-    ...brandFacts(own.brand),
+    logoUrl: own.brand?.logoUrl ?? null,
+    primaryColor: colors.primary,
+    design: { ...design, accentColor: colors.accent },
     directory: directoryFacts(profile),
     social: socialFacts(instagram),
     images,
-    ...toDemoContent(texts),
+    landing,
+    chat,
   };
 };
 

@@ -15,6 +15,7 @@ import {
   unique,
   uuid,
 } from 'drizzle-orm/pg-core';
+import type { DemoDesign } from '@/utils/DemoDesign';
 import type { WebsiteCheck } from '@/validations/EnrichmentValidation';
 
 // This file defines the structure of your database tables using the Drizzle ORM.
@@ -1156,6 +1157,8 @@ export type DemoSnapshot = {
   logoUrl: string | null;
   // Hex colour the page is tinted with
   primaryColor: string;
+  // Fonts, colours and layouts picked for the business; older demos lack it and keep the first look
+  design?: DemoDesign | null;
   // The professional's public booking profile (MioDottore), when one was found; older demos lack it
   directory?: {
     name: string;
@@ -1184,6 +1187,11 @@ export type DemoSnapshot = {
     ctaLabel: string;
     // The price only when a public source states it; older demos lack it
     services: { name: string; description: string | null; price?: string | null }[];
+    // Why customers pick the business, how a first visit goes and common questions, only from
+    // facts in the sources; older demos lack them
+    highlights?: { title: string; text: string }[];
+    steps?: { title: string; text: string }[];
+    faqs?: { question: string; answer: string }[];
   };
   // An invented customer and conversation, always labelled as an example
   chat: {

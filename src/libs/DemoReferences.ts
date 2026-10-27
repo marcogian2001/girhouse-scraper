@@ -16,7 +16,7 @@ import { logger } from './Logger';
 type Contact = typeof contactSchema.$inferSelect;
 
 /** Photos copied for one demo at most, from every source together. */
-const MAX_COPIED_PHOTOS = 8;
+export const MAX_COPIED_PHOTOS = 8;
 
 /** Instagram posts a demo reads the captions and photos of. */
 const INSTAGRAM_POSTS = 6;

@@ -1,6 +1,8 @@
 import type { DemoSnapshot } from '@/models/Schema';
+import type { LandingBodySection } from '@/utils/DemoDesign';
+import { DEFAULT_SECTION_ORDER } from '@/utils/DemoDesign';
 
-export type LandingSection = 'hero' | 'services' | 'about' | 'reviews' | 'funnel' | 'contact';
+export type LandingSection = 'hero' | LandingBodySection | 'funnel' | 'contact';
 
 /** What one press of "Next" shows, and which line the giraffe says over it. */
 export type TourScene =
@@ -26,7 +28,8 @@ export type TourScene =
 export const TOUR_STEPS = 6;
 
 /**
- * Lists the landing sections a business has data for. The review system and the hero always show.
+ * Lists the landing sections a business has data for, the body ones in the order its design
+ * picked. The hero and the review system always show.
  * @param options What is known.
  * @param options.data The demo snapshot.
  * @param options.hasReviews Whether Google returned reviews to show.
@@ -34,21 +37,20 @@ export const TOUR_STEPS = 6;
  */
 export const landingSectionsFor = (options: { data: DemoSnapshot; hasReviews: boolean }) => {
   const { data } = options;
-  const sections: LandingSection[] = ['hero'];
-
-  if (data.landing.services.length > 0) {
-    sections.push('services');
-  }
-
-  if (data.landing.about) {
-    sections.push('about');
-  }
-
-  if (options.hasReviews) {
-    sections.push('reviews');
-  }
-
-  sections.push('funnel');
+  const hasContent: Record<LandingBodySection, boolean> = {
+    services: data.landing.services.length > 0,
+    highlights: (data.landing.highlights?.length ?? 0) > 0,
+    about: Boolean(data.landing.about),
+    steps: (data.landing.steps?.length ?? 0) > 0,
+    reviews: options.hasReviews,
+    faq: (data.landing.faqs?.length ?? 0) > 0,
+  };
+  const order = data.design?.sectionOrder ?? DEFAULT_SECTION_ORDER;
+  const sections: LandingSection[] = [
+    'hero',
+    ...order.filter((section) => hasContent[section]),
+    'funnel',
+  ];
 
   if (data.openingHours.length > 0 || data.address || data.phone) {
     sections.push('contact');

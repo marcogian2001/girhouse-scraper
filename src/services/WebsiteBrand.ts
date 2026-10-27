@@ -1,4 +1,4 @@
-import { normalizeHex } from '@/utils/Colors';
+import { isUsableBrandColor, normalizeHex } from '@/utils/Colors';
 
 const FETCH_TIMEOUT_MS = 8000;
 
@@ -12,6 +12,18 @@ const MAX_IMAGES = 6;
 /** An image declared narrower than this is an icon or a thumbnail, not a photo. */
 const MIN_IMAGE_WIDTH_PX = 300;
 
+/** Stylesheets of the site read for its colours and fonts. */
+const MAX_STYLESHEETS = 2;
+
+const MAX_CSS_BYTES = 400_000;
+
+/** Colours and fonts a site uses at most, the most frequent first. */
+const MAX_BRAND_TOKENS = 3;
+
+/** Fonts that say nothing about a brand: generic families, system fonts and icon fonts. */
+const PLAIN_FONT =
+  /^(?:inherit|initial|unset|serif|sans-serif|monospace|cursive|system-ui|-apple-system|blinkmacsystemfont|ui-\w+|arial|helvetica(?: neue)?|times(?: new roman)?|georgia|verdana|tahoma|segoe ui|roboto|apple color emoji|segoe ui emoji|.*(?:awesome|icon|dashicons|eicons|glyph).*)$/iu;
+
 /** Image files that are logos, icons or decoration rather than photos of the business. */
 const DECORATION =
   /logo|icon|favicon|sprite|avatar|placeholder|badge|\.svg(?:$|\?)|\.gif(?:$|\?)/iu;
@@ -20,6 +32,10 @@ const DECORATION =
 export type WebsiteBrand = {
   logoUrl: string | null;
   themeColor: string | null;
+  // Colours with presence the site's styles use, the most frequent first
+  colors: string[];
+  // Font families the site loads or declares, the most frequent first
+  fonts: string[];
   title: string | null;
   description: string | null;
   // Visible text, for the AI to read services from
@@ -138,12 +154,72 @@ const findImages = (options: { sharingImage?: string; html: string; baseUrl: str
 };
 
 /**
+ * Lists values by how often they appear, the most frequent first.
+ * @param values The values, repeated as often as they appear.
+ * @returns Up to `MAX_BRAND_TOKENS` distinct values.
+ */
+const mostFrequent = (values: string[]) => {
+  const counts = new Map<string, number>();
+
+  for (const value of values) {
+    counts.set(value, (counts.get(value) ?? 0) + 1);
+  }
+
+  return [...counts.entries()]
+    .toSorted((a, b) => b[1] - a[1])
+    .slice(0, MAX_BRAND_TOKENS)
+    .map(([value]) => value);
+};
+
+/**
+ * Finds the colours with presence a site's styles use, leaving out whites, blacks and greys.
+ * @param css The site's styles.
+ * @returns The colours as lowercase six-digit hex, the most frequent first.
+ */
+const findColors = (css: string) =>
+  mostFrequent(
+    [...css.matchAll(/#(?:[0-9a-f]{6}|[0-9a-f]{3})(?![0-9a-f])/giu)]
+      .map((match) => normalizeHex(match[0]))
+      .filter((hex): hex is string => hex !== null && isUsableBrandColor(hex)),
+  );
+
+/**
+ * Finds the font families a site loads from Google Fonts or declares in its styles.
+ * @param options The page parts.
+ * @param options.links The link tags of the page.
+ * @param options.css The site's styles.
+ * @returns The families, the most frequent first, generic and icon fonts left out.
+ */
+const findFonts = (options: { links: string[]; css: string }) => {
+  const loaded = options.links.flatMap((tag) => {
+    const href = decodeEntities(readAttribute(tag, 'href') ?? '');
+
+    return href.includes('fonts.googleapis.com')
+      ? [...href.matchAll(/family=([^&:]+)/gu)].map((match) =>
+          decodeURIComponent(match[1] ?? '').replaceAll('+', ' '),
+        )
+      : [];
+  });
+
+  const declared = [...options.css.matchAll(/font-family\s*:\s*([^;}{!]+)/giu)].map(
+    (match) => match[1]?.split(',')[0]?.trim().replaceAll(/["']/gu, '') ?? '',
+  );
+
+  return mostFrequent(
+    [...loaded, ...declared].filter(
+      (font) => font && !font.startsWith('var(') && !PLAIN_FONT.test(font),
+    ),
+  );
+};
+
+/**
  * Extracts a business's brand from its homepage HTML.
  * @param html The page source.
  * @param baseUrl The page URL, to resolve relative links.
- * @returns The logo, theme colour, title, description, visible text and photos.
+ * @param stylesheets The site's stylesheets, when they were downloaded.
+ * @returns The logo, theme colour, colours, fonts, title, description, visible text and photos.
  */
-export const parseBrandHtml = (html: string, baseUrl: string): WebsiteBrand => {
+export const parseBrandHtml = (html: string, baseUrl: string, stylesheets = ''): WebsiteBrand => {
   const metas = html.match(/<meta\b[^>]*>/giu) ?? [];
   const links = html.match(/<link\b[^>]*>/giu) ?? [];
 
@@ -170,10 +246,17 @@ export const parseBrandHtml = (html: string, baseUrl: string): WebsiteBrand => {
     .slice(0, MAX_TEXT_LENGTH);
 
   const description = meta('description') ?? meta('og:description');
+  const css = [
+    ...[...html.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style>/giu)].map((match) => match[1]),
+    ...[...html.matchAll(/\sstyle\s*=\s*"([^"]*)"/giu)].map((match) => match[1]),
+    stylesheets,
+  ].join('\n');
 
   return {
     logoUrl: findLogo(links, baseUrl),
     themeColor: normalizeHex(meta('theme-color')),
+    colors: findColors(css),
+    fonts: findFonts({ links, css }),
     title: title ? decodeEntities(title).trim() || null : null,
     description: description ? decodeEntities(description) : null,
     text,
@@ -209,12 +292,45 @@ export const fetchHtml = async (url: string) => {
 };
 
 /**
- * Downloads a business's homepage and reads its brand.
+ * Downloads the first stylesheets a page links from its own host, where most sites keep their colours.
+ * A stylesheet that cannot be read is simply skipped.
+ * @param html The page source.
+ * @param baseUrl The page URL.
+ * @returns The stylesheets' text, joined.
+ */
+const fetchStylesheets = async (html: string, baseUrl: string) => {
+  const host = new URL(baseUrl).hostname;
+  const urls = (html.match(/<link\b[^>]*>/giu) ?? [])
+    .filter((tag) => readAttribute(tag, 'rel')?.toLowerCase().split(/\s+/u).includes('stylesheet'))
+    .map((tag) => resolveUrl(readAttribute(tag, 'href'), baseUrl))
+    .filter((url): url is string => url !== null && new URL(url).hostname === host)
+    .slice(0, MAX_STYLESHEETS);
+
+  const sheets = await Promise.all(
+    urls.map(async (url) => {
+      const response = await fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) }).catch(
+        () => null,
+      );
+      const text = response?.ok ? await response.text().catch(() => '') : '';
+
+      return text.slice(0, MAX_CSS_BYTES);
+    }),
+  );
+
+  return sheets.join('\n');
+};
+
+/**
+ * Downloads a business's homepage, with its own stylesheets, and reads its brand.
  * @param url The website URL.
  * @returns The brand, or null when the page could not be read.
  */
 export const fetchWebsiteBrand = async (url: string) => {
   const page = await fetchHtml(url);
 
-  return page ? parseBrandHtml(page.html, page.url) : null;
+  if (!page) {
+    return null;
+  }
+
+  return parseBrandHtml(page.html, page.url, await fetchStylesheets(page.html, page.url));
 };
