@@ -6,12 +6,15 @@ import type {
   CopywritingTokens,
 } from '@/utils/CopywritingModels';
 import { extractMentionNames } from '@/utils/KnowledgeMentions';
+import { readOwnWebsite } from '@/utils/Leads';
 import type { EnrichmentContent, WebsiteCheck } from '@/validations/EnrichmentValidation';
 
 const sequenceAngleSchema = z.object({
   pain: z
     .string()
-    .describe('The main problem of the business this sequence addresses, in a few words.'),
+    .describe(
+      'The main problem of the business this sequence addresses, in a few words. Never a missing website feature unless the website check lists it as "not found".',
+    ),
   reason: z.string().describe('Why this problem, citing the research detail that shows it.'),
 });
 
@@ -76,6 +79,7 @@ export const SYSTEM_INSTRUCTIONS = [
   '',
   'Hard rules:',
   '- Never state a fact about the recipient that is not in the research below. No invented mutual connections, no invented metrics, no flattery you cannot back up.',
+  '- Never say the recipient\'s website lacks something (online booking, a contact or booking form, WhatsApp, a clickable phone number) unless the website check below lists it as "not found". The research notes about the website cannot support that claim.',
   '- When the research confidence is low, write from the company or the industry instead of the person, and keep the email shorter.',
   '- Plain text only. No markdown, no HTML, no bullet lists, no links unless one was supplied.',
   '- Subject lines under 60 characters, lowercase or sentence case, never clickbait and never all caps.',
@@ -131,20 +135,27 @@ export const buildCampaignBrief = (options: {
     .join('\n\n');
 };
 
-const yesNo = (found: boolean) => (found ? 'yes' : 'no');
+const foundOrNot = (found: boolean) => (found ? 'found' : 'not found');
 
 /**
  * Renders what reading the business's website showed, so the email only calls
  * missing a contact channel the site really lacks.
- * @param check The website check, null when the business has no website of its own.
- * @returns The prompt section, or an empty string without a check.
+ * @param options The render options.
+ * @param options.check The website check, null when the website was not read.
+ * @param options.hasOwnWebsite Whether the business has a website of its own.
+ * @returns The prompt section, or an empty string for a business without a website.
  */
-const renderWebsiteCheck = (check: WebsiteCheck | null) => {
-  if (!check) {
-    return '';
+const renderWebsiteCheck = (options: { check: WebsiteCheck | null; hasOwnWebsite: boolean }) => {
+  if (!options.check) {
+    return options.hasOwnWebsite
+      ? [
+          '## Website check',
+          'The website was not checked. Never say a contact form, WhatsApp or online booking is missing from it.',
+        ].join('\n')
+      : '';
   }
 
-  if (!check.read) {
+  if (!options.check.read) {
     return [
       '## Website check',
       'The website could not be read reliably. Never say a contact form, WhatsApp or online booking is missing from it.',
@@ -152,13 +163,13 @@ const renderWebsiteCheck = (check: WebsiteCheck | null) => {
   }
 
   return [
-    '## Website check (read directly from the site, more reliable than the research)',
-    `- Pages read: ${check.pages.join(', ')}`,
-    `- Contact form: ${yesNo(check.contactForm)}`,
-    `- WhatsApp link: ${yesNo(check.whatsapp)}`,
-    `- Online booking: ${yesNo(check.booking)}`,
-    `- Clickable phone link: ${yesNo(check.phone)}`,
-    'Only call a contact channel missing when it reads "no" here.',
+    '## Website check (the pages below were read directly)',
+    `- Pages read: ${options.check.pages.join(', ')}`,
+    `- Contact form: ${foundOrNot(options.check.contactForm)}`,
+    `- WhatsApp link: ${foundOrNot(options.check.whatsapp)}`,
+    `- Online booking: ${foundOrNot(options.check.booking)}`,
+    `- Clickable phone link: ${foundOrNot(options.check.phone)}`,
+    'Only call a contact channel missing when it reads "not found" here, and say you did not find it on the site rather than that it does not exist.',
   ].join('\n');
 };
 
@@ -176,7 +187,10 @@ export const buildContactPrompt = (options: {
   enrichment: EnrichmentContent | null;
   websiteCheck?: WebsiteCheck | null;
 }) => {
-  const websiteCheck = renderWebsiteCheck(options.websiteCheck ?? null);
+  const websiteCheck = renderWebsiteCheck({
+    check: options.websiteCheck ?? null,
+    hasOwnWebsite: Boolean(readOwnWebsite(options.contact)),
+  });
   const fromCsv = [
     ['Email', options.contact.email],
     ['First name', options.contact.firstName],
@@ -263,7 +277,9 @@ const parseJson = (text: string): unknown => {
 };
 
 // Batches submitted before the angle was asked for come back without it
-const batchSequenceSchema = emailSequenceSchema.extend({ angle: sequenceAngleSchema.nullish() });
+const batchSequenceSchema = emailSequenceSchema.extend({
+  angle: sequenceAngleSchema.nullish(),
+});
 
 /**
  * Reads the sequence out of a structured-output reply that the SDK did not parse,

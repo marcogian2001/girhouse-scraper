@@ -7,11 +7,9 @@ import {
   writeEmailSequence,
 } from '@/services/Copywriting';
 import type { Campaign } from '@/services/EmailPrompt';
+import { EnrichmentContentValidation } from '@/validations/EnrichmentValidation';
 import {
-  EnrichmentContentValidation,
-  WebsiteCheckValidation,
-} from '@/validations/EnrichmentValidation';
-import {
+  ensureWebsiteCheck,
   loadKnowledgeAssets,
   requireCampaign,
   saveSequence,
@@ -127,23 +125,25 @@ const submitBatch = async (options: {
 
   const knowledgeAssets = await loadKnowledgeAssets(options.campaign);
 
-  const requests = contacts
-    .filter((contact) => !options.payload.doneIds.includes(contact.id))
-    .map((contact) => {
-      const enrichment = enrichments.find((item) => item.contactId === contact.id);
-      const parsedEnrichment = EnrichmentContentValidation.safeParse(enrichment?.content);
+  const requests = await Promise.all(
+    contacts
+      .filter((contact) => !options.payload.doneIds.includes(contact.id))
+      .map(async (contact) => {
+        const enrichment = enrichments.find((item) => item.contactId === contact.id);
+        const parsedEnrichment = EnrichmentContentValidation.safeParse(enrichment?.content);
 
-      return {
-        customId: contact.id,
-        options: {
-          campaign: options.campaign,
-          contact,
-          enrichment: parsedEnrichment.success ? parsedEnrichment.data : null,
-          websiteCheck: WebsiteCheckValidation.safeParse(enrichment?.websiteCheck).data ?? null,
-          knowledgeAssets,
-        },
-      };
-    });
+        return {
+          customId: contact.id,
+          options: {
+            campaign: options.campaign,
+            contact,
+            enrichment: parsedEnrichment.success ? parsedEnrichment.data : null,
+            websiteCheck: await ensureWebsiteCheck({ contact, enrichment }),
+            knowledgeAssets,
+          },
+        };
+      }),
+  );
 
   const [first] = requests;
 

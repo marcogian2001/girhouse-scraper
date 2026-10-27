@@ -19,6 +19,19 @@ type LeadSearch = typeof leadSearchSchema.$inferSelect;
  */
 export const readResearchField = (value?: string) => (value?.trim() ? value.trim() : null);
 
+/**
+ * Reads the business's own website from a contact. A page listed as the
+ * website on Google Maps, such as a Facebook profile, is not the business's own site.
+ * @param contact The contact's website and extra columns.
+ * @param contact.website The website as uploaded.
+ * @param contact.extra The extra columns, which may say the business has no website of its own.
+ * @returns The website, or null when the business has none of its own.
+ */
+export const readOwnWebsite = (contact: {
+  website: string | null;
+  extra: Record<string, string>;
+}) => (contact.extra['Has own website'] === 'no' ? null : contact.website);
+
 /** Lead states the worker still has something to do for. */
 export const OPEN_LEAD_STATUSES = ['found', 'researching', 'finding_email'] as const;
 

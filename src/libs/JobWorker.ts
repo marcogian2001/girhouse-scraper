@@ -12,12 +12,11 @@ import {
 } from '@/services/Instantly';
 import { createTaskRun, fetchTaskRunResult } from '@/services/Parallel';
 import { checkWebsite } from '@/services/WebsiteCheck';
-import {
-  EnrichmentContentValidation,
-  WebsiteCheckValidation,
-} from '@/validations/EnrichmentValidation';
+import { readOwnWebsite } from '@/utils/Leads';
+import { EnrichmentContentValidation } from '@/validations/EnrichmentValidation';
 import {
   enqueueWriting,
+  ensureWebsiteCheck,
   loadKnowledgeAssets,
   requireCampaign,
   saveSequence,
@@ -89,8 +88,7 @@ const runEnrichJob = async (job: Job) => {
   });
 
   if (!existing?.parallelRunId) {
-    // A page listed as the website on Google Maps, such as a Facebook profile, is not the business's own site
-    const ownWebsite = contact.extra['Has own website'] === 'no' ? null : contact.website;
+    const ownWebsite = readOwnWebsite(contact);
     const [run, websiteCheck] = await Promise.all([
       createTaskRun({ contact, processor: campaign.processor }),
       ownWebsite ? checkWebsite(ownWebsite) : null,
@@ -194,7 +192,7 @@ const runWriteJob = async (job: Job) => {
     campaign,
     contact,
     enrichment: parsedEnrichment.success ? parsedEnrichment.data : null,
-    websiteCheck: WebsiteCheckValidation.safeParse(enrichment?.websiteCheck).data ?? null,
+    websiteCheck: await ensureWebsiteCheck({ contact, enrichment }),
     knowledgeAssets,
   });
 

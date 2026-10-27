@@ -192,9 +192,11 @@ describe('Email prompt', () => {
         },
       });
 
-      expect(prompt).toContain('- Contact form: yes');
-      expect(prompt).toContain('- WhatsApp link: no');
-      expect(prompt).toContain('Only call a contact channel missing when it reads "no" here.');
+      expect(prompt).toContain('- Contact form: found');
+      expect(prompt).toContain('- WhatsApp link: not found');
+      expect(prompt).toContain(
+        'Only call a contact channel missing when it reads "not found" here',
+      );
     });
 
     it('forbids calling anything missing when the website could not be read', () => {
@@ -215,8 +217,30 @@ describe('Email prompt', () => {
       expect(prompt).not.toContain('- Contact form: no');
     });
 
+    it('forbids calling anything missing when the website was not checked', () => {
+      const prompt = buildContactPrompt({
+        contact: { ...contact(), website: 'analytical.com' },
+        enrichment: enrichment('high'),
+      });
+
+      expect(prompt).toContain('The website was not checked.');
+    });
+
     it('omits the website check for a business without a website', () => {
       const prompt = buildContactPrompt({ contact: contact(), enrichment: enrichment('high') });
+
+      expect(prompt).not.toContain('## Website check');
+    });
+
+    it('omits the website check for a business listed with a page that is not its own', () => {
+      const prompt = buildContactPrompt({
+        contact: {
+          ...contact(),
+          website: 'facebook.com/analytical',
+          extra: { 'Has own website': 'no' },
+        },
+        enrichment: enrichment('high'),
+      });
 
       expect(prompt).not.toContain('## Website check');
     });

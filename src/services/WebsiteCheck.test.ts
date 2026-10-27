@@ -27,6 +27,75 @@ describe('Website check', () => {
 
       expect(detectContactChannels(html).contactForm).toBeTruthy();
     });
+
+    it('finds a request form that asks for a phone number instead of a message', () => {
+      const html =
+        '<form action="/richiesta"><input name="nome"><input type="tel" name="tel"><button type="submit">Invia</button></form>';
+
+      expect(detectContactChannels(html).contactForm).toBeTruthy();
+    });
+
+    it('ignores a login form', () => {
+      const html =
+        '<form action="/login"><input type="email" name="email"><input type="password" name="pwd"></form>';
+
+      expect(detectContactChannels(html).contactForm).toBeFalsy();
+    });
+  });
+
+  describe('Booking', () => {
+    it('finds a "Prenota ora" button', () => {
+      expect(
+        detectContactChannels('<a class="btn" href="/servizi">Prenota ora</a>').booking,
+      ).toBeTruthy();
+    });
+
+    it('finds a link to a booking page', () => {
+      expect(detectContactChannels('<a href="/prenotazioni/">Orari</a>').booking).toBeTruthy();
+    });
+
+    it('finds a form with a date field', () => {
+      const html =
+        '<form action="/send"><input name="nome"><input type="date" name="giorno"></form>';
+
+      expect(detectContactChannels(html).booking).toBeTruthy();
+    });
+
+    it('finds a form named for bookings', () => {
+      const html = '<form id="form-prenotazione"><input name="nome"></form>';
+
+      expect(detectContactChannels(html).booking).toBeTruthy();
+    });
+
+    it('finds an embedded TheFork widget', () => {
+      const html = '<script src="https://widget.thefork.com/abc.js"></script>';
+
+      expect(detectContactChannels(html).booking).toBeTruthy();
+    });
+
+    it('finds the Amelia booking plugin', () => {
+      const html = '<link href="/wp-content/plugins/ameliabooking/public/css/amelia.css">';
+
+      expect(detectContactChannels(html).booking).toBeTruthy();
+    });
+
+    it('finds a Wix Bookings site', () => {
+      expect(
+        detectContactChannels('<script>{"artifactId":"bookings-uou"}</script>').booking,
+      ).toBeTruthy();
+    });
+
+    it('counts a phone link that offers to book', () => {
+      expect(
+        detectContactChannels('<a href="tel:+390612345678">Chiama per prenotare</a>').booking,
+      ).toBeTruthy();
+    });
+
+    it('ignores a Facebook link', () => {
+      expect(
+        detectContactChannels('<a href="https://facebook.com/studio">Facebook</a>').booking,
+      ).toBeFalsy();
+    });
   });
 
   describe('Other channels', () => {

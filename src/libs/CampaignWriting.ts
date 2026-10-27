@@ -3,16 +3,24 @@ import {
   campaignSchema,
   contactSchema,
   emailDraftSchema,
+  enrichmentSchema,
   jobSchema,
   knowledgeAssetSchema,
 } from '@/models/Schema';
 import type { WrittenSequence } from '@/services/EmailPrompt';
+import { checkWebsite } from '@/services/WebsiteCheck';
 import { extractMentionNames } from '@/utils/KnowledgeMentions';
+import { readOwnWebsite } from '@/utils/Leads';
+import { WebsiteCheckValidation } from '@/validations/EnrichmentValidation';
 import { db } from './DB';
 import { enqueue } from './JobQueue';
 import { recordCopywritingUsage } from './Usage';
 
 type Campaign = typeof campaignSchema.$inferSelect;
+
+type Contact = typeof contactSchema.$inferSelect;
+
+type Enrichment = typeof enrichmentSchema.$inferSelect;
 
 /**
  * How long a batch campaign waits for more contacts to finish research before
@@ -122,6 +130,42 @@ export const loadKnowledgeAssets = async (campaign: Campaign) => {
   });
 
   return [...selected, ...mentioned];
+};
+
+/**
+ * Returns what reading the contact's website showed, reading it now when the
+ * research came without a check, such as for leads reused from a lead search.
+ * @param options The call options.
+ * @param options.contact The contact being written to.
+ * @param options.enrichment The contact's research row, when there is one.
+ * @returns The website check, or null when the business has no website of its own.
+ */
+export const ensureWebsiteCheck = async (options: {
+  contact: Contact;
+  enrichment: Enrichment | undefined;
+}) => {
+  const stored = WebsiteCheckValidation.safeParse(options.enrichment?.websiteCheck);
+
+  if (stored.success) {
+    return stored.data;
+  }
+
+  const website = readOwnWebsite(options.contact);
+
+  if (!website) {
+    return null;
+  }
+
+  const websiteCheck = await checkWebsite(website);
+
+  if (options.enrichment) {
+    await db
+      .update(enrichmentSchema)
+      .set({ websiteCheck })
+      .where(eq(enrichmentSchema.id, options.enrichment.id));
+  }
+
+  return websiteCheck;
 };
 
 /**
