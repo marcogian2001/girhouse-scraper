@@ -1,6 +1,6 @@
 # Automazione risposte cold email: stato dei lavori
 
-Ultimo aggiornamento: 29 ottobre 2026 (demo versione B: video che va avanti da solo, con la voce di Gigi e i problemi tipici del settore del lead).
+Ultimo aggiornamento: 29 ottobre 2026 (garanzia soddisfatti o rimborsati a 30 giorni al posto della settimana gratis; demo versione B).
 
 Questo file serve a riprendere il lavoro anche senza la chat originale, da soli o con un altro assistente AI. Per ripartire basta dire all'AI: "leggi `docs/AUTOMAZIONE_RISPOSTE.md` e `AGENTS.md`, poi continuiamo dalla prima voce non spuntata".
 
@@ -25,7 +25,7 @@ Automatizzare tutto quello che succede dopo la risposta di un lead a una cold em
 
 - **Cosa facciamo:** rifacciamo la landing page e configuriamo GHL: telefono, WhatsApp ed email in un unico posto, risposta automatica e follow-up. Numeri e account restano del cliente.
 - **Prezzo:** 97€/mese, zero attivazione, nessun vincolo, assistenza italiana inclusa.
-- **Prova:** prima settimana gratis, senza contratto. Le email non parlano mai di carta (decisione del 23/10: non è vero che non serve).
+- **Garanzia (29/10):** soddisfatti o rimborsati: se dopo 30 giorni il cliente non è soddisfatto, gli rimborsiamo quanto ha pagato. Sostituisce la prima settimana gratis, che non diamo più e non va mai promessa (fino al 29/10 c'era una settimana gratis senza contratto; le email non parlavano mai di carta, decisione del 23/10).
 - **Scarcity reale:**
   - 10 nuove attività al mese, una cifra fissa e non un conteggio dei posti rimasti;
   - nella demo il 97€ compare accanto al 197€ barrato, con un conto alla rovescia di 7 giorni da quando la demo viene generata; rigenerarla lo fa ripartire. Finiti i 7 giorni il conto alla rovescia sparisce e il prezzo resta 97€ (decisione del 27/10). Tutto questo compare **solo nella demo**, mai nelle email (decisione del 20/10, sembrava una spinta commerciale).
@@ -232,7 +232,7 @@ Tutto il codice è committato su `main`. Restano fuori solo le modifiche `bg-whi
 - [x] **Step 2:** chat più empatica (snapshot v3). Prima "mi dispiace…", poi gli orari, più la nota per il gestionale (`chat.note`).
 - [x] **Step 3:** timeline classica; pipeline con il cursore che trascina la card di Giulia e apre la nota; inbox come una chat vera (chiamata persa, WhatsApp, email) con il compositore.
 - [x] **Step 4:** al posto del log, un'animazione per ogni azione.
-- [x] **Step 5:** "Prezzo riservato a **{attività}**", la settimana gratis visibile subito, l'assistenza in un gruppo WhatsApp e le garanzie in una fascia unica.
+- [x] **Step 5:** "Prezzo riservato a **{attività}**", la garanzia visibile subito (dal 29/10 "soddisfatti o rimborsati", prima la settimana gratis), l'assistenza in un gruppo WhatsApp e le garanzie in una fascia unica.
 - [x] **Step 6:** prefisso con le bandiere (Italia di default), il logo WhatsApp vero, l'avviso "una sola call, non riprogrammabile" e i pulsanti per aggiungere l'evento al calendario (Google o `.ics`).
 - [ ] Gigi in 3D: rimandato.
 
@@ -261,7 +261,7 @@ Tutto il codice è committato su `main`. Restano fuori solo le modifiche `bg-whi
 - [x] **Sezione prezzo, seconda revisione:**
   - pagina tutta blu, senza riquadro e senza le battute di Gigi (restano solo Indietro/Avanti, in bianco);
   - logo bianco piccolo al centro e tutto più compatto, così su mobile si vede fino al conto alla rovescia;
-  - € senza sfondo, solo "Prima settimana gratis", niente pulsante "Prenota la call".
+  - € senza sfondo, solo "Soddisfatti o rimborsati: 30 giorni" (fino al 29/10 "Prima settimana gratis"), niente pulsante "Prenota la call".
 - [x] **Call fissata:**
   - un solo pulsante grande "Aggiungi a Google Calendar" (tolto il file `.ics`);
   - il testo dice che un consulente contatta in giornata per confermare.
@@ -586,7 +586,7 @@ Sei Gianmarco del team Girhouse e scrivi su WhatsApp a titolari di piccole attiv
 COSA OFFRIAMO
 - Rifacciamo la pagina web dell'attività e configuriamo un sistema che mette telefono, WhatsApp ed email in un unico posto: risposta automatica entro 30 secondi a chi scrive o chiama quando il titolare è occupato, follow-up automatici a chi non risponde, raccolta delle recensioni su Google.
 - Configuriamo tutto noi, con un team italiano. Numeri e account restano del cliente.
-- 97€ al mese. Prima settimana gratis, senza carta e senza contratto. Il prezzo resta bloccato per chi entra adesso. Prendiamo solo 10 nuove attività al mese.
+- 97€ al mese, senza contratto. Soddisfatti o rimborsati: se dopo 30 giorni non è soddisfatto, gli rimborsiamo quanto ha pagato. Non c'è una prova gratuita. Il prezzo resta bloccato per chi entra adesso. Prendiamo solo 10 nuove attività al mese.
 
 CONTESTO DI QUESTO LEAD
 - Attività: {{contact.nome_attivita}} ({{contact.citta}})
@@ -609,7 +609,7 @@ COME PORTI ALLA CALL
 - La call dura 30 minuti, si fa una sola volta per attività e serve a vedere dal vivo la piattaforma configurata per lui.
 
 OBIEZIONI FREQUENTI (una o due frasi, poi una domanda)
-- "Costa troppo": basta un cliente in più al mese per ripagarlo, e la prima settimana è gratis per provare.
+- "Costa troppo": basta un cliente in più al mese per ripagarlo, e se dopo 30 giorni non è soddisfatto gli rimborsiamo quanto ha pagato.
 - "Ho già un sito": il punto non è il sito, ma chi risponde ai contatti quando lui è occupato.
 - "Non ho tempo": configuriamo tutto noi, a lui servono solo i 30 minuti della call.
 - "Ci penso": nessun problema; chiedi cosa vorrebbe vedere per decidere e proponi la call proprio per quello.

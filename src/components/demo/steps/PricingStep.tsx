@@ -1,6 +1,6 @@
 'use client';
 
-import { Check, Gift, Headset, KeyRound, Wrench } from 'lucide-react';
+import { Check, Headset, KeyRound, ShieldCheck, Wrench } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 import { GirhouseLogo } from '../GirhouseLogo';
@@ -11,7 +11,7 @@ import { useNow, useTimedSequence } from '../useTimedSequence';
 const INCLUDED = ['landing', 'inbox', 'instant', 'followup', 'reviews'] as const;
 
 const GUARANTEES = [
-  { key: 'free_week', icon: Gift },
+  { key: 'refund', icon: ShieldCheck },
   { key: 'done_for_you', icon: Wrench },
   { key: 'support', icon: Headset },
   { key: 'yours', icon: KeyRound },
@@ -123,8 +123,8 @@ export const PricingStep = (props: {
           </div>
 
           <p className="flex items-center justify-center gap-2 rounded-2xl bg-emerald-400 px-3 py-2 text-center text-sm font-bold text-emerald-950 shadow-lg">
-            <Gift className="size-5 shrink-0" />
-            {t('pricing_free_week_short')}
+            <ShieldCheck className="size-5 shrink-0" />
+            {t('pricing_refund_short')}
           </p>
 
           <PriceCountdown increaseOn={props.increaseOn} increaseLabel={props.increaseLabel} />
