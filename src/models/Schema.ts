@@ -1215,6 +1215,8 @@ export type DemoVsl = {
   chat: DemoSnapshot['chat'];
   // The reminder this kind of business sends, such as a car's yearly inspection
   reminder: { title: string; customerName: string; messages: DemoChatMessage[] };
+  // The message a caller gets after a missed call, and their answer; older versions B lack it
+  missedCall?: { customerName: string; message: string; reply: string };
   // The follow-up automation, chasing the customer this business most often loses
   followUp: {
     customerName: string;

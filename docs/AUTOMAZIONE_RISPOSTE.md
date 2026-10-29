@@ -482,6 +482,17 @@ Richiesta del titolare: una nuova versione della demo che parta con un tocco e p
 - [x] **Ritmo (29/10):** voce a 1,3x, silenzi ai bordi delle voci tagliati prima dell'MP3, tutte le voci scaricate in anticipo al primo tocco, follow-up a 1 secondo per passo e 0,2 secondi tra una scena e l'altra.
 - [x] **Musica sotto Gigi (29/10):** `public/demo/gigi-music.mp3`, base strumentale di 2 minuti fatta una volta con Suno su Kie, in loop. È abbassata nel file stesso (circa -41 LUFS, la voce è a -19) perché sui telefoni la pagina non può cambiare il volume.
 - [x] **Script per una sola demo:** `npx dotenv -c -- npx tsx scripts/generate-demo-vsl.ts <slug>` scrive e dà voce alla B senza passare dalla coda; con `--voice` rifà solo le voci.
+- [x] **VSL problema-soluzione (29/10, su richiesta del titolare):** la B parte subito con cinque problemi, ognuno raccontato su un b-roll del settore e seguito dalla soluzione:
+  - chiamata persa → messaggio automatico (call text back);
+  - messaggi senza risposta → chat con risposta in 30 secondi;
+  - appuntamenti saltati → promemoria;
+  - clienti che spariscono → follow-up;
+  - recensioni negative → sistema recensioni.
+
+  Poi gestionale, "sogno", nuova pagina e offerta (`buildVslScenes` in `src/components/demo/vsl/VslScript.ts`). Il narratore è Gianmarco, il fondatore.
+- [x] **B-roll:** 5 clip per settore (`busy`, `evening`, `noshow`, `lost`, `dream`) per 8 settori, più 2 comuni, fatte una volta con Seedance su Kie da `scripts/generate-broll.ts` (prompt in `src/utils/BrollLibrary.ts`), in `public/demo/broll/`, circa 7 MB in tutto. Il settore si legge da `DemoPainPoints` (`key`).
+- [x] **Musica per capitolo e suoni:** cinque tracce Suno in `public/demo/music/` (apertura, problema, soluzione, sogno, offerta) da `scripts/generate-vsl-music.ts`, che sfumano l'una nell'altra con un whoosh; suoni sintetizzati da `scripts/generate-sfx.ts` (squillo, notifica, campanella, whoosh, colpo, pop) e suonati a tempo con ciò che si vede.
+- [ ] **La faccia e la voce di Gianmarco:** in attesa delle foto in `public/demo/gianmarco/` e delle due registrazioni per clonare la voce con Gemini TTS (replica). Finché non ci sono, la B mostra ancora Gigi con la voce Achird.
 - [ ] **Versione B automatica per i nuovi lead:** non fatta. Oggi la B si crea a mano dal riquadro Demo.
 
 ---

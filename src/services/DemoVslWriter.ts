@@ -37,6 +37,11 @@ const vslTextsSchema = z.object({
     nome_cliente: z.string(),
     messaggi: z.array(messageSchema),
   }),
+  chiamata_persa: z.object({
+    nome_cliente: z.string(),
+    messaggio: z.string(),
+    risposta: z.string(),
+  }),
   follow_up: z.object({
     nome_cliente: z.string(),
     quando: z.string(),
@@ -48,6 +53,14 @@ const vslTextsSchema = z.object({
   // there is nothing to say: the API takes at most 16 nullable fields per schema
   battute: z.object({
     intro: z.string(),
+    problem_missed_call: z.string(),
+    missed_call: z.string(),
+    problem_whatsapp: z.string(),
+    problem_reminder: z.string(),
+    problem_followup: z.string(),
+    problem_reviews: z.string(),
+    reviews: z.string(),
+    dream: z.string(),
     landing_hero: z.string(),
     landing_services: z.string(),
     landing_about: z.string(),
@@ -68,51 +81,67 @@ const vslTextsSchema = z.object({
 
 export type DemoVslTexts = z.infer<typeof vslTextsSchema>;
 
-/** What each scene shows while Gigi says its line, so the line describes what is on screen. */
+/** What each scene shows while Gianmarco says its line, so the line describes what is on screen. */
 const SCENES: Record<VslWrittenLine, string> = {
   intro:
-    'Gigi a tutto schermo, prima di tutto il resto. Saluta, dice che la demo è fatta per questa attività e annuncia uno o due problemi del suo settore che le mostrerà come risolvere.',
-  landing_hero:
-    "La nuova pagina web dell'attività, la parte in alto: titolo, foto e pulsanti per prenotare e scrivere su WhatsApp.",
-  landing_services: 'La sezione dei servizi della pagina.',
-  landing_about: 'La sezione "chi siamo" della pagina.',
-  landing_highlights: 'La sezione "perché sceglierci" della pagina.',
-  landing_steps: 'La sezione che spiega il percorso passo dopo passo.',
-  landing_faq: 'Le domande frequenti della pagina.',
+    'Gianmarco, founder of Girhouse, on screen before anything else. He greets the owner by the business name, says he made this video for them, and opens a loop: before showing anything, he wants to tell them what happens every day to people who do their job.',
+  problem_missed_call:
+    'PROBLEM 1, over a clip of someone in this sector busy with a client while the phone rings unanswered. Tell it as a short scene the owner lives: they are busy, the phone rings, they cannot answer, the caller hangs up and calls the competitor. Make them feel the loss.',
+  missed_call:
+    'SOLUTION 1: a phone shows the call ringing, no answer, then a WhatsApp message from the business arrives on its own a few seconds later (the `chiamata_persa` message) and the caller answers it. Say what just happened and what it means: the customer stays theirs.',
+  problem_whatsapp:
+    'PROBLEM 2, over a clip of the owner alone in the evening scrolling unread messages. Messages that arrive while they work or after closing get an answer the next day, when the customer has already chosen someone else.',
   chat_start:
-    "Inizia la chat WhatsApp di esempio: il cliente della chat scrive mentre l'attività è occupata e riceve una risposta automatica dopo 30 secondi, a nome dell'attività.",
+    'SOLUTION 2 begins: the example WhatsApp chat. The chat customer writes while the business is busy and gets an answer in thirty seconds, in the business name.',
   chat_slots:
-    'Nella chat il sistema ascolta il problema del cliente, risponde con empatia e propone due orari liberi presi dal calendario.',
+    'In the chat the system listens to the customer, answers with empathy and offers two free times taken from the calendar.',
   chat_booked:
-    "Il cliente sceglie l'orario: appuntamento fissato, con promemoria. Il titolare non ha fatto nulla.",
+    'The customer picks a time: booked, with a reminder the day before. The owner did nothing.',
+  problem_reminder:
+    'PROBLEM 3, over a clip of the owner waiting next to an empty seat: a forgotten appointment, an empty slot, an hour lost, every week.',
   reminder:
-    'Una seconda chat WhatsApp: il promemoria automatico tipico di questo settore (il `promemoria`), che parte da solo e porta il cliente a prenotare o confermare.',
-  crm_contact:
-    'Il gestionale: la scheda del cliente della chat, compilata da sola con da dove arriva, cosa gli serve e quando viene.',
-  crm_timeline:
-    'La timeline del cliente: ogni passo tracciato, dalla chiamata persa al promemoria.',
-  crm_pipeline:
-    'La pipeline: il cliente avanza da nuovo contatto ad appuntamento fissato, con la nota scritta in automatico dalla chat.',
-  crm_inbox:
-    "Un'unica inbox: chiamate, WhatsApp ed email dello stesso cliente in una sola conversazione, e si risponde da lì.",
+    'SOLUTION 3: a second WhatsApp chat, the automatic reminder typical of this sector (the `promemoria`): it goes out on its own and the customer confirms or moves the appointment.',
+  problem_followup:
+    'PROBLEM 4, over a clip of the owner overwhelmed by notes and notifications: people who ask for information or a quote and then disappear, and nobody has time to chase them.',
   followup:
-    "L'automazione per chi non risponde (il `follow_up`): aspetta, manda un WhatsApp, poi un'email, poi avvia la chiamata, e si ferma da sola appena il cliente risponde.",
+    'SOLUTION 4: the automation for people who do not answer (the `follow_up`): it waits, sends a WhatsApp, then an email, then starts a call, and stops on its own as soon as the customer answers.',
+  problem_reviews:
+    'PROBLEM 5, over a clip of hands typing a one-star review on a phone: one unhappy customer on a bad day, and the review stays there for years in front of everyone.',
+  reviews:
+    'SOLUTION 5: the review system. After each visit the customer gets a message asking for a rating; five stars go straight to Google, an unhappy customer writes only to the business, which can make it right.',
+  crm_contact:
+    'Everything in one place: the CRM card of the chat customer, filled in on its own with where they came from, what they need and when they come.',
+  crm_timeline:
+    "The customer's timeline: every step tracked, from the missed call to the reminder.",
+  crm_pipeline:
+    'The pipeline: the customer moves from new contact to booked, with the note written automatically from the chat.',
+  crm_inbox:
+    'A single inbox: calls, WhatsApp and email from the same customer in one conversation, answered from there.',
+  dream:
+    'THE DREAM, over a clip of the owner relaxed and smiling with a happy client. Make them picture their week with all this in place: every call answered, a full calendar, customers coming back, evenings free. Concrete images from their sector, emotional, hopeful. End on the feeling that this is within reach.',
+  landing_hero:
+    'Now the new web page of the business, the top part: headline, photo, buttons to book and write on WhatsApp. Say it is the last piece: the page that brings these customers in.',
+  landing_services: 'The services section of the page.',
+  landing_about: 'The "about" section of the page.',
+  landing_highlights: 'The "why choose us" section of the page.',
+  landing_steps: 'The section explaining the path step by step.',
+  landing_faq: 'The frequently asked questions of the page.',
 };
 
 const INSTRUCTIONS = [
-  'You write version B of the demo Girhouse sends an Italian small business that showed interest: a video Gigi, a friendly giraffe, narrates on his own while the screens play. It never stops and nobody presses a button. Gigi talks to the owner, using "tu".',
+  'You write version B of the demo Girhouse sends an Italian small business that showed interest: a video sales letter Gianmarco, the founder of Girhouse, narrates on his own while the screens play, with music and b-roll. It never stops and nobody presses a button. Gianmarco talks to the owner, using "tu", as one person to another.',
   '',
-  "The goal: the owner must recognise their own working day. Pick from the playbook below the pains that fit this business best, and make every screen about them: the example chat, the reminder, the follow-up and each of Gigi's lines. A mechanic hears about inspection reminders and quotes answered too late, an osteopath about session reminders and patients who skip, a lawyer about calls lost during hearings.",
+  'The goal: the owner must recognise their own working day and feel it, then dream of how it could be. The video opens straight on five problems, each told as a short scene and followed by what the system does about it, then everything in one place, then the dream, then the new web page. Pick from the playbook below the pains that fit this business best and use its concrete words: a mechanic hears about inspection reminders and quotes answered too late, an osteopath about session reminders and patients who skip, a lawyer about calls lost during hearings.',
   '',
   'Rules for every text:',
   '- Italian, plain, warm, short sentences. Never use em dashes or en dashes.',
-  '- Never invent facts about this business (numbers, staff, problems they have). The pains are what businesses like this one live: say them as something common ("capita spesso", "so che"), not as facts about them, unless the notes from the Girhouse team say so.',
+  '- Never invent facts about this business (numbers, staff, problems they have). The pains are what businesses like this one live: tell them as scenes they will recognise ("sei con un paziente e il telefono squilla"), not as facts about them, unless the notes from the Girhouse team say so.',
   '- The notes from the Girhouse team are true and say what to stress: follow them.',
   '- Respect what the playbook says to be careful about (for example, never pushy reminders in healthcare).',
   '',
   '`dolori`: the 2 or 3 pains from the playbook this business most likely lives, in a short Italian sentence each.',
   '',
-  'Example WhatsApp chat (`chat`), clearly an example, about the first pain:',
+  'Example WhatsApp chat (`chat`), clearly an example, about the pain of messages answered too late:',
   '- `nome_cliente`: a common Italian first name for the invented customer.',
   '- `servizio`: the service the customer asks about, one of the listed services when there are any, else null.',
   '- `messaggi`: 8 to 10 short messages, each under 220 characters, sounding like real people.',
@@ -126,6 +155,11 @@ const INSTRUCTIONS = [
   '- `opzioni` is empty on every other message. No prices, no addresses, no medical, legal or tax advice, no promises beyond booking.',
   '- `nota`: one line the business would write in its CRM about this customer, only from what the customer said.',
   '',
+  'The missed call (`chiamata_persa`): a customer calls while the business is busy and gets a WhatsApp a few seconds later.',
+  '- `nome_cliente`: another common Italian first name.',
+  '- `messaggio`: the message the business sends on its own, under 180 characters: says sorry for not answering because it is with a customer or at work (in the words of this sector), and asks how it can help.',
+  '- `risposta`: what the customer answers, under 120 characters, tied to this sector (for example asking to book a session, a quote for the car, a consultation).',
+  '',
   "The reminder (`promemoria`): the recurring reminder this kind of business sends, from the playbook (for example the car's yearly inspection, the check-up a few weeks after the treatment, the next haircut).",
   '- `titolo`: 2 to 4 words naming it, for example "Promemoria revisione".',
   '- `nome_cliente`: another common Italian first name.',
@@ -137,15 +171,18 @@ const INSTRUCTIONS = [
   '- `whatsapp`: the WhatsApp message it sends, under 160 characters, kind, by first name.',
   '- `oggetto_email`: the email subject, under 60 characters. `testo_email`: the email, two sentences, under 260 characters.',
   '',
-  "Gigi's lines (`battute`): one per screen, read aloud by a voice while the screen plays.",
-  '- 1 to 3 short spoken sentences, at most 260 characters, natural to hear. No lists, no symbols, no abbreviations, no numbers written as digits except times and years.',
-  '- Each line says what is on screen right now, then why it matters for the pains you picked, with the concrete words of this sector.',
+  "Gianmarco's lines (`battute`): one per screen, read aloud by his voice while the screen plays, over music.",
+  '- Spoken, natural to hear, short sentences. No lists, no symbols, no abbreviations, no numbers written as digits except times and years.',
+  "- Problems (`problem_*`): 2 or 3 sentences, at most 300 characters. A short scene in the present tense, from the owner's point of view, with a concrete detail of this sector, ending on what it costs them (a customer lost, an empty hour, an evening gone). Emotional, never dramatic or insulting.",
+  '- Solutions: 2 or 3 sentences, at most 280 characters. Start with "Con Girhouse" or with what is happening on screen, then say what changes for them.',
+  '- The dream (`dream`): 3 or 4 sentences, at most 380 characters, vivid and hopeful.',
+  '- The other screens: 1 to 3 sentences, at most 260 characters, saying what is on screen and why it matters for the pains you picked.',
   '- Mark one or two key phrases with `<b>...</b>` (bold) or `<hl>...</hl>` (highlighted), never nested.',
-  '- Never tell them to press, tap or click anything: the demo plays on its own.',
-  '- Name things plainly: "il promemoria", "l\'automazione", "il messaggio". Never soften them with adjectives or adverbs such as "gentile", "con gentilezza", "delicato", "senza pressioni", "con calma": the owner hears them as odd. The care the playbook asks for goes into the messages the customer gets, not into how Gigi describes them.',
-  '- Use the real names: the business, and the customer names you wrote for the chat, the reminder and the follow-up.',
+  '- Never tell them to press, tap or click anything: the video plays on its own.',
+  '- Name things plainly: "il promemoria", "l\'automazione", "il messaggio". Never soften them with adjectives or adverbs such as "gentile", "con gentilezza", "delicato", "senza pressioni", "con calma": the owner hears them as odd. The care the playbook asks for goes into the messages the customer gets, not into how Gianmarco describes them.',
+  '- Use the real names: the business, and the customer names you wrote for the missed call, the chat, the reminder and the follow-up.',
   '- An empty string for a landing section the page does not have.',
-  "- The screens, with version A's generic line as a reference for length and tone:",
+  "- The screens, in order, with version A's generic line as a reference for length and tone where it has one:",
 ].join('\n');
 
 /**
@@ -276,6 +313,11 @@ export const toDemoVsl = (texts: DemoVslTexts): Omit<DemoVsl, 'generatedAt'> => 
     title: cleanReply(texts.promemoria.titolo),
     customerName: cleanReply(texts.promemoria.nome_cliente),
     messages: toMessages(texts.promemoria.messaggi, MAX_REMINDER_MESSAGES),
+  },
+  missedCall: {
+    customerName: cleanReply(texts.chiamata_persa.nome_cliente),
+    message: cleanReply(texts.chiamata_persa.messaggio),
+    reply: cleanReply(texts.chiamata_persa.risposta),
   },
   followUp: {
     customerName: cleanReply(texts.follow_up.nome_cliente),

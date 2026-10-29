@@ -51,30 +51,67 @@ const data: DemoSnapshot = {
   },
 };
 
-const chat = (upTo: number): VslScene => ({ step: 2, kind: 'chat', upTo, line: 'chat_slots' });
+const chat = (upTo: number): VslScene => ({
+  step: 1,
+  kind: 'chat',
+  upTo,
+  line: 'chat_slots',
+  chapter: 'solution',
+  cues: [],
+});
 
 const translate = {
   fixed: (line: string) => `fixed:${line}`,
   tour: (line: string) => `tour:${line}`,
 };
 
+const scenes = buildVslScenes({ data, hasReviews: false });
+
 describe('VslScript', () => {
   describe('Scenes', () => {
-    it('puts the reminder right after the booked chat', () => {
-      const scenes = buildVslScenes({ data, hasReviews: false });
-      const booked = scenes.findIndex((scene) => scene.line === 'chat_booked');
+    it('opens on the intro, then straight on the first problem', () => {
+      expect(scenes.slice(0, 3).map((scene) => scene.kind)).toStrictEqual([
+        'intro',
+        'problem',
+        'missed_call',
+      ]);
+    });
 
-      expect(scenes[booked + 1]).toStrictEqual({ step: 2, kind: 'reminder', line: 'reminder' });
+    it('follows each problem with its solution', () => {
+      const solutions = scenes.flatMap((scene, index) =>
+        scene.kind === 'problem' ? [scenes[index + 1]?.kind] : [],
+      );
+
+      expect(solutions).toStrictEqual(['missed_call', 'chat', 'reminder', 'followup', 'reviews']);
+    });
+
+    it('plays each problem under its own music, opened by a sound', () => {
+      const problem = scenes.find((scene) => scene.kind === 'problem');
+
+      expect(problem?.chapter).toBe('problem');
+      expect(problem?.cues.at(0)).toStrictEqual({ atMs: 0, sound: 'ring' });
+    });
+
+    it('shows the new page after the dream, without its review system', () => {
+      const dream = scenes.findIndex((scene) => scene.kind === 'dream');
+      const landing = scenes.findIndex((scene) => scene.kind === 'landing');
+
+      expect(landing).toBeGreaterThan(dream);
+      const sections = scenes.flatMap((scene) =>
+        scene.kind === 'landing' ? scene.sections.map(String) : [],
+      );
+
+      expect(sections).not.toContain('funnel');
     });
 
     it('ends on the booking', () => {
-      expect(buildVslScenes({ data, hasReviews: false }).at(-1)?.kind).toBe('booking');
+      expect(scenes.at(-1)?.kind).toBe('booking');
     });
 
     it('names the booking line after its phase', () => {
-      expect(vslLineOf({ step: 6, kind: 'booking', line: 'booking' }, 'slots')).toBe(
-        'booking_slots',
-      );
+      const booking = scenes.at(-1);
+
+      expect(booking && vslLineOf(booking, 'slots')).toBe('booking_slots');
     });
   });
 
@@ -89,16 +126,20 @@ describe('VslScript', () => {
       ).toBe('Ecco <mark>Luca</mark>');
     });
 
-    it('falls back to version A for a scene the AI left empty', () => {
+    it('falls back to version A for a scene both versions have', () => {
       expect(vslLineMarkup({ line: 'crm_inbox', vsl: { lines: {} }, translate })).toBe(
         'tour:crm_inbox',
       );
     });
 
-    it('falls back to the fixed line for the intro and the reminder', () => {
+    it('falls back to its fixed line for a scene only version B has', () => {
       expect(
-        vslLineMarkup({ line: 'reminder', vsl: { lines: { reminder: ' ' } }, translate }),
-      ).toBe('fixed:reminder');
+        vslLineMarkup({
+          line: 'problem_reviews',
+          vsl: { lines: { problem_reviews: ' ' } },
+          translate,
+        }),
+      ).toBe('fixed:problem_reviews');
     });
 
     it('says the fixed line on the price whatever the AI wrote', () => {
@@ -112,10 +153,10 @@ describe('VslScript', () => {
     });
 
     it('lists every line to voice once, the booking phases included', () => {
-      const lines = vslLinesToVoice(buildVslScenes({ data, hasReviews: false }));
+      const lines = vslLinesToVoice(scenes);
 
       expect(new Set(lines).size).toBe(lines.length);
-      expect(lines).toContain('reminder');
+      expect(lines).toContain('problem_missed_call');
       expect(lines).toContain('booking_unavailable');
     });
 
@@ -131,23 +172,20 @@ describe('VslScript', () => {
       );
     });
 
-    it('waits for every reminder message', () => {
+    it('waits for the missed call to ring and its chat to play', () => {
+      const missedCall = scenes.find((scene) => scene.kind === 'missed_call');
+
       expect(
-        vslSceneMinimumMs({
-          scene: { step: 2, kind: 'reminder', line: 'reminder' },
-          previous: chat(6),
-          reminderMessages: 4,
-        }),
-      ).toBe(6000);
+        missedCall &&
+          vslSceneMinimumMs({ scene: missedCall, previous: undefined, reminderMessages: 0 }),
+      ).toBeGreaterThan(6000);
     });
 
-    it('lets a scene without animation go as soon as Gigi is done', () => {
+    it('lets a problem go as soon as the voice is done', () => {
+      const problem = scenes.find((scene) => scene.kind === 'problem');
+
       expect(
-        vslSceneMinimumMs({
-          scene: { step: 3, kind: 'crm', part: 1, line: 'crm_contact' },
-          previous: undefined,
-          reminderMessages: 0,
-        }),
+        problem && vslSceneMinimumMs({ scene: problem, previous: undefined, reminderMessages: 0 }),
       ).toBe(0);
     });
   });

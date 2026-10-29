@@ -5,7 +5,17 @@ import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 import { useRef, useState } from 'react';
 import type { DemoVsl as DemoVslData } from '@/models/Schema';
+import type { BrollSector } from '@/utils/BrollLibrary';
+import { findSectorPainPoints } from '@/utils/DemoPainPoints';
 import { toSpokenText } from '@/utils/GigiVoice';
+import type { VslChapter, VslSound } from '@/utils/VslMusic';
+import {
+  MUSIC_CROSSFADE_SECONDS,
+  musicPath,
+  SOUND_GAIN,
+  VSL_CHAPTERS,
+  VSL_SOUNDS,
+} from '@/utils/VslMusic';
 import { captureDemoEvent } from '../DemoAnalytics';
 import { sendDemoEvent } from '../DemoSession';
 import type { DemoTourProps } from '../DemoTour';
@@ -25,7 +35,10 @@ import { WhatsAppStep } from '../steps/WhatsAppStep';
 import { TOUR_STEPS } from '../TourScenes';
 import { useTimedSequence } from '../useTimedSequence';
 import { WhatsAppChat } from '../WhatsAppChat';
+import { BrollScene } from './BrollScene';
 import { GigiTalkingFull } from './GigiTalking';
+import { MissedCallScene } from './MissedCallScene';
+import { ReviewsScene } from './ReviewsScene';
 import { VslBar } from './VslBar';
 import type { VslLine, VslScene } from './VslScript';
 import {
@@ -138,33 +151,93 @@ const preloadVoices = async (voices: DemoVoice[], files: Map<string, string>) =>
   }
 };
 
-/** Where the music loops: past its quiet intro, and back there before its end, which fades into it. */
-const MUSIC_LOOP = { start: 30, end: 170 };
+/** How long one chapter's music takes to fade into the next. */
+const MUSIC_FADE_SECONDS = 0.8;
 
 /**
- * Plays the music under Gigi with Web Audio, which loops it without a gap and keeps it going
- * next to the voice on phones. It is mixed quiet in the file itself, as phones ignore a
- * page's volume.
- * @returns The player.
+ * Plays the music under the voice with Web Audio, one track per chapter, fading from one
+ * to the next with a whoosh, plus the sounds each scene cues. Web Audio loops a track
+ * without a gap and keeps it going next to the voice on phones. Everything is mixed quiet
+ * in the files themselves, as phones ignore a page's volume.
+ * @returns The soundtrack.
  */
-const createMusicPlayer = () => {
+const createSoundtrack = () => {
   let context: AudioContext | null = null;
+  let current: { chapter: VslChapter; source: AudioBufferSourceNode; gain: GainNode } | null = null;
+  let wanted: VslChapter | null = null;
+  const buffers = new Map<string, Promise<AudioBuffer | null>>();
 
-  const play = async (audio: AudioContext) => {
-    try {
-      const response = await fetch('/demo/gigi-music.mp3');
-      const buffer = await audio.decodeAudioData(await response.arrayBuffer());
-      const source = audio.createBufferSource();
+  const load = async (audio: AudioContext, path: string) => {
+    const known = buffers.get(path);
 
-      source.buffer = buffer;
-      source.loop = true;
-      source.loopStart = MUSIC_LOOP.start;
-      source.loopEnd = Math.min(MUSIC_LOOP.end, buffer.duration);
-      source.connect(audio.destination);
-      source.start();
-    } catch {
-      // Without its music the demo still plays
+    if (known) {
+      return await known;
     }
+
+    const loading = (async () => {
+      try {
+        const response = await fetch(path);
+
+        return response.ok ? await audio.decodeAudioData(await response.arrayBuffer()) : null;
+      } catch {
+        // Without a file the demo still plays, a little quieter
+        return null;
+      }
+    })();
+    buffers.set(path, loading);
+
+    return await loading;
+  };
+
+  const sound = async (name: VslSound) => {
+    const audio = context;
+    const buffer = audio ? await load(audio, `/demo/sfx/${name}.mp3`) : null;
+
+    if (!audio || !buffer) {
+      return;
+    }
+
+    const source = audio.createBufferSource();
+    const gain = audio.createGain();
+
+    source.buffer = buffer;
+    gain.gain.value = SOUND_GAIN[name];
+    source.connect(gain).connect(audio.destination);
+    source.start();
+  };
+
+  const play = async (chapter: VslChapter) => {
+    const audio = context;
+    // A chapter whose track is missing keeps the dream's
+    const buffer = audio
+      ? ((await load(audio, musicPath(chapter))) ?? (await load(audio, musicPath('dream'))))
+      : null;
+
+    // Another chapter was asked for while this one loaded
+    if (!audio || !buffer || wanted !== chapter) {
+      return;
+    }
+
+    const now = audio.currentTime;
+    const source = audio.createBufferSource();
+    const gain = audio.createGain();
+
+    if (current) {
+      current.gain.gain.setValueAtTime(current.gain.gain.value, now);
+      current.gain.gain.linearRampToValueAtTime(0, now + MUSIC_FADE_SECONDS);
+      current.source.stop(now + MUSIC_FADE_SECONDS + 0.05);
+    }
+
+    source.buffer = buffer;
+    source.loop = true;
+    // The track's end fades into its start, so it loops back right after that part
+    source.loopStart = MUSIC_CROSSFADE_SECONDS;
+    source.loopEnd = buffer.duration;
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(1, now + MUSIC_FADE_SECONDS);
+    source.connect(gain).connect(audio.destination);
+    source.start();
+    current = { chapter, source, gain };
   };
 
   return {
@@ -174,9 +247,33 @@ const createMusicPlayer = () => {
         return;
       }
 
-      context = new AudioContext();
-      void context.resume();
-      void play(context);
+      const audio = new AudioContext();
+      context = audio;
+      void audio.resume();
+
+      for (const chapter of VSL_CHAPTERS) {
+        void load(audio, musicPath(chapter));
+      }
+
+      for (const name of VSL_SOUNDS) {
+        void load(audio, `/demo/sfx/${name}.mp3`);
+      }
+    },
+    setChapter: (chapter: VslChapter) => {
+      if (wanted === chapter) {
+        return;
+      }
+
+      // The first chapter just starts; the others are announced by a whoosh
+      if (wanted) {
+        void sound('whoosh');
+      }
+
+      wanted = chapter;
+      void play(chapter);
+    },
+    sound: (name: VslSound) => {
+      void sound(name);
     },
     pause: () => {
       void context?.suspend();
@@ -217,6 +314,36 @@ const firstVslSceneOf = (scenes: VslScene[], step: number | null) =>
     : 0;
 
 /**
+ * Picks whose b-roll plays: the lead's sector's, else the generic one.
+ * @param data The demo snapshot.
+ * @returns The sector.
+ */
+const brollSectorOf = (data: DemoTourProps['data']): BrollSector =>
+  findSectorPainPoints(data)?.key ?? 'generic';
+
+/** Scenes only version B has, drawn by `VslStoryVisual`. */
+const STORY_KINDS = new Set<VslScene['kind']>([
+  'problem',
+  'dream',
+  'missed_call',
+  'reviews',
+  'reminder',
+]);
+
+/** Scenes that build on the one before, staying on screen while they change. */
+const CONTINUED_KINDS = new Set<VslScene['kind']>(['chat', 'crm', 'landing', 'pricing']);
+
+/**
+ * Names what stays on screen across scenes: a chat that goes on, the page that grows, the
+ * CRM's views; every other scene starts afresh.
+ * @param scene The scene.
+ * @param index Its place in the demo.
+ * @returns The key of what it shows.
+ */
+const sceneGroup = (scene: VslScene, index: number) =>
+  CONTINUED_KINDS.has(scene.kind) ? scene.kind : `${scene.kind}-${index}`;
+
+/**
  * Says how long the whole demo lasts, from its voices.
  * @param voices The voices ready.
  * @returns The minutes, rounded up.
@@ -228,39 +355,44 @@ const estimateMinutes = (voices: DemoVoice[]) => {
 };
 
 /**
- * Picks the visual of a scene of version B.
- * @param options The scene and the demo data.
- * @param options.scene The current scene.
- * @param options.props The demo props.
- * @param options.data The snapshot with version B's chat.
- * @param options.bookingPhase Where the booking stands.
- * @param options.handleBookingPhase Moves the booking on.
- * @returns The scene's visual.
+ * Picks the visual of the scenes only version B has: the problems and the dream on b-roll,
+ * the missed call, the reminder and the review system.
+ * @param props Component props.
+ * @param props.scene The current scene.
+ * @param props.vsl The demo's version B.
+ * @param props.data The snapshot with version B's chat.
+ * @param props.sector The lead's sector, whose b-roll plays.
+ * @returns The scene's visual, or nothing for the other scenes.
  */
-const VslSceneVisual = (options: {
+const VslStoryVisual = (props: {
   scene: VslScene;
-  props: DemoTourProps & { vsl: DemoVslData };
+  vsl: DemoVslData;
   data: DemoTourProps['data'];
-  bookingPhase: BookingPhase;
-  handleBookingPhase: (phase: BookingPhase) => void;
+  sector: BrollSector;
 }) => {
   const t = useTranslations('DemoPage');
-  const { scene, props, data } = options;
+  const { scene, data } = props;
 
-  if (scene.kind === 'landing') {
+  if (scene.kind === 'problem') {
+    return <BrollScene sector={props.sector} clip={scene.broll} problem={scene.case} />;
+  }
+
+  if (scene.kind === 'dream') {
+    return <BrollScene sector={props.sector} clip="dream" />;
+  }
+
+  if (scene.kind === 'missed_call') {
     return (
-      <LandingStep
-        data={data}
-        reviews={props.reviews}
-        photos={props.photos}
-        sections={scene.sections}
-        autoplayFunnel
+      <MissedCallScene
+        company={data.company}
+        message={props.vsl.missedCall?.message ?? t('vsl_missed_message')}
+        reply={props.vsl.missedCall?.reply ?? t('vsl_missed_reply')}
       />
     );
   }
 
-  if (scene.kind === 'chat') {
-    return <WhatsAppStep data={data} upTo={scene.upTo} />;
+  if (scene.kind === 'reviews') {
+    return <ReviewsScene company={data.company} customer={data.chat.customerName} />;
   }
 
   if (scene.kind === 'reminder') {
@@ -279,6 +411,52 @@ const VslSceneVisual = (options: {
         </IPhoneFrame>
       </div>
     );
+  }
+
+  return null;
+};
+
+/**
+ * Picks the visual of a scene of version B.
+ * @param options The scene and the demo data.
+ * @param options.scene The current scene.
+ * @param options.props The demo props.
+ * @param options.data The snapshot with version B's chat.
+ * @param options.sector The lead's sector, whose b-roll plays.
+ * @param options.bookingPhase Where the booking stands.
+ * @param options.handleBookingPhase Moves the booking on.
+ * @returns The scene's visual.
+ */
+const VslSceneVisual = (options: {
+  scene: VslScene;
+  props: DemoTourProps & { vsl: DemoVslData };
+  data: DemoTourProps['data'];
+  sector: BrollSector;
+  bookingPhase: BookingPhase;
+  handleBookingPhase: (phase: BookingPhase) => void;
+}) => {
+  const { scene, props, data } = options;
+  const story = (
+    <VslStoryVisual scene={scene} vsl={props.vsl} data={data} sector={options.sector} />
+  );
+
+  if (STORY_KINDS.has(scene.kind)) {
+    return story;
+  }
+
+  if (scene.kind === 'landing') {
+    return (
+      <LandingStep
+        data={data}
+        reviews={props.reviews}
+        photos={props.photos}
+        sections={scene.sections}
+      />
+    );
+  }
+
+  if (scene.kind === 'chat') {
+    return <WhatsAppStep data={data} upTo={scene.upTo} />;
   }
 
   if (scene.kind === 'crm') {
@@ -326,13 +504,16 @@ export const DemoVsl = (props: DemoTourProps & { vsl: DemoVslData; voices: DemoV
   const t = useTranslations('DemoPage');
   const data = withVslChat(props.data, props.vsl);
   const scenes = buildVslScenes({ data, hasReviews: props.reviews.items.length > 0 });
+  const sector = brollSectorOf(data);
   const [index, setIndex] = useState(() => firstVslSceneOf(scenes, props.initialStep));
   const [isStarted, setIsStarted] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [isTalking, setIsTalking] = useState(false);
   const [bookingPhase, setBookingPhase] = useState<BookingPhase>('phone');
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const musicRef = useRef(createMusicPlayer());
+  const musicRef = useRef(createSoundtrack());
+  // The sounds the scene on screen still has to play
+  const cueTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
   // The voices downloaded ahead, by id, from when the page opens
   const voiceFiles = useRef(new Map<string, string>());
   const hasPreloaded = useRef(false);
@@ -439,6 +620,25 @@ export const DemoVsl = (props: DemoTourProps & { vsl: DemoVslData; voices: DemoV
     }
   };
 
+  const clearCues = () => {
+    for (const timer of cueTimers.current) {
+      clearTimeout(timer);
+    }
+
+    cueTimers.current = [];
+  };
+
+  // Starts a scene's music and plays its sounds on their cues
+  const enterScene = (target: VslScene) => {
+    clearCues();
+    musicRef.current.setChapter(target.chapter);
+    cueTimers.current = target.cues.map((cue) =>
+      setTimeout(() => {
+        musicRef.current.sound(cue.sound);
+      }, cue.atMs),
+    );
+  };
+
   const goTo = (next: number) => {
     const target = scenes[next];
 
@@ -462,6 +662,7 @@ export const DemoVsl = (props: DemoTourProps & { vsl: DemoVslData; voices: DemoV
     }
 
     setIndex(next);
+    enterScene(target);
 
     if (target.step !== scene?.step || target.kind !== scene.kind) {
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -473,6 +674,7 @@ export const DemoVsl = (props: DemoTourProps & { vsl: DemoVslData; voices: DemoV
   const pause = () => {
     audioRef.current?.pause();
     musicRef.current.pause();
+    clearCues();
     clockRef.current.pause();
     setIsTalking(false);
     setIsPaused(true);
@@ -603,9 +805,9 @@ export const DemoVsl = (props: DemoTourProps & { vsl: DemoVslData; voices: DemoV
                   }
 
                   // Played from the tap itself, which is what lets the voice and the music be heard
-                  void say({ index, line, advance: goTo });
-
                   musicRef.current.start();
+                  enterScene(scene);
+                  void say({ index, line, advance: goTo });
                 }}
                 className="flex animate-pop items-center gap-2 rounded-full bg-(--demo-primary) px-7 py-4 text-lg font-semibold whitespace-nowrap text-(--demo-on-primary) shadow-2xl"
               >
@@ -675,13 +877,14 @@ export const DemoVsl = (props: DemoTourProps & { vsl: DemoVslData; voices: DemoV
         </header>
 
         <main
-          key={`${scene.step}-${scene.kind === 'reminder'}`}
+          key={sceneGroup(scene, index)}
           className={`isolate mx-auto max-w-7xl animate-in px-4 duration-500 fade-in ${isPricing ? 'py-4 md:py-6' : 'py-6 md:py-10'}`}
         >
           <VslSceneVisual
             scene={scene}
             props={props}
             data={data}
+            sector={sector}
             bookingPhase={bookingPhase}
             handleBookingPhase={handleBookingPhase}
           />

@@ -31,8 +31,21 @@ const texts: DemoVslTexts = {
     oggetto_email: 'Il tuo preventivo',
     testo_email: 'Ciao Marco, ti avevamo scritto. Rispondi pure qui.',
   },
+  chiamata_persa: {
+    nome_cliente: 'Sara',
+    messaggio: 'Ciao Sara, scusa — ero sotto una macchina. Come posso aiutarti?',
+    risposta: 'Volevo un preventivo per i freni.',
+  },
   battute: {
-    intro: 'Ciao! <b>Gigi</b> qui.',
+    intro: 'Ciao! <b>Gianmarco</b> qui.',
+    problem_missed_call: '',
+    missed_call: '',
+    problem_whatsapp: '',
+    problem_reminder: '',
+    problem_followup: '',
+    problem_reviews: '',
+    reviews: '',
+    dream: '',
     landing_hero: '',
     landing_services: '',
     landing_about: '',
@@ -58,7 +71,7 @@ describe('DemoVslWriter', () => {
 
   it('keeps only the lines the AI wrote, without dashes', () => {
     expect(toDemoVsl(texts).lines).toStrictEqual({
-      intro: 'Ciao! <b>Gigi</b> qui.',
+      intro: 'Ciao! <b>Gianmarco</b> qui.',
       chat_start: 'Luca scrive, e la risposta parte',
     });
   });
@@ -72,5 +85,13 @@ describe('DemoVslWriter', () => {
 
   it('waits for the voice', () => {
     expect(toDemoVsl(texts).voice).toBe('pending');
+  });
+
+  it('keeps the missed call, without dashes', () => {
+    expect(toDemoVsl(texts).missedCall).toStrictEqual({
+      customerName: 'Sara',
+      message: 'Ciao Sara, scusa, ero sotto una macchina. Come posso aiutarti?',
+      reply: 'Volevo un preventivo per i freni.',
+    });
   });
 });

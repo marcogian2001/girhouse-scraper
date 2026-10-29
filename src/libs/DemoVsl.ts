@@ -5,7 +5,7 @@ import { landingSectionsFor } from '@/components/demo/TourScenes';
 import type { VslWrittenLine } from '@/components/demo/vsl/VslScript';
 import {
   buildVslScenes,
-  VSL_WRITTEN_LINES,
+  VSL_TOUR_LINES,
   vslLineMarkup,
   vslLinesToVoice,
   vslLineValues,
@@ -94,10 +94,9 @@ const writeScript = async (demo: Demo, generatedAt: string) => {
   const context = await loadLineContext(demo, demo.data);
   const t = createTranslator({ locale: 'it', messages, namespace: 'DemoPage' });
   const sections = landingSectionsFor({ data: demo.data, hasReviews: context.hasReviews });
+  // Version A's line for the scenes it shares, as a reference for length and tone
   const referenceLines: Partial<Record<VslWrittenLine, string>> = Object.fromEntries(
-    VSL_WRITTEN_LINES.flatMap((line) =>
-      line === 'reminder' ? [] : [[line, toSpokenText(t.markup(`line_${line}`, context.values))]],
-    ),
+    VSL_TOUR_LINES.map((line) => [line, toSpokenText(t.markup(`line_${line}`, context.values))]),
   );
 
   const { texts, call } = await writeDemoVsl({
