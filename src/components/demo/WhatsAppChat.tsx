@@ -34,12 +34,14 @@ const timeOf = (index: number) => `10:${String(2 + Math.floor(index / 2)).padSta
  * @param props.company The business name, shown as the chat contact.
  * @param props.messages The example conversation.
  * @param props.upTo How many messages this scene plays up to.
+ * @param props.isReminder The business writes first, on its own: no "answered in 30 seconds" badge.
  * @returns The chat screen.
  */
 export const WhatsAppChat = (props: {
   company: string;
   messages: DemoChatMessage[];
   upTo: number;
+  isReminder?: boolean;
 }) => {
   const t = useTranslations('DemoPage');
   const shown = useTimedSequence({ target: props.upTo, intervalMs: MESSAGE_INTERVAL_MS });
@@ -85,7 +87,7 @@ export const WhatsAppChat = (props: {
               ref={scrollChatToEnd}
               className={`flex animate-in flex-col duration-300 fade-in slide-in-from-bottom-2 ${isCustomer ? 'items-end' : 'items-start'}`}
             >
-              {index === firstReply && (
+              {index === firstReply && !props.isReminder && (
                 <span className="mb-1 self-center rounded-full bg-[#25d366] px-2.5 py-0.5 text-[10.5px] font-semibold text-white shadow">
                   {t('chat_reply_badge')}
                 </span>

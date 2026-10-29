@@ -23,6 +23,7 @@ import {
   syncCampaignStatus,
 } from './CampaignWriting';
 import { db } from './DB';
+import { demoVslJobHandlers, markDemoVslAbandoned } from './DemoVsl';
 import { followUpJobHandlers, markConversationTickAbandoned } from './FollowUps';
 import { ghlBotJobHandlers, markGhlBotAssignAbandoned } from './GhlBotAssign';
 import { instantlySyncJobHandlers, markInstantlySyncAbandoned } from './InstantlySync';
@@ -322,6 +323,12 @@ const markAbandoned = async (job: Job, message: string) => {
     return;
   }
 
+  if (job.type === 'demo_vsl') {
+    await markDemoVslAbandoned(job, message);
+
+    return;
+  }
+
   if (!job.campaignId) {
     await markLeadJobAbandoned(job, message);
 
@@ -357,6 +364,7 @@ const handlers = {
   ...followUpJobHandlers,
   ...ghlBotJobHandlers,
   ...instantlySyncJobHandlers,
+  ...demoVslJobHandlers,
 };
 
 /**

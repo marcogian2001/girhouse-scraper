@@ -1,5 +1,6 @@
 import { ExternalLink } from 'lucide-react';
 import { useFormatter, useTranslations } from 'next-intl';
+import { DemoVersionPanel } from '@/components/DemoVersionPanel';
 import { GenerateDemoButton } from '@/components/GenerateDemoButton';
 import { RebuildDemoForm } from '@/components/RebuildDemoForm';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -99,6 +100,13 @@ export const ConversationDemoCard = (props: {
             </div>
           ))}
         </dl>
+        <DemoVersionPanel
+          conversationId={props.conversationId}
+          url={url}
+          version={demo.version}
+          vslStatus={props.demo.vslStatus}
+          pains={demo.vsl?.pains ?? []}
+        />
         <RebuildDemoForm conversationId={props.conversationId} guidance={demo.guidance} />
       </CardContent>
     </Card>

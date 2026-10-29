@@ -34,6 +34,7 @@ import {
   renderReferences,
   socialFacts,
 } from './DemoReferences';
+import { demoVslStatus } from './DemoVsl';
 import { Env } from './Env';
 import { recordCopywritingUsage } from './Usage';
 
@@ -745,7 +746,7 @@ export const saveDemoPhone = async (options: {
 /**
  * Reads a conversation's demo with a summary of how the lead went through it.
  * @param conversationId The conversation.
- * @returns The demo, its link and the summary, or null when no demo was built.
+ * @returns The demo, its link, the summary and where its version B stands, or null when no demo was built.
  */
 export const getConversationDemo = async (conversationId: string) => {
   const demo = await db.query.demoSchema.findFirst({
@@ -761,5 +762,10 @@ export const getConversationDemo = async (conversationId: string) => {
     .from(demoEventSchema)
     .where(eq(demoEventSchema.demoId, demo.id));
 
-  return { demo, url: demoUrl(demo.slug), summary: summarizeDemo(events) };
+  return {
+    demo,
+    url: demoUrl(demo.slug),
+    summary: summarizeDemo(events),
+    vslStatus: await demoVslStatus(demo),
+  };
 };

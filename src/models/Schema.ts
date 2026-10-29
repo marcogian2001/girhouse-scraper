@@ -196,6 +196,8 @@ export const jobTypeEnum = pgEnum('job_type', [
   'ghl_bot_assign',
   // Copies Instantly's sending totals and replied leads, for the campaign tests
   'instantly_sync',
+  // Writes a demo's version B script and voices each of Gigi's lines with Kie
+  'demo_vsl',
 ]);
 
 export const jobStatusEnum = pgEnum('job_status', ['queued', 'running', 'done', 'failed']);
@@ -1203,6 +1205,31 @@ export type DemoSnapshot = {
   };
 };
 
+/** Version B of a demo: the video sales letter Gigi narrates on his own, scene after scene. */
+export type DemoVsl = {
+  // The lead's pain points the script leans on, as the AI picked them from the sales calls
+  pains: string[];
+  // Gigi's line for each scene, by line key; a scene without one says its fixed line
+  lines: Record<string, string>;
+  // The example chat, written around the pain points instead of version A's
+  chat: DemoSnapshot['chat'];
+  // The reminder this kind of business sends, such as a car's yearly inspection
+  reminder: { title: string; customerName: string; messages: DemoChatMessage[] };
+  // The follow-up automation, chasing the customer this business most often loses
+  followUp: {
+    customerName: string;
+    trigger: string;
+    whatsapp: string;
+    emailSubject: string;
+    emailBody: string;
+  };
+  generatedAt: string;
+  // Gigi's voice, made by Kie after the script: until it is ready the lines are only typed
+  voice: 'pending' | 'ready' | 'failed';
+};
+
+export const demoVersionEnum = pgEnum('demo_version', ['a', 'b']);
+
 export const demoEventTypeEnum = pgEnum('demo_event_type', [
   'open',
   'step',
@@ -1235,6 +1262,10 @@ export const demoSchema = pgTable(
     bookedAt: timestamp('booked_at', { mode: 'date' }),
     // Set when the demo is built or rebuilt: its reserved price countdown starts here
     generatedAt: timestamp('generated_at', { mode: 'date' }).defaultNow().notNull(),
+    // Which version the link shows: the guided tour (a) or the video sales letter (b)
+    version: demoVersionEnum('version').notNull().default('a'),
+    // Version B's script, once written; version A never reads it
+    vsl: jsonb('vsl').$type<DemoVsl>(),
     ...timestamps,
   },
   (table) => [
@@ -1258,6 +1289,27 @@ export const demoImageSchema = pgTable(
     createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
   },
   (table) => [index('demo_image_conversation_id_idx').on(table.conversationId)],
+);
+
+/** Gigi saying one line of a demo's version B, voiced by Kie and kept since Kie deletes its files. */
+export const demoVoiceSchema = pgTable(
+  'demo_voice',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    demoId: uuid('demo_id')
+      .notNull()
+      .references(() => demoSchema.id, { onDelete: 'cascade' }),
+    // The scene line it says, such as `landing_hero`
+    line: text('line').notNull(),
+    // What it says, without highlights: the page plays it only while its line still reads the same
+    text: text('text').notNull(),
+    contentType: text('content_type').notNull(),
+    // The file, base64-encoded
+    data: text('data').notNull(),
+    seconds: real('seconds').notNull(),
+    createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
+  },
+  (table) => [index('demo_voice_demo_id_idx').on(table.demoId)],
 );
 
 /** One thing a visitor did on a demo page. */

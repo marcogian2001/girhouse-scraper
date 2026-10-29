@@ -1,6 +1,6 @@
 # Automazione risposte cold email: stato dei lavori
 
-Ultimo aggiornamento: 27 ottobre 2026 (conto alla rovescia della demo di 7 giorni dalla generazione, prezzo sempre a 97€).
+Ultimo aggiornamento: 29 ottobre 2026 (demo versione B: video che va avanti da solo, con la voce di Gigi e i problemi tipici del settore del lead).
 
 Questo file serve a riprendere il lavoro anche senza la chat originale, da soli o con un altro assistente AI. Per ripartire basta dire all'AI: "leggi `docs/AUTOMAZIONE_RISPOSTE.md` e `AGENTS.md`, poi continuiamo dalla prima voce non spuntata".
 
@@ -469,6 +469,18 @@ Richiesta del titolare: una seconda versione dell'unica email a chi risponde di 
 - [x] **In modalità automatica** la risposta a un no parte in versione A senza aspettare: la B si può scegliere solo su una bozza.
 - [x] **Filtro per campagna** nella pagina Risposte (26/10): selezione multipla, nell'URL come `campaign` ripetuto.
 
+### Demo versione B: il video di Gigi (VSL) [x] (29/10)
+
+Richiesta del titolare: una nuova versione della demo che parta con un tocco e poi non si fermi più, con Gigi che parla di tutto con la sua voce, e più personalizzata sui problemi del settore del lead (meccanico: promemoria delle revisioni; osteopata: promemoria delle visite). **La versione A e la sua generazione restano identiche**: la B si aggiunge sopra la stessa demo e si sceglie lead per lead.
+
+- [x] **Riquadro Demo:** tab "A · Tour guidato / B · Video con Gigi", pulsante "Crea versione B" / "Rigenera versione B", anteprime separate (`?anteprima=1&versione=a|b`) e i problemi su cui punta la B. La versione scelta sta in `demo.version` (migrazione `0044`); finché la B non è scritta il link mostra la A.
+- [x] **Pain point dalle call:** `src/utils/DemoPainPoints.ts`, distillati dalle call con fisioterapista, autofficina, avvocato, naturopata, nutrizionista e agente immobiliare, più dentisti/studi medici e parrucchieri/estetica. Il settore si riconosce dalla categoria Google o dal nome; l'AI riceve il suo settore in testa e gli altri come esempio.
+- [x] **Copione:** job `demo_vsl` (`src/libs/DemoVsl.ts`). Claude (`src/services/DemoVslWriter.ts`) legge la demo già fatta e scrive in `demo.vsl`: i 2-3 problemi, una chat nuova sul problema principale, il **promemoria** tipico del settore (scena nuova dopo la chat), il follow-up per il cliente che quel settore perde più spesso e una battuta di Gigi per ogni scena. Prezzo, recensioni, contatti e prenotazione hanno battute fisse (`DemoPage.vsl_line_*`), scritte per un video che va da solo (niente "premi Avanti").
+- [x] **Voce:** stessa voce dei video (Gemini TTS "Achird" su Kie, impostazioni in `src/utils/GigiVoice.ts`), una per battuta, convertita in MP3 (`src/utils/Mp3.ts`, circa 6 KB al secondo) e salvata in `demo_voice`, servita da `/api/demo-voices/<id>`. Costo: pochi centesimi a demo; pronta in qualche minuto. Una voce si usa solo se la battuta mostrata è ancora identica a quella letta; senza voce la battuta scorre scritta per il tempo che servirebbe a dirla.
+- [x] **Player** (`src/components/demo/vsl/DemoVsl.tsx`): un tocco su "Guarda la demo" sblocca l'audio, poi ogni scena passa da sola quando Gigi ha finito e la scena ha finito di animarsi (chat, promemoria, automazione, recensioni). Pausa, indietro e salta restano disponibili; se il telefono va in background la demo si mette in pausa. Le recensioni si "toccano" da sole a 5 stelle. Si ferma alla prenotazione.
+- [x] **Gigi che parla:** loop muti ricavati dal video del prezzo (`public/demo/gigi-talk.mp4` a figura intera e `gigi-talk-face.mp4` solo la testa, per la mini giraffa nella barra). Si animano mentre c'è la voce; il labiale non è sincronizzato parola per parola (scelta del titolare: niente Kling per ogni lead, sarebbero 8-10$ a demo).
+- [ ] **Versione B automatica per i nuovi lead:** non fatta. Oggi la B si crea a mano dal riquadro Demo.
+
 ---
 
 ## 5. Punti da verificare
@@ -531,6 +543,7 @@ Per caricarle ci sono due strade:
 - **Il DB di sviluppo è Neon, cioè quello vero.** `bun run dev`, `db:migrate` e `bun run test:e2e` applicano le migrazioni su Neon. Per le prove usare un PGlite usa e getta:
   - avviarlo su una porta libera con `TZ=UTC npx pglite-server -p 54999 --run <script>`;
   - passare `DATABASE_URL=postgres://postgres:postgres@127.0.0.1:54999/postgres` esplicito.
+- **Anche `build-local` migra Neon:** il suo passo `db-server:memory` lancia `db:migrate` con dotenv, quindi la migrazione finisce su Neon nonostante il nome. Il 29/10 ha applicato così la `0044` (solo aggiunte: colonne con default, una tabella e un valore di enum).
 - **`TZ=UTC` è obbligatorio con PGlite.** Senza, il fuso di sessione è `Etc/GMT-4` e i job sembrano nel futuro, quindi il worker non li prende.
 - **La porta 5432 è occupata** da un Postgres di Homebrew. Per questo `db-server:file` e `db-server:memory` usano la porta 6543.
 - **Next 16 rifiuta un secondo `next dev`** nella stessa cartella. Per le prove senza server si usa Bun, importando le librerie direttamente da uno script fuori dal progetto, con `--env-file` che punta a PGlite.

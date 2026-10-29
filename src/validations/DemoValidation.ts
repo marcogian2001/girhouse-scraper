@@ -31,3 +31,9 @@ export const DemoRebuildValidation = z.object({
   // What the Girhouse team tells the demo to use, links to the business's pages included
   guidance: z.string().trim().max(4000),
 });
+
+export const DemoVersionValidation = z.object({
+  version: z.enum(['a', 'b']),
+  // Writes and voices version B again even when it exists
+  regenerate: z.boolean().default(false),
+});

@@ -9,6 +9,23 @@ import { useTimedSequence } from './useTimedSequence';
 /** Ratings from here up are sent to Google, the rest stay private. */
 const GOOGLE_FROM = 4;
 
+/** The rating tapped on its own, and how long after the funnel shows. */
+const AUTOPLAY = { rating: 5, delayMs: 1500 };
+
+/**
+ * Picks the rating on show: the visitor's, else the one tapped on its own.
+ * @param tapped What the visitor did: a star, `cleared` after trying again, or null.
+ * @param autoRating The rating tapped on its own, once it is.
+ * @returns The rating, or null when none is picked.
+ */
+const ratingOf = (tapped: number | 'cleared' | null, autoRating: number | null) => {
+  if (tapped === 'cleared') {
+    return null;
+  }
+
+  return tapped ?? autoRating;
+};
+
 const STAR_PATH = 'M12 17.3l-6.2 3.7 1.6-7L2 9.3l7.1-.6L12 2l2.9 6.7 7.1.6-5.4 4.7 1.6 7z';
 
 /**
@@ -18,11 +35,22 @@ const STAR_PATH = 'M12 17.3l-6.2 3.7 1.6-7L2 9.3l7.1-.6L12 2l2.9 6.7 7.1.6-5.4 4
  * @param props Component props.
  * @param props.company The business name.
  * @param props.customer The example customer.
+ * @param props.isAutoplay Taps five stars by itself, until the visitor taps one.
  * @returns The interactive explainer.
  */
-export const ReviewFunnel = (props: { company: string; customer: string }) => {
+export const ReviewFunnel = (props: {
+  company: string;
+  customer: string;
+  isAutoplay?: boolean;
+}) => {
   const t = useTranslations('DemoPage');
-  const [rating, setRating] = useState<number | null>(null);
+  // Null until the visitor taps a star or tries again, so the autoplay fills in only before
+  const [tapped, setTapped] = useState<number | 'cleared' | null>(null);
+  const autoplayed = useTimedSequence({
+    target: props.isAutoplay ? 1 : 0,
+    intervalMs: AUTOPLAY.delayMs,
+  });
+  const rating = ratingOf(tapped, autoplayed > 0 ? AUTOPLAY.rating : null);
   const [hovered, setHovered] = useState<number | null>(null);
   const phase = useTimedSequence({
     target: rating ? 3 : 0,
@@ -55,7 +83,7 @@ export const ReviewFunnel = (props: { company: string; customer: string }) => {
                   setHovered(star);
                 }}
                 onClick={() => {
-                  setRating(star);
+                  setTapped(star);
                 }}
                 className="transition-transform hover:scale-125 active:scale-95"
               >
@@ -124,7 +152,7 @@ export const ReviewFunnel = (props: { company: string; customer: string }) => {
         <button
           type="button"
           onClick={() => {
-            setRating(null);
+            setTapped('cleared');
           }}
           className="mx-auto flex items-center gap-1.5 text-sm font-medium text-(--demo-primary)"
         >

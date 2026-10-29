@@ -14,22 +14,18 @@ import { readFile, rm, writeFile } from 'node:fs/promises';
 import { parseArgs } from 'node:util';
 import * as z from 'zod';
 import gigiPauses from '@/components/demo/gigi-pauses.json';
-import { stripHighlights } from '@/components/demo/Highlights';
 import { logger } from '@/libs/Logger';
 import messages from '@/locales/it.json';
-import { downloadFromKie, runKieTask, uploadToKie } from './Kie';
-
-/** Gemini "Achird": a friendly male voice that speaks natural Italian. */
-const VOICE_NAME = 'Achird';
-
-const VOICE_STYLE =
-  'Voce maschile calda e amichevole, italiano naturale, ritmo tranquillo e sorridente.';
+import { downloadFromKie, runKieTask, uploadToKie } from '@/services/Kie';
+import {
+  GIGI_VOICE_NAME,
+  GIGI_VOICE_STYLE,
+  GIGI_VOICE_TEMPO,
+  toSpokenText,
+} from '@/utils/GigiVoice';
 
 const AVATAR_PROMPT =
   'A friendly cartoon giraffe wearing round glasses and a navy suit talks warmly to the camera, with natural lip movements, gentle head nods and blinking. Its arms stay relaxed at its sides and its hooves stay dark brown hooves the whole time: no hands, no fingers, no palms. Only the head, the mouth and the eyes move. Static camera, plain white background, soft studio light.';
-
-/** Gemini has no speed setting, so the voice is sped up with ffmpeg before Kling lip-syncs it. */
-const VOICE_TEMPO = 1.15;
 
 /** Quieter than this counts as a pause in the voice. */
 const PAUSE_NOISE = '-35dB';
@@ -39,9 +35,6 @@ const PAUSE_SECONDS = 0.3;
 
 /** Kling's background is off-white (about #fcfcfc): lifting the levels makes it match the white page. */
 const WHITE_LEVEL = 0.96;
-
-/** Read as written, the voice says "Ghirhouse": spelled the Italian way, the G is soft as in "giraffa". */
-const SPOKEN_NAME = 'Giraus';
 
 /** The line each video reads. */
 const LINES = {
@@ -62,13 +55,12 @@ const args = argsSchema.parse({ video: positionals[0], ...values });
 const output = `public/demo/gigi-${args.video}`;
 
 // The slots come from the arguments so the video says what the Automation page says
-const text = stripHighlights(LINES[args.video]).replaceAll('{slots}', String(args.slots));
-const spoken = text.replaceAll('Girhouse', SPOKEN_NAME);
+const spoken = toSpokenText(LINES[args.video].replaceAll('{slots}', String(args.slots)));
 logger.info(`Voicing: ${spoken}`);
 
 const voiceUrl = await runKieTask('google/gemini-3-8-flash-tts', {
-  speakers: [{ speaker_id: 'Speaker 1', voice_name: VOICE_NAME }],
-  dialogue_turns: [{ speaker_id: 'Speaker 1', style: VOICE_STYLE, text: spoken }],
+  speakers: [{ speaker_id: 'Speaker 1', voice_name: GIGI_VOICE_NAME }],
+  dialogue_turns: [{ speaker_id: 'Speaker 1', style: GIGI_VOICE_STYLE, text: spoken }],
 });
 logger.info(`Voice ready: ${voiceUrl}`);
 
@@ -80,7 +72,7 @@ execFileSync('ffmpeg', [
   '-i',
   `${output}.voice.wav`,
   '-filter:a',
-  `atempo=${VOICE_TEMPO}`,
+  `atempo=${GIGI_VOICE_TEMPO}`,
   '-b:a',
   '128k',
   `${output}.voice.mp3`,

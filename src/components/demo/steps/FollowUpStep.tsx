@@ -17,17 +17,55 @@ const NODES = [
 
 type NodeKey = (typeof NODES)[number]['key'] | 'stop';
 
+/** What the automation says when a demo writes it for the lead's own customers. */
+export type FollowUpTexts = {
+  customerName: string;
+  trigger: string;
+  whatsapp: string;
+  emailSubject: string;
+  emailBody: string;
+};
+
 /** How many steps of the workflow show at once on a phone. */
 const MOBILE_STEPS = 2;
+
+/**
+ * Reads the stage texts: the demo's own when it has them, else the example with Marco.
+ * @param t The demo translations.
+ * @param texts The demo's own texts, if any.
+ * @returns The texts of each stage.
+ */
+const stageTexts = (t: ReturnType<typeof useTranslations<'DemoPage'>>, texts?: FollowUpTexts) =>
+  texts
+    ? {
+        trigger: texts.trigger,
+        whatsapp: texts.whatsapp,
+        emailTo: t('vsl_followup_email_to', { customer: texts.customerName.toLowerCase() }),
+        emailSubject: texts.emailSubject,
+        emailBody: texts.emailBody,
+        call: t('vsl_followup_call', { customer: texts.customerName }),
+        stop: t('vsl_followup_stop', { customer: texts.customerName }),
+      }
+    : {
+        trigger: t('followup_stage_trigger'),
+        whatsapp: t('followup_stage_whatsapp'),
+        emailTo: t('followup_stage_email_to'),
+        emailSubject: t('followup_stage_email_subject'),
+        emailBody: t('followup_stage_email_body'),
+        call: t('followup_stage_call'),
+        stop: t('followup_stage_stop'),
+      };
 
 /**
  * Plays what one node of the automation does, so each action is seen happening.
  * @param props Component props.
  * @param props.node The node that just fired.
+ * @param props.texts The demo's own texts, if any.
  * @returns The animation of that action.
  */
-const ActionStage = (props: { node: NodeKey }) => {
+const ActionStage = (props: { node: NodeKey; texts?: FollowUpTexts }) => {
   const t = useTranslations('DemoPage');
+  const texts = stageTexts(t, props.texts);
 
   if (props.node === 'whatsapp') {
     return (
@@ -38,11 +76,11 @@ const ActionStage = (props: { node: NodeKey }) => {
           </span>
           <div className="min-w-0 text-left">
             <p className="text-xs font-semibold">WhatsApp</p>
-            <p className="truncate text-[11px] text-neutral-500">{t('followup_stage_whatsapp')}</p>
+            <p className="truncate text-[11px] text-neutral-500">{texts.whatsapp}</p>
           </div>
         </div>
         <p className="animate-in rounded-lg rounded-tl-none bg-white px-3 py-2 text-left text-sm shadow-sm delay-500 duration-500 fill-mode-both fade-in">
-          {t('followup_stage_whatsapp')}
+          {texts.whatsapp}
         </p>
       </div>
     );
@@ -53,9 +91,9 @@ const ActionStage = (props: { node: NodeKey }) => {
       <div className="relative mx-auto w-full max-w-sm">
         <Mail className="absolute -top-6 left-1/2 size-12 -translate-x-1/2 animate-out text-sky-500 duration-1000 fill-mode-forwards fade-out slide-out-to-top-12" />
         <div className="animate-in space-y-2 rounded-2xl bg-white p-4 text-left shadow-2xl ring-1 ring-sky-100 delay-300 duration-500 fill-mode-both fade-in slide-in-from-bottom-6">
-          <p className="text-xs text-neutral-400">{t('followup_stage_email_to')}</p>
-          <p className="text-sm font-semibold">{t('followup_stage_email_subject')}</p>
-          <p className="text-sm text-neutral-600">{t('followup_stage_email_body')}</p>
+          <p className="text-xs text-neutral-400">{texts.emailTo}</p>
+          <p className="text-sm font-semibold">{texts.emailSubject}</p>
+          <p className="text-sm text-neutral-600">{texts.emailBody}</p>
           <p className="flex items-center gap-1 text-xs font-medium text-green-600">
             <CheckCircle2 className="size-3.5" />
             {t('followup_stage_sent')}
@@ -72,7 +110,7 @@ const ActionStage = (props: { node: NodeKey }) => {
           <span className="absolute inset-0 animate-ping rounded-full bg-violet-400/60" />
           <PhoneCall className="relative size-8" />
         </span>
-        <p className="text-lg font-semibold">{t('followup_stage_call')}</p>
+        <p className="text-lg font-semibold">{texts.call}</p>
         <p className="text-xs text-white/60">{t('followup_stage_call_detail')}</p>
       </div>
     );
@@ -82,7 +120,7 @@ const ActionStage = (props: { node: NodeKey }) => {
     return (
       <div className="mx-auto flex max-w-sm animate-pop items-center gap-3 rounded-3xl bg-green-50 p-4 ring-2 ring-green-300 md:flex-col md:p-8">
         <CheckCircle2 className="size-8 shrink-0 text-green-600 md:size-12" />
-        <p className="font-semibold text-green-800 md:text-center">{t('followup_stage_stop')}</p>
+        <p className="font-semibold text-green-800 md:text-center">{texts.stop}</p>
       </div>
     );
   }
@@ -93,7 +131,9 @@ const ActionStage = (props: { node: NodeKey }) => {
       <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-white shadow-xl ring-1 ring-neutral-200 md:size-20">
         <Hourglass className="size-6 animate-spin text-neutral-500 [animation-duration:2s] md:size-9" />
       </span>
-      <p className="font-semibold text-neutral-700">{t(`followup_stage_${props.node}`)}</p>
+      <p className="font-semibold text-neutral-700">
+        {props.node === 'trigger' ? texts.trigger : t(`followup_stage_${props.node}`)}
+      </p>
     </div>
   );
 };
@@ -102,9 +142,11 @@ const ActionStage = (props: { node: NodeKey }) => {
  * An automation run as the workflow builder shows it: the nodes light up one after
  * another while the stage beside them plays each action, until the customer answers.
  * It plays through on its own, with no press of "Next".
+ * @param props Component props.
+ * @param props.texts What it says, written for the lead's own customers; the example with Marco without.
  * @returns The workflow mockup.
  */
-export const FollowUpStep = () => {
+export const FollowUpStep = (props: { texts?: FollowUpTexts }) => {
   const t = useTranslations('DemoPage');
   // One tick per node, then one more for the customer's answer that stops it
   const tick = useTimedSequence({ target: NODES.length + 1, intervalMs: 1800 });
@@ -176,7 +218,7 @@ export const FollowUpStep = () => {
         key={current}
         className="-order-1 min-h-28 animate-in content-center duration-500 zoom-in-95 fade-in md:min-h-80 lg:order-none"
       >
-        <ActionStage node={current} />
+        <ActionStage node={current} texts={props.texts} />
       </div>
     </div>
   );

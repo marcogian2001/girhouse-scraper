@@ -2,10 +2,12 @@ import type { Metadata } from 'next';
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import * as z from 'zod';
+import type { DemoTourProps } from '@/components/demo/DemoTour';
 import { DemoTour } from '@/components/demo/DemoTour';
-import type { DemoReviews } from '@/components/demo/GoogleReviews';
+import { DemoVsl } from '@/components/demo/vsl/DemoVsl';
+import { loadDemoReviews } from '@/libs/DemoReviews';
 import { getDemoPage } from '@/libs/Demos';
-import { getPlaceDetails, pickReviews } from '@/services/GooglePlaces';
+import { getDemoVoices } from '@/libs/DemoVsl';
 import { AppConfig } from '@/utils/AppConfig';
 import { readableTextColor } from '@/utils/Colors';
 import { DEMO_STEPS } from '@/utils/DemoStats';
@@ -18,9 +20,6 @@ type DemoPageProps = {
 
 /** Google photos the landing preview can use: the hero and the "about" section. */
 const PHOTO_COUNT = 2;
-
-/** Reviews shown as cards, as many as Google returns at most. */
-const REVIEW_COUNT = 3;
 
 /**
  * Loads a demo from its slug, or answers with a 404 page.
@@ -63,26 +62,11 @@ export default async function DemoPage(props: DemoPageProps) {
   const isPreview = searchParams.anteprima === '1';
   const step = z.coerce.number().int().min(1).max(DEMO_STEPS).safeParse(searchParams.passo);
 
-  // Read live, since Google forbids storing them; the page still works when Google does not answer
-  const details = data.placeId ? await getPlaceDetails(data.placeId).catch(() => null) : null;
-  const googleReviews = details ? pickReviews(details.reviews) : [];
+  const { reviews, details } = await loadDemoReviews({
+    data,
+    formatWhen: (date) => format.dateTime(date, { month: 'long', year: 'numeric' }),
+  });
   const { directory } = data;
-
-  // Google's reviews first; a professional without them shows their MioDottore ones
-  const reviews: DemoReviews =
-    googleReviews.length > 0 || !directory?.reviews.length
-      ? { source: 'Google', rating: data.rating, count: data.reviewsCount, items: googleReviews }
-      : {
-          source: 'MioDottore',
-          rating: directory.rating,
-          count: directory.reviewsCount,
-          items: directory.reviews.slice(0, REVIEW_COUNT).map((review) => ({
-            ...review,
-            when: review.when
-              ? format.dateTime(new Date(review.when), { month: 'long', year: 'numeric' })
-              : null,
-          })),
-        };
 
   // Every build or rebuild of the demo starts its countdown again
   const increaseOn = new Date(demo.generatedAt.getTime() + settings.priceIncreaseDays * 86_400_000);
@@ -93,38 +77,52 @@ export default async function DemoPage(props: DemoPageProps) {
     '--demo-on-primary': readableTextColor(data.primaryColor),
   };
 
+  // The team can open either version from the dashboard; the lead sees the one the demo is set to
+  const version =
+    searchParams.versione === 'a' || searchParams.versione === 'b'
+      ? searchParams.versione
+      : demo.version;
+  // Version B shows once its script is written; until then the link keeps version A
+  const vsl = version === 'b' ? demo.vsl : null;
+
+  const tourProps: DemoTourProps = {
+    slug,
+    track: !isPreview,
+    initialStep: step.success ? step.data : null,
+    data,
+    reviews,
+    photos: [
+      ...(details?.photos ?? []).slice(0, PHOTO_COUNT).map((photo, index) => ({
+        src: `/api/demo/${slug}/photo/${index}`,
+        author: photo.authorAttributions.at(0)?.displayName ?? null,
+      })),
+      ...(data.images?.photos ?? []).map((src) => ({ src, author: null })),
+      ...(directory?.photos ?? []).map((src) => ({ src, author: null })),
+    ],
+    pricing: {
+      price: settings.monthlyPrice,
+      newPrice: settings.newMonthlyPrice,
+      slots: settings.onboardingSlotsPerMonth,
+      increaseOn: increaseOn.toISOString(),
+      increaseLabel: format.dateTime(increaseOn, {
+        day: 'numeric',
+        month: 'long',
+        timeZone: AppConfig.timeZone,
+      }),
+    },
+    whatsappNumber: settings.whatsappBusinessNumber,
+  };
+
   return (
     <div
       style={brandStyle}
       className="min-h-svh bg-gradient-to-b from-amber-50/70 via-white to-white"
     >
-      <DemoTour
-        slug={slug}
-        track={!isPreview}
-        initialStep={step.success ? step.data : null}
-        data={data}
-        reviews={reviews}
-        photos={[
-          ...(details?.photos ?? []).slice(0, PHOTO_COUNT).map((photo, index) => ({
-            src: `/api/demo/${slug}/photo/${index}`,
-            author: photo.authorAttributions.at(0)?.displayName ?? null,
-          })),
-          ...(data.images?.photos ?? []).map((src) => ({ src, author: null })),
-          ...(directory?.photos ?? []).map((src) => ({ src, author: null })),
-        ]}
-        pricing={{
-          price: settings.monthlyPrice,
-          newPrice: settings.newMonthlyPrice,
-          slots: settings.onboardingSlotsPerMonth,
-          increaseOn: increaseOn.toISOString(),
-          increaseLabel: format.dateTime(increaseOn, {
-            day: 'numeric',
-            month: 'long',
-            timeZone: AppConfig.timeZone,
-          }),
-        }}
-        whatsappNumber={settings.whatsappBusinessNumber}
-      />
+      {vsl ? (
+        <DemoVsl {...tourProps} vsl={vsl} voices={await getDemoVoices(demo.id)} />
+      ) : (
+        <DemoTour {...tourProps} />
+      )}
     </div>
   );
 }

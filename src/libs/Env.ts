@@ -25,7 +25,7 @@ export const Env = createEnv({
     GHL_WEBHOOK_SECRET: z.string().min(16).optional(),
     // The GHL user that bot-managed campaigns' leads are assigned to
     GHL_BOT_USER_ID: z.string().min(1).optional(),
-    // Kie AI, used once by `scripts/generate-gigi-intro.ts` to make Gigi's intro video
+    // Kie AI: makes Gigi's videos (`scripts/generate-gigi-video.ts`) and voices version B demos
     KIE_API_KEY: z.string().min(1).optional(),
     APIFY_API_TOKEN: z.string().min(1).optional(),
     PROSPEO_API_KEY: z.string().min(1).optional(),

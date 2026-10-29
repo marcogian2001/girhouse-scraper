@@ -114,7 +114,11 @@ const SceneVisual = (options: {
  * @param props.initialStep The step a link opened the tour on, if any.
  * @returns Nothing visible.
  */
-const DemoTracking = (props: { slug: string; company: string; initialStep: number | null }) => {
+export const DemoTracking = (props: {
+  slug: string;
+  company: string;
+  initialStep: number | null;
+}) => {
   useEffect(() => {
     startDemoAnalytics({ slug: props.slug, company: props.company });
     sendDemoEvent(props.slug, { type: 'open' });

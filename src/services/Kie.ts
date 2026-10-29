@@ -60,24 +60,52 @@ const kie = async (url: string, body?: Record<string, unknown>) => {
 };
 
 /**
- * Waits for a Kie task to finish.
- * @param taskId The task to wait for.
- * @returns The URL of the generated file.
+ * Starts a Kie generation task without waiting for it.
+ * @param model The model id.
+ * @param input The model input.
+ * @returns The task id, to read with `readKieTask`.
+ */
+export const createKieTask = async (model: string, input: Record<string, unknown>) =>
+  taskSchema.parse(await kie(`${KIE_API_URL}/api/v1/jobs/createTask`, { model, input })).taskId;
+
+/**
+ * Reads where a Kie task stands.
+ * @param taskId The task.
+ * @returns The URL of the generated file, or null while the task is still running.
+ * @throws {Error} When the task failed.
+ */
+export const readKieTask = async (taskId: string) => {
+  const record = recordSchema.parse(
+    await kie(`${KIE_API_URL}/api/v1/jobs/recordInfo?taskId=${taskId}`),
+  );
+
+  if (record.state === 'success' && record.resultJson) {
+    return resultSchema.parse(JSON.parse(record.resultJson)).resultUrls[0] ?? '';
+  }
+
+  if (record.state === 'fail') {
+    throw new Error(`Kie task ${taskId} failed: ${record.failMsg ?? 'no reason given'}`);
+  }
+
+  return null;
+};
+
+/**
+ * Runs a Kie generation task to the end, waiting in-process: for scripts, not requests.
+ * @param model The model id.
+ * @param input The model input.
+ * @returns The URL of the generated file, which Kie keeps for 14 days.
  * @throws {Error} When the task fails or takes too long.
  */
-const waitForResult = async (taskId: string) => {
+export const runKieTask = async (model: string, input: Record<string, unknown>) => {
+  const taskId = await createKieTask(model, input);
+
   for (let poll = 0; poll < MAX_POLLS; poll += 1) {
-    const record = recordSchema.parse(
-      // oxlint-disable-next-line no-await-in-loop
-      await kie(`${KIE_API_URL}/api/v1/jobs/recordInfo?taskId=${taskId}`),
-    );
+    // oxlint-disable-next-line no-await-in-loop
+    const url = await readKieTask(taskId);
 
-    if (record.state === 'success' && record.resultJson) {
-      return resultSchema.parse(JSON.parse(record.resultJson)).resultUrls[0] ?? '';
-    }
-
-    if (record.state === 'fail') {
-      throw new Error(`Kie task ${taskId} failed: ${record.failMsg ?? 'no reason given'}`);
+    if (url !== null) {
+      return url;
     }
 
     // oxlint-disable-next-line no-await-in-loop
@@ -85,20 +113,6 @@ const waitForResult = async (taskId: string) => {
   }
 
   throw new Error(`Kie task ${taskId} did not finish in time`);
-};
-
-/**
- * Runs a Kie generation task to the end.
- * @param model The model id.
- * @param input The model input.
- * @returns The URL of the generated file, which Kie keeps for 14 days.
- */
-export const runKieTask = async (model: string, input: Record<string, unknown>) => {
-  const task = taskSchema.parse(
-    await kie(`${KIE_API_URL}/api/v1/jobs/createTask`, { model, input }),
-  );
-
-  return await waitForResult(task.taskId);
 };
 
 /**

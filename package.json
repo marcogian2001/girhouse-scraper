@@ -16,7 +16,7 @@
     "lint:fix": "ultracite fix --type-aware --type-check",
     "check:types": "tsc --noEmit --pretty",
     "check:deps": "knip",
-    "check:i18n": "i18n-check -l src/locales -s en -u src -f next-intl -i \"CampaignStatus.status_*\" \"ContactStatus.status_*\" \"CampaignSettingsForm.processor_*\" \"ColumnMapper.field_*\" \"EnrichmentCard.confidence_*\" \"EnrichmentCard.field_*\" \"KnowledgeManager.kind_*\" \"LeadSearchStatus.status_*\" \"LeadStatus.status_*\" \"LeadSearchForm.website_*\" \"LeadTable.source_*\" \"LeadTable.filter_*\" \"ConversationState.status_*\" \"ReplyCategory.category_*\" \"ReplyStatus.status_*\" \"AutomationSettingsForm.field_*\" \"AutomationSettingsForm.legend_*\" \"ReplyDetailPage.event_*\" \"ReplyDetailPage.source_*\" \"OutboundStatus.status_*\" \"OutboundEmailEditor.issue_*\" \"OutboundEmailEditor.error_*\" \"DemoPage.line_*\" \"DemoPage.step*\" \"DemoPage.crm_*\" \"DemoPage.followup_*\" \"DemoPage.pricing_*\" \"DemoPage.booking_error_*\" \"ConversationDemoCard.behavior_*\" \"CampaignTests.step_*\" \"CampaignTests.base_*\" \"CampaignTests.hint_*\"",
+    "check:i18n": "i18n-check -l src/locales -s en -u src -f next-intl -i \"CampaignStatus.status_*\" \"ContactStatus.status_*\" \"CampaignSettingsForm.processor_*\" \"ColumnMapper.field_*\" \"EnrichmentCard.confidence_*\" \"EnrichmentCard.field_*\" \"KnowledgeManager.kind_*\" \"LeadSearchStatus.status_*\" \"LeadStatus.status_*\" \"LeadSearchForm.website_*\" \"LeadTable.source_*\" \"LeadTable.filter_*\" \"ConversationState.status_*\" \"ReplyCategory.category_*\" \"ReplyStatus.status_*\" \"AutomationSettingsForm.field_*\" \"AutomationSettingsForm.legend_*\" \"ReplyDetailPage.event_*\" \"ReplyDetailPage.source_*\" \"OutboundStatus.status_*\" \"OutboundEmailEditor.issue_*\" \"OutboundEmailEditor.error_*\" \"DemoPage.line_*\" \"DemoPage.vsl_line_*\" \"DemoPage.step*\" \"DemoPage.crm_*\" \"DemoPage.followup_*\" \"DemoPage.pricing_*\" \"DemoPage.booking_error_*\" \"ConversationDemoCard.behavior_*\" \"ConversationDemoCard.version_*\" \"ConversationDemoCard.hint_version_*\" \"ConversationDemoCard.vsl_status_*\" \"ConversationDemoCard.open_preview_*\" \"CampaignTests.step_*\" \"CampaignTests.base_*\" \"CampaignTests.hint_*\"",
     "commit": "commit",
     "test": "vitest run",
     "test:e2e": "playwright test",
@@ -29,6 +29,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "0.124.0",
     "@arcjet/next": "1.10.0",
+    "@breezystack/lamejs": "^1.2.7",
     "@hookform/resolvers": "5.9.1",
     "@logtape/logtape": "2.3.1",
     "@sentry/nextjs": "10.70.0",

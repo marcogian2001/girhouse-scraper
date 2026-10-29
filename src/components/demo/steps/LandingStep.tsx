@@ -74,6 +74,7 @@ const scrollFrameTo = (node: HTMLElement | null) => {
  * @param props.reviews Real reviews, already picked, with their source.
  * @param props.photos The business's photos: Google's, the copied ones, then its MioDottore profile's.
  * @param props.sections The sections revealed so far.
+ * @param props.autoplayFunnel Taps five stars on the review system by itself, for a demo that plays on its own.
  * @returns The landing preview.
  */
 export const LandingStep = (props: {
@@ -81,6 +82,7 @@ export const LandingStep = (props: {
   reviews: DemoReviews;
   photos: DemoPhoto[];
   sections: LandingSection[];
+  autoplayFunnel?: boolean;
 }) => {
   const t = useTranslations('DemoPage');
   const { data } = props;
@@ -129,7 +131,11 @@ export const LandingStep = (props: {
           <SectionHeading kicker={t('funnel_kicker')} title={t('funnel_title')} />
           <p className="text-sm text-neutral-600">{t('funnel_subtitle')}</p>
         </div>
-        <ReviewFunnel company={data.company} customer={data.chat.customerName} />
+        <ReviewFunnel
+          company={data.company}
+          customer={data.chat.customerName}
+          isAutoplay={props.autoplayFunnel}
+        />
       </div>
     ),
     contact: <ContactSection data={data} />,

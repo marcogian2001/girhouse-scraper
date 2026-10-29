@@ -9,7 +9,7 @@
 import { execFileSync } from 'node:child_process';
 import { readFile, rm, writeFile } from 'node:fs/promises';
 import { logger } from '@/libs/Logger';
-import { downloadFromKie, runKieTask, uploadToKie } from './Kie';
+import { downloadFromKie, runKieTask, uploadToKie } from '@/services/Kie';
 
 const PROMPT =
   'Use the cartoon giraffe of the reference image as the very same character: same face, round glasses, navy suit and tie, dark brown hooves. Create a glossy 3D Pixar-style product hero composition: the giraffe stands smiling in the middle, surrounded by oversized floating objects that stand for a digital package for a small business: a smartphone showing a WhatsApp chat with green bubbles, an open laptop showing a modern website landing page, a calendar card with a big check mark, a golden five-star review badge and an email envelope. Cyan (#10BADE) and electric blue (#0074F2) accents, soft studio light, premium marketing render, plain light grey background, no text, no letters, no logos.';

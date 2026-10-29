@@ -12,7 +12,7 @@ import { visibleLength } from './Highlights';
  * @param bar Gigi's bar, or null when it unmounts.
  * @returns Stops watching the bar.
  */
-const measureBar = (bar: HTMLElement | null) => {
+export const measureBar = (bar: HTMLElement | null) => {
   const observer = new ResizeObserver(() => {
     bar?.parentElement?.style.setProperty('--demo-bar-h', `${bar.offsetHeight}px`);
   });
