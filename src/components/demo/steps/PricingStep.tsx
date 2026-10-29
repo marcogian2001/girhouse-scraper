@@ -45,6 +45,7 @@ const HEADLINE_SHADOW =
  * @param props.slots How many new businesses are taken each month.
  * @param props.increaseOn When the countdown ends, ISO.
  * @param props.increaseLabel That date, formatted.
+ * @param props.isBookingDeadline Shows that date as the last day to book the call.
  * @returns The pricing flyer.
  */
 export const PricingStep = (props: {
@@ -55,6 +56,7 @@ export const PricingStep = (props: {
   slots: number;
   increaseOn: string;
   increaseLabel: string;
+  isBookingDeadline?: boolean;
 }) => {
   const t = useTranslations('DemoPage');
   const now = useNow(1000);
@@ -127,7 +129,11 @@ export const PricingStep = (props: {
             {t('pricing_refund_short')}
           </p>
 
-          <PriceCountdown increaseOn={props.increaseOn} increaseLabel={props.increaseLabel} />
+          <PriceCountdown
+            increaseOn={props.increaseOn}
+            increaseLabel={props.increaseLabel}
+            isBookingDeadline={props.isBookingDeadline}
+          />
         </div>
       </div>
 

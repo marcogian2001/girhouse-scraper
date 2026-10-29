@@ -36,9 +36,15 @@ export const isPriceLocked = (increaseOn: string, now: Date) => new Date(increas
  * @param props Component props.
  * @param props.increaseOn When the countdown ends, ISO.
  * @param props.increaseLabel That date, formatted.
+ * @param props.isBookingDeadline Names the date as the last day to book the call, which keeps the
+ * price locked until it happens, instead of the day the price ends.
  * @returns The countdown, or nothing.
  */
-export const PriceCountdown = (props: { increaseOn: string; increaseLabel: string }) => {
+export const PriceCountdown = (props: {
+  increaseOn: string;
+  increaseLabel: string;
+  isBookingDeadline?: boolean;
+}) => {
   const t = useTranslations('DemoPage');
   const now = useNow(1000);
 
@@ -52,7 +58,9 @@ export const PriceCountdown = (props: { increaseOn: string; increaseLabel: strin
     <div className="space-y-2 rounded-2xl bg-black/25 p-3 md:space-y-2.5 md:p-3.5">
       <p className="flex items-center justify-center gap-2 text-sm font-medium">
         <Timer className="size-4 text-[#10BADE]" />
-        {t('pricing_locked_until', { date: props.increaseLabel })}
+        {props.isBookingDeadline
+          ? t('vsl_book_by', { date: props.increaseLabel })
+          : t('pricing_locked_until', { date: props.increaseLabel })}
       </p>
       <div className="grid grid-cols-4 gap-2 text-center">
         {UNITS.map((unit) => (

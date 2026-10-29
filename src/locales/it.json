@@ -1208,10 +1208,10 @@
     "vsl_line_landing_funnel": "Questo è il <b>sistema recensioni</b>: dopo ogni visita il cliente riceve un messaggio. Guarda: chi dà <hl>cinque stelle</hl> va dritto su Google, chi è scontento scrive solo a te.",
     "vsl_line_landing_contact": "In fondo <b>orari, indirizzo</b> e il pulsante <b>WhatsApp</b> sempre a portata. Ora ti mostro <hl>cosa succede quando qualcuno ti scrive</hl>.",
     "vsl_line_pricing_video": "Ti è piaciuto tutto questo? Immagino vorrai sapere <b>quanto costa</b>. Forse pensi a cifre come 2.000 o 3.000 euro… e invece no! Grazie al nostro <b>sistema strutturato</b> riusciamo a offrirti tutto questo <hl>a un prezzo che ti sorprenderà</hl>, solo per i prossimi giorni. E quel prezzo resterà bloccato <hl>per sempre</hl>. Ricorda però che facciamo il setup <b>solo a {slots} aziende ogni mese</b>. Ecco il prezzo.",
-    "vsl_line_pricing_price": "Ecco il <b>prezzo riservato a {company}</b>, bloccato fino alla data che vedi. E se dopo <hl>30 giorni</hl> non sei soddisfatto, <b>ti rimborsiamo</b>.",
+    "vsl_line_pricing_price": "Ecco il <b>prezzo riservato a {company}</b>. Resta <hl>bloccato fino alla nostra chiamata</hl>, e se dopo 30 giorni non sei soddisfatto, <b>ti rimborsiamo</b>.",
     "vsl_line_pricing_included": "Dentro c'è <b>tutto quello che hai visto</b>, più un <hl>gruppo WhatsApp</hl> dove il nostro team italiano ti segue.",
-    "vsl_line_pricing_guarantees": "<b>Prepariamo tutto noi</b>, tu non devi configurare niente. Ricorda che prendiamo solo <hl>{slots} nuove attività al mese</hl>: se vuoi vederlo dal vivo, prenota qui la tua call.",
-    "vsl_line_booking_phone": "Ti faccio vedere <b>tutto dal vivo</b> con una persona del nostro team. Lasciami qui sotto il tuo <hl>numero WhatsApp</hl>.",
+    "vsl_line_pricing_guarantees": "<b>Prepariamo tutto noi</b>, tu non devi configurare niente. Ora il prossimo passo è <hl>prenotare la chiamata</hl>: fino a quando la facciamo insieme, il prezzo resta bloccato per te.",
+    "vsl_line_booking_phone": "Prenotiamo la chiamata: ti faccio vedere <b>tutto dal vivo</b> e fino ad allora il prezzo resta bloccato. Lasciami qui sotto il tuo <hl>numero WhatsApp</hl>.",
     "vsl_line_booking_slots": "Perfetto! Questi sono gli <b>orari liberi</b>. <hl>Scegli quello che preferisci.</hl>",
     "vsl_line_booking_confirm": "Ottima scelta. <b>Leggi l'avviso</b> e <hl>conferma la call</hl>.",
     "vsl_line_booking_booked": "<b>Fatto!</b> Ci sentiamo presto. <hl>Aggiungi l'evento al calendario</hl> così non te lo perdi.",
@@ -1225,7 +1225,8 @@
     "vsl_followup_email_to": "A: {customer}@esempio.it",
     "vsl_followup_call": "Chiamata a {customer}…",
     "vsl_followup_stop": "{customer} ha risposto: l'automazione si ferma da sola",
-    "vsl_reminder_label": "Esempio: {title}, inviato in automatico"
+    "vsl_reminder_label": "Esempio: {title}, inviato in automatico",
+    "vsl_book_by": "Prenota la chiamata entro il {date}"
   },
   "ConversationDemoCard": {
     "title": "Demo",

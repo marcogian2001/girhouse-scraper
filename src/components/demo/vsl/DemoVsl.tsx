@@ -290,7 +290,9 @@ const VslSceneVisual = (options: {
   }
 
   if (scene.kind === 'pricing') {
-    return <PricingStep part={scene.part} company={data.company} {...props.pricing} />;
+    return (
+      <PricingStep part={scene.part} company={data.company} {...props.pricing} isBookingDeadline />
+    );
   }
 
   if (scene.kind === 'booking') {
@@ -629,6 +631,7 @@ export const DemoVsl = (props: DemoTourProps & { vsl: DemoVslData; voices: DemoV
               <PriceCountdown
                 increaseOn={props.pricing.increaseOn}
                 increaseLabel={props.pricing.increaseLabel}
+                isBookingDeadline
               />
             </div>
           )}
