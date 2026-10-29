@@ -130,20 +130,21 @@ export const CrmTimeline = (props: { data: DemoSnapshot }) => {
   const shown = useTimedSequence({ target: items.length, intervalMs: 600 });
 
   return (
-    <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-xl md:p-7">
+    <div className="rounded-2xl border border-neutral-200 bg-white p-4 shadow-xl md:p-7">
       <p className="mb-5 flex items-center gap-2 text-sm font-semibold text-neutral-500">
         <span className="rounded-full bg-neutral-100 px-3 py-1">{t('crm_today')}</span>
         {t('crm_timeline_title')}
       </p>
-      <ol className="relative space-y-5 before:absolute before:top-2 before:bottom-2 before:left-[4.6rem] before:w-0.5 before:bg-neutral-200">
+      {/* On a phone the time moves into the entry, so the axis sits at the left edge */}
+      <ol className="relative space-y-4 before:absolute before:top-2 before:bottom-2 before:left-[1.07rem] before:w-0.5 before:bg-neutral-200 md:space-y-5 md:before:left-[4.6rem]">
         {items.slice(0, shown).map((item, index) => (
           <li
             key={item.key}
-            className="relative grid animate-in grid-cols-[3.5rem_2.25rem_1fr] items-start gap-3 fade-in slide-in-from-left-3"
+            className="relative grid animate-in grid-cols-[2.25rem_1fr] items-start gap-2.5 fade-in slide-in-from-left-3 md:grid-cols-[3.5rem_2.25rem_1fr] md:gap-3"
           >
             {/* On a phone the page follows each new entry down */}
             {index === shown - 1 && <ScrollAnchor className="absolute inset-0" />}
-            <span className="pt-2 text-right text-xs font-medium text-neutral-400 tabular-nums">
+            <span className="pt-2 text-right text-xs font-medium text-neutral-400 tabular-nums max-md:hidden">
               {item.time}
             </span>
             <span
@@ -151,10 +152,11 @@ export const CrmTimeline = (props: { data: DemoSnapshot }) => {
             >
               <item.icon className="size-4" />
             </span>
-            <div className="space-y-1 rounded-xl bg-neutral-50 px-4 py-2.5">
+            <div className="min-w-0 space-y-1 rounded-xl bg-neutral-50 px-3 py-2.5 md:px-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="text-sm font-semibold">{item.title}</p>
                 <span className="rounded-full bg-white px-2 py-0.5 text-[11px] text-neutral-500 ring-1 ring-neutral-200">
+                  <span className="text-neutral-400 tabular-nums md:hidden">{item.time} · </span>
                   {item.channel}
                 </span>
               </div>

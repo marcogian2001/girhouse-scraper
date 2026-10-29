@@ -142,6 +142,7 @@ const INSTRUCTIONS = [
   '- Each line says what is on screen right now, then why it matters for the pains you picked, with the concrete words of this sector.',
   '- Mark one or two key phrases with `<b>...</b>` (bold) or `<hl>...</hl>` (highlighted), never nested.',
   '- Never tell them to press, tap or click anything: the demo plays on its own.',
+  '- Name things plainly: "il promemoria", "l\'automazione", "il messaggio". Never soften them with adjectives or adverbs such as "gentile", "con gentilezza", "delicato", "senza pressioni", "con calma": the owner hears them as odd. The care the playbook asks for goes into the messages the customer gets, not into how Gigi describes them.',
   '- Use the real names: the business, and the customer names you wrote for the chat, the reminder and the follow-up.',
   '- An empty string for a landing section the page does not have.',
   "- The screens, with version A's generic line as a reference for length and tone:",

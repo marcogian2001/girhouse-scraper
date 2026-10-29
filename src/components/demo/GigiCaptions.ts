@@ -42,6 +42,47 @@ export const splitSentences = (segments: HighlightSegment[]) => {
 };
 
 /**
+ * Splits a line into short captions: its sentences, and long ones again after a colon or
+ * a semicolon, so a caption fits in two lines on a phone.
+ * @param segments The runs of the line.
+ * @returns The runs of each caption, in order.
+ */
+const splitCaptions = (segments: HighlightSegment[]) => {
+  const text = segments.map((segment) => segment.text).join('');
+  const ends = [...text.matchAll(/(?:[.!?…]+[»"]?|[:;])\s+/gu)].map(
+    (match) => match.index + match[0].length,
+  );
+
+  return [0, ...ends]
+    .map((start, index) => cutHighlights(segments, start, ends[index] ?? text.length))
+    .filter((caption) => visibleLength(caption) > 0);
+};
+
+/**
+ * Finds the caption being said, from how much of the whole line is typed.
+ * @param segments The runs of the line.
+ * @param typed How many characters of the whole line are typed.
+ * @returns The caption and how many of its characters are typed.
+ */
+export const currentCaption = (segments: HighlightSegment[], typed: number) => {
+  let before = 0;
+
+  for (const caption of splitCaptions(segments)) {
+    const length = visibleLength(caption);
+
+    if (typed < before + length) {
+      return { segments: caption, typed: typed - before };
+    }
+
+    before += length;
+  }
+
+  const last = splitCaptions(segments).at(-1) ?? [];
+
+  return { segments: last, typed: visibleLength(last) };
+};
+
+/**
  * Times when each sentence starts in Gigi's video. Each one is placed by its share of
  * the characters, then moved onto the closest pause in the voice, where sentences break.
  * @param options The line and the video.

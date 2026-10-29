@@ -3,12 +3,13 @@
 import { ArrowLeft, Pause, Play, SkipForward } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { measureBar } from '../GigiBar';
+import { currentCaption } from '../GigiCaptions';
 import { TypedText } from '../GiraffeSpeaker';
 import type { HighlightSegment } from '../Highlights';
 import { GigiTalkingFace } from './GigiTalking';
 
 /**
- * The bar across the bottom of version B: the mini Gigi talking and his line on the left,
+ * The bar across the bottom of version B: the mini Gigi talking and what he is saying now on the left,
  * pause and the way back or ahead on the right. Nothing has to be pressed: the demo moves
  * on by itself when Gigi is done. On the price it drops the line, on blue glass.
  * @param props Component props.
@@ -35,6 +36,8 @@ export const VslBar = (props: {
   onSkip: () => void;
 }) => {
   const t = useTranslations('DemoPage');
+  // Only what Gigi is saying now, like a subtitle, so the bar stays two lines high
+  const caption = currentCaption(props.segments, props.typed);
 
   return (
     <aside
@@ -46,7 +49,7 @@ export const VslBar = (props: {
 
         <p
           aria-live="polite"
-          className={`min-w-0 flex-1 text-sm leading-snug md:text-base md:leading-relaxed ${props.isQuiet ? 'text-white' : 'text-neutral-700'}`}
+          className={`min-h-[2lh] min-w-0 flex-1 text-sm leading-snug md:text-base md:leading-relaxed ${props.isQuiet ? 'text-white' : 'text-neutral-700'}`}
         >
           {props.isPaused && (
             <span className="mr-2 inline-flex rounded-full bg-amber-100 px-2 py-0.5 align-middle text-xs font-semibold text-amber-800">
@@ -59,7 +62,7 @@ export const VslBar = (props: {
                 {props.segments.map((segment) => segment.text).join('')}
               </span>
               <span aria-hidden>
-                <TypedText segments={props.segments} typed={props.typed} />
+                <TypedText segments={caption.segments} typed={caption.typed} />
               </span>
             </>
           )}

@@ -214,9 +214,15 @@ const downloadVoice = async (task: VoiceTask & { url: string }) => ({
  * @param tasks The voice tasks.
  */
 const storeVoices = async (demo: Demo, tasks: VoiceTask[]) => {
-  const voiced = await Promise.all(
-    tasks.flatMap((task) => (task.url ? [downloadVoice({ ...task, url: task.url })] : [])),
-  );
+  const voiced: Awaited<ReturnType<typeof downloadVoice>>[] = [];
+
+  // One at a time: Kie's file host drops connections when many come at once
+  for (const task of tasks) {
+    if (task.url) {
+      // oxlint-disable-next-line no-await-in-loop
+      voiced.push(await downloadVoice({ ...task, url: task.url }));
+    }
+  }
 
   await db.transaction(async (tx) => {
     await tx.delete(demoVoiceSchema).where(eq(demoVoiceSchema.demoId, demo.id));

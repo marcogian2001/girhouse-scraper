@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { sentenceStarts, splitSentences } from './GigiCaptions';
+import { currentCaption, sentenceStarts, splitSentences } from './GigiCaptions';
 import { parseHighlights } from './Highlights';
 
 const text = (sentence: { text: string }[]) => sentence.map((segment) => segment.text).join('');
@@ -58,6 +58,34 @@ describe('GigiCaptions', () => {
 
     it('ignores pauses too far from the sentence', () => {
       expect(sentenceStarts({ sentences, duration: 32, pauses: [5] })).toStrictEqual([0, 11, 22]);
+    });
+  });
+
+  describe('Current caption', () => {
+    const line = parseHighlights('Ecco la <b>timeline</b>: ogni passo resta tracciato. Sai tutto.');
+
+    it('shows only the part being said, after a colon', () => {
+      expect(currentCaption(line, 3)).toStrictEqual({
+        segments: [
+          { text: 'Ecco la ', style: 'plain' },
+          { text: 'timeline', style: 'bold' },
+          { text: ': ', style: 'plain' },
+        ],
+        typed: 3,
+      });
+    });
+
+    it('moves to the next sentence once the previous one is typed', () => {
+      expect(currentCaption(line, 60).segments).toStrictEqual([
+        { text: 'Sai tutto.', style: 'plain' },
+      ]);
+    });
+
+    it('keeps the last caption whole once the line is said', () => {
+      expect(currentCaption(line, 500)).toStrictEqual({
+        segments: [{ text: 'Sai tutto.', style: 'plain' }],
+        typed: 10,
+      });
     });
   });
 });

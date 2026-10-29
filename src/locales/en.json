@@ -1210,7 +1210,7 @@
     "vsl_line_pricing_video": "Did you like all this? I imagine you want to know <b>how much it costs</b>. Maybe you are thinking of numbers like 2,000 or 3,000 euros… but no! Thanks to our <b>structured system</b> we can offer you all of this <hl>at a price that will surprise you</hl>, only for the next few days. And that price will stay locked <hl>forever</hl>. Just remember we only set up <b>{slots} businesses a month</b>. Here is the price.",
     "vsl_line_pricing_price": "Here is the <b>price reserved for {company}</b>, locked until the date you see. And the <hl>first week is free</hl>, to try the whole platform.",
     "vsl_line_pricing_included": "It includes <b>everything you have seen</b>, plus a <hl>WhatsApp group</hl> where our Italian team looks after you.",
-    "vsl_line_pricing_guarantees": "<b>Try it free</b> and <b>we set everything up</b>. Remember we only take <hl>{slots} new businesses a month</hl>: to see it live, book your call here.",
+    "vsl_line_pricing_guarantees": "<b>We set everything up</b>, you don't have to configure anything. Remember we only take <hl>{slots} new businesses a month</hl>: to see it live, book your call here.",
     "vsl_line_booking_phone": "I'll show you <b>everything live</b> with someone from our team. Leave me your <hl>WhatsApp number</hl> below.",
     "vsl_line_booking_slots": "Great! These are the <b>free times</b>. <hl>Pick the one you like.</hl>",
     "vsl_line_booking_confirm": "Good choice. <b>Read the notice</b> and <hl>confirm the call</hl>.",

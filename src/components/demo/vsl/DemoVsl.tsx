@@ -138,6 +138,55 @@ const preloadVoices = async (voices: DemoVoice[], files: Map<string, string>) =>
   }
 };
 
+/** Where the music loops: past its quiet intro, and back there before its end, which fades into it. */
+const MUSIC_LOOP = { start: 30, end: 170 };
+
+/**
+ * Plays the music under Gigi with Web Audio, which loops it without a gap and keeps it going
+ * next to the voice on phones. It is mixed quiet in the file itself, as phones ignore a
+ * page's volume.
+ * @returns The player.
+ */
+const createMusicPlayer = () => {
+  let context: AudioContext | null = null;
+
+  const play = async (audio: AudioContext) => {
+    try {
+      const response = await fetch('/demo/gigi-music.mp3');
+      const buffer = await audio.decodeAudioData(await response.arrayBuffer());
+      const source = audio.createBufferSource();
+
+      source.buffer = buffer;
+      source.loop = true;
+      source.loopStart = MUSIC_LOOP.start;
+      source.loopEnd = Math.min(MUSIC_LOOP.end, buffer.duration);
+      source.connect(audio.destination);
+      source.start();
+    } catch {
+      // Without its music the demo still plays
+    }
+  };
+
+  return {
+    // Called from the tap, which is what lets the page make a sound
+    start: () => {
+      if (context) {
+        return;
+      }
+
+      context = new AudioContext();
+      void context.resume();
+      void play(context);
+    },
+    pause: () => {
+      void context?.suspend();
+    },
+    resume: () => {
+      void context?.resume();
+    },
+  };
+};
+
 /**
  * Plays a voice, the browser permitting.
  * @param audio The audio element.
@@ -281,9 +330,10 @@ export const DemoVsl = (props: DemoTourProps & { vsl: DemoVslData; voices: DemoV
   const [isTalking, setIsTalking] = useState(false);
   const [bookingPhase, setBookingPhase] = useState<BookingPhase>('phone');
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const musicRef = useRef<HTMLAudioElement | null>(null);
-  // The voices downloaded ahead, by id
+  const musicRef = useRef(createMusicPlayer());
+  // The voices downloaded ahead, by id, from when the page opens
   const voiceFiles = useRef(new Map<string, string>());
+  const hasPreloaded = useRef(false);
   const clockRef = useRef(createVslClock());
   // What the handlers read, since their timers outlive the render that set them
   const playback = useRef({ index, hasVoice: false, isLineDone: false });
@@ -420,7 +470,7 @@ export const DemoVsl = (props: DemoTourProps & { vsl: DemoVslData; voices: DemoV
 
   const pause = () => {
     audioRef.current?.pause();
-    musicRef.current?.pause();
+    musicRef.current.pause();
     clockRef.current.pause();
     setIsTalking(false);
     setIsPaused(true);
@@ -432,9 +482,7 @@ export const DemoVsl = (props: DemoTourProps & { vsl: DemoVslData; voices: DemoV
 
     setIsPaused(false);
 
-    if (musicRef.current) {
-      void tryPlay(musicRef.current);
-    }
+    musicRef.current.resume();
 
     if (clockRef.current.resume()) {
       setIsTalking(!isLineDone);
@@ -450,11 +498,22 @@ export const DemoVsl = (props: DemoTourProps & { vsl: DemoVslData; voices: DemoV
     <DemoTracking slug={props.slug} company={data.company} initialStep={props.initialStep} />
   ) : null;
 
+  const voicesInOrder = vslLinesToVoice(scenes).flatMap((entry) => {
+    const said = voiceOf(entry);
+
+    return said ? [said] : [];
+  });
+
   const audio = (
     // oxlint-disable-next-line jsx-a11y/media-has-caption -- Every line is typed in the bar while it is said
     <audio
       ref={(element) => {
         audioRef.current = element;
+
+        if (element && !hasPreloaded.current) {
+          hasPreloaded.current = true;
+          void preloadVoices(voicesInOrder, voiceFiles.current);
+        }
       }}
       preload="auto"
       onPlaying={() => {
@@ -478,19 +537,6 @@ export const DemoVsl = (props: DemoTourProps & { vsl: DemoVslData; voices: DemoV
           });
         }
       }}
-    />
-  );
-
-  // Under Gigi the whole time, mixed quiet in the file itself: phones ignore a page's volume
-  const music = (
-    // oxlint-disable-next-line jsx-a11y/media-has-caption -- Music without words
-    <audio
-      ref={(element) => {
-        musicRef.current = element;
-      }}
-      src="/demo/gigi-music.mp3"
-      loop
-      preload="auto"
     />
   );
 
@@ -536,7 +582,7 @@ export const DemoVsl = (props: DemoTourProps & { vsl: DemoVslData; voices: DemoV
           {isStarted ? (
             <GigiTalkingFull isTalking={isTalking} />
           ) : (
-            <div className="relative">
+            <div className="flex flex-col items-center gap-4">
               <Image
                 src="/demo/gigi-talk.jpg"
                 alt=""
@@ -557,20 +603,9 @@ export const DemoVsl = (props: DemoTourProps & { vsl: DemoVslData; voices: DemoV
                   // Played from the tap itself, which is what lets the voice and the music be heard
                   void say({ index, line, advance: goTo });
 
-                  if (musicRef.current) {
-                    void tryPlay(musicRef.current);
-                  }
-
-                  void preloadVoices(
-                    vslLinesToVoice(scenes).flatMap((entry) => {
-                      const said = voiceOf(entry);
-
-                      return said ? [said] : [];
-                    }),
-                    voiceFiles.current,
-                  );
+                  musicRef.current.start();
                 }}
-                className="absolute inset-0 m-auto flex size-fit animate-pop items-center gap-2 rounded-full bg-(--demo-primary) px-7 py-4 text-lg font-semibold whitespace-nowrap text-(--demo-on-primary) shadow-2xl"
+                className="flex animate-pop items-center gap-2 rounded-full bg-(--demo-primary) px-7 py-4 text-lg font-semibold whitespace-nowrap text-(--demo-on-primary) shadow-2xl"
               >
                 <Play className="size-6 fill-current" />
                 {t('vsl_start')}
@@ -672,7 +707,6 @@ export const DemoVsl = (props: DemoTourProps & { vsl: DemoVslData; voices: DemoV
     <>
       {tracking}
       {audio}
-      {music}
       {content}
     </>
   );
