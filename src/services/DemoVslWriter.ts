@@ -86,11 +86,11 @@ const SCENES: Record<VslWrittenLine, string> = {
   intro:
     'Gigi, the Girhouse giraffe, on screen before anything else. He introduces himself as "Gigi di Girhouse", greets the owner by the business name, says he made this video for them, and opens a loop: before showing anything, he wants to tell them what happens every day to people who do their job.',
   problem_missed_call:
-    'PROBLEM 1, over a clip of someone in this sector busy with a client while the phone rings unanswered. Tell it as a short scene the owner lives: they are busy, the phone rings, they cannot answer, the caller hangs up and calls the competitor. Make them feel the loss.',
+    'PROBLEM 1, over stock footage of the sector. Tell it as a short scene the owner lives: they are busy, the phone rings, they cannot answer, the caller hangs up and calls the competitor. Make them feel the loss.',
   missed_call:
     'SOLUTION 1: a phone shows the call ringing, no answer, then a WhatsApp message from the business arrives on its own a few seconds later (the `chiamata_persa` message) and the caller answers it. Say what just happened and what it means: the customer stays theirs.',
   problem_whatsapp:
-    'PROBLEM 2, over a clip of the owner alone in the evening scrolling unread messages. Messages that arrive while they work or after closing get an answer the next day, when the customer has already chosen someone else.',
+    'PROBLEM 2, over stock footage of the evening. Messages that arrive while they work or after closing get an answer the next day, when the customer has already chosen someone else.',
   chat_start:
     'SOLUTION 2 begins: the example WhatsApp chat. The chat customer writes while the business is busy and gets an answer in thirty seconds, in the business name.',
   chat_slots:
@@ -98,15 +98,15 @@ const SCENES: Record<VslWrittenLine, string> = {
   chat_booked:
     'The customer picks a time: booked, with a reminder the day before. The owner did nothing.',
   problem_reminder:
-    'PROBLEM 3, over a clip of the owner waiting next to an empty seat: a forgotten appointment, an empty slot, an hour lost, every week.',
+    'PROBLEM 3, over stock footage of an empty waiting room: a forgotten appointment, an empty slot, an hour lost, every week.',
   reminder:
     'SOLUTION 3: a second WhatsApp chat, the automatic reminder typical of this sector (the `promemoria`): it goes out on its own and the customer confirms or moves the appointment.',
   problem_followup:
-    'PROBLEM 4, over a clip of the owner overwhelmed by notes and notifications: people who ask for information or a quote and then disappear, and nobody has time to chase them.',
+    'PROBLEM 4, over stock footage of someone overwhelmed: people who ask for information or a quote and then disappear, and nobody has time to chase them.',
   followup:
     'SOLUTION 4: the automation for people who do not answer (the `follow_up`): it waits, sends a WhatsApp, then an email, then starts a call, and stops on its own as soon as the customer answers.',
   problem_reviews:
-    'PROBLEM 5, over a clip of hands typing a one-star review on a phone: one unhappy customer on a bad day, and the review stays there for years in front of everyone.',
+    'PROBLEM 5, over stock footage of someone typing on a phone: one unhappy customer on a bad day, and the review stays there for years in front of everyone.',
   reviews:
     'SOLUTION 5: the review system. After each visit the customer gets a message asking for a rating; five stars go straight to Google, an unhappy customer writes only to the business, which can make it right.',
   crm_contact:
@@ -118,7 +118,7 @@ const SCENES: Record<VslWrittenLine, string> = {
   crm_inbox:
     'A single inbox: calls, WhatsApp and email from the same customer in one conversation, answered from there.',
   dream:
-    'THE DREAM, over a clip of the owner relaxed and smiling with a happy client. Make them picture their week with all this in place: every call answered, a full calendar, customers coming back, evenings free. Concrete images from their sector, emotional, hopeful. End on the feeling that this is within reach.',
+    'THE DREAM, over stock footage of the sector. Make them picture their week with all this in place: every call answered, a full calendar, customers coming back, evenings free. Concrete images from their sector, emotional, hopeful. End on the feeling that this is within reach.',
   landing_hero:
     'Now the new web page of the business, the top part: headline, photo, buttons to book and write on WhatsApp. Say it is the last piece: the page that brings these customers in.',
   landing_services: 'The services section of the page.',
@@ -179,6 +179,7 @@ const INSTRUCTIONS = [
   '- The other screens: 1 to 3 sentences, at most 260 characters, saying what is on screen and why it matters for the pains you picked.',
   '- Mark one or two key phrases with `<b>...</b>` (bold) or `<hl>...</hl>` (highlighted), never nested.',
   '- Never tell them to press, tap or click anything: the video plays on its own.',
+  '- The problems and the dream play over generic stock footage that does not match the words exactly: never describe gestures, body parts, objects, places or people that could be on screen ("hai le mani sulla schiena", "la sedia vuota", "guardi l\'orologio"). Tell what happens and what it costs, not what it looks like.',
   '- Name things plainly: "il promemoria", "l\'automazione", "il messaggio". Never soften them with adjectives or adverbs such as "gentile", "con gentilezza", "delicato", "senza pressioni", "con calma": the owner hears them as odd. The care the playbook asks for goes into the messages the customer gets, not into how Gigi describes them.',
   '- Use the real names: the business, and the customer names you wrote for the missed call, the chat, the reminder and the follow-up.',
   '- An empty string for a landing section the page does not have.',

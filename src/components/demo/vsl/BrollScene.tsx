@@ -10,8 +10,11 @@ import type { VslCase } from './VslScript';
 /** What the dream shows over its clip, one after the other. */
 const DREAM_CHIPS = ['vsl_dream_calls', 'vsl_dream_agenda', 'vsl_dream_evenings'] as const;
 
+/** Slows the clips a little, so they feel calmer and last the whole line without restarting. */
+const PLAYBACK_RATE = 0.8;
+
 /**
- * A b-roll clip in a cinema frame, muted and looping under the voice: the lead's sector's
+ * A b-roll clip in a cinema frame, muted, slowed and looping under the voice: the lead's sector's
  * when it was made, else the generic one, else a dark frame. Problems carry their name in
  * a red label; the dream adds what changes, one line at a time.
  * @param props Component props.
@@ -42,6 +45,9 @@ export const BrollScene = (props: { sector: BrollSector; clip: BrollClip; proble
           playsInline
           aria-hidden
           className="absolute inset-0 size-full animate-in object-cover duration-700 fade-in zoom-in-105"
+          onLoadedMetadata={(event) => {
+            event.currentTarget.playbackRate = PLAYBACK_RATE;
+          }}
           onError={() => {
             // A sector whose clips are not made yet borrows the generic ones
             setSource((current) => (current === 'generic' ? null : 'generic'));
