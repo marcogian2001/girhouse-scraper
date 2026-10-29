@@ -34,26 +34,50 @@ const resultSchema = z.object({ resultUrls: z.array(z.string()).min(1) });
 
 const uploadSchema = z.object({ downloadUrl: z.string() });
 
+/** Kie's answer when calls come too fast. */
+const RATE_LIMITED = 429;
+
+/** How long to wait after Kie says calls come too fast, doubling each time. */
+const RATE_LIMIT_WAIT_MS = 2000;
+
+const RATE_LIMIT_ATTEMPTS = 4;
+
 /**
- * Calls Kie, which answers HTTP 200 even on errors and reports them in `code`.
+ * Calls Kie, which answers HTTP 200 even on errors and reports them in `code`. When it
+ * says calls come too fast, it waits and calls again a few times.
  * @param url The endpoint URL.
  * @param body The JSON body, sent as a POST when present.
  * @returns The `data` of the response.
  * @throws {Error} When Kie reports an error.
  */
 const kie = async (url: string, body?: Record<string, unknown>) => {
-  const response = await fetch(url, {
-    method: body ? 'POST' : 'GET',
-    headers: {
-      Authorization: `Bearer ${requireEnv('KIE_API_KEY', Env.KIE_API_KEY)}`,
-      'Content-Type': 'application/json',
-    },
-    body: body && JSON.stringify(body),
-  });
-  const envelope = envelopeSchema.parse(await response.json());
+  let envelope: z.infer<typeof envelopeSchema> | null = null;
 
-  if (envelope.code !== 200) {
-    throw new Error(`Kie ${url} failed with ${envelope.code}: ${envelope.msg ?? ''}`);
+  for (let attempt = 0; attempt < RATE_LIMIT_ATTEMPTS; attempt += 1) {
+    if (attempt > 0) {
+      // oxlint-disable-next-line no-await-in-loop
+      await sleep(RATE_LIMIT_WAIT_MS * 2 ** (attempt - 1));
+    }
+
+    // oxlint-disable-next-line no-await-in-loop
+    const response = await fetch(url, {
+      method: body ? 'POST' : 'GET',
+      headers: {
+        Authorization: `Bearer ${requireEnv('KIE_API_KEY', Env.KIE_API_KEY)}`,
+        'Content-Type': 'application/json',
+      },
+      body: body && JSON.stringify(body),
+    });
+    // oxlint-disable-next-line no-await-in-loop
+    envelope = envelopeSchema.parse(await response.json());
+
+    if (envelope.code !== RATE_LIMITED) {
+      break;
+    }
+  }
+
+  if (!envelope || envelope.code !== 200) {
+    throw new Error(`Kie ${url} failed with ${envelope?.code}: ${envelope?.msg ?? ''}`);
   }
 
   return envelope.data;

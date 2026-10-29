@@ -44,25 +44,26 @@ const vslTextsSchema = z.object({
     oggetto_email: z.string(),
     testo_email: z.string(),
   }),
-  // One per line of `VSL_WRITTEN_LINES`, which `satisfies` keeps in step
+  // One per line of `VSL_WRITTEN_LINES`, which `satisfies` keeps in step. Strings, empty when
+  // there is nothing to say: the API takes at most 16 nullable fields per schema
   battute: z.object({
-    intro: z.string().nullable(),
-    landing_hero: z.string().nullable(),
-    landing_services: z.string().nullable(),
-    landing_about: z.string().nullable(),
-    landing_highlights: z.string().nullable(),
-    landing_steps: z.string().nullable(),
-    landing_faq: z.string().nullable(),
-    chat_start: z.string().nullable(),
-    chat_slots: z.string().nullable(),
-    chat_booked: z.string().nullable(),
-    reminder: z.string().nullable(),
-    crm_contact: z.string().nullable(),
-    crm_timeline: z.string().nullable(),
-    crm_pipeline: z.string().nullable(),
-    crm_inbox: z.string().nullable(),
-    followup: z.string().nullable(),
-  } satisfies Record<VslWrittenLine, z.ZodNullable<z.ZodString>>),
+    intro: z.string(),
+    landing_hero: z.string(),
+    landing_services: z.string(),
+    landing_about: z.string(),
+    landing_highlights: z.string(),
+    landing_steps: z.string(),
+    landing_faq: z.string(),
+    chat_start: z.string(),
+    chat_slots: z.string(),
+    chat_booked: z.string(),
+    reminder: z.string(),
+    crm_contact: z.string(),
+    crm_timeline: z.string(),
+    crm_pipeline: z.string(),
+    crm_inbox: z.string(),
+    followup: z.string(),
+  } satisfies Record<VslWrittenLine, z.ZodString>),
 });
 
 export type DemoVslTexts = z.infer<typeof vslTextsSchema>;
@@ -142,7 +143,7 @@ const INSTRUCTIONS = [
   '- Mark one or two key phrases with `<b>...</b>` (bold) or `<hl>...</hl>` (highlighted), never nested.',
   '- Never tell them to press, tap or click anything: the demo plays on its own.',
   '- Use the real names: the business, and the customer names you wrote for the chat, the reminder and the follow-up.',
-  '- Null for a landing section the page does not have.',
+  '- An empty string for a landing section the page does not have.',
   "- The screens, with version A's generic line as a reference for length and tone:",
 ].join('\n');
 
@@ -161,7 +162,7 @@ const renderScreens = (options: {
     const isMissing = line.startsWith('landing_') && !options.sections.includes(line.slice(8));
     const reference = options.referenceLines[line];
 
-    return `- \`${line}\`: ${isMissing ? 'NOT ON THIS PAGE, write null.' : SCENES[line]}${reference && !isMissing ? ` Version A says: "${reference}"` : ''}`;
+    return `- \`${line}\`: ${isMissing ? 'NOT ON THIS PAGE, write an empty string.' : SCENES[line]}${reference && !isMissing ? ` Version A says: "${reference}"` : ''}`;
   }).join('\n');
 
 /**
@@ -261,7 +262,7 @@ export const toDemoVsl = (texts: DemoVslTexts): Omit<DemoVsl, 'generatedAt'> => 
   pains: texts.dolori.slice(0, MAX_PAINS).map((pain) => cleanReply(pain)),
   lines: Object.fromEntries(
     Object.entries(texts.battute).flatMap(([line, text]) =>
-      text?.trim() ? [[line, cleanReply(text)]] : [],
+      text.trim() ? [[line, cleanReply(text)]] : [],
     ),
   ),
   chat: {

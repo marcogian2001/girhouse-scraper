@@ -245,67 +245,69 @@ const storeVoices = async (demo: Demo, tasks: VoiceTask[]) => {
 
 /**
  * Moves version B on by one phase: the script, then the voice tasks, then their results.
- * @param job The `demo_vsl` job.
+ * @param payload Where version B stands.
+ * @returns Where it stands next and when to look again, or null once it is done.
  */
-const runDemoVslJob = async (job: Job) => {
-  const payload: Payload = payloadSchema.parse(job.payload);
+export const advanceDemoVsl = async (
+  payload: Payload,
+): Promise<{ payload: Payload; delaySeconds: number } | null> => {
   const demo = await db.query.demoSchema.findFirst({ where: eq(demoSchema.id, payload.demoId) });
 
   // Gone, or a newer request took over: nothing left to do
   if (!demo || (payload.phase !== 'script' && demo.vsl?.generatedAt !== payload.generatedAt)) {
-    await completeJob(job.id);
-
-    return;
+    return null;
   }
 
   if (payload.phase === 'script') {
     await writeScript(demo, payload.generatedAt);
-    await rescheduleJob({
-      jobId: job.id,
-      delaySeconds: 0,
-      payload: { ...payload, phase: 'voice_start' },
-    });
 
-    return;
+    return { payload: { ...payload, phase: 'voice_start' }, delaySeconds: 0 };
   }
 
   if (payload.phase === 'voice_start' && demo.vsl) {
-    const lines = await renderVoiceLines(demo, demo.vsl);
-    const tasks = await Promise.all(
-      lines.map(async (entry) => ({
-        ...entry,
-        taskId: await startVoice(entry.text),
-        retries: 0,
-        url: null,
-        isFailed: false,
-      })),
-    );
+    const tasks: VoiceTask[] = [];
 
-    await rescheduleJob({
-      jobId: job.id,
-      delaySeconds: pollDelaySeconds(0),
+    // One at a time: Kie refuses calls that come too fast
+    for (const entry of await renderVoiceLines(demo, demo.vsl)) {
+      // oxlint-disable-next-line no-await-in-loop
+      const taskId = await startVoice(entry.text);
+
+      tasks.push({ ...entry, taskId, retries: 0, url: null, isFailed: false });
+    }
+
+    return {
       payload: { ...payload, phase: 'voice_poll', tasks, voiceStartedAt: Date.now() },
-    });
-
-    return;
+      delaySeconds: pollDelaySeconds(0),
+    };
   }
 
-  const tasks = await Promise.all(payload.tasks.map(pollVoice));
+  const tasks: VoiceTask[] = [];
+
+  for (const task of payload.tasks) {
+    // oxlint-disable-next-line no-await-in-loop
+    tasks.push(await pollVoice(task));
+  }
+
   const elapsed = Date.now() - (payload.voiceStartedAt ?? Date.now());
   const isWaiting = tasks.some((task) => !task.url && !task.isFailed);
 
   if (isWaiting && elapsed < VOICE_TIMEOUT_MS) {
-    await rescheduleJob({
-      jobId: job.id,
-      delaySeconds: pollDelaySeconds(elapsed),
-      payload: { ...payload, tasks },
-    });
-
-    return;
+    return { payload: { ...payload, tasks }, delaySeconds: pollDelaySeconds(elapsed) };
   }
 
   await storeVoices(demo, tasks);
-  await completeJob(job.id);
+
+  return null;
+};
+
+/**
+ * Runs one phase of version B for the worker.
+ * @param job The `demo_vsl` job.
+ */
+const runDemoVslJob = async (job: Job) => {
+  const next = await advanceDemoVsl(payloadSchema.parse(job.payload));
+
+  await (next ? rescheduleJob({ jobId: job.id, ...next }) : completeJob(job.id));
 };
 
 export const demoVslJobHandlers = {

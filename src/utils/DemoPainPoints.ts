@@ -32,7 +32,7 @@ const SECTOR_PAIN_POINTS: SectorPainPoints[] = [
       'Promemoria della seduta del giorno dopo, con la possibilità di confermare o spostare; richiamo per il controllo o il mantenimento qualche settimana dopo la fine del ciclo.',
     followUp:
       'Chi ha fatto la prima valutazione e non ha ancora fissato il ciclo, o chi ha interrotto le sedute.',
-    care: 'È sanità: i messaggi devono essere gentili e mai pressanti. Un promemoria che suona come un obbligo fa sentire il paziente "in gabbia". Il tono è di chi si prende cura, il ritmo e il momento li decide lo studio.',
+    care: 'È sanità: i messaggi devono essere gentili e mai pressanti, perché un promemoria che suona come un obbligo infastidisce il paziente. Il tono è di chi si prende cura, il ritmo e il momento li decide lo studio.',
   },
   {
     sector: 'Officina, autofficina, carrozzeria, gommista, centro revisioni, concessionaria',
