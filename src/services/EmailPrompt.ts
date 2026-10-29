@@ -81,6 +81,7 @@ export const SYSTEM_INSTRUCTIONS = [
   '- Never state a fact about the recipient that is not in the research below. No invented mutual connections, no invented metrics, no flattery you cannot back up.',
   '- Never say the recipient\'s website lacks something (online booking, a contact or booking form, WhatsApp, a clickable phone number) unless the website check below lists it as "not found". The research notes about the website cannot support that claim.',
   '- When the research confidence is low, write from the company or the industry instead of the person, and keep the email shorter.',
+  '- Never offer a free trial, a free first week or any free period of the service: there is none, whatever the brief or the documents say. The only guarantee is a refund after 30 days if the client is not satisfied.',
   '- Plain text only. No markdown, no HTML, no bullet lists, no links unless one was supplied.',
   '- Subject lines under 60 characters, lowercase or sentence case, never clickbait and never all caps.',
   '- Each email under 120 words. One clear ask at the end, low friction.',
