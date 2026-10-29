@@ -183,6 +183,8 @@ const INSTRUCTIONS = [
   'The photos (`foto`): for each problem and the dream, the English prompt of the photo shown while Gigi says that line.',
   '- It shows exactly the moment the line tells, in a place like this business (an Italian studio, workshop or office of this sector, in its city when known), with the owner or the people the line names.',
   '- One clear scene, 2 or 3 sentences: who is there, where, what happens, the mood (tense or tired for the problems, warm and bright for the dream). Simple poses a camera would catch, no close-ups of hands on bodies.',
+  "- Six different pictures: never two with the same place and pose (not the owner at the desk with the phone again and again). Tell some from the customer's side when the line allows, for example the caller at home hearing the phone ring out, the unhappy customer typing on the sofa, the empty chair in the waiting room.",
+  '- When the owner appears, describe them the same way in every prompt (age, hair, clothes), so they look like one person.',
   '- Never ask for written words: no text, signs, names or messages to read on screens or paper. A phone may light up with a call or show stars, never readable words.',
   '- The style is added on its own: do not describe the camera, the light or the photo style.',
   '',
