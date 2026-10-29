@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 import { useRef, useState } from 'react';
 import type { DemoVsl as DemoVslData } from '@/models/Schema';
-import { GIGI_VOICE_TEMPO, toSpokenText } from '@/utils/GigiVoice';
+import { toSpokenText } from '@/utils/GigiVoice';
 import { captureDemoEvent } from '../DemoAnalytics';
 import { sendDemoEvent } from '../DemoSession';
 import type { DemoTourProps } from '../DemoTour';
@@ -32,6 +32,7 @@ import {
   buildVslScenes,
   spokenDurationMs,
   VSL_GAP_MS,
+  VSL_VOICE_TEMPO,
   vslLineMarkup,
   vslLineOf,
   vslLineValues,
@@ -148,7 +149,7 @@ const firstVslSceneOf = (scenes: VslScene[], step: number | null) =>
  * @returns The minutes, rounded up.
  */
 const estimateMinutes = (voices: DemoVoice[]) => {
-  const seconds = voices.reduce((sum, voice) => sum + voice.seconds / GIGI_VOICE_TEMPO, 0);
+  const seconds = voices.reduce((sum, voice) => sum + voice.seconds / VSL_VOICE_TEMPO, 0);
 
   return seconds > 0 ? Math.ceil(seconds / 60) : DEFAULT_MINUTES;
 };
@@ -289,7 +290,7 @@ export const DemoVsl = (props: DemoTourProps & { vsl: DemoVslData; voices: DemoV
   const total = visibleLength(segments);
   const voice = voiceOf(line);
   const lineMs = voice
-    ? (voice.seconds * 1000) / GIGI_VOICE_TEMPO
+    ? (voice.seconds * 1000) / VSL_VOICE_TEMPO
     : spokenDurationMs(markupOf(line));
   const typed = useTimedSequence({
     target: isStarted ? total : 0,
@@ -350,7 +351,7 @@ export const DemoVsl = (props: DemoTourProps & { vsl: DemoVslData; voices: DemoV
     }
 
     audio.src = `/api/demo-voices/${next.id}`;
-    audio.playbackRate = GIGI_VOICE_TEMPO;
+    audio.playbackRate = VSL_VOICE_TEMPO;
 
     // The browser wants a tap first: the demo waits on pause for it
     if (!(await tryPlay(audio))) {

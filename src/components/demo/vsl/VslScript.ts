@@ -59,7 +59,10 @@ export type VslTranslate = {
 };
 
 /** The pause between the end of a line and the next scene. */
-export const VSL_GAP_MS = 600;
+export const VSL_GAP_MS = 300;
+
+/** How fast the voice plays: quicker than Gigi's videos (1.15), so the demo keeps moving. */
+export const VSL_VOICE_TEMPO = 1.3;
 
 /** How long a message of the example chats takes to show. */
 const CHAT_MESSAGE_MS = 1500;
@@ -74,7 +77,7 @@ const FUNNEL_MS = 1500 + 3 * 700;
 const TIMELINE_MS = 8 * 600;
 
 /** Without a voice, a line stays on screen as long as it would take to say it. */
-const SPOKEN_MS_PER_CHARACTER = 65;
+const SPOKEN_MS_PER_CHARACTER = 57;
 
 const WRITTEN = new Set<string>(VSL_WRITTEN_LINES);
 
