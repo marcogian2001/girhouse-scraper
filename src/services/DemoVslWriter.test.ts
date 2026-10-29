@@ -62,6 +62,14 @@ const texts: DemoVslTexts = {
     crm_inbox: '',
     followup: '',
   },
+  foto: {
+    problem_missed_call: ' A mechanic under a car while a phone rings on the bench. ',
+    problem_whatsapp: '',
+    problem_reminder: '',
+    problem_followup: '',
+    problem_reviews: '',
+    dream: 'The mechanic smiles at a customer picking up a car.',
+  },
 };
 
 describe('DemoVslWriter', () => {
@@ -92,6 +100,13 @@ describe('DemoVslWriter', () => {
       customerName: 'Sara',
       message: 'Ciao Sara, scusa, ero sotto una macchina. Come posso aiutarti?',
       reply: 'Volevo un preventivo per i freni.',
+    });
+  });
+
+  it('keeps only the photo prompts the AI wrote, trimmed', () => {
+    expect(toDemoVsl(texts).images).toStrictEqual({
+      problem_missed_call: 'A mechanic under a car while a phone rings on the bench.',
+      dream: 'The mechanic smiles at a customer picking up a car.',
     });
   });
 });

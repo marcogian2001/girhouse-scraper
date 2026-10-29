@@ -5,8 +5,6 @@ import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 import { useRef, useState } from 'react';
 import type { DemoVsl as DemoVslData } from '@/models/Schema';
-import type { BrollSector } from '@/utils/BrollLibrary';
-import { findSectorPainPoints } from '@/utils/DemoPainPoints';
 import { toSpokenText } from '@/utils/GigiVoice';
 import type { VslChapter, VslSound } from '@/utils/VslMusic';
 import {
@@ -35,9 +33,9 @@ import { WhatsAppStep } from '../steps/WhatsAppStep';
 import { TOUR_STEPS } from '../TourScenes';
 import { useTimedSequence } from '../useTimedSequence';
 import { WhatsAppChat } from '../WhatsAppChat';
-import { BrollScene } from './BrollScene';
 import { HOST_POSTER, HostTalkingFull } from './HostTalking';
 import { MissedCallScene } from './MissedCallScene';
+import { PhotoScene } from './PhotoScene';
 import { ReviewsScene } from './ReviewsScene';
 import { VslBar } from './VslBar';
 import type { VslLine, VslScene } from './VslScript';
@@ -57,6 +55,9 @@ import {
 
 /** One of Gigi's lines, voiced by Kie. */
 export type DemoVoice = { id: string; line: string; text: string; seconds: number };
+
+/** The photo Kie made behind one of Gigi's lines. */
+export type VslPhoto = { id: string; line: string; prompt: string };
 
 /** The typing ends a little before the voice, so the words are never behind it. */
 const TYPING_SHARE = 0.9;
@@ -316,14 +317,6 @@ const firstVslSceneOf = (scenes: VslScene[], step: number | null) =>
       )
     : 0;
 
-/**
- * Picks whose b-roll plays: the lead's sector's, else the generic one.
- * @param data The demo snapshot.
- * @returns The sector.
- */
-const brollSectorOf = (data: DemoTourProps['data']): BrollSector =>
-  findSectorPainPoints(data)?.key ?? 'generic';
-
 /** Scenes only version B has, drawn by `VslStoryVisual`. */
 const STORY_KINDS = new Set<VslScene['kind']>([
   'problem',
@@ -358,30 +351,30 @@ const estimateMinutes = (voices: DemoVoice[]) => {
 };
 
 /**
- * Picks the visual of the scenes only version B has: the problems and the dream on b-roll,
+ * Picks the visual of the scenes only version B has: the problems and the dream on a photo,
  * the missed call, the reminder and the review system.
  * @param props Component props.
  * @param props.scene The current scene.
  * @param props.vsl The demo's version B.
  * @param props.data The snapshot with version B's chat.
- * @param props.sector The lead's sector, whose b-roll plays.
+ * @param props.photo The photo of the problem or the dream, if made.
  * @returns The scene's visual, or nothing for the other scenes.
  */
 const VslStoryVisual = (props: {
   scene: VslScene;
   vsl: DemoVslData;
   data: DemoTourProps['data'];
-  sector: BrollSector;
+  photo: string | null;
 }) => {
   const t = useTranslations('DemoPage');
   const { scene, data } = props;
 
   if (scene.kind === 'problem') {
-    return <BrollScene sector={props.sector} clip={scene.broll} problem={scene.case} />;
+    return <PhotoScene src={props.photo} problem={scene.case} />;
   }
 
   if (scene.kind === 'dream') {
-    return <BrollScene sector={props.sector} clip="dream" />;
+    return <PhotoScene src={props.photo} />;
   }
 
   if (scene.kind === 'missed_call') {
@@ -425,7 +418,7 @@ const VslStoryVisual = (props: {
  * @param options.scene The current scene.
  * @param options.props The demo props.
  * @param options.data The snapshot with version B's chat.
- * @param options.sector The lead's sector, whose b-roll plays.
+ * @param options.photo The photo of the problem or the dream, if made.
  * @param options.bookingPhase Where the booking stands.
  * @param options.handleBookingPhase Moves the booking on.
  * @returns The scene's visual.
@@ -434,14 +427,12 @@ const VslSceneVisual = (options: {
   scene: VslScene;
   props: DemoTourProps & { vsl: DemoVslData };
   data: DemoTourProps['data'];
-  sector: BrollSector;
+  photo: string | null;
   bookingPhase: BookingPhase;
   handleBookingPhase: (phase: BookingPhase) => void;
 }) => {
   const { scene, props, data } = options;
-  const story = (
-    <VslStoryVisual scene={scene} vsl={props.vsl} data={data} sector={options.sector} />
-  );
+  const story = <VslStoryVisual scene={scene} vsl={props.vsl} data={data} photo={options.photo} />;
 
   if (STORY_KINDS.has(scene.kind)) {
     return story;
@@ -501,13 +492,15 @@ const VslSceneVisual = (options: {
  * @param props Component props.
  * @param props.vsl The demo's version B.
  * @param props.voices Gigi's voiced lines.
+ * @param props.vslPhotos The photos behind the problems and the dream.
  * @returns The video sales letter.
  */
-export const DemoVsl = (props: DemoTourProps & { vsl: DemoVslData; voices: DemoVoice[] }) => {
+export const DemoVsl = (
+  props: DemoTourProps & { vsl: DemoVslData; voices: DemoVoice[]; vslPhotos: VslPhoto[] },
+) => {
   const t = useTranslations('DemoPage');
   const data = withVslChat(props.data, props.vsl);
   const scenes = buildVslScenes({ data, hasReviews: props.reviews.items.length > 0 });
-  const sector = brollSectorOf(data);
   const [index, setIndex] = useState(() => firstVslSceneOf(scenes, props.initialStep));
   const [isStarted, setIsStarted] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -547,6 +540,13 @@ export const DemoVsl = (props: DemoTourProps & { vsl: DemoVslData; voices: DemoV
 
     return voice && voice.text === toSpokenText(markupOf(line)) ? voice : null;
   };
+  // A photo goes behind its line only while version B still asks for it
+  const photos = new Map(
+    props.vslPhotos
+      .filter((photo) => photo.prompt === props.vsl.images?.[photo.line])
+      .map((photo) => [photo.line, `/api/demo-photos/${photo.id}`]),
+  );
+  const photoOf = (line: VslLine) => photos.get(line) ?? null;
 
   const line = scene ? vslLineOf(scene, bookingPhase) : 'intro';
   const segments = parseHighlights(markupOf(line));
@@ -887,7 +887,7 @@ export const DemoVsl = (props: DemoTourProps & { vsl: DemoVslData; voices: DemoV
             scene={scene}
             props={props}
             data={data}
-            sector={sector}
+            photo={photoOf(line)}
             bookingPhase={bookingPhase}
             handleBookingPhase={handleBookingPhase}
           />
@@ -916,6 +916,10 @@ export const DemoVsl = (props: DemoTourProps & { vsl: DemoVslData; voices: DemoV
     <>
       {tracking}
       {audio}
+      {/* The photos load while Gigi introduces himself; React moves these into the head */}
+      {[...photos.values()].map((src) => (
+        <link key={src} rel="preload" as="image" href={src} />
+      ))}
       {content}
     </>
   );

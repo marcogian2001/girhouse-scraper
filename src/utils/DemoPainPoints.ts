@@ -1,5 +1,3 @@
-import type { BrollSector } from './BrollLibrary';
-
 /**
  * What small businesses told the Girhouse team on sales calls, by sector: what wears them
  * out, the reminders their customers need, how a silent customer is chased and what must
@@ -7,8 +5,6 @@ import type { BrollSector } from './BrollLibrary';
  * talks about the business's own day rather than features.
  */
 export type SectorPainPoints = {
-  // Names the sector's b-roll in `public/demo/broll/`
-  key: BrollSector;
   sector: string;
   // Patterns in the Google category or the business name, lower-cased, that point to this sector
   matches: RegExp[];
@@ -23,7 +19,6 @@ export type SectorPainPoints = {
 
 const SECTOR_PAIN_POINTS: SectorPainPoints[] = [
   {
-    key: 'physio',
     sector: 'Fisioterapia, osteopatia, riabilitazione, chiropratica',
     matches: [/\b(?:fisioterap|osteopat|riabilita|chiropr|posturolog|massoterap)/u],
     pains: [
@@ -40,7 +35,6 @@ const SECTOR_PAIN_POINTS: SectorPainPoints[] = [
     care: 'È sanità: i messaggi devono essere gentili e mai pressanti, perché un promemoria che suona come un obbligo infastidisce il paziente. Il tono è di chi si prende cura, il ritmo e il momento li decide lo studio.',
   },
   {
-    key: 'mechanic',
     sector: 'Officina, autofficina, carrozzeria, gommista, centro revisioni, concessionaria',
     matches: [
       /\b(?:autofficin|officin|meccanic|carrozz|gommist|revision|concessionari|elettrauto|pneumatic)/u,
@@ -59,7 +53,6 @@ const SECTOR_PAIN_POINTS: SectorPainPoints[] = [
     care: "Preferiscono WhatsApp alla voce automatica: i clienti chiudono il telefono se sentono un risponditore. Le cose delicate le gestisce sempre una persona dell'officina.",
   },
   {
-    key: 'legal',
     sector: 'Avvocato, studio legale, commercialista, notaio, consulente del lavoro',
     matches: [
       /\b(?:avvocat|studio legale|commercialist|notai|consulente del lavoro|patronat|tributarist)/u,
@@ -76,7 +69,6 @@ const SECTOR_PAIN_POINTS: SectorPainPoints[] = [
     care: "Tono sobrio e professionale, mai commerciale. Niente consigli legali o fiscali nei messaggi automatici: raccolgono le informazioni e fissano l'appuntamento, il resto lo fa il professionista.",
   },
   {
-    key: 'nutrition',
     sector: 'Nutrizionista, dietista, biologo nutrizionista, naturopata',
     matches: [/\b(?:nutrizion|dietist|dietolog|naturopat|erborist|biologo nutrizionista)/u],
     pains: [
@@ -92,7 +84,6 @@ const SECTOR_PAIN_POINTS: SectorPainPoints[] = [
     care: 'Mai promettere risultati o chili persi. Il paziente spesso ha 50-60 anni e vuole sentirsi seguito da una persona: tono caldo e semplice.',
   },
   {
-    key: 'realestate',
     sector: 'Agenzia immobiliare, agente immobiliare, costruttore',
     matches: [/\b(?:immobiliar|agente immobiliare|real estate|impresa edile|costruttor)/u],
     pains: [
@@ -107,7 +98,6 @@ const SECTOR_PAIN_POINTS: SectorPainPoints[] = [
     care: null,
   },
   {
-    key: 'medical',
     sector: 'Dentista, studio medico, poliambulatorio, psicologo, veterinario',
     matches: [
       /\b(?:dentist|odontoiatr|studio medico|medico|poliambulator|ambulatori|psicolog|psicoterap|veterinar|ottic|logoped|ostetric|podolog)/u,
@@ -123,7 +113,6 @@ const SECTOR_PAIN_POINTS: SectorPainPoints[] = [
     care: 'È sanità: tono rassicurante, mai pressante, nessun consiglio medico nei messaggi automatici.',
   },
   {
-    key: 'beauty',
     sector: 'Parrucchiere, barbiere, centro estetico, spa, palestra, personal trainer',
     matches: [
       /\b(?:parrucch|barbier|barber|estetist|centro estetico|beauty|nail|palestr|fitness|personal trainer|pilates|yoga)/u,

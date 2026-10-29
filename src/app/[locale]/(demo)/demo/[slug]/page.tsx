@@ -7,7 +7,7 @@ import { DemoTour } from '@/components/demo/DemoTour';
 import { DemoVsl } from '@/components/demo/vsl/DemoVsl';
 import { loadDemoReviews } from '@/libs/DemoReviews';
 import { getDemoPage } from '@/libs/Demos';
-import { getDemoVoices } from '@/libs/DemoVsl';
+import { getDemoPhotos, getDemoVoices } from '@/libs/DemoVsl';
 import { AppConfig } from '@/utils/AppConfig';
 import { readableTextColor } from '@/utils/Colors';
 import { DEMO_STEPS } from '@/utils/DemoStats';
@@ -119,7 +119,12 @@ export default async function DemoPage(props: DemoPageProps) {
       className="min-h-svh bg-gradient-to-b from-amber-50/70 via-white to-white"
     >
       {vsl ? (
-        <DemoVsl {...tourProps} vsl={vsl} voices={await getDemoVoices(demo.id)} />
+        <DemoVsl
+          {...tourProps}
+          vsl={vsl}
+          voices={await getDemoVoices(demo.id)}
+          vslPhotos={await getDemoPhotos(demo.id)}
+        />
       ) : (
         <DemoTour {...tourProps} />
       )}

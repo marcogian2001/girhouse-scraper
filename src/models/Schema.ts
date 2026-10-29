@@ -1217,6 +1217,8 @@ export type DemoVsl = {
   reminder: { title: string; customerName: string; messages: DemoChatMessage[] };
   // The message a caller gets after a missed call, and their answer; older versions B lack it
   missedCall?: { customerName: string; message: string; reply: string };
+  // The prompt of the photo behind each problem and the dream, by line; older versions B lack it
+  images?: Record<string, string>;
   // The follow-up automation, chasing the customer this business most often loses
   followUp: {
     customerName: string;
@@ -1327,6 +1329,26 @@ export const demoVoiceSchema = pgTable(
     createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
   },
   (table) => [index('demo_voice_demo_id_idx').on(table.demoId)],
+);
+
+/** The photo Kie made for one scene of a demo's version B, shown behind Gigi's line. */
+export const demoPhotoSchema = pgTable(
+  'demo_photo',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    demoId: uuid('demo_id')
+      .notNull()
+      .references(() => demoSchema.id, { onDelete: 'cascade' }),
+    // The scene line it goes behind, such as `problem_missed_call`
+    line: text('line').notNull(),
+    // The prompt it was made from: the page shows it only while its scene still asks for it
+    prompt: text('prompt').notNull(),
+    contentType: text('content_type').notNull(),
+    // The file, base64-encoded
+    data: text('data').notNull(),
+    createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
+  },
+  (table) => [index('demo_photo_demo_id_idx').on(table.demoId)],
 );
 
 /** One thing a visitor did on a demo page. */

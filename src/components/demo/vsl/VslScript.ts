@@ -1,5 +1,4 @@
 import type { DemoSnapshot, DemoVsl } from '@/models/Schema';
-import type { BrollScene } from '@/utils/BrollLibrary';
 import type { VslChapter, VslSound } from '@/utils/VslMusic';
 import type { DemoReviews } from '../GoogleReviews';
 import { HIGHLIGHT_TAGS, parseHighlights, visibleLength } from '../Highlights';
@@ -35,7 +34,7 @@ type SceneSound = { chapter: VslChapter; cues: VslCue[] };
 export type VslScene = SceneSound &
   (
     | { step: 0; kind: 'intro'; line: 'intro' }
-    | { step: 1; kind: 'problem'; case: VslCase; broll: BrollScene; line: `problem_${VslCase}` }
+    | { step: 1; kind: 'problem'; case: VslCase; line: `problem_${VslCase}` }
     | { step: 1; kind: 'missed_call'; line: 'missed_call' }
     | { step: 1; kind: 'chat'; upTo: number; line: 'chat_start' | 'chat_slots' | 'chat_booked' }
     | { step: 1; kind: 'reminder'; line: 'reminder' }
@@ -98,6 +97,18 @@ export const VSL_WRITTEN_LINES = [
 ] as const;
 
 export type VslWrittenLine = (typeof VSL_WRITTEN_LINES)[number];
+
+/** Lines told over a photo Kie makes for each lead, from a prompt the AI writes with the line. */
+export const VSL_PHOTO_LINES = [
+  'problem_missed_call',
+  'problem_whatsapp',
+  'problem_reminder',
+  'problem_followup',
+  'problem_reviews',
+  'dream',
+] as const satisfies readonly VslWrittenLine[];
+
+export type VslPhotoLine = (typeof VSL_PHOTO_LINES)[number];
 
 /** Version A's lines, said when the AI wrote none for a scene version A also has. */
 export const VSL_TOUR_LINES = [
@@ -168,13 +179,13 @@ const TIMELINE_MS = 8 * 600;
 /** Without a voice, a line stays on screen as long as it would take to say it. */
 const SPOKEN_MS_PER_CHARACTER = 57;
 
-/** What each problem shows and sounds like: its b-roll, and the sound that opens it. */
-const PROBLEMS: Record<VslCase, { broll: BrollScene; sound: VslSound }> = {
-  missed_call: { broll: 'busy', sound: 'ring' },
-  whatsapp: { broll: 'evening', sound: 'ping' },
-  reminder: { broll: 'noshow', sound: 'hit' },
-  followup: { broll: 'lost', sound: 'hit' },
-  reviews: { broll: 'review', sound: 'hit' },
+/** The sound that opens each problem. */
+const PROBLEM_SOUNDS: Record<VslCase, VslSound> = {
+  missed_call: 'ring',
+  whatsapp: 'ping',
+  reminder: 'hit',
+  followup: 'hit',
+  reviews: 'hit',
 };
 
 const WRITTEN = new Set<string>(VSL_WRITTEN_LINES);
@@ -236,16 +247,15 @@ export const vslLineValues = (options: {
 /**
  * Builds a problem scene.
  * @param useCase The problem.
- * @returns The scene: its b-roll under the problem's music, opened by its sound.
+ * @returns The scene: its photo under the problem's music, opened by its sound.
  */
 const problemScene = (useCase: VslCase): VslScene => ({
   step: 1,
   kind: 'problem',
   case: useCase,
-  broll: PROBLEMS[useCase].broll,
   line: `problem_${useCase}`,
   chapter: 'problem',
-  cues: [{ atMs: 0, sound: PROBLEMS[useCase].sound }],
+  cues: [{ atMs: 0, sound: PROBLEM_SOUNDS[useCase] }],
 });
 
 /**

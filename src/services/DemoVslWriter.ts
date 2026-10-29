@@ -1,7 +1,7 @@
 import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';
 import * as z from 'zod';
-import type { VslWrittenLine } from '@/components/demo/vsl/VslScript';
-import { VSL_WRITTEN_LINES } from '@/components/demo/vsl/VslScript';
+import type { VslPhotoLine, VslWrittenLine } from '@/components/demo/vsl/VslScript';
+import { VSL_PHOTO_LINES, VSL_WRITTEN_LINES } from '@/components/demo/vsl/VslScript';
 import { logger } from '@/libs/Logger';
 import type { DemoSnapshot, DemoVsl } from '@/models/Schema';
 import { requireCopywritingModel } from '@/utils/CopywritingModels';
@@ -77,6 +77,15 @@ const vslTextsSchema = z.object({
     crm_inbox: z.string(),
     followup: z.string(),
   } satisfies Record<VslWrittenLine, z.ZodString>),
+  // The prompt of the photo behind each of these lines, in English
+  foto: z.object({
+    problem_missed_call: z.string(),
+    problem_whatsapp: z.string(),
+    problem_reminder: z.string(),
+    problem_followup: z.string(),
+    problem_reviews: z.string(),
+    dream: z.string(),
+  } satisfies Record<VslPhotoLine, z.ZodString>),
 });
 
 export type DemoVslTexts = z.infer<typeof vslTextsSchema>;
@@ -86,11 +95,11 @@ const SCENES: Record<VslWrittenLine, string> = {
   intro:
     'Gigi, the Girhouse giraffe, on screen before anything else. He introduces himself as "Gigi di Girhouse", greets the owner by the business name, says he made this video for them, and opens a loop: before showing anything, he wants to tell them what happens every day to people who do their job.',
   problem_missed_call:
-    'PROBLEM 1, over stock footage of the sector. Tell it as a short scene the owner lives: they are busy, the phone rings, they cannot answer, the caller hangs up and calls the competitor. Make them feel the loss.',
+    'PROBLEM 1, over a photo of this moment. Tell it as a short scene the owner lives: they are busy, the phone rings, they cannot answer, the caller hangs up and calls the competitor. Make them feel the loss.',
   missed_call:
     'SOLUTION 1: a phone shows the call ringing, no answer, then a WhatsApp message from the business arrives on its own a few seconds later (the `chiamata_persa` message) and the caller answers it. Say what just happened and what it means: the customer stays theirs.',
   problem_whatsapp:
-    'PROBLEM 2, over stock footage of the evening. Messages that arrive while they work or after closing get an answer the next day, when the customer has already chosen someone else.',
+    'PROBLEM 2, over a photo of this moment. Messages that arrive while they work or after closing get an answer the next day, when the customer has already chosen someone else.',
   chat_start:
     'SOLUTION 2 begins: the example WhatsApp chat. The chat customer writes while the business is busy and gets an answer in thirty seconds, in the business name.',
   chat_slots:
@@ -98,15 +107,15 @@ const SCENES: Record<VslWrittenLine, string> = {
   chat_booked:
     'The customer picks a time: booked, with a reminder the day before. The owner did nothing.',
   problem_reminder:
-    'PROBLEM 3, over stock footage of an empty waiting room: a forgotten appointment, an empty slot, an hour lost, every week.',
+    'PROBLEM 3, over a photo of this moment: a forgotten appointment, an empty slot, an hour lost, every week.',
   reminder:
     'SOLUTION 3: a second WhatsApp chat, the automatic reminder typical of this sector (the `promemoria`): it goes out on its own and the customer confirms or moves the appointment.',
   problem_followup:
-    'PROBLEM 4, over stock footage of someone overwhelmed: people who ask for information or a quote and then disappear, and nobody has time to chase them.',
+    'PROBLEM 4, over a photo of this moment: people who ask for information or a quote and then disappear, and nobody has time to chase them.',
   followup:
     'SOLUTION 4: the automation for people who do not answer (the `follow_up`): it waits, sends a WhatsApp, then an email, then starts a call, and stops on its own as soon as the customer answers.',
   problem_reviews:
-    'PROBLEM 5, over stock footage of someone typing on a phone: one unhappy customer on a bad day, and the review stays there for years in front of everyone.',
+    'PROBLEM 5, over a photo of this moment: one unhappy customer on a bad day, and the review stays there for years in front of everyone.',
   reviews:
     'SOLUTION 5: the review system. After each visit the customer gets a message asking for a rating; five stars go straight to Google, an unhappy customer writes only to the business, which can make it right.',
   crm_contact:
@@ -118,7 +127,7 @@ const SCENES: Record<VslWrittenLine, string> = {
   crm_inbox:
     'A single inbox: calls, WhatsApp and email from the same customer in one conversation, answered from there.',
   dream:
-    'THE DREAM, over stock footage of the sector. Make them picture their week with all this in place: every call answered, a full calendar, customers coming back, evenings free. Concrete images from their sector, emotional, hopeful. End on the feeling that this is within reach.',
+    'THE DREAM, over a photo of this moment. Make them picture their week with all this in place: every call answered, a full calendar, customers coming back, evenings free. Concrete images from their sector, emotional, hopeful. End on the feeling that this is within reach.',
   landing_hero:
     'Now the new web page of the business, the top part: headline, photo, buttons to book and write on WhatsApp. Say it is the last piece: the page that brings these customers in.',
   landing_services: 'The services section of the page.',
@@ -129,7 +138,7 @@ const SCENES: Record<VslWrittenLine, string> = {
 };
 
 const INSTRUCTIONS = [
-  'You write version B of the demo Girhouse sends an Italian small business that showed interest: a video sales letter Gigi, the friendly Girhouse giraffe, narrates on his own while the screens play, with music and b-roll. It never stops and nobody presses a button. Gigi talks to the owner, using "tu", warmly, as a friend who knows their work.',
+  'You write version B of the demo Girhouse sends an Italian small business that showed interest: a video sales letter Gigi, the friendly Girhouse giraffe, narrates on his own while the screens play, with music and photos. It never stops and nobody presses a button. Gigi talks to the owner, using "tu", warmly, as a friend who knows their work.',
   '',
   'The goal: the owner must recognise their own working day and feel it, then dream of how it could be. The video opens straight on five problems, each told as a short scene and followed by what the system does about it, then everything in one place, then the dream, then the new web page. Pick from the playbook below the pains that fit this business best and use its concrete words: a mechanic hears about inspection reminders and quotes answered too late, an osteopath about session reminders and patients who skip, a lawyer about calls lost during hearings.',
   '',
@@ -171,6 +180,12 @@ const INSTRUCTIONS = [
   '- `whatsapp`: the WhatsApp message it sends, under 160 characters, kind, by first name.',
   '- `oggetto_email`: the email subject, under 60 characters. `testo_email`: the email, two sentences, under 260 characters.',
   '',
+  'The photos (`foto`): for each problem and the dream, the English prompt of the photo shown while Gigi says that line.',
+  '- It shows exactly the moment the line tells, in a place like this business (an Italian studio, workshop or office of this sector, in its city when known), with the owner or the people the line names.',
+  '- One clear scene, 2 or 3 sentences: who is there, where, what happens, the mood (tense or tired for the problems, warm and bright for the dream). Simple poses a camera would catch, no close-ups of hands on bodies.',
+  '- Never ask for written words: no text, signs, names or messages to read on screens or paper. A phone may light up with a call or show stars, never readable words.',
+  '- The style is added on its own: do not describe the camera, the light or the photo style.',
+  '',
   "Gigi's lines (`battute`): one per screen, read aloud by his voice while the screen plays, over music.",
   '- Spoken, natural to hear, short sentences. No lists, no symbols, no abbreviations, no numbers written as digits except times and years.',
   "- Problems (`problem_*`): 2 or 3 sentences, at most 300 characters. A short scene in the present tense, from the owner's point of view, with a concrete detail of this sector, ending on what it costs them (a customer lost, an empty hour, an evening gone). Emotional, never dramatic or insulting.",
@@ -179,7 +194,7 @@ const INSTRUCTIONS = [
   '- The other screens: 1 to 3 sentences, at most 260 characters, saying what is on screen and why it matters for the pains you picked.',
   '- Mark one or two key phrases with `<b>...</b>` (bold) or `<hl>...</hl>` (highlighted), never nested.',
   '- Never tell them to press, tap or click anything: the video plays on its own.',
-  '- The problems and the dream play over generic stock footage that does not match the words exactly: never describe gestures, body parts, objects, places or people that could be on screen ("hai le mani sulla schiena", "la sedia vuota", "guardi l\'orologio"). Tell what happens and what it costs, not what it looks like.',
+  '- The problems and the dream play over a photo made from your `foto` prompt, so line and photo tell the same moment. Never name precise gestures or body parts ("hai le mani sulla schiena"): the photo may get them wrong.',
   '- Name things plainly: "il promemoria", "l\'automazione", "il messaggio". Never soften them with adjectives or adverbs such as "gentile", "con gentilezza", "delicato", "senza pressioni", "con calma": the owner hears them as odd. The care the playbook asks for goes into the messages the customer gets, not into how Gigi describes them.',
   '- Use the real names: the business, and the customer names you wrote for the missed call, the chat, the reminder and the follow-up.',
   '- An empty string for a landing section the page does not have.',
@@ -327,5 +342,12 @@ export const toDemoVsl = (texts: DemoVslTexts): Omit<DemoVsl, 'generatedAt'> => 
     emailSubject: cleanReply(texts.follow_up.oggetto_email),
     emailBody: cleanReply(texts.follow_up.testo_email),
   },
+  images: Object.fromEntries(
+    VSL_PHOTO_LINES.flatMap((line) => {
+      const prompt = texts.foto[line].trim();
+
+      return prompt ? [[line, prompt]] : [];
+    }),
+  ),
   voice: 'pending',
 });

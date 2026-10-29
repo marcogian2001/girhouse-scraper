@@ -1,12 +1,12 @@
 /**
- * Writes and voices version B of one demo from the terminal, without the job queue:
+ * Writes, voices and illustrates version B of one demo from the terminal, without the job queue:
  *
  *   npx dotenv -c -- npx tsx scripts/generate-demo-vsl.ts dottor-giorgio-neri
  *   npx dotenv -c -- npx tsx scripts/generate-demo-vsl.ts dottor-giorgio-neri --voice
  *
- * With `--voice` it keeps the script and only voices it again.
+ * With `--voice` it keeps the script and only makes its voices and photos again.
  * The link keeps the version it shows; version B opens with `?versione=b`. It calls
- * Claude for the script and Kie for each of Gigi's lines, on the database in `.env`.
+ * Claude for the script and Kie for each of Gigi's lines and photos, on the database in `.env`.
  */
 import { setTimeout as sleep } from 'node:timers/promises';
 import { parseArgs } from 'node:util';

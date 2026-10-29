@@ -1,5 +1,6 @@
 import { and, eq, inArray, sql } from 'drizzle-orm';
 import { createTranslator } from 'next-intl';
+import sharp from 'sharp';
 import * as z from 'zod';
 import { landingSectionsFor } from '@/components/demo/TourScenes';
 import type { VslWrittenLine } from '@/components/demo/vsl/VslScript';
@@ -13,7 +14,13 @@ import {
 } from '@/components/demo/vsl/VslScript';
 import messages from '@/locales/it.json';
 import type { DemoVsl } from '@/models/Schema';
-import { conversationSchema, demoSchema, demoVoiceSchema, jobSchema } from '@/models/Schema';
+import {
+  conversationSchema,
+  demoPhotoSchema,
+  demoSchema,
+  demoVoiceSchema,
+  jobSchema,
+} from '@/models/Schema';
 import { toDemoVsl, writeDemoVsl } from '@/services/DemoVslWriter';
 import { createKieTask, downloadFromKie, readKieTask } from '@/services/Kie';
 import { GIGI_VOICE_NAME, GIGI_VOICE_STYLE, toSpokenText } from '@/utils/GigiVoice';
@@ -31,14 +38,29 @@ type Demo = typeof demoSchema.$inferSelect;
 
 const TTS_MODEL = 'google/gemini-3-8-flash-tts';
 
-/** Past this, the lines Kie has voiced are kept and the others are only typed. */
+/** 4 credits a photo at 1K. */
+const PHOTO_MODEL = 'nano-banana-2-1';
+
+/** Added to every prompt the AI writes, so the photos look alike. */
+const PHOTO_STYLE =
+  'Candid documentary photograph, natural light, shallow depth of field, realistic, 35mm. No text, no logos, no captions, no readable words on screens or paper.';
+
+/** Wide enough for the frame on a large screen. */
+const PHOTO_WIDTH = 1280;
+
+const PHOTO_QUALITY = 78;
+
+/** Past this, the lines Kie has voiced are kept and the others are only typed, without a photo. */
 const VOICE_TIMEOUT_MS = 15 * 60 * 1000;
 
-/** A line Kie fails to voice is asked again this many times. */
+/** A voice or a photo Kie fails is asked again this many times. */
 const VOICE_RETRIES = 1;
 
 const taskSchema = z.object({
+  // Jobs from before the photos only voiced
+  kind: z.enum(['voice', 'photo']).default('voice'),
   line: z.string(),
+  // What the voice says, or the prompt of the photo
   text: z.string(),
   taskId: z.string(),
   retries: z.number().int(),
@@ -58,7 +80,7 @@ const payloadSchema = z.object({
 
 type Payload = z.infer<typeof payloadSchema>;
 
-type VoiceTask = z.infer<typeof taskSchema>;
+type KieTask = z.infer<typeof taskSchema>;
 
 /**
  * Reads what the lines the page shows say, with the facts the page reads.
@@ -171,11 +193,32 @@ const startVoice = async (text: string) =>
   });
 
 /**
- * Reads where one voice stands, asking again once when Kie failed it.
- * @param task The voice task.
+ * Asks Kie for the photo behind one of Gigi's lines.
+ * @param prompt What it shows, as the AI wrote it.
+ * @returns The Kie task.
+ */
+const startPhoto = async (prompt: string) =>
+  await createKieTask(PHOTO_MODEL, {
+    prompt: `${prompt} ${PHOTO_STYLE}`,
+    aspect_ratio: '16:9',
+    resolution: '1K',
+    output_format: 'jpg',
+  });
+
+/**
+ * Asks Kie for a voice or a photo.
+ * @param task What to make.
+ * @returns The Kie task.
+ */
+const startTask = async (task: Pick<KieTask, 'kind' | 'text'>) =>
+  await (task.kind === 'photo' ? startPhoto(task.text) : startVoice(task.text));
+
+/**
+ * Reads where one voice or photo stands, asking again once when Kie failed it.
+ * @param task The task.
  * @returns The task, updated.
  */
-const pollVoice = async (task: VoiceTask): Promise<VoiceTask> => {
+const pollTask = async (task: KieTask): Promise<KieTask> => {
   if (task.url || task.isFailed) {
     return task;
   }
@@ -184,7 +227,8 @@ const pollVoice = async (task: VoiceTask): Promise<VoiceTask> => {
     return { ...task, url: await readKieTask(task.taskId) };
   } catch (error) {
     if (task.retries >= VOICE_RETRIES) {
-      logger.warn('Kie could not voice {line}: {error}', {
+      logger.warn('Kie could not make the {kind} of {line}: {error}', {
+        kind: task.kind,
         line: task.line,
         error: error instanceof Error ? error.message : String(error),
       });
@@ -192,7 +236,7 @@ const pollVoice = async (task: VoiceTask): Promise<VoiceTask> => {
       return { ...task, isFailed: true };
     }
 
-    return { ...task, taskId: await startVoice(task.text), retries: task.retries + 1 };
+    return { ...task, taskId: await startTask(task), retries: task.retries + 1 };
   }
 };
 
@@ -201,24 +245,42 @@ const pollVoice = async (task: VoiceTask): Promise<VoiceTask> => {
  * @param task The voice task, done.
  * @returns The line, what it says and the MP3.
  */
-const downloadVoice = async (task: VoiceTask & { url: string }) => ({
+const downloadVoice = async (task: KieTask & { url: string }) => ({
   line: task.line,
   text: task.text,
   ...wavToMp3(await downloadFromKie(task.url)),
 });
 
 /**
- * Downloads the voices Kie made, stores them as MP3 in place of the demo's old ones and
- * marks version B as voiced.
- * @param demo The demo.
- * @param tasks The voice tasks.
+ * Downloads one photo Kie made, shrunk to what the frame shows.
+ * @param task The photo task, done.
+ * @returns The line, its prompt and the JPEG.
  */
-const storeVoices = async (demo: Demo, tasks: VoiceTask[]) => {
+const downloadPhoto = async (task: KieTask & { url: string }) => ({
+  line: task.line,
+  prompt: task.text,
+  data: await sharp(await downloadFromKie(task.url))
+    .resize({ width: PHOTO_WIDTH, withoutEnlargement: true })
+    .jpeg({ quality: PHOTO_QUALITY, mozjpeg: true })
+    .toBuffer(),
+});
+
+/**
+ * Downloads the voices and photos Kie made, stores them in place of the demo's old ones
+ * and marks version B as voiced.
+ * @param demo The demo.
+ * @param tasks The voice and photo tasks.
+ */
+const storeResults = async (demo: Demo, tasks: KieTask[]) => {
   const voiced: Awaited<ReturnType<typeof downloadVoice>>[] = [];
+  const photos: Awaited<ReturnType<typeof downloadPhoto>>[] = [];
 
   // One at a time: Kie's file host drops connections when many come at once
   for (const task of tasks) {
-    if (task.url) {
+    if (task.url && task.kind === 'photo') {
+      // oxlint-disable-next-line no-await-in-loop
+      photos.push(await downloadPhoto({ ...task, url: task.url }));
+    } else if (task.url) {
       // oxlint-disable-next-line no-await-in-loop
       voiced.push(await downloadVoice({ ...task, url: task.url }));
     }
@@ -226,6 +288,7 @@ const storeVoices = async (demo: Demo, tasks: VoiceTask[]) => {
 
   await db.transaction(async (tx) => {
     await tx.delete(demoVoiceSchema).where(eq(demoVoiceSchema.demoId, demo.id));
+    await tx.delete(demoPhotoSchema).where(eq(demoPhotoSchema.demoId, demo.id));
 
     if (voiced.length > 0) {
       await tx.insert(demoVoiceSchema).values(
@@ -240,6 +303,18 @@ const storeVoices = async (demo: Demo, tasks: VoiceTask[]) => {
       );
     }
 
+    if (photos.length > 0) {
+      await tx.insert(demoPhotoSchema).values(
+        photos.map((photo) => ({
+          demoId: demo.id,
+          line: photo.line,
+          prompt: photo.prompt,
+          contentType: 'image/jpeg',
+          data: photo.data.toString('base64'),
+        })),
+      );
+    }
+
     await tx
       .update(demoSchema)
       .set({
@@ -250,7 +325,7 @@ const storeVoices = async (demo: Demo, tasks: VoiceTask[]) => {
 };
 
 /**
- * Moves version B on by one phase: the script, then the voice tasks, then their results.
+ * Moves version B on by one phase: the script, then the voice and photo tasks, then their results.
  * @param payload Where version B stands.
  * @returns Where it stands next and when to look again, or null once it is done.
  */
@@ -271,12 +346,24 @@ export const advanceDemoVsl = async (
   }
 
   if (payload.phase === 'voice_start' && demo.vsl) {
-    const tasks: VoiceTask[] = [];
+    const tasks: KieTask[] = [];
+    const lines = await renderVoiceLines(demo, demo.vsl);
+    const entries = [
+      ...lines.map((entry) => ({
+        ...entry,
+        kind: 'voice' as const,
+      })),
+      ...Object.entries(demo.vsl.images ?? {}).map(([line, text]) => ({
+        line,
+        text,
+        kind: 'photo' as const,
+      })),
+    ];
 
     // One at a time: Kie refuses calls that come too fast
-    for (const entry of await renderVoiceLines(demo, demo.vsl)) {
+    for (const entry of entries) {
       // oxlint-disable-next-line no-await-in-loop
-      const taskId = await startVoice(entry.text);
+      const taskId = await startTask(entry);
 
       tasks.push({ ...entry, taskId, retries: 0, url: null, isFailed: false });
     }
@@ -287,11 +374,11 @@ export const advanceDemoVsl = async (
     };
   }
 
-  const tasks: VoiceTask[] = [];
+  const tasks: KieTask[] = [];
 
   for (const task of payload.tasks) {
     // oxlint-disable-next-line no-await-in-loop
-    tasks.push(await pollVoice(task));
+    tasks.push(await pollTask(task));
   }
 
   const elapsed = Date.now() - (payload.voiceStartedAt ?? Date.now());
@@ -301,7 +388,7 @@ export const advanceDemoVsl = async (
     return { payload: { ...payload, tasks }, delaySeconds: pollDelaySeconds(elapsed) };
   }
 
-  await storeVoices(demo, tasks);
+  await storeResults(demo, tasks);
 
   return null;
 };
@@ -366,7 +453,7 @@ const findVslJobs = async (demoId: string) =>
     );
 
 /**
- * Writes and voices version B of a demo again, in the background. A request still queued
+ * Writes, voices and illustrates version B of a demo again, in the background. A request still queued
  * is dropped, so only the newest one is built.
  * @param demoId The demo.
  */
@@ -428,3 +515,14 @@ export const getDemoVoices = async (demoId: string) =>
     })
     .from(demoVoiceSchema)
     .where(eq(demoVoiceSchema.demoId, demoId));
+
+/**
+ * Lists the photos of a demo's version B, without their files.
+ * @param demoId The demo.
+ * @returns Each photo: its id, the line it goes behind and its prompt.
+ */
+export const getDemoPhotos = async (demoId: string) =>
+  await db
+    .select({ id: demoPhotoSchema.id, line: demoPhotoSchema.line, prompt: demoPhotoSchema.prompt })
+    .from(demoPhotoSchema)
+    .where(eq(demoPhotoSchema.demoId, demoId));
