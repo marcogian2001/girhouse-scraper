@@ -1293,6 +1293,21 @@ export const demoImageSchema = pgTable(
   (table) => [index('demo_image_conversation_id_idx').on(table.conversationId)],
 );
 
+export const hostVoiceKindEnum = pgEnum('host_voice_kind', ['source', 'consent']);
+
+/**
+ * Gianmarco's own recordings, from which Gemini clones the voice that narrates version B:
+ * natural speech and his consent. Kept private here and handed to Kie only for each voicing,
+ * since anyone holding them could clone his voice.
+ */
+export const hostVoiceSchema = pgTable('host_voice', {
+  kind: hostVoiceKindEnum('kind').primaryKey(),
+  contentType: text('content_type').notNull(),
+  // The WAV file, base64-encoded
+  data: text('data').notNull(),
+  ...timestamps,
+});
+
 /** Gigi saying one line of a demo's version B, voiced by Kie and kept since Kie deletes its files. */
 export const demoVoiceSchema = pgTable(
   'demo_voice',

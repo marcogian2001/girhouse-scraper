@@ -13,9 +13,15 @@ import {
 } from '@/components/demo/vsl/VslScript';
 import messages from '@/locales/it.json';
 import type { DemoVsl } from '@/models/Schema';
-import { conversationSchema, demoSchema, demoVoiceSchema, jobSchema } from '@/models/Schema';
+import {
+  conversationSchema,
+  demoSchema,
+  demoVoiceSchema,
+  hostVoiceSchema,
+  jobSchema,
+} from '@/models/Schema';
 import { toDemoVsl, writeDemoVsl } from '@/services/DemoVslWriter';
-import { createKieTask, downloadFromKie, readKieTask } from '@/services/Kie';
+import { createKieTask, downloadFromKie, readKieTask, uploadToKie } from '@/services/Kie';
 import { GIGI_VOICE_NAME, GIGI_VOICE_STYLE, toSpokenText } from '@/utils/GigiVoice';
 import { wavToMp3 } from '@/utils/Mp3';
 import { getAutomationSettings } from './AutomationSettings';
@@ -30,6 +36,13 @@ type Job = typeof jobSchema.$inferSelect;
 type Demo = typeof demoSchema.$inferSelect;
 
 const TTS_MODEL = 'google/gemini-3-8-flash-tts';
+
+/**
+ * How Gianmarco's cloned voice speaks: he talks a little slowly, so the style asks for a
+ * brisk pace, on top of the page playing the voice faster.
+ */
+const HOST_VOICE_STYLE =
+  'Voce maschile calda e sicura, italiano naturale, ritmo spedito e coinvolgente.';
 
 /** Past this, the lines Kie has voiced are kept and the others are only typed. */
 const VOICE_TIMEOUT_MS = 15 * 60 * 1000;
@@ -47,6 +60,10 @@ const taskSchema = z.object({
   isFailed: z.boolean(),
 });
 
+const replicaSchema = z.object({ source: z.string(), consent: z.string() });
+
+type Replica = z.infer<typeof replicaSchema>;
+
 const payloadSchema = z.object({
   demoId: z.uuid(),
   // Stamps the version B this job writes, so a newer request makes it stop
@@ -54,6 +71,8 @@ const payloadSchema = z.object({
   phase: z.enum(['script', 'voice_start', 'voice_poll']),
   tasks: z.array(taskSchema).default([]),
   voiceStartedAt: z.number().optional(),
+  // Where Kie can fetch Gianmarco's recordings for this voicing; it deletes them within a day
+  replica: replicaSchema.nullish(),
 });
 
 type Payload = z.infer<typeof payloadSchema>;
@@ -159,22 +178,58 @@ const renderVoiceLines = async (demo: Demo, vsl: DemoVsl) => {
 };
 
 /**
- * Asks Kie to voice one of Gigi's lines.
+ * Hands Gianmarco's recordings to Kie for one voicing. They stay private in the database and
+ * Kie keeps its copies for a day only.
+ * @returns Where Kie can fetch them, or null when they were never saved.
+ */
+const shareHostVoice = async (): Promise<Replica | null> => {
+  const rows = await db.select().from(hostVoiceSchema);
+  const upload = async (kind: 'source' | 'consent') => {
+    const row = rows.find((entry) => entry.kind === kind);
+
+    return row
+      ? await uploadToKie({
+          data: Buffer.from(row.data, 'base64'),
+          mimeType: row.contentType,
+          fileName: `host-voice-${kind}.wav`,
+        })
+      : null;
+  };
+  const source = await upload('source');
+  const consent = await upload('consent');
+
+  return source && consent ? { source, consent } : null;
+};
+
+/**
+ * Asks Kie to voice one of the lines: in Gianmarco's cloned voice, or in Gemini's own when
+ * his recordings are missing.
  * @param text What he says.
+ * @param replica Where Kie can fetch his recordings, if they were saved.
  * @returns The Kie task.
  */
-const startVoice = async (text: string) =>
+const startVoice = async (text: string, replica: Replica | null) =>
   await createKieTask(TTS_MODEL, {
-    speakers: [{ speaker_id: 'Speaker 1', voice_name: GIGI_VOICE_NAME }],
-    dialogue_turns: [{ speaker_id: 'Speaker 1', style: GIGI_VOICE_STYLE, text }],
+    speakers: [
+      replica
+        ? {
+            speaker_id: 'Speaker 1',
+            replica: { source_audio_url: replica.source, consent_audio_url: replica.consent },
+          }
+        : { speaker_id: 'Speaker 1', voice_name: GIGI_VOICE_NAME },
+    ],
+    dialogue_turns: [
+      { speaker_id: 'Speaker 1', style: replica ? HOST_VOICE_STYLE : GIGI_VOICE_STYLE, text },
+    ],
   });
 
 /**
  * Reads where one voice stands, asking again once when Kie failed it.
  * @param task The voice task.
+ * @param replica Where Kie can fetch Gianmarco's recordings, if they were saved.
  * @returns The task, updated.
  */
-const pollVoice = async (task: VoiceTask): Promise<VoiceTask> => {
+const pollVoice = async (task: VoiceTask, replica: Replica | null): Promise<VoiceTask> => {
   if (task.url || task.isFailed) {
     return task;
   }
@@ -191,7 +246,7 @@ const pollVoice = async (task: VoiceTask): Promise<VoiceTask> => {
       return { ...task, isFailed: true };
     }
 
-    return { ...task, taskId: await startVoice(task.text), retries: task.retries + 1 };
+    return { ...task, taskId: await startVoice(task.text, replica), retries: task.retries + 1 };
   }
 };
 
@@ -270,18 +325,19 @@ export const advanceDemoVsl = async (
   }
 
   if (payload.phase === 'voice_start' && demo.vsl) {
+    const replica = await shareHostVoice();
     const tasks: VoiceTask[] = [];
 
     // One at a time: Kie refuses calls that come too fast
     for (const entry of await renderVoiceLines(demo, demo.vsl)) {
       // oxlint-disable-next-line no-await-in-loop
-      const taskId = await startVoice(entry.text);
+      const taskId = await startVoice(entry.text, replica);
 
       tasks.push({ ...entry, taskId, retries: 0, url: null, isFailed: false });
     }
 
     return {
-      payload: { ...payload, phase: 'voice_poll', tasks, voiceStartedAt: Date.now() },
+      payload: { ...payload, phase: 'voice_poll', tasks, voiceStartedAt: Date.now(), replica },
       delaySeconds: pollDelaySeconds(0),
     };
   }
@@ -290,7 +346,7 @@ export const advanceDemoVsl = async (
 
   for (const task of payload.tasks) {
     // oxlint-disable-next-line no-await-in-loop
-    tasks.push(await pollVoice(task));
+    tasks.push(await pollVoice(task, payload.replica ?? null));
   }
 
   const elapsed = Date.now() - (payload.voiceStartedAt ?? Date.now());

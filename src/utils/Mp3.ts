@@ -18,7 +18,7 @@ const SILENCE_PAD_SECONDS = 0.05;
  * @returns The sample rate, the channels and where the samples are.
  * @throws {Error} When the file is not 16-bit PCM WAV.
  */
-const readWav = (wav: Buffer) => {
+export const readWav = (wav: Buffer) => {
   if (wav.toString('ascii', 0, 4) !== 'RIFF' || wav.toString('ascii', 8, 12) !== 'WAVE') {
     throw new Error('Not a WAV file');
   }

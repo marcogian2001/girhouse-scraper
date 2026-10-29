@@ -36,7 +36,7 @@ import { TOUR_STEPS } from '../TourScenes';
 import { useTimedSequence } from '../useTimedSequence';
 import { WhatsAppChat } from '../WhatsAppChat';
 import { BrollScene } from './BrollScene';
-import { GigiTalkingFull } from './GigiTalking';
+import { HOST_POSTER, HostTalkingFull } from './HostTalking';
 import { MissedCallScene } from './MissedCallScene';
 import { ReviewsScene } from './ReviewsScene';
 import { VslBar } from './VslBar';
@@ -55,7 +55,7 @@ import {
   withVslChat,
 } from './VslScript';
 
-/** One of Gigi's lines, voiced by Kie. */
+/** One of Gianmarco's lines, voiced by Kie. */
 export type DemoVoice = { id: string; line: string; text: string; seconds: number };
 
 /** The typing ends a little before the voice, so the words are never behind it. */
@@ -486,18 +486,18 @@ const VslSceneVisual = (options: {
     );
   }
 
-  // Gigi's own screens have their full-screen layout
+  // Gianmarco's own screens have their full-screen layout
   return null;
 };
 
 /**
- * Version B of the demo: a video sales letter. One tap starts it, then Gigi narrates every
+ * Version B of the demo: a video sales letter. One tap starts it, then Gianmarco narrates every
  * scene with his own voice and the demo moves on by itself when he is done and the scene
  * has played. One audio element carries every line, so a phone that let it play once lets
  * it play to the end. Without a voice, a line stays on screen as long as it takes to say.
  * @param props Component props.
  * @param props.vsl The demo's version B.
- * @param props.voices Gigi's voiced lines.
+ * @param props.voices Gianmarco's voiced lines.
  * @returns The video sales letter.
  */
 export const DemoVsl = (props: DemoTourProps & { vsl: DemoVslData; voices: DemoVoice[] }) => {
@@ -558,7 +558,7 @@ export const DemoVsl = (props: DemoTourProps & { vsl: DemoVslData; voices: DemoV
     restartKey: `${index}-${line}`,
   });
 
-  // Moves on once Gigi is done and the scene has played what it shows
+  // Moves on once Gianmarco is done and the scene has played what it shows
   const moveOnLater = (advance: (next: number) => void) => {
     const { index: current } = playback.current;
     const target = scenes[current];
@@ -761,12 +761,12 @@ export const DemoVsl = (props: DemoTourProps & { vsl: DemoVslData; voices: DemoV
     }
   };
 
-  const isGigiScreen = scene.kind === 'intro' || scene.kind === 'video';
+  const isHostScreen = scene.kind === 'intro' || scene.kind === 'video';
   const isPricing = scene.kind === 'pricing';
   const content =
-    !isStarted || isGigiScreen ? (
+    !isStarted || isHostScreen ? (
       <>
-        {/* The landing's photos load while Gigi introduces himself; React moves these into the head */}
+        {/* The landing's photos load while Gianmarco introduces himself; React moves these into the head */}
         {props.photos.slice(0, 2).map((photo) => (
           <link key={photo.src} rel="preload" as="image" href={photo.src} />
         ))}
@@ -784,16 +784,16 @@ export const DemoVsl = (props: DemoTourProps & { vsl: DemoVslData; voices: DemoV
           </h1>
 
           {isStarted ? (
-            <GigiTalkingFull isTalking={isTalking} />
+            <HostTalkingFull isTalking={isTalking} />
           ) : (
             <div className="flex flex-col items-center gap-4">
               <Image
-                src="/demo/gigi-talk.jpg"
+                src={HOST_POSTER.src}
                 alt=""
-                width={483}
-                height={720}
+                width={HOST_POSTER.width}
+                height={HOST_POSTER.height}
                 priority
-                className="h-[min(18rem,29svh)] w-auto rounded-3xl mix-blend-multiply md:h-80"
+                className="h-[min(20rem,34svh)] w-auto rounded-3xl shadow-2xl ring-4 ring-white md:h-96"
               />
               <button
                 type="button"

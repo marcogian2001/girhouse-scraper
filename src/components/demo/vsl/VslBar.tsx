@@ -6,10 +6,10 @@ import { measureBar } from '../GigiBar';
 import { currentCaption } from '../GigiCaptions';
 import { TypedText } from '../GiraffeSpeaker';
 import type { HighlightSegment } from '../Highlights';
-import { GigiTalkingFace } from './GigiTalking';
+import { HostTalkingFace } from './HostTalking';
 
 /**
- * The bar across the bottom of version B: the mini Gigi talking and what he is saying now on the left,
+ * The bar across the bottom of version B: Gianmarco's face talking and what he is saying now on the left,
  * pause and the way back or ahead on the right. Nothing has to be pressed: the demo moves
  * on by itself when Gigi is done. On the price it drops the line, on blue glass.
  * @param props Component props.
@@ -45,7 +45,7 @@ export const VslBar = (props: {
       className={`fixed inset-x-0 bottom-0 z-30 animate-in fade-in slide-in-from-bottom-4 ${props.isQuiet ? 'border-t border-white/15 bg-[#06287f]/40 backdrop-blur-md' : 'border-t border-neutral-200 bg-white/95 shadow-[0_-10px_30px_rgba(0,0,0,0.08)] backdrop-blur'}`}
     >
       <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-2 md:gap-6 md:py-3">
-        <GigiTalkingFace isTalking={props.isTalking} className="size-12 md:size-16" />
+        <HostTalkingFace isTalking={props.isTalking} className="size-12 md:size-16" />
 
         <p
           aria-live="polite"
