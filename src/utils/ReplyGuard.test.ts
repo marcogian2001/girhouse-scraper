@@ -3,6 +3,7 @@ import {
   checkReply,
   cleanReply,
   DEMO_LINK_PLACEHOLDER,
+  demoLinkVariants,
   fillDemoLink,
   fillSlots,
   SLOTS_PLACEHOLDER,
@@ -51,6 +52,18 @@ describe('ReplyGuard', () => {
 
       expect(filled).toContain(demoUrl);
       expect(checkReply({ body: filled, prices, allowedLinks: [demoUrl] })).toStrictEqual([]);
+    });
+
+    it('accepts the demo link pointing to a step or to version B', () => {
+      const demoUrl = 'https://demo.girhouse.com/nutrizionista-rossi';
+
+      expect(
+        checkReply({
+          body: `${body}\n${demoUrl}?versione=b\n${demoUrl}?passo=3`,
+          prices,
+          allowedLinks: demoLinkVariants(demoUrl, 6),
+        }),
+      ).toStrictEqual([]);
     });
 
     it('still flags another link next to the demo link', () => {

@@ -82,6 +82,20 @@ export const checkReply = (options: {
 };
 
 /**
+ * Lists the forms of a demo link an email may carry: the page itself, a step of it, or one
+ * of its two versions.
+ * @param demoUrl The lead's demo page.
+ * @param steps How many steps the demo has.
+ * @returns The links.
+ */
+export const demoLinkVariants = (demoUrl: string, steps: number) => [
+  demoUrl,
+  ...Array.from({ length: steps }, (_unused, index) => `${demoUrl}?passo=${index + 1}`),
+  `${demoUrl}?versione=a`,
+  `${demoUrl}?versione=b`,
+];
+
+/**
  * Puts the demo link where the writer left the placeholder.
  * @param body The reply body.
  * @param demoUrl The lead's demo page.

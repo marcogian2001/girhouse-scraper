@@ -24,7 +24,13 @@ import {
 import { DEMO_STEPS } from '@/utils/DemoStats';
 import { FOLLOW_UP_STATES } from '@/utils/FollowUps';
 import { buildOfferBrief } from '@/utils/Offer';
-import { checkReply, cleanReply, fillDemoLink, fillSlots } from '@/utils/ReplyGuard';
+import {
+  checkReply,
+  cleanReply,
+  demoLinkVariants,
+  fillDemoLink,
+  fillSlots,
+} from '@/utils/ReplyGuard';
 import type { ReplyCategory } from '@/utils/ReplyRouting';
 import { FINAL_STATES } from '@/utils/ReplyRouting';
 import { stripQuotedReply } from '@/utils/ReplyText';
@@ -191,7 +197,7 @@ export const writeCheckedReply = async (
   conversation: Conversation,
 ) => {
   const { prices, demoUrl: link, offeredSlots, ...writerOptions } = options;
-  const allowedLinks = link ? [link] : [];
+  const allowedLinks = link ? demoLinkVariants(link, DEMO_STEPS) : [];
   const slotWords = joinSlotLabels(offeredSlots);
 
   /**
@@ -750,15 +756,8 @@ export const approveOutbound = async (options: {
     body,
     prices: [settings.monthlyPrice],
     // A follow-up may point to the step the lead stopped at
-    allowedLinks: demo
-      ? [
-          demo.url,
-          ...Array.from(
-            { length: DEMO_STEPS },
-            (_unused, index) => `${demo.url}?passo=${index + 1}`,
-          ),
-        ]
-      : [],
+    // A person may point to a step or to one of the two versions
+    allowedLinks: demo ? demoLinkVariants(demo.url, DEMO_STEPS) : [],
   });
 
   if (issues.some((issue) => BLOCKING_ISSUES.has(issue))) {
