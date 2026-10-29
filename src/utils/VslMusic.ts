@@ -20,10 +20,10 @@ export type VslSound = (typeof VSL_SOUNDS)[number];
 
 /** How loud each sound plays under the voice, the whoosh being the quietest file. */
 export const SOUND_GAIN: Record<VslSound, number> = {
-  ring: 0.55,
-  ping: 0.5,
-  bell: 0.45,
-  whoosh: 0.9,
-  hit: 0.6,
-  pop: 0.5,
+  ring: 0.38,
+  ping: 0.35,
+  bell: 0.3,
+  whoosh: 0.6,
+  hit: 0.42,
+  pop: 0.35,
 };

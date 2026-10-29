@@ -9,7 +9,7 @@ import type { HighlightSegment } from '../Highlights';
 import { HostTalkingFace } from './HostTalking';
 
 /**
- * The bar across the bottom of version B: Gianmarco's face talking and what he is saying now on the left,
+ * The bar across the bottom of version B: Gigi's face talking and what he is saying now on the left,
  * pause and the way back or ahead on the right. Nothing has to be pressed: the demo moves
  * on by itself when Gigi is done. On the price it drops the line, on blue glass.
  * @param props Component props.

@@ -55,7 +55,7 @@ import {
   withVslChat,
 } from './VslScript';
 
-/** One of Gianmarco's lines, voiced by Kie. */
+/** One of Gigi's lines, voiced by Kie. */
 export type DemoVoice = { id: string; line: string; text: string; seconds: number };
 
 /** The typing ends a little before the voice, so the words are never behind it. */
@@ -154,6 +154,9 @@ const preloadVoices = async (voices: DemoVoice[], files: Map<string, string>) =>
 /** How long one chapter's music takes to fade into the next. */
 const MUSIC_FADE_SECONDS = 0.8;
 
+/** The music's level under the voice, on top of its quiet mix: half, about -6 dB. */
+const MUSIC_GAIN = 0.5;
+
 /**
  * Plays the music under the voice with Web Audio, one track per chapter, fading from one
  * to the next with a whoosh, plus the sounds each scene cues. Web Audio loops a track
@@ -234,7 +237,7 @@ const createSoundtrack = () => {
     source.loopStart = MUSIC_CROSSFADE_SECONDS;
     source.loopEnd = buffer.duration;
     gain.gain.setValueAtTime(0, now);
-    gain.gain.linearRampToValueAtTime(1, now + MUSIC_FADE_SECONDS);
+    gain.gain.linearRampToValueAtTime(MUSIC_GAIN, now + MUSIC_FADE_SECONDS);
     source.connect(gain).connect(audio.destination);
     source.start();
     current = { chapter, source, gain };
@@ -486,18 +489,18 @@ const VslSceneVisual = (options: {
     );
   }
 
-  // Gianmarco's own screens have their full-screen layout
+  // Gigi's own screens have their full-screen layout
   return null;
 };
 
 /**
- * Version B of the demo: a video sales letter. One tap starts it, then Gianmarco narrates every
+ * Version B of the demo: a video sales letter. One tap starts it, then Gigi narrates every
  * scene with his own voice and the demo moves on by itself when he is done and the scene
  * has played. One audio element carries every line, so a phone that let it play once lets
  * it play to the end. Without a voice, a line stays on screen as long as it takes to say.
  * @param props Component props.
  * @param props.vsl The demo's version B.
- * @param props.voices Gianmarco's voiced lines.
+ * @param props.voices Gigi's voiced lines.
  * @returns The video sales letter.
  */
 export const DemoVsl = (props: DemoTourProps & { vsl: DemoVslData; voices: DemoVoice[] }) => {
@@ -558,7 +561,7 @@ export const DemoVsl = (props: DemoTourProps & { vsl: DemoVslData; voices: DemoV
     restartKey: `${index}-${line}`,
   });
 
-  // Moves on once Gianmarco is done and the scene has played what it shows
+  // Moves on once Gigi is done and the scene has played what it shows
   const moveOnLater = (advance: (next: number) => void) => {
     const { index: current } = playback.current;
     const target = scenes[current];
@@ -766,7 +769,7 @@ export const DemoVsl = (props: DemoTourProps & { vsl: DemoVslData; voices: DemoV
   const content =
     !isStarted || isHostScreen ? (
       <>
-        {/* The landing's photos load while Gianmarco introduces himself; React moves these into the head */}
+        {/* The landing's photos load while Gigi introduces himself; React moves these into the head */}
         {props.photos.slice(0, 2).map((photo) => (
           <link key={photo.src} rel="preload" as="image" href={photo.src} />
         ))}
@@ -793,7 +796,7 @@ export const DemoVsl = (props: DemoTourProps & { vsl: DemoVslData; voices: DemoV
                 width={HOST_POSTER.width}
                 height={HOST_POSTER.height}
                 priority
-                className="h-[min(20rem,34svh)] w-auto rounded-3xl shadow-2xl ring-4 ring-white md:h-96"
+                className="h-[min(18rem,29svh)] w-auto rounded-3xl mix-blend-multiply md:h-80"
               />
               <button
                 type="button"

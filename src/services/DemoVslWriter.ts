@@ -81,10 +81,10 @@ const vslTextsSchema = z.object({
 
 export type DemoVslTexts = z.infer<typeof vslTextsSchema>;
 
-/** What each scene shows while Gianmarco says its line, so the line describes what is on screen. */
+/** What each scene shows while Gigi says its line, so the line describes what is on screen. */
 const SCENES: Record<VslWrittenLine, string> = {
   intro:
-    'Gianmarco, founder of Girhouse, on screen before anything else. He greets the owner by the business name, says he made this video for them, and opens a loop: before showing anything, he wants to tell them what happens every day to people who do their job.',
+    'Gigi, the Girhouse giraffe, on screen before anything else. He introduces himself as "Gigi di Girhouse", greets the owner by the business name, says he made this video for them, and opens a loop: before showing anything, he wants to tell them what happens every day to people who do their job.',
   problem_missed_call:
     'PROBLEM 1, over a clip of someone in this sector busy with a client while the phone rings unanswered. Tell it as a short scene the owner lives: they are busy, the phone rings, they cannot answer, the caller hangs up and calls the competitor. Make them feel the loss.',
   missed_call:
@@ -129,7 +129,7 @@ const SCENES: Record<VslWrittenLine, string> = {
 };
 
 const INSTRUCTIONS = [
-  'You write version B of the demo Girhouse sends an Italian small business that showed interest: a video sales letter Gianmarco, the founder of Girhouse, narrates on his own while the screens play, with music and b-roll. It never stops and nobody presses a button. Gianmarco talks to the owner, using "tu", as one person to another.',
+  'You write version B of the demo Girhouse sends an Italian small business that showed interest: a video sales letter Gigi, the friendly Girhouse giraffe, narrates on his own while the screens play, with music and b-roll. It never stops and nobody presses a button. Gigi talks to the owner, using "tu", warmly, as a friend who knows their work.',
   '',
   'The goal: the owner must recognise their own working day and feel it, then dream of how it could be. The video opens straight on five problems, each told as a short scene and followed by what the system does about it, then everything in one place, then the dream, then the new web page. Pick from the playbook below the pains that fit this business best and use its concrete words: a mechanic hears about inspection reminders and quotes answered too late, an osteopath about session reminders and patients who skip, a lawyer about calls lost during hearings.',
   '',
@@ -171,7 +171,7 @@ const INSTRUCTIONS = [
   '- `whatsapp`: the WhatsApp message it sends, under 160 characters, kind, by first name.',
   '- `oggetto_email`: the email subject, under 60 characters. `testo_email`: the email, two sentences, under 260 characters.',
   '',
-  "Gianmarco's lines (`battute`): one per screen, read aloud by his voice while the screen plays, over music.",
+  "Gigi's lines (`battute`): one per screen, read aloud by his voice while the screen plays, over music.",
   '- Spoken, natural to hear, short sentences. No lists, no symbols, no abbreviations, no numbers written as digits except times and years.',
   "- Problems (`problem_*`): 2 or 3 sentences, at most 300 characters. A short scene in the present tense, from the owner's point of view, with a concrete detail of this sector, ending on what it costs them (a customer lost, an empty hour, an evening gone). Emotional, never dramatic or insulting.",
   '- Solutions: 2 or 3 sentences, at most 280 characters. Start with "Con Girhouse" or with what is happening on screen, then say what changes for them.',
@@ -179,7 +179,7 @@ const INSTRUCTIONS = [
   '- The other screens: 1 to 3 sentences, at most 260 characters, saying what is on screen and why it matters for the pains you picked.',
   '- Mark one or two key phrases with `<b>...</b>` (bold) or `<hl>...</hl>` (highlighted), never nested.',
   '- Never tell them to press, tap or click anything: the video plays on its own.',
-  '- Name things plainly: "il promemoria", "l\'automazione", "il messaggio". Never soften them with adjectives or adverbs such as "gentile", "con gentilezza", "delicato", "senza pressioni", "con calma": the owner hears them as odd. The care the playbook asks for goes into the messages the customer gets, not into how Gianmarco describes them.',
+  '- Name things plainly: "il promemoria", "l\'automazione", "il messaggio". Never soften them with adjectives or adverbs such as "gentile", "con gentilezza", "delicato", "senza pressioni", "con calma": the owner hears them as odd. The care the playbook asks for goes into the messages the customer gets, not into how Gigi describes them.',
   '- Use the real names: the business, and the customer names you wrote for the missed call, the chat, the reminder and the follow-up.',
   '- An empty string for a landing section the page does not have.',
   "- The screens, in order, with version A's generic line as a reference for length and tone where it has one:",
