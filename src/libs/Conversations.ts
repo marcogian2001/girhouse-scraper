@@ -6,6 +6,7 @@ import {
   conversationEventSchema,
   conversationSchema,
   conversationStateEnum,
+  demoSchema,
   emailSuppressionSchema,
   inboundMessageSchema,
   jobSchema,
@@ -684,7 +685,8 @@ export const listConversations = async (options: {
 };
 
 /**
- * Counts the reply jobs of a conversation still waiting for the worker.
+ * Counts the reply jobs of a conversation, and the version B of its demo, still waiting
+ * for the worker.
  * @param conversationId The conversation to check.
  * @returns How many are queued or running.
  */
@@ -698,6 +700,11 @@ const countPendingJobs = async (conversationId: string) => {
     .select({ id: sql`${outboundEmailSchema.id}::text` })
     .from(outboundEmailSchema)
     .where(eq(outboundEmailSchema.conversationId, conversationId));
+
+  const demoIds = db
+    .select({ id: sql`${demoSchema.id}::text` })
+    .from(demoSchema)
+    .where(eq(demoSchema.conversationId, conversationId));
 
   const [row] = await db
     .select({ count: sql<number>`count(*)`.mapWith(Number) })
@@ -715,6 +722,11 @@ const countPendingJobs = async (conversationId: string) => {
           and(
             eq(jobSchema.type, 'reply_send'),
             inArray(sql`${jobSchema.payload}->>'outboundEmailId'`, emailIds),
+          ),
+          // The open page drives it, and refreshes the demo card once it is voiced
+          and(
+            eq(jobSchema.type, 'demo_vsl'),
+            inArray(sql`${jobSchema.payload}->>'demoId'`, demoIds),
           ),
         ),
       ),
