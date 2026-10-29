@@ -31,10 +31,12 @@ import type { VslLine, VslScene } from './VslScript';
 import {
   buildVslScenes,
   spokenDurationMs,
+  VSL_FOLLOW_UP_STEP_MS,
   VSL_GAP_MS,
   VSL_VOICE_TEMPO,
   vslLineMarkup,
   vslLineOf,
+  vslLinesToVoice,
   vslLineValues,
   vslSceneMinimumMs,
   withVslChat,
@@ -112,6 +114,28 @@ const createVslClock = () => {
       return true;
     },
   };
+};
+
+/**
+ * Downloads every voice ahead, one after the other in the order they are said, so a new
+ * scene starts speaking at once instead of waiting for its file.
+ * @param voices The voices, in the order they are said.
+ * @param files Where the downloaded files go, by voice id, as object URLs.
+ */
+const preloadVoices = async (voices: DemoVoice[], files: Map<string, string>) => {
+  for (const voice of voices) {
+    try {
+      // oxlint-disable-next-line no-await-in-loop
+      const response = await fetch(`/api/demo-voices/${voice.id}`);
+
+      if (response.ok) {
+        // oxlint-disable-next-line no-await-in-loop
+        files.set(voice.id, URL.createObjectURL(await response.blob()));
+      }
+    } catch {
+      // A voice that did not download is fetched when it is said
+    }
+  }
 };
 
 /**
@@ -213,7 +237,7 @@ const VslSceneVisual = (options: {
   }
 
   if (scene.kind === 'followup') {
-    return <FollowUpStep texts={props.vsl.followUp} />;
+    return <FollowUpStep texts={props.vsl.followUp} stepMs={VSL_FOLLOW_UP_STEP_MS} />;
   }
 
   if (scene.kind === 'pricing') {
@@ -257,6 +281,9 @@ export const DemoVsl = (props: DemoTourProps & { vsl: DemoVslData; voices: DemoV
   const [isTalking, setIsTalking] = useState(false);
   const [bookingPhase, setBookingPhase] = useState<BookingPhase>('phone');
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const musicRef = useRef<HTMLAudioElement | null>(null);
+  // The voices downloaded ahead, by id
+  const voiceFiles = useRef(new Map<string, string>());
   const clockRef = useRef(createVslClock());
   // What the handlers read, since their timers outlive the render that set them
   const playback = useRef({ index, hasVoice: false, isLineDone: false });
@@ -350,7 +377,7 @@ export const DemoVsl = (props: DemoTourProps & { vsl: DemoVslData; voices: DemoV
       return;
     }
 
-    audio.src = `/api/demo-voices/${next.id}`;
+    audio.src = voiceFiles.current.get(next.id) ?? `/api/demo-voices/${next.id}`;
     audio.playbackRate = VSL_VOICE_TEMPO;
 
     // The browser wants a tap first: the demo waits on pause for it
@@ -393,6 +420,7 @@ export const DemoVsl = (props: DemoTourProps & { vsl: DemoVslData; voices: DemoV
 
   const pause = () => {
     audioRef.current?.pause();
+    musicRef.current?.pause();
     clockRef.current.pause();
     setIsTalking(false);
     setIsPaused(true);
@@ -403,6 +431,10 @@ export const DemoVsl = (props: DemoTourProps & { vsl: DemoVslData; voices: DemoV
     const audio = audioRef.current;
 
     setIsPaused(false);
+
+    if (musicRef.current) {
+      void tryPlay(musicRef.current);
+    }
 
     if (clockRef.current.resume()) {
       setIsTalking(!isLineDone);
@@ -446,6 +478,19 @@ export const DemoVsl = (props: DemoTourProps & { vsl: DemoVslData; voices: DemoV
           });
         }
       }}
+    />
+  );
+
+  // Under Gigi the whole time, mixed quiet in the file itself: phones ignore a page's volume
+  const music = (
+    // oxlint-disable-next-line jsx-a11y/media-has-caption -- Music without words
+    <audio
+      ref={(element) => {
+        musicRef.current = element;
+      }}
+      src="/demo/gigi-music.mp3"
+      loop
+      preload="auto"
     />
   );
 
@@ -509,8 +554,21 @@ export const DemoVsl = (props: DemoTourProps & { vsl: DemoVslData; voices: DemoV
                     captureDemoEvent('demo_vsl_start', { scene: index });
                   }
 
-                  // Played from the tap itself, which is what lets the voice be heard
+                  // Played from the tap itself, which is what lets the voice and the music be heard
                   void say({ index, line, advance: goTo });
+
+                  if (musicRef.current) {
+                    void tryPlay(musicRef.current);
+                  }
+
+                  void preloadVoices(
+                    vslLinesToVoice(scenes).flatMap((entry) => {
+                      const said = voiceOf(entry);
+
+                      return said ? [said] : [];
+                    }),
+                    voiceFiles.current,
+                  );
                 }}
                 className="absolute inset-0 m-auto flex size-fit animate-pop items-center gap-2 rounded-full bg-(--demo-primary) px-7 py-4 text-lg font-semibold whitespace-nowrap text-(--demo-on-primary) shadow-2xl"
               >
@@ -614,6 +672,7 @@ export const DemoVsl = (props: DemoTourProps & { vsl: DemoVslData; voices: DemoV
     <>
       {tracking}
       {audio}
+      {music}
       {content}
     </>
   );

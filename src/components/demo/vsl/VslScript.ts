@@ -59,7 +59,7 @@ export type VslTranslate = {
 };
 
 /** The pause between the end of a line and the next scene. */
-export const VSL_GAP_MS = 300;
+export const VSL_GAP_MS = 200;
 
 /** How fast the voice plays: quicker than Gigi's videos (1.15), so the demo keeps moving. */
 export const VSL_VOICE_TEMPO = 1.3;
@@ -67,8 +67,11 @@ export const VSL_VOICE_TEMPO = 1.3;
 /** How long a message of the example chats takes to show. */
 const CHAT_MESSAGE_MS = 1500;
 
-/** The follow-up automation: seven steps, 1.8 seconds each. */
-const FOLLOW_UP_MS = 7 * 1800;
+/** How long each step of the follow-up automation lights up: quicker than version A's 1.8 seconds. */
+export const VSL_FOLLOW_UP_STEP_MS = 1000;
+
+/** The follow-up automation: seven steps. */
+const FOLLOW_UP_MS = 7 * VSL_FOLLOW_UP_STEP_MS;
 
 /** The review system: the star is tapped after 1.5 seconds, then three replies 0.7 seconds apart. */
 const FUNNEL_MS = 1500 + 3 * 700;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { wavToMp3 } from './Mp3';
+import { trimSilence, wavToMp3 } from './Mp3';
 
 /**
  * Builds a 16-bit PCM WAV of a tone.
@@ -60,5 +60,18 @@ describe('Mp3', () => {
 
   it('rejects a file that is not WAV', () => {
     expect(() => wavToMp3(Buffer.from('not a wav file at all, really'))).toThrow('Not a WAV');
+  });
+
+  describe('Silence', () => {
+    const voice = Int16Array.from([0, 0, 0, 0, 5000, -4000, 3000, 0, 0, 0]);
+
+    it('cuts the silent ends of a voice, keeping a breath', () => {
+      // One sample of padding at this rate
+      expect([...trimSilence(voice, 20)]).toStrictEqual([0, 5000, -4000, 3000, 0]);
+    });
+
+    it('keeps a silent file as it is', () => {
+      expect(trimSilence(new Int16Array(5), 20)).toHaveLength(5);
+    });
   });
 });

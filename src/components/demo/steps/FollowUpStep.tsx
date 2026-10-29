@@ -144,12 +144,13 @@ const ActionStage = (props: { node: NodeKey; texts?: FollowUpTexts }) => {
  * It plays through on its own, with no press of "Next".
  * @param props Component props.
  * @param props.texts What it says, written for the lead's own customers; the example with Marco without.
+ * @param props.stepMs How long each step lights up; 1.8 seconds without.
  * @returns The workflow mockup.
  */
-export const FollowUpStep = (props: { texts?: FollowUpTexts }) => {
+export const FollowUpStep = (props: { texts?: FollowUpTexts; stepMs?: number }) => {
   const t = useTranslations('DemoPage');
   // One tick per node, then one more for the customer's answer that stops it
-  const tick = useTimedSequence({ target: NODES.length + 1, intervalMs: 1800 });
+  const tick = useTimedSequence({ target: NODES.length + 1, intervalMs: props.stepMs ?? 1800 });
   const active = Math.max(Math.min(tick, NODES.length), 1);
   const isStopped = tick > NODES.length;
   const current: NodeKey = isStopped ? 'stop' : (NODES[active - 1]?.key ?? 'trigger');

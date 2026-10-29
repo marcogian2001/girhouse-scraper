@@ -2,11 +2,14 @@
  * Writes and voices version B of one demo from the terminal, without the job queue:
  *
  *   npx dotenv -c -- npx tsx scripts/generate-demo-vsl.ts dottor-giorgio-neri
+ *   npx dotenv -c -- npx tsx scripts/generate-demo-vsl.ts dottor-giorgio-neri --voice
  *
+ * With `--voice` it keeps the script and only voices it again.
  * The link keeps the version it shows; version B opens with `?versione=b`. It calls
  * Claude for the script and Kie for each of Gigi's lines, on the database in `.env`.
  */
 import { setTimeout as sleep } from 'node:timers/promises';
+import { parseArgs } from 'node:util';
 import { eq } from 'drizzle-orm';
 import * as z from 'zod';
 import { db } from '@/libs/DB';
@@ -15,15 +18,26 @@ import { logger } from '@/libs/Logger';
 import { demoSchema } from '@/models/Schema';
 import { DemoSlugValidation } from '@/validations/DemoValidation';
 
-const slug = DemoSlugValidation.parse(process.argv[2]);
+const { values, positionals } = parseArgs({
+  allowPositionals: true,
+  options: { voice: { type: 'boolean', default: false } },
+});
+const slug = DemoSlugValidation.parse(positionals[0]);
 const demo = await db.query.demoSchema.findFirst({ where: eq(demoSchema.slug, slug) });
 
 if (!demo) {
   throw new Error(`No demo has the slug ${slug}`);
 }
 
+if (values.voice && !demo.vsl) {
+  throw new Error(`Demo ${slug} has no version B to voice`);
+}
+
 let next: Awaited<ReturnType<typeof advanceDemoVsl>> = {
-  payload: { demoId: demo.id, generatedAt: new Date().toISOString(), phase: 'script', tasks: [] },
+  payload:
+    values.voice && demo.vsl
+      ? { demoId: demo.id, generatedAt: demo.vsl.generatedAt, phase: 'voice_start', tasks: [] }
+      : { demoId: demo.id, generatedAt: new Date().toISOString(), phase: 'script', tasks: [] },
   delaySeconds: 0,
 };
 
