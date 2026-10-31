@@ -148,13 +148,14 @@ Il rischio riguarda anche la legge sulla pubblicità ingannevole tra imprese. Pr
 5. Il percorso reale, compresi i mesi che servono alla SEO.
 6. Garanzia, prezzo dello step e scelta tra acquisto e call.
 
-## Decisioni e materiali che servono
+## Stato del 31/10/2026
+
+Il quiz è online con chiusura solo su acquisto a 47 € (funnel F9). La stima della perdita usa la quota di richieste perse indicata dal cliente, non percentuali nostre.
 
 | Tema | Cosa serve |
 | --- | --- |
-| Fine del quiz | Scegliere tra acquisto a 47 € con call in alternativa, oppure solo call |
-| Pagamento | Il link di pagamento da 47 €, se si sceglie l'acquisto |
-| Prove reali | Testimonianze con nome, risultati veri, numero di clienti attivi |
-| Stima della perdita | Quote per tempo di risposta, da dati veri o da una stima dichiarata |
-| Go High Level | Mappare i campi nuovi e il punteggio |
+| Pagamento | Collegare il checkout: 47 € il primo mese, poi 97 € al mese |
+| Termini | Condizioni di vendita e trattamento dell'IVA nel checkout |
+| Prove reali | Testimonianze con nome e risultati veri |
+| Go High Level | Mappare i campi nuovi, il punteggio e funnel = F9 |
 | Misurazione | Un evento per ogni schermata, per vedere dove si abbandona |
