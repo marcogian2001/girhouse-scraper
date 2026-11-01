@@ -182,7 +182,7 @@ Il tasso di abbandono di una schermata è la differenza con l'evento successivo,
 
 **Diagnosi Google.** È attiva con `GH_GOOGLE_PLACES_KEY` in `wp-config.php`; senza la costante il quiz fa la domanda sulla scheda come prima. Cerca l'attività con Places API, prima con nome e città e poi con il solo nome, e la confronta con i primi 10 risultati di "categoria città". Limiti: 12 richieste all'ora per visitatore, 500 ricerche al giorno, risultati in cache per un giorno, ricerche vuote escluse.
 
-**Schermate informative.** "Dove si perdono oggi i tuoi clienti" e "Cosa cambia con Girhouse" riprendono la vecchia landing. "Cosa è incluso" arriva subito dopo il nome dell'attività e ha un'animazione per ognuno dei 6 desideri, con quel nome: iPhone su mobile, browser su desktop, con la scritta "Simulazione". L'iPhone 18 segue proporzioni da indiscrezioni, senza specifiche ufficiali verificate. Il quiz non indica più il numero di domande.
+**Schermate informative.** "Dove si perdono oggi i tuoi clienti" e "Cosa cambia con Girhouse" riprendono la vecchia landing. "Cosa è incluso" arriva subito dopo il nome dell'attività e ha un'animazione per ognuno dei 6 desideri, con quel nome: iPhone su mobile, browser su desktop. L'iPhone 18 segue proporzioni da indiscrezioni, senza specifiche ufficiali verificate. Il quiz non indica più il numero di domande.
 
 **Risposta sull'AI.** "Gestire messaggi e chiamate dei miei clienti con l'AI" descrive risposte automatiche a messaggi e chiamate: va tenuta solo se il servizio le fa davvero, e il piano operativo vietava la parola AI.
 
