@@ -158,4 +158,16 @@ Il quiz è online con chiusura solo su acquisto a 47 € (funnel F9). La stima d
 | Termini | Condizioni di vendita e trattamento dell'IVA nel checkout |
 | Prove reali | Testimonianze con nome e risultati veri |
 | Go High Level | Mappare i campi nuovi, il punteggio e funnel = F9 |
-| Misurazione | Un evento per ogni schermata, per vedere dove si abbandona |
+
+## Misurazione dal 01/11/2026
+
+Il quiz manda un evento per ogni schermata, una sola volta per visita e senza le risposte: su Clarity con il nome della schermata, su Meta come `QuizStep` con il nome nel parametro `step`.
+
+| Evento | Quando parte |
+| --- | --- |
+| `quiz_01_settore` ... `quiz_24_result` | Si apre la schermata, numerata nell'ordine del percorso |
+| `quiz_22_loader_conferma_obiettivo`, `quiz_22_loader_conferma_tempo` | Compare la domanda durante il caricamento |
+| `quiz_stop_ecommerce`, `quiz_stop_nonavviata`, `quiz_stop_pubblicita`, `quiz_stop_decisore` | La persona è esclusa dal quiz: non è un abbandono |
+| `quiz_checkout_click` | Clic su "Attiva a 47 €" |
+
+Il tasso di abbandono di una schermata è la differenza con l'evento successivo, togliendo gli stop.
