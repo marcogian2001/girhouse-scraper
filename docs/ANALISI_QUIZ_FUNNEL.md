@@ -194,6 +194,8 @@ Il tasso di abbandono di una schermata è la differenza con l'evento successivo,
 
 **Punteggio.** Resta calcolato dalle risposte con regole fisse, su una scala severa che si ferma a 50, e la pagina lo dichiara: 100 è il livello con tutte le parti gestite insieme. Un'attività messa meglio prende comunque più di una messa peggio; non c'è una soglia uguale per tutti, perché sarebbe il "punteggio negativo per tutti" escluso sopra. Colori: anello rosso, aree rosse sotto 50 e gialle a 50, mai verde.
 
+**Nessuno scorrimento.** Ogni schermata si adatta all'altezza del dispositivo (`fit()` in `quiz.js`), provata a 390×664, 360×600 e 1280×720. La pagina finale è divisa in schermate, con l'offerta per ultima, e "Cosa dice Google oggi" in due passi: confronto delle recensioni, poi salita.
+
 **Sezioni spostate.** Il guadagno con il grafico arriva subito dopo il valore del cliente; "Cosa dice Google oggi", con la posizione vera e la salita, subito dopo la scheda. Tolte le domande "Cosa hai già provato?" e "Cosa deve evitare la soluzione giusta?". La numerazione degli eventi `quiz_NN_` segue il nuovo ordine, quindi i confronti vanno fatti solo sui dati raccolti con questa versione.
 
 **Da far vedere a chi segue la parte legale.** Nomi e dati dei concorrenti mostrati nel confronto, e l'invio a Google di nome e città dell'attività, da citare nella privacy.
