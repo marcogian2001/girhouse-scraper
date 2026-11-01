@@ -221,3 +221,11 @@ Il tasso di abbandono di una schermata è la differenza con l'evento successivo,
 - **Misure senza cache del browser dal Mac, con il server sotto carico (load ~90)**: prima pittura con skeleton a ~0,56 s; campo carta pronto in 2,3-3,2 s arrivando dal quiz, 3,2-3,5 s entrando direttamente. Non è sotto i 2 s: Stripe da solo impiega ~1,4 s dopo il montaggio, di cui ~0,9 s per `elements/sessions`.
 - **Da confermare**: serve un pagamento di prova dell'utente in modalità test, perché il primo aggiornamento del checkout ora non parte.
 
+## Pagina del prezzo e suono del guadagno (2 novembre 2026)
+
+- **Suono del guadagno**: `suono-guadagno.mp3` è tolto dal quiz e salvato in `~/backups-girhouse/`. Ai traguardi dei 3, 6 e 12 mesi suona `coinSound()`, una moneta generata nel browser e più acuta a ogni traguardo.
+- **Prezzo animato**: `playDeal()` mostra solo "Prezzo normale 97 €", lo barra e poi fa comparire "Solo su questa pagina, il primo mese 47 €". Il resto della card e il bottone compaiono dopo circa 2,5 s. Chi ha i movimenti ridotti vede subito lo stato finale. Con la chiusura a telefonata la scritta è "Il primo mese".
+- **Mockup, titolo e bullet**: mockup e "Sistema Girhouse" sono più grandi. I bullet stanno in un riquadro "Cosa è incluso". Il mockup è alto fino a 190 px e 149 px su 390×664.
+- **Schermi bassi**: su 390×664 i bullet mostrano solo i nomi su due colonne e la garanzia è abbreviata; sotto i 640 px di altezza il riquadro sparisce. La pagina non scorre.
+- **Da tenere vero**: "solo su questa pagina" regge finché il coupon `primomese47` si usa solo da qui. Va rivisto se altri funnel lo useranno.
+
