@@ -188,7 +188,7 @@ Il tasso di abbandono di una schermata è la differenza con l'evento successivo,
 
 **Domande iniziali.** Dopo il settore c'è la domanda aperta "Descrivi di cosa ti occupi esattamente:", che arriva a Go High Level come `descrizione`. "Cosa vuoi ottenere?" chiede una sola risposta, la priorità assoluta del momento.
 
-**Nome dell'attività.** Nome e città sono obbligatori e arrivano a Go High Level come `attivita_nome` e `attivita_citta`. Se Google non trova nulla si può continuare lo stesso.
+**Nome dell'attività.** Nome e città sono obbligatori e arrivano a Go High Level come `attivita_nome` e `attivita_citta`. Se Google non trova nulla, o la persona dice che nessun risultato è suo, il quiz mostra una scheda d'esempio e l'avviso con la ricerca fatta (nome e città). Se la ricerca va in errore non afferma nulla e si può continuare.
 
 **Contatti.** Il numero ha il selettore del prefisso e la casella per novità e offerte è stata tolta: `consenso_marketing` arriva sempre `No`, quindi a questi contatti non vanno inviate comunicazioni promozionali senza un consenso raccolto a parte.
 
