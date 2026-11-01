@@ -200,6 +200,8 @@ Il tasso di abbandono di una schermata è la differenza con l'evento successivo,
 
 **Mockup e suoni.** `pacchetto-girhouse.webp` (blocco finale e checkout) ha sfondo trasparente: dispositivi disegnati in HTML e schermate reali delle simulazioni. Sul checkout Lenis è disattivato (`checkout.php`), perché rendeva molle lo scorrimento. `suono-guadagno.mp3` è una ripetizione del file fornito dal proprietario, suonata sui pallini a 3, 6 e 12 mesi.
 
-**Sezioni spostate.** Il guadagno con il grafico arriva subito dopo il valore del cliente; "Cosa dice Google oggi", con la posizione vera e la salita, subito dopo la scheda. Tolte le domande "Cosa hai già provato?" e "Cosa deve evitare la soluzione giusta?". La numerazione degli eventi `quiz_NN_` segue il nuovo ordine, quindi i confronti vanno fatti solo sui dati raccolti con questa versione.
+**Sessione al checkout.** Se il carrello è vuoto durante l'aggiornamento o l'invio, `checkout.php` rimette il pacchetto con il coupon, così non compare "sessione scaduta". Non lo fa se la stessa email ha un ordine pagato negli ultimi 15 minuti, per evitare un doppio addebito.
+
+**Sezioni spostate.** Il guadagno con il grafico arriva subito dopo il valore del cliente; "Cosa dice Google oggi", con la posizione vera e la salita, subito dopo la scheda. Tolte le domande "Cosa hai già provato?", "Cosa deve evitare la soluzione giusta?" e "Ti ritrovi in questa frase?". La numerazione degli eventi `quiz_NN_` segue il nuovo ordine, quindi i confronti vanno fatti solo sui dati raccolti con questa versione.
 
 **Da far vedere a chi segue la parte legale.** Nomi e dati dei concorrenti mostrati nel confronto, e l'invio a Google di nome e città dell'attività, da citare nella privacy.
