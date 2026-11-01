@@ -165,9 +165,21 @@ Il quiz manda un evento per ogni schermata, una sola volta per visita e senza le
 
 | Evento | Quando parte |
 | --- | --- |
-| `quiz_01_settore` ... `quiz_24_result` | Si apre la schermata, numerata nell'ordine del percorso |
-| `quiz_22_loader_conferma_obiettivo`, `quiz_22_loader_conferma_tempo` | Compare la domanda durante il caricamento |
+| `quiz_01_settore` ... `quiz_25_result` | Si apre la schermata, numerata nell'ordine del percorso |
+| `quiz_23_loader_conferma_obiettivo`, `quiz_23_loader_conferma_tempo` | Compare la domanda durante il caricamento |
 | `quiz_stop_ecommerce`, `quiz_stop_nonavviata`, `quiz_stop_pubblicita`, `quiz_stop_decisore` | La persona è esclusa dal quiz: non è un abbandono |
-| `quiz_checkout_click` | Clic su "Attiva a 47 €" |
+| `quiz_diagnosi_trovata`, `quiz_diagnosi_saltata`, `quiz_diagnosi_non_riuscita` | Esito della ricerca su Google |
+| `quiz_variante_acquisto`, `quiz_variante_telefonata` | Si apre il risultato con quella chiusura |
+| `quiz_checkout_click`, `quiz_telefonata_click` | Clic sul bottone di chiusura |
 
 Il tasso di abbandono di una schermata è la differenza con l'evento successivo, togliendo gli stop.
+
+## Versione 2 del quiz, 01/11/2026
+
+**Risultati per desiderio.** Sono 5, uno per risposta a "Cosa vuoi ottenere?": cambiano titolo, promessa, ordine delle sezioni e ultimo passo del percorso.
+
+**Test acquisto o telefonata.** Ogni persona riceve a caso una delle due chiusure e la mantiene. Il confronto si fa tra `quiz_variante_*` e clic, e su Go High Level con il campo `variante_chiusura`. Per vedere una variante: `?chiusura=acquisto` o `?chiusura=telefonata`. Il calendario si apre senza dati precompilati, per non mettere i contatti nell'indirizzo.
+
+**Diagnosi Google.** Il codice è online ma spento finché `GH_GOOGLE_PLACES_KEY` non è in `wp-config.php`. Da spenta, il quiz fa la domanda sulla scheda come prima. Da accesa, cerca l'attività con Places API e la confronta con i primi 10 risultati di "categoria città". Limiti: 12 richieste all'ora per visitatore, 500 ricerche al giorno, risultati in cache per un giorno.
+
+**Da far vedere a chi segue la parte legale.** Nomi e dati dei concorrenti mostrati nel confronto, e l'invio a Google di nome e città dell'attività, da citare nella privacy.
