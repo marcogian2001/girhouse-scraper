@@ -202,6 +202,10 @@ Il tasso di abbandono di una schermata è la differenza con l'evento successivo,
 
 **Sessione al checkout.** Se il carrello è vuoto durante l'aggiornamento o l'invio, `checkout.php` rimette il pacchetto con il coupon, così non compare "sessione scaduta". Non lo fa se la stessa email ha un ordine pagato negli ultimi 15 minuti, per evitare un doppio addebito.
 
-**Sezioni spostate.** Il guadagno con il grafico arriva subito dopo il valore del cliente; "Cosa dice Google oggi", con la posizione vera e la salita, subito dopo la scheda. Tolte le domande "Cosa hai già provato?", "Cosa deve evitare la soluzione giusta?" e "Ti ritrovi in questa frase?". La numerazione degli eventi `quiz_NN_` segue il nuovo ordine, quindi i confronti vanno fatti solo sui dati raccolti con questa versione.
+**Timer del checkout.** Vale davvero: parte alla prima apertura, dura 10 minuti e resta nel cookie `gh_offer_until` per 30 giorni. Allo scadere il coupon non è più valido e il primo mese costa 97 €. Cancellando i cookie il tempo riparte, quindi il limite non è assoluto.
+
+**Da confermare prima di andare online.** "150+ aziende" deve essere un numero vero (il piano vietava i numeri di clienti); servono foto reali di clienti con il loro consenso; chi segue la parte legale deve vedere il bottone "Attiva ora il sistema Girhouse" senza casella, con le condizioni scritte sotto.
+
+**Sezioni spostate.** Il guadagno con il grafico arriva subito dopo il valore del cliente; "Cosa dice Google oggi", con la posizione vera e la salita, subito dopo la scheda. Tolte le domande "Cosa hai già provato?", "Cosa deve evitare la soluzione giusta?", "Ti ritrovi in questa frase?" e il riepilogo delle risposte. La numerazione degli eventi `quiz_NN_` segue il nuovo ordine, quindi i confronti vanno fatti solo sui dati raccolti con questa versione.
 
 **Da far vedere a chi segue la parte legale.** Nomi e dati dei concorrenti mostrati nel confronto, e l'invio a Google di nome e città dell'attività, da citare nella privacy.
