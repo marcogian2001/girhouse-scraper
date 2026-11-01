@@ -204,7 +204,7 @@ Il tasso di abbandono di una schermata è la differenza con l'evento successivo,
 
 **Timer del checkout.** Vale davvero: parte alla prima apertura, dura 10 minuti e resta nel cookie `gh_offer_until` per 30 giorni. Allo scadere il coupon non è più valido e il primo mese costa 97 €. Cancellando i cookie il tempo riparte, quindi il limite non è assoluto.
 
-**Da confermare prima di andare online.** "150+ aziende" deve essere un numero vero (il piano vietava i numeri di clienti); servono foto reali di clienti con il loro consenso; chi segue la parte legale deve vedere il bottone "Attiva ora il sistema Girhouse" senza casella, con le condizioni scritte sotto.
+**Prova sociale al checkout.** Le foto sono quelle dei clienti con nome sulla home di girhouse.com; le recensioni sono estratti brevi dal profilo Trustpilot. **Da confermare prima di andare online.** "150+ aziende" deve essere un numero vero (il piano vietava i numeri di clienti) e l'uso delle foto dei clienti al checkout deve essere coperto dal loro consenso; chi segue la parte legale deve vedere il bottone "Attiva ora il sistema Girhouse" senza casella, con le condizioni scritte sotto.
 
 **Sezioni spostate.** Il guadagno con il grafico arriva subito dopo il valore del cliente; "Cosa dice Google oggi", con la posizione vera e la salita, subito dopo la scheda. Tolte le domande "Cosa hai già provato?", "Cosa deve evitare la soluzione giusta?", "Ti ritrovi in questa frase?" e il riepilogo delle risposte. La numerazione degli eventi `quiz_NN_` segue il nuovo ordine, quindi i confronti vanno fatti solo sui dati raccolti con questa versione.
 
