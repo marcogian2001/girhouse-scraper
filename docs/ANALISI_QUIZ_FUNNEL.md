@@ -196,6 +196,10 @@ Il tasso di abbandono di una schermata è la differenza con l'evento successivo,
 
 **Nessuno scorrimento.** Ogni schermata si adatta all'altezza del dispositivo (`fit()` in `quiz.js`), provata a 390×664, 360×600 e 1280×720. La pagina finale è divisa in schermate, con l'offerta per ultima, e "Cosa dice Google oggi" in due passi: confronto delle recensioni, poi salita.
 
+**Ricerca della zona.** Quando Google non dà la categoria, o la persona non ha selezionato un'attività, il confronto cerca quanto ricavato dalla risposta "Descrivi di cosa ti occupi" con regole sulle parole, senza un modello AI. Se la descrizione manca usa il settore.
+
+**Mockup e suoni.** `pacchetto-girhouse.webp` (blocco finale e checkout) unisce i dispositivi generati con KIE e le schermate reali delle simulazioni. `suono-guadagno.mp3` è una ripetizione del file fornito dal proprietario, suonata sui pallini a 3, 6 e 12 mesi.
+
 **Sezioni spostate.** Il guadagno con il grafico arriva subito dopo il valore del cliente; "Cosa dice Google oggi", con la posizione vera e la salita, subito dopo la scheda. Tolte le domande "Cosa hai già provato?" e "Cosa deve evitare la soluzione giusta?". La numerazione degli eventi `quiz_NN_` segue il nuovo ordine, quindi i confronti vanno fatti solo sui dati raccolti con questa versione.
 
 **Da far vedere a chi segue la parte legale.** Nomi e dati dei concorrenti mostrati nel confronto, e l'invio a Google di nome e città dell'attività, da citare nella privacy.
