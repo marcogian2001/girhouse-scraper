@@ -211,3 +211,13 @@ Il tasso di abbandono di una schermata è la differenza con l'evento successivo,
 **Sezioni spostate.** Il guadagno con il grafico arriva subito dopo il valore del cliente; "Cosa dice Google oggi", con la posizione vera e la salita, subito dopo la scheda. Tolte le domande "Cosa hai già provato?", "Cosa deve evitare la soluzione giusta?", "Ti ritrovi in questa frase?" e il riepilogo delle risposte. La numerazione degli eventi `quiz_NN_` segue il nuovo ordine, quindi i confronti vanno fatti solo sui dati raccolti con questa versione.
 
 **Da far vedere a chi segue la parte legale.** Nomi e dati dei concorrenti mostrati nel confronto, e l'invio a Google di nome e città dell'attività, da citare nella privacy.
+
+## Velocità del checkout: plugin leggeri e dettagli cliente (1 novembre 2026)
+
+- **Plugin leggeri**: su `/attiva/` e sulle sue chiamate `wc-ajax` `gh_funnels_is_light_request()` non carica Elementor, Happy Addons, Presto Player, Pro Elements, Rank Math, SVG Support, WP-Optimize e WooPayments.
+- **Dettagli cliente spariti e ripristinati**: il blocco `#contact_details` lo generava WooPayments. Togliendo il plugin è scomparso e il CSS nascondeva tutti i campi di fatturazione. Template e CSS ora usano `.woocommerce-billing-fields`, senza dipendere da WooPayments. `co-v2-test.cjs` controlla anche che i campi siano visibili, non solo i valori.
+- **Pagamento montato prima**: `is_checkout` di `wc_checkout_params` vale `0` e il primo `update_order_review` non parte. Un `updated_checkout` lanciato al caricamento monta Stripe subito. Risparmio di circa 300 ms.
+- **Script preparati dal quiz**: il checkout scrive gli script e gli stili locali in `uploads/girhouse/funnels/checkout-assets.json` e la pagina del prezzo li scarica in anticipo. Il preload punta all'URL reale di Stripe (`dahlia/stripe.js`), non più a `v3`.
+- **Misure senza cache del browser dal Mac, con il server sotto carico (load ~90)**: prima pittura con skeleton a ~0,56 s; campo carta pronto in 2,3-3,2 s arrivando dal quiz, 3,2-3,5 s entrando direttamente. Non è sotto i 2 s: Stripe da solo impiega ~1,4 s dopo il montaggio, di cui ~0,9 s per `elements/sessions`.
+- **Da confermare**: serve un pagamento di prova dell'utente in modalità test, perché il primo aggiornamento del checkout ora non parte.
+
