@@ -186,4 +186,6 @@ Il tasso di abbandono di una schermata è la differenza con l'evento successivo,
 
 **Contatti.** Il numero ha il selettore del prefisso e la casella per novità e offerte è stata tolta: `consenso_marketing` arriva sempre `No`, quindi a questi contatti non vanno inviate comunicazioni promozionali senza un consenso raccolto a parte.
 
+**Punteggio.** Resta calcolato dalle risposte, senza soglie imposte, perché la pagina dichiara "regole fisse" e un voto forzato sarebbe il "punteggio negativo per tutti" escluso sopra. Solo i colori sono severi: anello rosso sotto 70 e giallo sopra, aree rosse sotto 50 e gialle sopra, mai verde.
+
 **Da far vedere a chi segue la parte legale.** Nomi e dati dei concorrenti mostrati nel confronto, e l'invio a Google di nome e città dell'attività, da citare nella privacy.
