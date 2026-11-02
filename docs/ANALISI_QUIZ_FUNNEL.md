@@ -285,5 +285,6 @@ L'avviso chiede di attivare "Creazione account durante il checkout" (`woocommerc
 - **Step dopo il quiz**: `checkout_vista`, `pagato`, `prenota_vista`, `prenota_orario`, `prenotato`. Il pagamento e la prenotazione risultano solo a chi arriva dal quiz e torna alla pagina di conferma.
 - **Step a 0**: `GH_QS_STEPS` in `analisi.php` elenca tutto il percorso, compresi checkout e prenotazione, così la mappa li mostra anche a 0. Va aggiornato quando cambiano gli `STEPS` di `quiz.js`.
 - **Schermata**: filtri custom con icone, periodo personalizzato, mappa su una linea con zoom e trascinamento, divisa alla fine tra checkout e calendario, risposte per domanda, elenco delle persone. Da aggiornare in privacy policy e cookie policy.
+- **Frecce della mappa**: le linee del bivio sono agganciate al centro di ogni ramo e gli step hanno tutti la stessa altezza, così restano allineate a ogni zoom.
 - **Grafica lavagna**: percentuali con controllo custom meno e più; il bordo della card resta arrotondato dopo il clic.
 
