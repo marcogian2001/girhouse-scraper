@@ -238,3 +238,13 @@ Il tasso di abbandono di una schermata è la differenza con l'evento successivo,
 - **Pagina di conferma**: rifatta sul modello Shopify nel template. I dati del cliente si vedono solo con la chiave giusta e nella prima ora, oppure al proprietario dell'ordine. Gli hook `woocommerce_thankyou` restano attivi, senza la tabella standard.
 - **Favicon**: aggiunta a `piu-clienti.html` e `piu-clienti-quiz.html`, con le icone del sito caricate in WordPress.
 - **Salita su Google**: da circa 5,4 s a circa 2,4 s in "Dove potresti essere". Più veloce anche nella simulazione di "Cosa è incluso".
+
+## Indirizzi, avviso prezzo e prenotazione (2 novembre 2026)
+
+- **Indirizzi**: landing `/fnl/f1/`, quiz `/fnl/f1/quiz/`, prenotazione `/fnl/f1/prenota/`. I vecchi `/funnel/piu-clienti/` e `/funnel/piu-clienti-quiz/` fanno redirect 301 e conservano i parametri. Il checkout resta `/attiva/`.
+- **Timer tolto**: al posto del conto alla rovescia c'è "Attenzione! Questo prezzo è valido solo all'interno di questa pagina". È stata tolta anche la scadenza dei 10 minuti con il cookie `gh_offer_until`, altrimenti il prezzo sarebbe salito a 97 € senza avviso. Il coupon `primomese47` vale sempre su `/attiva/`.
+- **Campi del checkout**: un controllo prima di Stripe porta sul primo campo vuoto e mostra l'errore in italiano sotto ogni campo. Il testo inglese di Stripe è tradotto con `wp.i18n`.
+- **WhatsApp**: bottone fisso su checkout e prenotazione verso il numero 393516930869, quello presente nella home. Da confermare.
+- **Prenotazione**: `pages/piu-clienti-prenota.html` riusa testata, garanzia, punti, recensioni e piè di pagina del checkout, con il calendario LeadConnector al posto di dati e pagamento. Il quiz con chiusura a telefonata porta qui conservando i parametri.
+- **Stile del calendario**: è in un iframe di un altro dominio, quindi il CSS della pagina non può entrarci. `docs/calendario-girhouse-css.txt` va incollato nelle impostazioni del calendario, se LeadConnector lo consente. Provato solo in anteprima. Il nome "Call Demo - 30 min (ADS)" è visibile ai clienti e si cambia da LeadConnector.
+
