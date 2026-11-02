@@ -261,3 +261,9 @@ Il tasso di abbandono di una schermata è la differenza con l'evento successivo,
 ## Avviso WPSubscription sull'account al checkout
 
 L'avviso chiede di attivare "Creazione account durante il checkout" (`woocommerce_enable_signup_and_login_from_checkout`). Resta spenta. Con `wp_subscription_allow_guest_checkout=1` e `wp_subscription_enforce_login=0` il plugin crea da solo l'account e fa l'accesso solo per gli account nuovi. L'ordine 21642 ha creato cliente, abbonamento #21643 attivo a 97 € e carta salvata. Il rinnovo automatico non si può ancora verificare: prossima data 1 dicembre 2026. L'ordine e l'abbonamento di prova vanno tolti prima del lancio.
+
+## Lavagna e pagine WooPayments in bacheca (2 novembre 2026)
+
+- **Lavagna**: su `rest_cookie_invalid_nonce` `board.js` chiede una chiave nuova a `admin-ajax.php?action=rest-nonce` e riprova una volta. Se non si è più collegati chiede di ricaricare la pagina.
+- **WooPayments che carica all'infinito** (`page=wc-admin&path=/payments/overview`): ancora aperto. Lato server è tutto a posto: account e Jetpack collegati, rotte `/wc/v3/payments/*` con codice 200 in massimo 1,1 s, `dist/index.js` raggiungibile. Il blocco è nel browser dell'utente; va provata una finestra in incognito, come già successo con l'errore di sessione dall'iPhone.
+
