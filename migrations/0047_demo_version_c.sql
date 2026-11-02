@@ -1,0 +1,1 @@
+ALTER TYPE "public"."demo_version" ADD VALUE 'c';

@@ -1,12 +1,12 @@
 /**
- * Writes, voices and illustrates version B of one demo from the terminal, without the job queue:
+ * Writes, voices and illustrates the video of one demo from the terminal, without the job queue:
  *
  *   npx dotenv -c -- npx tsx scripts/generate-demo-vsl.ts dottor-giorgio-neri
  *   npx dotenv -c -- npx tsx scripts/generate-demo-vsl.ts dottor-giorgio-neri --voice
  *
- * With `--voice` it keeps the script and only makes its voices and photos again.
- * The link keeps the version it shows; version B opens with `?versione=b`. It calls
- * Claude for the script and Kie for each of Gigi's lines and photos, on the database in `.env`.
+ * With `--voice` it keeps the script and only makes its voices and photos again. The link then
+ * shows the video, whatever the demo showed before. It calls Claude for the script and Kie for
+ * each of Gigi's lines and photos, on the database in `.env`.
  */
 import { setTimeout as sleep } from 'node:timers/promises';
 import { parseArgs } from 'node:util';
@@ -30,7 +30,7 @@ if (!demo) {
 }
 
 if (values.voice && !demo.vsl) {
-  throw new Error(`Demo ${slug} has no version B to voice`);
+  throw new Error(`Demo ${slug} has no video to voice`);
 }
 
 let next: Awaited<ReturnType<typeof advanceDemoVsl>> = {
@@ -44,11 +44,11 @@ let next: Awaited<ReturnType<typeof advanceDemoVsl>> = {
 while (next) {
   // oxlint-disable-next-line no-await-in-loop
   await sleep(next.delaySeconds * 1000);
-  logger.info(`Version B of ${slug}: ${next.payload.phase}`);
+  logger.info(`Video of ${slug}: ${next.payload.phase}`);
   // oxlint-disable-next-line no-await-in-loop
   next = await advanceDemoVsl(next.payload);
 }
 
 const done = await db.query.demoSchema.findFirst({ where: eq(demoSchema.id, demo.id) });
-logger.info(`Version B of ${slug} is ${z.string().parse(done?.vsl?.voice)}`);
+logger.info(`Video of ${slug} is ${z.string().parse(done?.vsl?.voice)}`);
 process.exit(0);

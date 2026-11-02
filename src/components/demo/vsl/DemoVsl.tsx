@@ -33,10 +33,16 @@ import { WhatsAppStep } from '../steps/WhatsAppStep';
 import { TOUR_STEPS } from '../TourScenes';
 import { useTimedSequence } from '../useTimedSequence';
 import { WhatsAppChat } from '../WhatsAppChat';
+import { GoogleScene } from './GoogleScene';
 import { HOST_POSTER, HostTalkingFull } from './HostTalking';
 import { MissedCallScene } from './MissedCallScene';
 import { PhotoScene } from './PhotoScene';
+import { ReviewRequestScene } from './ReviewRequestScene';
 import { ReviewsScene } from './ReviewsScene';
+import { VideoClosingStep } from './VideoClosingStep';
+import { VideoOfferStep } from './VideoOfferStep';
+import type { VideoClosing, VideoLine } from './VideoScript';
+import { buildVideoScenes, isVideoLine, videoLineMarkup, videoLinesToVoice } from './VideoScript';
 import { VslBar } from './VslBar';
 import type { VslLine, VslScene } from './VslScript';
 import {
@@ -52,6 +58,12 @@ import {
   vslSceneMinimumMs,
   withVslChat,
 } from './VslScript';
+
+/** The wording of the start screen, for the new video and for version B. */
+const START_COPY = {
+  video: { headline: 'video_headline', start: 'video_start' },
+  vsl: { headline: 'intro_headline', start: 'vsl_start' },
+} as const;
 
 /** One of Gigi's lines, voiced by Kie. */
 export type DemoVoice = { id: string; line: string; text: string; seconds: number };
@@ -320,6 +332,7 @@ const firstVslSceneOf = (scenes: VslScene[], step: number | null) =>
 /** Scenes only version B has, drawn by `VslStoryVisual`. */
 const STORY_KINDS = new Set<VslScene['kind']>([
   'problem',
+  'loss',
   'dream',
   'missed_call',
   'reviews',
@@ -327,7 +340,14 @@ const STORY_KINDS = new Set<VslScene['kind']>([
 ]);
 
 /** Scenes that build on the one before, staying on screen while they change. */
-const CONTINUED_KINDS = new Set<VslScene['kind']>(['chat', 'crm', 'landing', 'pricing']);
+const CONTINUED_KINDS = new Set<VslScene['kind']>([
+  'chat',
+  'crm',
+  'landing',
+  'pricing',
+  'site',
+  'offer',
+]);
 
 /**
  * Names what stays on screen across scenes: a chat that goes on, the page that grows, the
@@ -345,10 +365,56 @@ const sceneGroup = (scene: VslScene, index: number) =>
  * @returns The minutes, rounded up.
  */
 const estimateMinutes = (voices: DemoVoice[]) => {
-  const seconds = voices.reduce((sum, voice) => sum + voice.seconds / VSL_VOICE_TEMPO, 0);
+  // The new video's booking lines are only said to those who book
+  const seconds = voices
+    .filter((voice) => !voice.line.startsWith('video_line_booking_'))
+    .reduce((sum, voice) => sum + voice.seconds / VSL_VOICE_TEMPO, 0);
 
   return seconds > 0 ? Math.ceil(seconds / 60) : DEFAULT_MINUTES;
 };
+
+/**
+ * Builds the scenes: a video with a closing is version C, one without is version B.
+ * @param options What is known.
+ * @param options.data The snapshot with the video's chat.
+ * @param options.closing How the video ends, if it is version C.
+ * @param options.hasReviews Whether Google returned reviews to show.
+ * @returns The scenes.
+ */
+const scenesOf = (options: {
+  data: DemoTourProps['data'];
+  closing: VideoClosing | undefined;
+  hasReviews: boolean;
+}) =>
+  options.closing
+    ? buildVideoScenes({ data: options.data, closing: options.closing })
+    : buildVslScenes(options);
+
+/**
+ * Lists the lines to voice ahead, for version C or B.
+ * @param scenes The scenes.
+ * @param closing How the video ends, if it is version C.
+ * @returns The lines, in the order they are said.
+ */
+const linesToVoice = (scenes: VslScene[], closing: VideoClosing | undefined) =>
+  closing ? videoLinesToVoice(scenes, closing) : vslLinesToVoice(scenes);
+
+/**
+ * Names the line a scene says, the closing's being the booking's once that is open.
+ * @param options The scene.
+ * @param options.scene The scene.
+ * @param options.bookingPhase Where the booking stands.
+ * @param options.isCallOpen Whether the closing shows the booking.
+ * @returns The line.
+ */
+const lineOfScene = (options: {
+  scene: VslScene;
+  bookingPhase: BookingPhase;
+  isCallOpen: boolean;
+}) =>
+  options.scene.kind === 'closing' && options.isCallOpen
+    ? (`video_line_booking_${options.bookingPhase}` as const)
+    : vslLineOf(options.scene, options.bookingPhase);
 
 /**
  * Picks the visual of the scenes only version B has: the problems and the dream on a photo,
@@ -371,6 +437,10 @@ const VslStoryVisual = (props: {
 
   if (scene.kind === 'problem') {
     return <PhotoScene src={props.photo} problem={scene.case} />;
+  }
+
+  if (scene.kind === 'loss') {
+    return <PhotoScene src={props.photo} loss={scene.loss} />;
   }
 
   if (scene.kind === 'dream') {
@@ -421,6 +491,8 @@ const VslStoryVisual = (props: {
  * @param options.photo The photo of the problem or the dream, if made.
  * @param options.bookingPhase Where the booking stands.
  * @param options.handleBookingPhase Moves the booking on.
+ * @param options.isCallOpen Whether the closing shows the booking.
+ * @param options.handleOpenCall Opens the booking from the closing.
  * @returns The scene's visual.
  */
 const VslSceneVisual = (options: {
@@ -430,7 +502,10 @@ const VslSceneVisual = (options: {
   photo: string | null;
   bookingPhase: BookingPhase;
   handleBookingPhase: (phase: BookingPhase) => void;
+  isCallOpen: boolean;
+  handleOpenCall: () => void;
 }) => {
+  const t = useTranslations('DemoPage');
   const { scene, props, data } = options;
   const story = <VslStoryVisual scene={scene} vsl={props.vsl} data={data} photo={options.photo} />;
 
@@ -445,6 +520,56 @@ const VslSceneVisual = (options: {
         reviews={props.reviews}
         photos={props.photos}
         sections={scene.sections}
+      />
+    );
+  }
+
+  if (scene.kind === 'google') {
+    return <GoogleScene data={data} reviews={props.reviews} photo={props.photos.at(0)?.src} />;
+  }
+
+  if (scene.kind === 'site') {
+    return (
+      <div className="space-y-4">
+        <p className="mx-auto w-fit rounded-full bg-(--demo-primary) px-4 py-1.5 text-center text-sm font-semibold text-(--demo-on-primary) shadow">
+          {t('video_site_label')}
+        </p>
+        <LandingStep
+          data={data}
+          reviews={props.reviews}
+          photos={props.photos}
+          sections={scene.sections}
+        />
+      </div>
+    );
+  }
+
+  if (scene.kind === 'review_request' && props.vsl.reviewRequest) {
+    return <ReviewRequestScene company={data.company} texts={props.vsl.reviewRequest} />;
+  }
+
+  if (scene.kind === 'offer') {
+    return (
+      <VideoOfferStep
+        part={scene.part}
+        price={props.pricing.price}
+        isCallOnly={props.vsl.closing === 'call'}
+      />
+    );
+  }
+
+  if (scene.kind === 'closing') {
+    return (
+      <VideoClosingStep
+        slug={props.slug}
+        company={data.company}
+        whatsappNumber={props.whatsappNumber}
+        track={props.track}
+        closing={scene.closing}
+        isCallOpen={options.isCallOpen}
+        onOpenCall={options.handleOpenCall}
+        bookingPhase={options.bookingPhase}
+        onBookingPhase={options.handleBookingPhase}
       />
     );
   }
@@ -500,12 +625,16 @@ export const DemoVsl = (
 ) => {
   const t = useTranslations('DemoPage');
   const data = withVslChat(props.data, props.vsl);
-  const scenes = buildVslScenes({ data, hasReviews: props.reviews.items.length > 0 });
+  const { closing } = props.vsl;
+  const startCopy = closing ? START_COPY.video : START_COPY.vsl;
+  // Version C has a closing; version B never does
+  const scenes = scenesOf({ data, closing, hasReviews: props.reviews.items.length > 0 });
   const [index, setIndex] = useState(() => firstVslSceneOf(scenes, props.initialStep));
   const [isStarted, setIsStarted] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [isTalking, setIsTalking] = useState(false);
   const [bookingPhase, setBookingPhase] = useState<BookingPhase>('phone');
+  const [isCallOpen, setIsCallOpen] = useState(closing === 'call');
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const musicRef = useRef(createSoundtrack());
   // The sounds the scene on screen still has to play
@@ -525,17 +654,23 @@ export const DemoVsl = (
     price: props.pricing.price,
     slots: props.pricing.slots,
   });
-  const markupOf = (line: VslLine) =>
-    vslLineMarkup({
-      line,
-      vsl: props.vsl,
-      translate: {
-        fixed: (key) => t.markup(`vsl_line_${key}`, values),
-        tour: (key) => t.markup(`line_${key}`, values),
-      },
-    });
+  const markupOf = (line: VslLine | VideoLine) =>
+    isVideoLine(line)
+      ? videoLineMarkup({
+          line,
+          vsl: props.vsl,
+          translate: (key) => t.markup(key, values),
+        })
+      : vslLineMarkup({
+          line,
+          vsl: props.vsl,
+          translate: {
+            fixed: (key) => t.markup(`vsl_line_${key}`, values),
+            tour: (key) => t.markup(`line_${key}`, values),
+          },
+        });
   // A voice says its line only while the page still writes it the same way
-  const voiceOf = (line: VslLine) => {
+  const voiceOf = (line: VslLine | VideoLine) => {
     const voice = props.voices.find((entry) => entry.line === line);
 
     return voice && voice.text === toSpokenText(markupOf(line)) ? voice : null;
@@ -546,9 +681,11 @@ export const DemoVsl = (
       .filter((photo) => photo.prompt === props.vsl.images?.[photo.line])
       .map((photo) => [photo.line, `/api/demo-photos/${photo.id}`]),
   );
-  const photoOf = (line: VslLine) => photos.get(line) ?? null;
+  const photoOf = (line: VslLine | VideoLine) => photos.get(line) ?? null;
 
-  const line = scene ? vslLineOf(scene, bookingPhase) : 'intro';
+  const line: VslLine | VideoLine = scene
+    ? lineOfScene({ scene, bookingPhase, isCallOpen })
+    : 'intro';
   const segments = parseHighlights(markupOf(line));
   const total = visibleLength(segments);
   const voice = voiceOf(line);
@@ -592,7 +729,7 @@ export const DemoVsl = (
 
   const say = async (options: {
     index: number;
-    line: VslLine;
+    line: VslLine | VideoLine;
     advance: (next: number) => void;
   }) => {
     const audio = audioRef.current;
@@ -655,7 +792,8 @@ export const DemoVsl = (
 
     if (props.track) {
       captureDemoEvent('demo_scene', {
-        version: 'b',
+        version: closing ? 'c' : 'b',
+        closing,
         scene: next,
         step: target.step,
         kind: target.kind,
@@ -671,7 +809,11 @@ export const DemoVsl = (
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    void say({ index: next, line: vslLineOf(target, bookingPhase), advance: goTo });
+    void say({
+      index: next,
+      line: lineOfScene({ scene: target, bookingPhase, isCallOpen }),
+      advance: goTo,
+    });
   };
 
   const pause = () => {
@@ -705,7 +847,7 @@ export const DemoVsl = (
     <DemoTracking slug={props.slug} company={data.company} initialStep={props.initialStep} />
   ) : null;
 
-  const voicesInOrder = vslLinesToVoice(scenes).flatMap((entry) => {
+  const voicesInOrder = linesToVoice(scenes, closing).flatMap((entry) => {
     const said = voiceOf(entry);
 
     return said ? [said] : [];
@@ -753,7 +895,16 @@ export const DemoVsl = (
 
   const handleBookingPhase = (phase: BookingPhase) => {
     setBookingPhase(phase);
-    void say({ index, line: `booking_${phase}`, advance: goTo });
+    void say({
+      index,
+      line: closing ? `video_line_booking_${phase}` : `booking_${phase}`,
+      advance: goTo,
+    });
+  };
+
+  const handleOpenCall = () => {
+    setIsCallOpen(true);
+    void say({ index, line: `video_line_booking_${bookingPhase}`, advance: goTo });
   };
 
   const togglePause = () => {
@@ -780,7 +931,7 @@ export const DemoVsl = (
           <h1 className="pt-10 text-3xl leading-tight font-bold tracking-tight text-balance wrap-anywhere text-neutral-950 md:text-4xl">
             {scene.kind === 'video'
               ? t('pricing_video_headline')
-              : t.rich('intro_headline', {
+              : t.rich(startCopy.headline, {
                   company: data.company,
                   b: (chunks) => <span className="text-(--demo-primary)">{chunks}</span>,
                 })}
@@ -815,7 +966,7 @@ export const DemoVsl = (
                 className="flex animate-pop items-center gap-2 rounded-full bg-(--demo-primary) px-7 py-4 text-lg font-semibold whitespace-nowrap text-(--demo-on-primary) shadow-2xl"
               >
                 <Play className="size-6 fill-current" />
-                {t('vsl_start')}
+                {t(startCopy.start)}
               </button>
             </div>
           )}
@@ -890,6 +1041,8 @@ export const DemoVsl = (
             photo={photoOf(line)}
             bookingPhase={bookingPhase}
             handleBookingPhase={handleBookingPhase}
+            isCallOpen={isCallOpen}
+            handleOpenCall={handleOpenCall}
           />
         </main>
 

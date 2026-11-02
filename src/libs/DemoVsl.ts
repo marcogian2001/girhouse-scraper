@@ -2,16 +2,13 @@ import { and, eq, inArray, sql } from 'drizzle-orm';
 import { createTranslator } from 'next-intl';
 import sharp from 'sharp';
 import * as z from 'zod';
-import { landingSectionsFor } from '@/components/demo/TourScenes';
-import type { VslWrittenLine } from '@/components/demo/vsl/VslScript';
 import {
-  buildVslScenes,
-  VSL_TOUR_LINES,
-  vslLineMarkup,
-  vslLinesToVoice,
-  vslLineValues,
-  withVslChat,
-} from '@/components/demo/vsl/VslScript';
+  buildVideoScenes,
+  pickVideoClosing,
+  videoLineMarkup,
+  videoLinesToVoice,
+} from '@/components/demo/vsl/VideoScript';
+import { vslLineValues, withVslChat } from '@/components/demo/vsl/VslScript';
 import messages from '@/locales/it.json';
 import type { DemoVsl } from '@/models/Schema';
 import {
@@ -103,7 +100,7 @@ const loadLineContext = async (demo: Demo, vsl: Pick<DemoVsl, 'chat'>) => {
     slots: settings.onboardingSlotsPerMonth,
   });
 
-  return { settings, data, hasReviews: reviews.items.length > 0, values };
+  return { data, values };
 };
 
 /**
@@ -113,20 +110,12 @@ const loadLineContext = async (demo: Demo, vsl: Pick<DemoVsl, 'chat'>) => {
  * @throws {Error} When the AI answer does not parse, so the job retries.
  */
 const writeScript = async (demo: Demo, generatedAt: string) => {
-  const context = await loadLineContext(demo, demo.data);
-  const t = createTranslator({ locale: 'it', messages, namespace: 'DemoPage' });
-  const sections = landingSectionsFor({ data: demo.data, hasReviews: context.hasReviews });
-  // Version A's line for the scenes it shares, as a reference for length and tone
-  const referenceLines: Partial<Record<VslWrittenLine, string>> = Object.fromEntries(
-    VSL_TOUR_LINES.map((line) => [line, toSpokenText(t.markup(`line_${line}`, context.values))]),
-  );
+  const settings = await getAutomationSettings(demo.organizationId);
 
   const { texts, call } = await writeDemoVsl({
-    model: context.settings.classificationModel,
+    model: settings.classificationModel,
     data: demo.data,
     notes: demo.guidance,
-    sections,
-    referenceLines,
   });
 
   const conversation = await db.query.conversationSchema.findFirst({
@@ -144,12 +133,16 @@ const writeScript = async (demo: Demo, generatedAt: string) => {
   }
 
   if (!texts) {
-    throw new Error(`${call.model} returned no parsable version B for demo ${demo.id}`);
+    throw new Error(`${call.model} returned no parsable video for demo ${demo.id}`);
   }
 
-  const vsl: DemoVsl = { ...toDemoVsl(texts), generatedAt };
+  const vsl: DemoVsl = {
+    ...toDemoVsl(texts),
+    closing: demo.vsl?.closing ?? pickVideoClosing(demo.id),
+    generatedAt,
+  };
 
-  await db.update(demoSchema).set({ vsl }).where(eq(demoSchema.id, demo.id));
+  await db.update(demoSchema).set({ vsl, version: 'c' }).where(eq(demoSchema.id, demo.id));
 };
 
 /**
@@ -161,19 +154,17 @@ const writeScript = async (demo: Demo, generatedAt: string) => {
 const renderVoiceLines = async (demo: Demo, vsl: DemoVsl) => {
   const context = await loadLineContext(demo, vsl);
   const t = createTranslator({ locale: 'it', messages, namespace: 'DemoPage' });
-  const scenes = buildVslScenes({ data: context.data, hasReviews: context.hasReviews });
+  const closing = vsl.closing ?? pickVideoClosing(demo.id);
+  const scenes = buildVideoScenes({ data: context.data, closing });
 
-  return vslLinesToVoice(scenes)
+  return videoLinesToVoice(scenes, closing)
     .map((line) => ({
       line,
       text: toSpokenText(
-        vslLineMarkup({
+        videoLineMarkup({
           line,
           vsl,
-          translate: {
-            fixed: (key) => t.markup(`vsl_line_${key}`, context.values),
-            tour: (key) => t.markup(`line_${key}`, context.values),
-          },
+          translate: (key) => t.markup(key, context.values),
         }),
       ),
     }))
@@ -499,6 +490,27 @@ export const demoVslStatus = async (demo: Demo) => {
 
   return demo.vsl.voice === 'failed' ? ('unvoiced' as const) : ('ready' as const);
 };
+
+/**
+ * Records that a person checked the video before its link goes out.
+ * @param demoId The demo.
+ */
+export const markDemoVideoChecked = async (demoId: string) => {
+  await db
+    .update(demoSchema)
+    .set({
+      vsl: sql`jsonb_set(${demoSchema.vsl}, '{checkedAt}', ${JSON.stringify(new Date().toISOString())}::jsonb)`,
+    })
+    .where(eq(demoSchema.id, demoId));
+};
+
+/**
+ * Tells whether a demo's link may go out: the demos before the video have nothing to check.
+ * @param demo The demo.
+ * @returns Whether a person checked the video, or it has nothing to check.
+ */
+export const isDemoCleared = (demo: Pick<Demo, 'version' | 'vsl'>) =>
+  demo.version !== 'c' || Boolean(demo.vsl?.checkedAt);
 
 /**
  * Lists the voices of a demo's version B, without their files.

@@ -102,10 +102,9 @@ export const ConversationDemoCard = (props: {
         </dl>
         <DemoVersionPanel
           conversationId={props.conversationId}
-          url={url}
-          version={demo.version}
+          isOldVersion={demo.version !== 'c'}
           vslStatus={props.demo.vslStatus}
-          pains={demo.vsl?.pains ?? []}
+          vsl={demo.vsl}
         />
         <RebuildDemoForm conversationId={props.conversationId} guidance={demo.guidance} />
       </CardContent>

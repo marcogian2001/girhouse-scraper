@@ -32,8 +32,7 @@ export const DemoRebuildValidation = z.object({
   guidance: z.string().trim().max(4000),
 });
 
-export const DemoVersionValidation = z.object({
-  version: z.enum(['a', 'b']),
-  // Writes and voices version B again even when it exists
-  regenerate: z.boolean().default(false),
+export const DemoVideoActionValidation = z.object({
+  // Writes the video again, or records that a person checked it
+  action: z.enum(['regenerate', 'check']),
 });

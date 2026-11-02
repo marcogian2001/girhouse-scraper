@@ -42,6 +42,7 @@ import { isBotManaged, logEvent, setConversationState } from './Conversations';
 import { db } from './DB';
 import { bookCall, earliestBookable, getDemoSlots } from './DemoBooking';
 import { demoUrl, ensureDemo, getConversationDemo } from './Demos';
+import { isDemoCleared } from './DemoVsl';
 import { completeJob, enqueue } from './JobQueue';
 import { loadLeadContext } from './LeadContext';
 import { scheduleNextAction } from './NextAction';
@@ -67,7 +68,7 @@ const sendPayloadSchema = z.object({
 const DEMO_SENT_FROM = new Set<Conversation['state']>(['replied', 'classified', 'manual_review']);
 
 /** Rules a person cannot approve past: the email would go out broken. */
-const BLOCKING_ISSUES = new Set(['demo_link_missing', 'slots_missing', 'link']);
+const BLOCKING_ISSUES = new Set(['demo_link_missing', 'slots_missing', 'link', 'demo_not_checked']);
 
 /** Emails written to a lead who went silent, rather than in answer to a reply. */
 const FOLLOW_UP_KINDS = new Set<OutboundEmail['kind']>(['follow_up', 'closing', 'nurturing']);
@@ -431,6 +432,7 @@ const replyWriterInput = async (options: {
  * @param options.offeredSlots The call times the email offers.
  * @param options.isBooked Whether the email confirms a booked call.
  * @param options.carriesDemo Whether the email carries the demo link.
+ * @param options.isDemoCleared Whether a person checked the video the email links to.
  * @param options.notInterestedVersion The version of the answer to a "not interested".
  * @param options.sendAt When the lead asked to be contacted again, if they did: the send
  * time in automatic mode, the proposed one on a draft.
@@ -443,6 +445,7 @@ const saveWrittenReply = async (options: {
   offeredSlots: string[];
   isBooked: boolean;
   carriesDemo: boolean;
+  isDemoCleared: boolean;
   notInterestedVersion: NotInterestedVersion | null;
   sendAt: Date | null;
 }) => {
@@ -451,7 +454,9 @@ const saveWrittenReply = async (options: {
     settings.enabled &&
     settings.mode === 'auto' &&
     (conversation.state === 'classified' || options.isBooked) &&
-    written.issues.length === 0;
+    written.issues.length === 0 &&
+    // A video nobody checked waits for a person, even in automatic mode
+    (!options.carriesDemo || options.isDemoCleared);
 
   const [created] = await db
     .insert(outboundEmailSchema)
@@ -575,6 +580,7 @@ const runReplyWriteJob = async (job: Job) => {
     offeredSlots,
     isBooked,
     carriesDemo: Boolean(demo),
+    isDemoCleared: !demo || isDemoCleared(demo),
     notInterestedVersion,
     sendAt: isBooked ? null : sendAt,
   });
@@ -705,6 +711,33 @@ export const rewriteOutbound = async (options: {
 const APPROVABLE_STATUSES = new Set<OutboundEmail['status']>(['draft', 'failed', 'scheduled']);
 
 /**
+ * Checks the body a person approves, against the rules and the demo it links to.
+ * @param options The email.
+ * @param options.body The body to send.
+ * @param options.demo The conversation's demo, if any.
+ * @param options.prices The prices the email may name.
+ * @returns The issues found.
+ */
+const checkApproved = (options: {
+  body: string;
+  demo: Awaited<ReturnType<typeof getConversationDemo>>;
+  prices: number[];
+}) => {
+  const { body, demo } = options;
+  const issues = checkReply({
+    body,
+    prices: options.prices,
+    // A follow-up may point to the step the lead stopped at
+    // A person may point to a step or to one of the two old versions
+    allowedLinks: demo ? demoLinkVariants(demo.url, DEMO_STEPS) : [],
+  });
+
+  return demo && body.includes(demo.url) && !isDemoCleared(demo.demo)
+    ? [...issues, 'demo_not_checked' as const]
+    : issues;
+};
+
+/**
  * Approves a draft, as edited by a person, and schedules it. A scheduled email can be
  * approved again, to change its text or its send time.
  * @param options The call options.
@@ -752,13 +785,7 @@ export const approveOutbound = async (options: {
   const demo = await getConversationDemo(row.conversation.id);
   const cleaned = cleanReply(options.body);
   const body = demo ? fillDemoLink(cleaned, demo.url) : cleaned;
-  const issues = checkReply({
-    body,
-    prices: [settings.monthlyPrice],
-    // A follow-up may point to the step the lead stopped at
-    // A person may point to a step or to one of the two versions
-    allowedLinks: demo ? demoLinkVariants(demo.url, DEMO_STEPS) : [],
-  });
+  const issues = checkApproved({ body, demo, prices: [settings.monthlyPrice] });
 
   if (issues.some((issue) => BLOCKING_ISSUES.has(issue))) {
     return { status: 'blocked' as const, issues };

@@ -5,6 +5,7 @@ import * as z from 'zod';
 import type { DemoTourProps } from '@/components/demo/DemoTour';
 import { DemoTour } from '@/components/demo/DemoTour';
 import { DemoVsl } from '@/components/demo/vsl/DemoVsl';
+import { VideoPending } from '@/components/demo/vsl/VideoPending';
 import { loadDemoReviews } from '@/libs/DemoReviews';
 import { getDemoPage } from '@/libs/Demos';
 import { getDemoPhotos, getDemoVoices } from '@/libs/DemoVsl';
@@ -77,13 +78,15 @@ export default async function DemoPage(props: DemoPageProps) {
     '--demo-on-primary': readableTextColor(data.primaryColor),
   };
 
-  // The team can open either version from the dashboard; the lead sees the one the demo is set to
+  // Links already sent may name version A or B; a new demo only has its video
   const version =
-    searchParams.versione === 'a' || searchParams.versione === 'b'
+    demo.version !== 'c' && (searchParams.versione === 'a' || searchParams.versione === 'b')
       ? searchParams.versione
       : demo.version;
   // Version B shows once its script is written; until then the link keeps version A
-  const vsl = version === 'b' ? demo.vsl : null;
+  const vsl = version === 'a' ? null : demo.vsl;
+  // Version C has no older version to fall back on, so its link waits for the voice
+  const isPending = version === 'c' && (!vsl || vsl.voice === 'pending');
 
   const tourProps: DemoTourProps = {
     slug,
@@ -118,16 +121,16 @@ export default async function DemoPage(props: DemoPageProps) {
       style={brandStyle}
       className="min-h-svh bg-gradient-to-b from-amber-50/70 via-white to-white"
     >
-      {vsl ? (
+      {isPending && <VideoPending company={data.company} />}
+      {!isPending && vsl && (
         <DemoVsl
           {...tourProps}
           vsl={vsl}
           voices={await getDemoVoices(demo.id)}
           vslPhotos={await getDemoPhotos(demo.id)}
         />
-      ) : (
-        <DemoTour {...tourProps} />
       )}
+      {!isPending && !vsl && <DemoTour {...tourProps} />}
     </div>
   );
 }

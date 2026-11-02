@@ -34,7 +34,7 @@ import {
   renderReferences,
   socialFacts,
 } from './DemoReferences';
-import { demoVslStatus } from './DemoVsl';
+import { demoVslStatus, requestDemoVsl } from './DemoVsl';
 import { Env } from './Env';
 import { recordCopywritingUsage } from './Usage';
 
@@ -471,6 +471,7 @@ const insertDemo = async (options: {
         slug,
         data,
         guidance: options.guidance,
+        version: 'c',
       })
       .onConflictDoNothing()
       .returning();
@@ -484,6 +485,8 @@ const insertDemo = async (options: {
         type: 'demo_created',
         payload: { demoId: created.id, slug: created.slug },
       });
+      // oxlint-disable-next-line no-await-in-loop
+      await requestDemoVsl(created.id);
 
       return created;
     }
@@ -588,6 +591,11 @@ export const rebuildDemo = async (conversation: Conversation, guidance?: string 
     .returning();
 
   await deleteUnusedImages(conversation.id, data.images);
+
+  // The video tells this demo's facts; the old versions keep what they show
+  if (existing.version === 'c') {
+    await requestDemoVsl(existing.id);
+  }
 
   return rebuilt ?? existing;
 };

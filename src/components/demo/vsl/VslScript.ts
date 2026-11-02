@@ -4,6 +4,7 @@ import type { DemoReviews } from '../GoogleReviews';
 import { HIGHLIGHT_TAGS, parseHighlights, visibleLength } from '../Highlights';
 import type { LandingSection } from '../TourScenes';
 import { landingSectionsFor } from '../TourScenes';
+import type { VideoClosing, VideoLine, VideoLoss } from './VideoScript';
 
 /** The new page's sections: its review system has a case of its own earlier on. */
 type VslLandingSection = Exclude<LandingSection, 'funnel'>;
@@ -61,6 +62,18 @@ export type VslScene = SceneSound &
         line: 'pricing_price' | 'pricing_included' | 'pricing_guarantees';
       }
     | { step: 6; kind: 'booking'; line: 'booking' }
+    // Version C
+    | { step: 0; kind: 'intro'; line: VideoLine }
+    | { step: 1 | 2 | 3 | 4; kind: 'loss'; loss: VideoLoss; line: VideoLine }
+    | { step: 1; kind: 'google'; line: VideoLine }
+    | { step: 1; kind: 'site'; sections: LandingSection[]; line: VideoLine }
+    | { step: 2; kind: 'review_request'; line: VideoLine }
+    | { step: 3; kind: 'missed_call'; line: VideoLine }
+    | { step: 3; kind: 'chat'; upTo: number; line: VideoLine }
+    | { step: 3; kind: 'crm'; part: number; line: VideoLine }
+    | { step: 4; kind: 'reminder'; line: VideoLine }
+    | { step: 5; kind: 'offer'; part: number; line: VideoLine }
+    | { step: 6; kind: 'closing'; closing: VideoClosing; line: VideoLine }
   );
 
 /** Where the booking stands, each with its own line. */
@@ -69,7 +82,7 @@ export const VSL_BOOKING_PHASES = ['phone', 'slots', 'confirm', 'booked', 'unava
 type BookingLine = `booking_${(typeof VSL_BOOKING_PHASES)[number]}`;
 
 /** Lines the AI writes for each lead, around its pain points. */
-export const VSL_WRITTEN_LINES = [
+const VSL_WRITTEN_LINES = [
   'intro',
   'problem_missed_call',
   'missed_call',
@@ -98,20 +111,8 @@ export const VSL_WRITTEN_LINES = [
 
 export type VslWrittenLine = (typeof VSL_WRITTEN_LINES)[number];
 
-/** Lines told over a photo Kie makes for each lead, from a prompt the AI writes with the line. */
-export const VSL_PHOTO_LINES = [
-  'problem_missed_call',
-  'problem_whatsapp',
-  'problem_reminder',
-  'problem_followup',
-  'problem_reviews',
-  'dream',
-] as const satisfies readonly VslWrittenLine[];
-
-export type VslPhotoLine = (typeof VSL_PHOTO_LINES)[number];
-
 /** Version A's lines, said when the AI wrote none for a scene version A also has. */
-export const VSL_TOUR_LINES = [
+const VSL_TOUR_LINES = [
   'chat_start',
   'chat_slots',
   'chat_booked',
@@ -149,6 +150,9 @@ export type VslTranslate = {
   tour: (line: VslTourLine) => string;
 };
 
+/** What the first month costs in version C, the first step of the price ladder. */
+export const VIDEO_FIRST_MONTH_PRICE = 47;
+
 /** The pause between the end of a line and the next scene. */
 export const VSL_GAP_MS = 200;
 
@@ -172,6 +176,12 @@ const FOLLOW_UP_MS = 7 * VSL_FOLLOW_UP_STEP_MS;
 
 /** The review system: the star is tapped after 1.5 seconds, then three replies 0.7 seconds apart. */
 const FUNNEL_MS = 1500 + 3 * 700;
+
+/** The review request: its two messages, then the review. */
+const REVIEW_REQUEST_MS = 4500;
+
+/** The Google profile: long enough to read the business's name. */
+const GOOGLE_MS = 3500;
 
 /** How long the CRM timeline takes to fill. */
 const TIMELINE_MS = 8 * 600;
@@ -241,6 +251,7 @@ export const vslLineValues = (options: {
   count: options.reviews.count ?? 0,
   source: options.reviews.source,
   price: options.price,
+  firstPrice: VIDEO_FIRST_MONTH_PRICE,
   slots: options.slots,
 });
 
@@ -381,7 +392,7 @@ export const buildVslScenes = (options: { data: DemoSnapshot; hasReviews: boolea
 export const vslLineOf = (
   scene: VslScene,
   bookingPhase: (typeof VSL_BOOKING_PHASES)[number],
-): VslLine => (scene.kind === 'booking' ? `booking_${bookingPhase}` : scene.line);
+): VslLine | VideoLine => (scene.kind === 'booking' ? `booking_${bookingPhase}` : scene.line);
 
 /**
  * Turns the AI's tags into the ones `parseHighlights` reads.
@@ -420,7 +431,7 @@ export const vslLineMarkup = (options: {
  * @returns The lines, each once, the booking phases included.
  */
 export const vslLinesToVoice = (scenes: VslScene[]) => [
-  ...new Set<VslLine>([
+  ...new Set<VslLine | VideoLine>([
     ...scenes.flatMap((scene) => (scene.kind === 'booking' ? [] : [scene.line])),
     ...VSL_BOOKING_PHASES.map((phase) => `booking_${phase}` as const),
   ]),
@@ -449,6 +460,8 @@ export const vslSceneMinimumMs = (options: {
   }
 
   const minimums: Partial<Record<VslScene['kind'], number>> = {
+    review_request: REVIEW_REQUEST_MS,
+    google: GOOGLE_MS,
     missed_call: MISSED_CALL_MS,
     reminder: options.reminderMessages * CHAT_MESSAGE_MS,
     followup: FOLLOW_UP_MS,

@@ -24,12 +24,10 @@ const texts: DemoVslTexts = {
     nome_cliente: 'Anna',
     messaggi: [{ da: 'attivita', testo: 'Ciao Anna, la revisione scade il 14', opzioni: [] }],
   },
-  follow_up: {
-    nome_cliente: 'Marco',
-    quando: 'Marco non risponde al preventivo',
-    whatsapp: 'Ciao Marco, ti tengo da parte un orario?',
-    oggetto_email: 'Il tuo preventivo',
-    testo_email: 'Ciao Marco, ti avevamo scritto. Rispondi pure qui.',
+  recensione: {
+    nome_cliente: 'Giulia',
+    messaggio: 'Grazie Giulia — ci lasci una recensione su Google?',
+    risposta: 'Fatto!',
   },
   chiamata_persa: {
     nome_cliente: 'Sara',
@@ -37,38 +35,25 @@ const texts: DemoVslTexts = {
     risposta: 'Volevo un preventivo per i freni.',
   },
   battute: {
-    intro: 'Ciao! <b>Gianmarco</b> qui.',
-    problem_missed_call: '',
-    missed_call: '',
-    problem_whatsapp: '',
-    problem_reminder: '',
-    problem_followup: '',
-    problem_reviews: '',
-    reviews: '',
-    dream: '',
-    landing_hero: '',
-    landing_services: '',
-    landing_about: '',
-    landing_highlights: '',
-    landing_steps: '',
-    landing_faq: '',
-    chat_start: 'Luca scrive — e la risposta parte',
-    chat_slots: '   ',
-    chat_booked: '',
-    reminder: '',
-    crm_contact: '',
-    crm_timeline: '',
-    crm_pipeline: '',
-    crm_inbox: '',
-    followup: '',
+    video_line_loss_not_found: 'Ciao! <b>Gianmarco</b> qui.',
+    video_line_google: '',
+    video_line_site_hero: '',
+    video_line_site_services: '',
+    video_line_loss_not_chosen: '',
+    video_line_review_request: '',
+    video_line_loss_lost: '',
+    video_line_missed_call: '',
+    video_line_chat_start: 'Luca scrive — e la risposta parte',
+    video_line_chat_booked: '   ',
+    video_line_inbox: '',
+    video_line_loss_not_back: '',
+    video_line_reminder: '',
   },
   foto: {
-    problem_missed_call: ' A mechanic under a car while a phone rings on the bench. ',
-    problem_whatsapp: '',
-    problem_reminder: '',
-    problem_followup: '',
-    problem_reviews: '',
-    dream: 'The mechanic smiles at a customer picking up a car.',
+    video_line_loss_not_found: 'A woman searches on her phone at home.',
+    video_line_loss_not_chosen: '  ',
+    video_line_loss_lost: '',
+    video_line_loss_not_back: '',
   },
 };
 
@@ -79,8 +64,8 @@ describe('DemoVslWriter', () => {
 
   it('keeps only the lines the AI wrote, without dashes', () => {
     expect(toDemoVsl(texts).lines).toStrictEqual({
-      intro: 'Ciao! <b>Gianmarco</b> qui.',
-      chat_start: 'Luca scrive, e la risposta parte',
+      video_line_loss_not_found: 'Ciao! <b>Gianmarco</b> qui.',
+      video_line_chat_start: 'Luca scrive, e la risposta parte',
     });
   });
 
@@ -103,10 +88,17 @@ describe('DemoVslWriter', () => {
     });
   });
 
+  it('keeps the review request, without dashes', () => {
+    expect(toDemoVsl(texts).reviewRequest).toStrictEqual({
+      customerName: 'Giulia',
+      message: 'Grazie Giulia, ci lasci una recensione su Google?',
+      reply: 'Fatto!',
+    });
+  });
+
   it('keeps only the photo prompts the AI wrote, trimmed', () => {
     expect(toDemoVsl(texts).images).toStrictEqual({
-      problem_missed_call: 'A mechanic under a car while a phone rings on the bench.',
-      dream: 'The mechanic smiles at a customer picking up a car.',
+      video_line_loss_not_found: 'A woman searches on her phone at home.',
     });
   });
 });

@@ -1,51 +1,94 @@
 'use client';
 
-import { ExternalLink } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { useFormatter, useTranslations } from 'next-intl';
 import { useState } from 'react';
+import { findBannedWords } from '@/components/demo/vsl/VideoScript';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field';
 import { Spinner } from '@/components/ui/spinner';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { demoVslStatus } from '@/libs/DemoVsl';
 import { useRouter } from '@/libs/I18nNavigation';
+import type { DemoVsl } from '@/models/Schema';
 
-const DEMO_VERSIONS = ['a', 'b'] as const;
-
-type DemoVersion = (typeof DEMO_VERSIONS)[number];
+const CHECKS = ['check_name', 'check_italian', 'check_images'] as const;
 
 /**
- * Picks the version of the demo the link shows, and creates or rewrites version B: the
- * video Gigi narrates on his own, around the pain points of the lead's sector.
+ * The one-minute check a person makes before the link goes out, or when it was made.
+ * @param props Component props.
+ * @param props.checkedAt When a person checked the video, if they did.
+ * @param props.isBusy Whether the panel is saving.
+ * @param props.onCheck Records the check.
+ * @returns The check.
+ */
+const VideoCheck = (props: {
+  checkedAt: string | null;
+  isBusy: boolean;
+  onCheck: () => Promise<void>;
+}) => {
+  const t = useTranslations('ConversationDemoCard');
+  const format = useFormatter();
+
+  if (props.checkedAt) {
+    return (
+      <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+        <CheckCircle2 className="size-4 text-green-600" />
+        {t('video_checked', {
+          date: format.dateTime(new Date(props.checkedAt), {
+            dateStyle: 'medium',
+            timeStyle: 'short',
+          }),
+        })}
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      <p className="text-sm font-medium">{t('video_check_title')}</p>
+      <ul className="list-disc space-y-0.5 pl-5 text-sm">
+        {CHECKS.map((check) => (
+          <li key={check}>{t(check)}</li>
+        ))}
+      </ul>
+      <Button type="button" size="sm" disabled={props.isBusy} onClick={props.onCheck}>
+        {props.isBusy && <Spinner />}
+        {t('button_check')}
+      </Button>
+    </div>
+  );
+};
+
+/**
+ * The demo's video: where it stands, how it closes and its check. A demo from before the
+ * video stays as it is until someone asks for the new one.
  * @param props Component props.
  * @param props.conversationId The conversation.
- * @param props.url The demo link.
- * @param props.version The version the link shows.
- * @param props.vslStatus Where version B stands.
- * @param props.pains The pain points version B leans on, once written.
+ * @param props.isOldVersion Whether the link still shows a demo from before the video.
+ * @param props.vslStatus Where the video stands.
+ * @param props.vsl The video's script, once written.
  * @returns The panel.
  */
 export const DemoVersionPanel = (props: {
   conversationId: string;
-  url: string;
-  version: DemoVersion;
+  isOldVersion: boolean;
   vslStatus: Awaited<ReturnType<typeof demoVslStatus>>;
-  pains: string[];
+  vsl: DemoVsl | null;
 }) => {
   const t = useTranslations('ConversationDemoCard');
   const router = useRouter();
   const [isBusy, setIsBusy] = useState(false);
   const [hasError, setHasError] = useState(false);
 
-  const save = async (version: DemoVersion, regenerate: boolean) => {
+  const send = async (action: 'regenerate' | 'check') => {
     setIsBusy(true);
     setHasError(false);
 
     const response = await fetch(`/api/replies/${props.conversationId}/demo/version`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ version, regenerate }),
+      body: JSON.stringify({ action }),
     });
 
     setIsBusy(false);
@@ -56,73 +99,57 @@ export const DemoVersionPanel = (props: {
     }
   };
 
-  const hasVsl = props.vslStatus === 'ready' || props.vslStatus === 'unvoiced';
+  const isReady =
+    !props.isOldVersion && (props.vslStatus === 'ready' || props.vslStatus === 'unvoiced');
+  const banned = isReady && props.vsl ? findBannedWords(props.vsl.lines) : [];
+  const closing = props.isOldVersion ? undefined : props.vsl?.closing;
+  const canCreate = props.isOldVersion || props.vslStatus === 'none';
 
   return (
     <Field>
-      <FieldLabel>{t('label_version')}</FieldLabel>
-      <Tabs
-        value={props.version}
-        onValueChange={async (value) => {
-          const next = DEMO_VERSIONS.find((option) => option === value);
+      <FieldLabel>{t('label_video')}</FieldLabel>
+      <FieldDescription>
+        {props.isOldVersion ? t('video_old_version') : t(`vsl_status_${props.vslStatus}`)}
+      </FieldDescription>
 
-          if (next && next !== props.version) {
-            await save(next, false);
-          }
-        }}
-      >
-        <TabsList>
-          {DEMO_VERSIONS.map((option) => (
-            <TabsTrigger key={option} value={option} disabled={isBusy}>
-              {t(`version_${option}`)}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-      </Tabs>
-      <FieldDescription>{t(`hint_version_${props.version}`)}</FieldDescription>
-
-      <p className="text-sm text-muted-foreground">{t(`vsl_status_${props.vslStatus}`)}</p>
-
-      {props.pains.length > 0 && (
-        <div className="space-y-1">
-          <p className="text-xs text-muted-foreground">{t('vsl_pains')}</p>
-          <ul className="list-disc space-y-0.5 pl-5 text-sm">
-            {props.pains.map((pain) => (
-              <li key={pain}>{pain}</li>
-            ))}
-          </ul>
-        </div>
+      {closing && (
+        <p className="text-sm">
+          {t('video_closing_label')}: {t(`video_closing_${closing}`)}
+        </p>
       )}
 
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-        {DEMO_VERSIONS.filter((option) => option === 'a' || hasVsl).map((option) => (
-          <a
-            key={option}
-            href={`${props.url}?anteprima=1&versione=${option}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
-          >
-            {t(`open_preview_${option}`)}
-            <ExternalLink className="size-3.5" />
-          </a>
-        ))}
+      {banned.length > 0 && (
+        <Alert variant="destructive">
+          <AlertTriangle />
+          <AlertDescription>{t('video_banned', { words: banned.join(', ') })}</AlertDescription>
+        </Alert>
+      )}
 
-        {props.vslStatus !== 'building' && (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={isBusy}
-            onClick={async () => {
-              await save('b', true);
-            }}
-          >
-            {isBusy && <Spinner />}
-            {props.vslStatus === 'none' ? t('button_create_b') : t('button_regenerate_b')}
-          </Button>
-        )}
-      </div>
+      {isReady && (
+        <VideoCheck
+          checkedAt={props.vsl?.checkedAt ?? null}
+          isBusy={isBusy}
+          onCheck={async () => {
+            await send('check');
+          }}
+        />
+      )}
+
+      {props.vslStatus !== 'building' && (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="w-fit"
+          disabled={isBusy}
+          onClick={async () => {
+            await send('regenerate');
+          }}
+        >
+          {isBusy && <Spinner />}
+          {canCreate ? t('button_create_video') : t('button_regenerate_video')}
+        </Button>
+      )}
 
       {hasError && (
         <Alert variant="destructive">

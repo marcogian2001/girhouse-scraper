@@ -330,6 +330,13 @@
       "when": 1793288401331,
       "tag": "0046_demo_photo",
       "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1793626587298,
+      "tag": "0047_demo_version_c",
+      "breakpoints": true
     }
   ]
 }

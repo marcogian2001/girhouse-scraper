@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 import { useTimedSequence } from '../useTimedSequence';
+import type { VideoLoss } from './VideoScript';
 import type { VslCase } from './VslScript';
 
 /** What the dream shows over its photo, one after the other. */
@@ -15,12 +16,13 @@ const DREAM_CHIPS = ['vsl_dream_calls', 'vsl_dream_agenda', 'vsl_dream_evenings'
  * @param props Component props.
  * @param props.src The photo, if made.
  * @param props.problem The problem told over it, if any.
+ * @param props.loss Where customers get lost, told over it in version C.
  * @returns The scene.
  */
-export const PhotoScene = (props: { src: string | null; problem?: VslCase }) => {
+export const PhotoScene = (props: { src: string | null; problem?: VslCase; loss?: VideoLoss }) => {
   const t = useTranslations('DemoPage');
   const chips = useTimedSequence({
-    target: props.problem ? 0 : DREAM_CHIPS.length,
+    target: props.problem || props.loss ? 0 : DREAM_CHIPS.length,
     intervalMs: 1400,
   });
 
@@ -38,11 +40,19 @@ export const PhotoScene = (props: { src: string | null; problem?: VslCase }) => 
       )}
       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-black/30" />
 
-      {props.problem ? (
+      {props.loss && (
+        <p className="absolute top-4 left-4 animate-pop rounded-full bg-neutral-950/85 px-4 py-1.5 text-sm font-bold text-white shadow-lg md:top-6 md:left-6 md:text-base">
+          {t(`video_loss_${props.loss}`)}
+        </p>
+      )}
+
+      {!props.loss && props.problem && (
         <p className="absolute top-4 left-4 animate-pop rounded-full bg-red-600 px-4 py-1.5 text-sm font-bold text-white shadow-lg md:top-6 md:left-6 md:text-base">
           {t(`vsl_case_${props.problem}`)}
         </p>
-      ) : (
+      )}
+
+      {!props.loss && !props.problem && (
         <ul className="absolute inset-x-4 bottom-4 flex flex-wrap gap-2 md:inset-x-6 md:bottom-6">
           {DREAM_CHIPS.slice(0, chips).map((chip) => (
             <li

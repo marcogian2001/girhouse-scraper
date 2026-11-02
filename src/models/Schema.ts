@@ -1219,8 +1219,14 @@ export type DemoVsl = {
   missedCall?: { customerName: string; message: string; reply: string };
   // The prompt of the photo behind each problem and the dream, by line; older versions B lack it
   images?: Record<string, string>;
-  // The follow-up automation, chasing the customer this business most often loses
-  followUp: {
+  // The automatic message after a service asking everyone for a Google review; version C only
+  reviewRequest?: { customerName: string; message: string; reply: string };
+  // How the video ends, a test of the three closings; version C only
+  closing?: 'purchase' | 'call' | 'both';
+  // When a person checked name, Italian and images before the link goes out; version C only
+  checkedAt?: string;
+  // The follow-up automation, chasing the customer this business most often loses; version B only
+  followUp?: {
     customerName: string;
     trigger: string;
     whatsapp: string;
@@ -1232,7 +1238,7 @@ export type DemoVsl = {
   voice: 'pending' | 'ready' | 'failed';
 };
 
-export const demoVersionEnum = pgEnum('demo_version', ['a', 'b']);
+export const demoVersionEnum = pgEnum('demo_version', ['a', 'b', 'c']);
 
 export const demoEventTypeEnum = pgEnum('demo_event_type', [
   'open',
@@ -1267,8 +1273,9 @@ export const demoSchema = pgTable(
     // Set when the demo is built or rebuilt: its reserved price countdown starts here
     generatedAt: timestamp('generated_at', { mode: 'date' }).defaultNow().notNull(),
     // Which version the link shows: the guided tour (a) or the video sales letter (b)
+    // New demos are version C, set on insert; A and B only stay for the links already sent
     version: demoVersionEnum('version').notNull().default('a'),
-    // Version B's script, once written; version A never reads it
+    // The script of version B or C, once written; version A never reads it
     vsl: jsonb('vsl').$type<DemoVsl>(),
     ...timestamps,
   },

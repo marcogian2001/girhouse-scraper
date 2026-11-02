@@ -1,6 +1,6 @@
 # Automazione risposte cold email: stato dei lavori
 
-Ultimo aggiornamento: 29 ottobre 2026 (garanzia soddisfatti o rimborsati a 30 giorni al posto della settimana gratis; demo versione B).
+Ultimo aggiornamento: 2 novembre 2026 (nuova video demo, versione C, dal piano "Cosa cambiamo: target, offerta, funnel e vendita"; A e B restano solo per i link già inviati).
 
 Questo file serve a riprendere il lavoro anche senza la chat originale, da soli o con un altro assistente AI. Per ripartire basta dire all'AI: "leggi `docs/AUTOMAZIONE_RISPOSTE.md` e `AGENTS.md`, poi continuiamo dalla prima voce non spuntata".
 
@@ -499,7 +499,21 @@ Richiesta del titolare: una nuova versione della demo che parta con un tocco e p
   - **Ritmo:** la voce gli somiglia ma parla un po' lento, quindi lo stile chiede un ritmo spedito e la pagina la suona a 1,3x.
   - **File originali:** foto e registrazioni grezze restano fuori da git, in `.git/info/exclude`.
 - **Rete dell'ufficio:** un filtro blocca `file.aiquickdraw.com`, l'host da cui Kie serve voci e video. Per generare dal Mac serve la VPN; il server di produzione invece scarica senza problemi.
-- [ ] **Versione B automatica per i nuovi lead:** non fatta. Oggi la B si crea a mano dal riquadro Demo.
+- [x] **Superata dalla versione C (2/11):** ogni nuova demo nasce con il nuovo video; la B non si crea più.
+
+### Video demo, versione C (2/11) [x]
+
+Da "Cosa cambiamo: target, offerta, funnel e vendita". Sostituisce A e B per tutte le nuove demo. **Le demo già create non cambiano:** restano su A o B (`demo.version`), compresi i link `?versione=a|b`. Non aumentare `DEMO_SNAPSHOT_VERSION`: le ricostruirebbe alla prima visita.
+
+- **Percorso (`src/components/demo/vsl/VideoScript.ts`):** intro, poi le quattro perdite con la risposta di Girhouse. "Ti cercano, ma non ti trovano": scheda Google e sito come potrebbe essere. "Ti trovano, ma non ti scelgono": richiesta di recensione. "Ti scrivono, ma si perdono": chiamata persa, chat, posto unico. "Sono già clienti, ma non tornano": richiamo. Infine offerta e chiusura. Riusa il player di `DemoVsl.tsx`: un copione con `closing` è la C, senza è la B.
+- **Recensioni senza filtro:** la C non usa `ReviewFunnel` (5 stelle su Google, gli scontenti in privato), che il piano vieta. Stesso messaggio a tutti. **La B lo mostra ancora**, perché le vecchie demo restano così.
+- **Offerta fissa, mai scritta dall'AI:** 47 € il primo mese, poi 97 € (`monthlyPrice`), garanzia con le parole del piano, nessun countdown, nessun "posti limitati". Le battute fisse sono `video_line_*` in `it.json`.
+- **Tre chiusure in test (V1 acquisto, V2 call, V3 entrambe):** `pickVideoClosing` le divide dall'id della demo e `vsl.closing` la conserva. Il bottone porta a `/attiva/?funnel=demo&demo={slug}`. Eventi PostHog: `demo_scene` con `version` e `closing`, `demo_purchase_click`, `demo_call_click`.
+- **Parole vietate:** elenco nel prompt di `DemoVslWriter.ts` e in `BANNED_WORDS`. Se l'AI ne usa una, il riquadro Demo avvisa; un test controlla le battute fisse.
+- **Controllo umano:** nel riquadro Demo, "Ho controllato il video" salva `vsl.checkedAt`. Finché non c'è, l'approvazione di un'email con il link è bloccata (`demo_not_checked`) e in modalità automatica la risposta resta bozza. Rigenerare il video azzera il controllo.
+- **Generazione:** parte da sola quando nasce la demo (`insertDemo`) e quando si ricostruisce una C. Fino alla voce pronta il link mostra "Stiamo finendo il video" (`VideoPending`), perché la C non ha una versione A di riserva.
+- **Migrazione `0047`:** aggiunge `c` a `demo_version`. Il default della colonna resta `a` e `insertDemo` scrive `c`: Postgres non può usare un valore nuovo di un enum nella transazione che lo crea, e le migrazioni girano in una sola transazione.
+- **Da fare a parte:** le email di risposta e il bot GHL parlano ancora della vecchia offerta (`buildOfferBrief` in `src/utils/Offer.ts`: landing, "follow-up", {slots} attività al mese).
 
 ---
 

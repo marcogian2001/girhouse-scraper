@@ -55,6 +55,7 @@ const loadSlots = async (slug: string): Promise<Slots | null> => {
  * @param props.track Whether clicks are reported; off in dashboard previews.
  * @param props.phase Where the booking stands.
  * @param props.onPhase Moves the booking on, so the giraffe says the matching line.
+ * @param props.hasPlainNotice Reminds of the reminders, without the "one call only" warning.
  * @returns The booking flow.
  */
 export const BookingStep = (props: {
@@ -64,6 +65,7 @@ export const BookingStep = (props: {
   track: boolean;
   phase: BookingPhase;
   onPhase: (phase: BookingPhase) => void;
+  hasPlainNotice?: boolean;
 }) => {
   const t = useTranslations('DemoPage');
   const format = useFormatter();
@@ -316,7 +318,7 @@ export const BookingStep = (props: {
             <div className="flex items-start gap-3 rounded-2xl bg-amber-50 p-4 text-left text-sm leading-relaxed text-amber-950 ring-1 ring-amber-200">
               <AlertTriangle className="mt-0.5 size-5 shrink-0 text-amber-600" />
               <p>
-                {t.rich('booking_confirm_notice', {
+                {t.rich(props.hasPlainNotice ? 'video_booking_notice' : 'booking_confirm_notice', {
                   b: (chunks) => <strong className="font-bold">{chunks}</strong>,
                 })}
               </p>
