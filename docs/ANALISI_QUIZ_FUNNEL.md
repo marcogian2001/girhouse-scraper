@@ -229,3 +229,12 @@ Il tasso di abbandono di una schermata è la differenza con l'evento successivo,
 - **Schermi bassi**: su 390×664 i bullet mostrano solo i nomi su due colonne e la garanzia è abbreviata; sotto i 640 px di altezza il riquadro sparisce. La pagina non scorre.
 - **Da tenere vero**: "solo su questa pagina" regge finché il coupon `primomese47` si usa solo da qui. Va rivisto se altri funnel lo useranno.
 
+## Sessione scaduta, conferma e salita su Google (2 novembre 2026)
+
+- **Primo pagamento di prova riuscito**: ordine 21642, in modalità test, da finestra in incognito.
+- **"Sessione scaduta" dall'iPhone**: la pagina aveva il carrello, il pagamento no, e il nonce non era valido. Lo stesso errore si riproduce con due cookie `wp_woocommerce_session_` con lo stesso nome, per esempio uno vecchio su `.girhouse.com`. Che sull'iPhone fosse proprio questo non è ancora provato.
+- **Correzione**: `gh_funnels_fix_session_cookie()` in `girhouse-funnels.php` sceglie il cookie valido con la scadenza più lontana e reimposta quello normale, solo sulle richieste del checkout.
+- **Registrazione temporanea**: `gh_funnels_debug_line()` in `checkout.php` scrive stati e nomi in `~/domains/girhouse.com/gh-checkout-debug.log`, fuori dal sito. Da togliere, insieme al file, dopo la prova dall'iPhone.
+- **Pagina di conferma**: rifatta sul modello Shopify nel template. I dati del cliente si vedono solo con la chiave giusta e nella prima ora, oppure al proprietario dell'ordine. Gli hook `woocommerce_thankyou` restano attivi, senza la tabella standard.
+- **Salita su Google**: da circa 5,4 s a circa 2,4 s in "Dove potresti essere". Più veloce anche nella simulazione di "Cosa è incluso".
+
