@@ -245,6 +245,17 @@ Il tasso di abbandono di una schermata è la differenza con l'evento successivo,
 - **Timer tolto**: al posto del conto alla rovescia c'è "Attenzione! Questo prezzo è valido solo all'interno di questa pagina". È stata tolta anche la scadenza dei 10 minuti con il cookie `gh_offer_until`, altrimenti il prezzo sarebbe salito a 97 € senza avviso. Il coupon `primomese47` vale sempre su `/attiva/`.
 - **Campi del checkout**: un controllo prima di Stripe porta sul primo campo vuoto e mostra l'errore in italiano sotto ogni campo. Il testo inglese di Stripe è tradotto con `wp.i18n`.
 - **WhatsApp**: bottone fisso su checkout e prenotazione verso il numero 393516930869, quello presente nella home. Da confermare.
-- **Prenotazione**: `pages/piu-clienti-prenota.html` riusa testata, garanzia, punti, recensioni e piè di pagina del checkout, con il calendario LeadConnector al posto di dati e pagamento. Il quiz con chiusura a telefonata porta qui conservando i parametri.
-- **Stile del calendario**: è in un iframe di un altro dominio, quindi il CSS della pagina non può entrarci. `docs/calendario-girhouse-css.txt` va incollato nelle impostazioni del calendario, se LeadConnector lo consente. Provato solo in anteprima. Il nome "Call Demo - 30 min (ADS)" è visibile ai clienti e si cambia da LeadConnector.
+- **Prenotazione**: `pages/piu-clienti-prenota.html` riusa testata, garanzia, punti, recensioni e piè di pagina del checkout, con il calendario al posto di dati e pagamento. Il quiz con chiusura a telefonata porta qui conservando i parametri.
+- **Stile del calendario**: superato dal calendario su misura, vedi sotto..
+
+## Calendario su misura con Go High Level (2 novembre 2026)
+
+- **Interfaccia**: `uploads/girhouse/funnels/prenota.js` riprende Cal.com con i colori Girhouse: informazioni, mese e orari affiancati, poi il modulo e la conferma. Sotto 1180 px le informazioni vanno sopra, su telefono è tutto in colonna. Nome, email e telefono si precompilano da `sessionStorage`, senza passare dall'indirizzo.
+- **Server**: `mu-plugins/girhouse-funnels/prenota.php` espone `GET /wp-json/gh-funnels/v1/calendario/orari` e `POST .../prenota`. La chiave `GH_GHL_TOKEN` è in `wp-config.php` e non arriva al browser. Prima di prenotare ricontrolla che l'orario sia libero; poi fa upsert del contatto e crea l'appuntamento. Limiti: 120 letture e 10 prenotazioni l'ora per IP, cache degli orari di 60 s.
+- **Provato**: orari veri, dati errati (400), orario non libero (409), interfaccia su desktop, tablet, mobile e Safari. La conferma è stata simulata nel browser: **nessun appuntamento vero è stato creato**, quindi la scrittura su GHL va provata con una prenotazione reale.
+- **Da sistemare in GHL**: `allowBookingFor` è 4 giorni, per questo si possono prenotare solo due date.
+
+## Avviso WPSubscription sull'account al checkout
+
+L'avviso chiede di attivare "Creazione account durante il checkout" (`woocommerce_enable_signup_and_login_from_checkout`). Resta spenta. Con `wp_subscription_allow_guest_checkout=1` e `wp_subscription_enforce_login=0` il plugin crea da solo l'account e fa l'accesso solo per gli account nuovi. L'ordine 21642 ha creato cliente, abbonamento #21643 attivo a 97 € e carta salvata. Il rinnovo automatico non si può ancora verificare: prossima data 1 dicembre 2026. L'ordine e l'abbonamento di prova vanno tolti prima del lancio.
 
