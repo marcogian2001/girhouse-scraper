@@ -293,8 +293,16 @@ L'avviso chiede di attivare "Creazione account durante il checkout" (`woocommerc
 - **Percorso**: annunci, landing con video `/fnl/f2/` (`pages/vsl-47.html`, `vsl.js`), split test 50/50, poi `/attiva/?funnel=f2` oppure `/fnl/f2/prenota/` (`pages/vsl-47-prenota.html`, copia della prenotazione F1 con `data-funnel="F2"`). Sulla lavagna è il funnel 21645, in stato Bozza.
 - **Video obbligatorio**: all'apertura parte senza audio con il rettangolo "Il video è partito, clicca per ascoltare". Al clic riparte dall'inizio con l'audio, e solo da quel momento il tempo conta. Salti in avanti e velocità diverse vengono annullati; al 70% reale (42 s su 60 nel segnaposto) si sblocca il bottone. Lo stato resta in `localStorage` (`gh_vsl_f2_v2`).
 - **Timer sotto il bottone**: è volutamente non reale. Parte sempre da 0:55, i primi 8 secondi guardati scorrono in tempo reale, poi rallenta e arriva a zero allo sblocco (`TIMER_START`, `TIMER_REAL` in `vsl.js`). Se il 70% del video dura meno di 55 s scorre più veloce del reale.
+- **Schermo intero**: mai il player nativo. Si usa `requestFullscreen` sul nostro player e, dove non c'è (iPhone), il player occupa tutta la pagina con i nostri comandi.
 - **Barra rapida**: il primo 15% del video riempie il 40% della barra, poi scorre normale (`FAST_UNTIL`, `FAST_SHOWS` in `vsl.js`). La durata non è mostrata, quindi la barra non indica il tempo reale.
 - **Da sostituire**: `vsl-segnaposto.mp4` e `.png` sono di esempio. Con la VSL vera vanno cambiati `src`, `poster` e il nome di `STORE` in `vsl.js`, così chi aveva sbloccato con il segnaposto riparte da zero.
 - **Tracciamento**: eventi Meta `VslVisto` (25, 50, 70, 100) e `VslClic`, eventi Clarity equivalenti. Le prenotazioni arrivano in GHL con fonte "Funnel F2 prenotazione". La schermata Analisi quiz non include F2.
 - **Non copiato**: le due recensioni della landing F1, perché la loro data si aggiorna da sola in base al giorno di visita.
+
+## Prestazioni del checkout (2 novembre 2026)
+
+- **Fatto**: `checkout.css` contiene solo le regole di checkout, conferma e condizioni (33 KB contro 100 KB). Si genera da `quiz.css`: **dopo ogni modifica a `quiz.css` che tocca il checkout va rigenerato** e confrontato sui sei stati (mobile, desktop, errori, prefisso, conferma, condizioni). Tutti gli script in fondo alla pagina, foto da 96 px, tolti `select2`, `subscrpt_status`, le impostazioni del gateway e lo script delle password, animazioni solo su `opacity`, stelle in SVG, bottone più scuro per il contrasto.
+- **Spostamenti**: Stripe fa crescere i bottoni rapidi con un'animazione. `.co-express-space` tiene lo spazio e si restringe allo stesso ritmo; lo skeleton del pagamento ha l'altezza finale.
+- **Misure locali** (Chrome con rete lenta e CPU rallentata, 3 prove): CLS da 0,119 a 0,026; CSS e script bloccanti da 10 a 5; KB nostri da 567 a 518. L'API di PageSpeed ha risposto 429, quindi il punteggio ufficiale è da rifare.
+- **Non dipende da noi**: Stripe, hCaptcha e Google Pay pesano oltre 3 MB e determinano Speed Index e cookie di terze parti. Il blocco dell'indicizzazione è voluto. Non sono stati aggiunti gli header di sicurezza (HSTS, COOP, CSP).
 
