@@ -39,7 +39,9 @@ import { MissedCallScene } from './MissedCallScene';
 import { PhotoScene } from './PhotoScene';
 import { ReviewRequestScene } from './ReviewRequestScene';
 import { ReviewsScene } from './ReviewsScene';
+import { SocialRequestScene } from './SocialRequestScene';
 import { VideoClosingStep } from './VideoClosingStep';
+import { VideoGraphic } from './VideoGraphic';
 import { VideoOfferStep } from './VideoOfferStep';
 import type { VideoClosing, VideoLine } from './VideoScript';
 import { buildVideoScenes, isVideoLine, videoLineMarkup, videoLinesToVoice } from './VideoScript';
@@ -61,8 +63,13 @@ import {
 
 /** The wording of the start screen, for the new video and for version B. */
 const START_COPY = {
-  video: { headline: 'video_headline', start: 'video_start' },
-  vsl: { headline: 'intro_headline', start: 'vsl_start' },
+  video: {
+    headline: 'video_headline',
+    start: 'video_start',
+    page: 'flex flex-col',
+    main: 'w-full',
+  },
+  vsl: { headline: 'intro_headline', start: 'vsl_start', page: '', main: '' },
 } as const;
 
 /** One of Gigi's lines, voiced by Kie. */
@@ -548,6 +555,10 @@ const VslSceneVisual = (options: {
     return <ReviewRequestScene company={data.company} texts={props.vsl.reviewRequest} />;
   }
 
+  if (scene.kind === 'social' && props.vsl.socialRequest) {
+    return <SocialRequestScene company={data.company} texts={props.vsl.socialRequest} />;
+  }
+
   if (scene.kind === 'offer') {
     return (
       <VideoOfferStep
@@ -1006,7 +1017,7 @@ export const DemoVsl = (
       </>
     ) : (
       <div
-        className={`min-h-svh overflow-x-clip pb-[calc(var(--demo-bar-h,6rem)+1.5rem)] ${isPricing ? 'bg-gradient-to-b from-[#0074F2] via-[#0a52d4] to-[#06287f]' : ''}`}
+        className={`min-h-svh overflow-x-clip pb-[calc(var(--demo-bar-h,6rem)+1.5rem)] ${startCopy.page} ${isPricing ? 'bg-gradient-to-b from-[#0074F2] via-[#0a52d4] to-[#06287f]' : ''}`}
       >
         {/* Above the mockups, whose own layers stay inside `main` */}
         <header className="sticky top-0 z-20 border-b border-neutral-100 bg-white/90 backdrop-blur">
@@ -1032,7 +1043,7 @@ export const DemoVsl = (
 
         <main
           key={sceneGroup(scene, index)}
-          className={`isolate mx-auto max-w-7xl animate-in px-4 duration-500 fade-in ${isPricing ? 'py-4 md:py-6' : 'py-6 md:py-10'}`}
+          className={`isolate mx-auto max-w-7xl animate-in px-4 duration-500 fade-in ${startCopy.main} ${isPricing ? 'py-4 md:py-6' : 'py-6 md:py-10'}`}
         >
           <VslSceneVisual
             scene={scene}
@@ -1045,6 +1056,8 @@ export const DemoVsl = (
             handleOpenCall={handleOpenCall}
           />
         </main>
+
+        <VideoGraphic scene={scene} isVideo={Boolean(closing)} />
 
         <VslBar
           segments={segments}

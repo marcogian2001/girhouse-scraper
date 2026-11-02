@@ -70,6 +70,7 @@ export type VslScene = SceneSound &
     | { step: 2; kind: 'review_request'; line: VideoLine }
     | { step: 3; kind: 'missed_call'; line: VideoLine }
     | { step: 3; kind: 'chat'; upTo: number; line: VideoLine }
+    | { step: 3; kind: 'social'; line: VideoLine }
     | { step: 3; kind: 'crm'; part: number; line: VideoLine }
     | { step: 4; kind: 'reminder'; line: VideoLine }
     | { step: 5; kind: 'offer'; part: number; line: VideoLine }
@@ -179,6 +180,9 @@ const FUNNEL_MS = 1500 + 3 * 700;
 
 /** The review request: its two messages, then the review. */
 const REVIEW_REQUEST_MS = 4500;
+
+/** The social request: the comment, the private message and the answer. */
+const SOCIAL_MS = 5000;
 
 /** The Google profile: long enough to read the business's name. */
 const GOOGLE_MS = 3500;
@@ -461,6 +465,7 @@ export const vslSceneMinimumMs = (options: {
 
   const minimums: Partial<Record<VslScene['kind'], number>> = {
     review_request: REVIEW_REQUEST_MS,
+    social: SOCIAL_MS,
     google: GOOGLE_MS,
     missed_call: MISSED_CALL_MS,
     reminder: options.reminderMessages * CHAT_MESSAGE_MS,

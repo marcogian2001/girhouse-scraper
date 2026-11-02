@@ -29,6 +29,12 @@ const texts: DemoVslTexts = {
     messaggio: 'Grazie Giulia — ci lasci una recensione su Google?',
     risposta: 'Fatto!',
   },
+  social: {
+    nome_cliente: 'Elena',
+    commento: 'Info?',
+    messaggio: 'Ciao Elena — come posso aiutarti?',
+    risposta: 'Vorrei un preventivo',
+  },
   chiamata_persa: {
     nome_cliente: 'Sara',
     messaggio: 'Ciao Sara, scusa — ero sotto una macchina. Come posso aiutarti?',
@@ -45,6 +51,8 @@ const texts: DemoVslTexts = {
     video_line_missed_call: '',
     video_line_chat_start: 'Luca scrive — e la risposta parte',
     video_line_chat_booked: '   ',
+    video_line_loss_social: '',
+    video_line_social: '',
     video_line_inbox: '',
     video_line_loss_not_back: '',
     video_line_reminder: '',
@@ -53,6 +61,7 @@ const texts: DemoVslTexts = {
     video_line_loss_not_found: 'A woman searches on her phone at home.',
     video_line_loss_not_chosen: '  ',
     video_line_loss_lost: '',
+    video_line_loss_social: '',
     video_line_loss_not_back: '',
   },
 };
@@ -93,6 +102,15 @@ describe('DemoVslWriter', () => {
       customerName: 'Giulia',
       message: 'Grazie Giulia, ci lasci una recensione su Google?',
       reply: 'Fatto!',
+    });
+  });
+
+  it('keeps the social request, without dashes', () => {
+    expect(toDemoVsl(texts).socialRequest).toStrictEqual({
+      customerName: 'Elena',
+      comment: 'Info?',
+      message: 'Ciao Elena, come posso aiutarti?',
+      reply: 'Vorrei un preventivo',
     });
   });
 

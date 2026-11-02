@@ -9,7 +9,7 @@ export const VIDEO_CLOSINGS = ['purchase', 'call', 'both'] as const;
 export type VideoClosing = (typeof VIDEO_CLOSINGS)[number];
 
 /** Where customers get lost along the way, each followed by what Girhouse does about it. */
-export type VideoLoss = 'not_found' | 'not_chosen' | 'lost' | 'not_back';
+export type VideoLoss = 'not_found' | 'not_chosen' | 'lost' | 'social' | 'not_back';
 
 /** Lines the AI writes for each lead. */
 export const VIDEO_WRITTEN_LINES = [
@@ -23,6 +23,8 @@ export const VIDEO_WRITTEN_LINES = [
   'video_line_missed_call',
   'video_line_chat_start',
   'video_line_chat_booked',
+  'video_line_loss_social',
+  'video_line_social',
   'video_line_inbox',
   'video_line_loss_not_back',
   'video_line_reminder',
@@ -35,6 +37,7 @@ export const VIDEO_PHOTO_LINES = [
   'video_line_loss_not_found',
   'video_line_loss_not_chosen',
   'video_line_loss_lost',
+  'video_line_loss_social',
   'video_line_loss_not_back',
 ] as const satisfies readonly VideoWrittenLine[];
 
@@ -69,6 +72,8 @@ const BANNED_WORDS = [
   /\bprova gratuita\b/iu,
   /\bposti limitati\b/iu,
   /\bcandidatura\b/iu,
+  /\bmanychat\b/iu,
+  /\bgo ?high ?level\b/iu,
   /\bil tuo nuovo sito\b/iu,
 ];
 
@@ -105,7 +110,7 @@ export const pickVideoClosing = (demoId: string): VideoClosing => {
 const lossScene = (options: {
   step: 1 | 2 | 3 | 4;
   loss: VideoLoss;
-  sound: 'hit' | 'ring';
+  sound: 'hit' | 'ring' | 'ping';
 }): VslScene => ({
   step: options.step,
   kind: 'loss',
@@ -194,6 +199,17 @@ export const buildVideoScenes = (options: { data: DemoSnapshot; closing: VideoCl
       line: 'video_line_chat_booked',
       chapter: 'solution',
       cues: [{ atMs: CHAT_MESSAGE_MS, sound: 'pop' }],
+    },
+    lossScene({ step: 3, loss: 'social', sound: 'ping' }),
+    {
+      step: 3,
+      kind: 'social',
+      line: 'video_line_social',
+      chapter: 'solution',
+      cues: [
+        { atMs: 1500, sound: 'ping' },
+        { atMs: 3000, sound: 'pop' },
+      ],
     },
     {
       step: 3,

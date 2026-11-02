@@ -1221,6 +1221,8 @@ export type DemoVsl = {
   images?: Record<string, string>;
   // The automatic message after a service asking everyone for a Google review; version C only
   reviewRequest?: { customerName: string; message: string; reply: string };
+  // The comment on a post that opens an automatic private message; version C only
+  socialRequest?: { customerName: string; comment: string; message: string; reply: string };
   // How the video ends, a test of the three closings; version C only
   closing?: 'purchase' | 'call' | 'both';
   // When a person checked name, Italian and images before the link goes out; version C only

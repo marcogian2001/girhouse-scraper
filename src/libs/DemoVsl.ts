@@ -35,7 +35,6 @@ type Demo = typeof demoSchema.$inferSelect;
 
 const TTS_MODEL = 'google/gemini-3-8-flash-tts';
 
-/** 4 credits a photo at 1K. */
 const PHOTO_MODEL = 'nano-banana-2-1';
 
 /** Added to every prompt the AI writes, so the photos look alike. */
@@ -43,9 +42,9 @@ const PHOTO_STYLE =
   'Candid documentary photograph, natural light, shallow depth of field, realistic, 35mm. No text, no logos, no captions, no readable words on screens or paper.';
 
 /** Wide enough for the frame on a large screen. */
-const PHOTO_WIDTH = 1280;
+const PHOTO_WIDTH = 1920;
 
-const PHOTO_QUALITY = 78;
+const PHOTO_QUALITY = 86;
 
 /** Past this, the lines Kie has voiced are kept and the others are only typed, without a photo. */
 const VOICE_TIMEOUT_MS = 15 * 60 * 1000;
@@ -192,7 +191,7 @@ const startPhoto = async (prompt: string) =>
   await createKieTask(PHOTO_MODEL, {
     prompt: `${prompt} ${PHOTO_STYLE}`,
     aspect_ratio: '16:9',
-    resolution: '1K',
+    resolution: '2K',
     output_format: 'jpg',
   });
 

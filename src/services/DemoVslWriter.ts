@@ -47,6 +47,12 @@ const vslTextsSchema = z.object({
     messaggio: z.string(),
     risposta: z.string(),
   }),
+  social: z.object({
+    nome_cliente: z.string(),
+    commento: z.string(),
+    messaggio: z.string(),
+    risposta: z.string(),
+  }),
   // One per line of `VIDEO_WRITTEN_LINES`, which `satisfies` keeps in step
   battute: z.object({
     video_line_loss_not_found: z.string(),
@@ -59,6 +65,8 @@ const vslTextsSchema = z.object({
     video_line_missed_call: z.string(),
     video_line_chat_start: z.string(),
     video_line_chat_booked: z.string(),
+    video_line_loss_social: z.string(),
+    video_line_social: z.string(),
     video_line_inbox: z.string(),
     video_line_loss_not_back: z.string(),
     video_line_reminder: z.string(),
@@ -68,6 +76,7 @@ const vslTextsSchema = z.object({
     video_line_loss_not_found: z.string(),
     video_line_loss_not_chosen: z.string(),
     video_line_loss_lost: z.string(),
+    video_line_loss_social: z.string(),
     video_line_loss_not_back: z.string(),
   } satisfies Record<VideoPhotoLine, z.ZodString>),
 });
@@ -96,6 +105,10 @@ const SCENES: Record<VideoWrittenLine, string> = {
     'The example WhatsApp chat: the customer writes and gets an answer at once, in the name of the business.',
   video_line_chat_booked:
     'The chat goes on: two free times from the calendar, the customer picks one and it is booked, with a reminder the day before.',
+  video_line_loss_social:
+    'Over a photo: people also ask on Instagram and Facebook, in a comment or a private message, and those requests get read days later or never. Tell it as something that happens in this job, never as a fact about this business, which may not even use social media.',
+  video_line_social:
+    'A phone shows a comment under a post (`social`), then a private message that goes out on its own with the answer, and the person replies. Say that comments and private messages get an automatic answer you decide, and end up with all the other requests.',
   video_line_inbox:
     'One place where every message, call and appointment of that customer arrives. Say "un posto unico" and what the owner sees, without naming any software.',
   video_line_loss_not_back:
@@ -114,7 +127,7 @@ const INSTRUCTIONS = [
   '- Never state anything about what this business has or does today: not its site, its Google profile, its reviews, how it answers. You have not checked them. Tell what happens to people in this line of work, or what could be, never "il tuo sito non..." or "non hai...".',
   '- The site and the Google profile are examples: "come potrebbe essere", "potrebbe comparire così". Never "il tuo nuovo sito".',
   '- Promise what Girhouse does and how, never a result: no number of customers or appointments, no first place on Google, no "agenda piena". Being found on Google takes a few months: say it when you talk about Google.',
-  '- Never use these words: gestionale, CRM, pipeline, lead, funnel, landing page, automazione, bot, AI, intelligenza artificiale, 24/7, H24. Say "un posto unico dove arrivano tutti i messaggi, i contatti e gli appuntamenti", "clienti", "richieste", "il sito", "messaggi automatici che decidi tu", "risposta automatica".',
+  '- Never use these words: gestionale, CRM, pipeline, lead, funnel, landing page, automazione, bot, AI, intelligenza artificiale, 24/7, H24, ManyChat, Go High Level. Say "un posto unico dove arrivano tutti i messaggi, i contatti e gli appuntamenti", "clienti", "richieste", "il sito", "messaggi automatici che decidi tu", "risposta automatica".',
   '- No fake urgency, no limited places, no "candidatura", no "attività idonee". Never open on bad news.',
   '- Do not lean on "rispondi subito": most owners already answer on their own or with a secretary. For health professionals lead on being found on Google, reviews and their own bookings. For businesses with a team lead on no request lost and customers coming back.',
   '- Never invent facts about this business. The notes from the Girhouse team are true and say what to stress: follow them.',
@@ -150,10 +163,10 @@ const INSTRUCTIONS = [
   '- `nome_cliente`: another common Italian first name.',
   '- `messaggi`: 3 messages. The business writes first with a concrete detail, kind and never pushy, offering two times as `opzioni`. The customer picks one, exactly as written. The business confirms. `opzioni` empty on the other messages.',
   '',
-  'The photos (`foto`): for each of the four stretches, the English prompt of the photo shown while Gigi says that line.',
+  'The photos (`foto`): for each stretch, the English prompt of the photo shown while Gigi says that line.',
   '- It shows the moment the line tells, in a place that fits this sector and is clearly Italian, with the people the line names. It must fit this business: an office professional is never in a warehouse, a workshop owner is never in a medical studio.',
   '- One clear scene, 2 or 3 sentences: who is there, where, what happens, the mood. Simple poses a camera would catch, no close-ups of hands on bodies.',
-  "- Four different pictures: never two with the same place and pose. Tell some from the customer's side, for example someone at home searching on their phone.",
+  "- Five different pictures: never two with the same place and pose. Tell some from the customer's side, for example someone at home searching on their phone.",
   '- When the owner appears, describe them the same way in every prompt, so they look like one person.',
   '- Never ask for written words: no text, signs, names or messages to read on screens or paper.',
   '- The style is added on its own: do not describe the camera, the light or the photo style.',
@@ -165,7 +178,7 @@ const INSTRUCTIONS = [
   '- Say each thing once: never repeat a phrase within a line, such as "come potrebbe essere" and then "potrebbe essere così".',
   '- Never name precise gestures or body parts: the photo may get them wrong.',
   '- Name things plainly. Never soften them with adjectives such as "gentile", "delicato", "con calma".',
-  '- Use the customer names you wrote for the missed call, the chat, the review request and the reminder.',
+  '- Use the customer names you wrote for the missed call, the chat, the social request, the review request and the reminder.',
   '- An empty string for `video_line_site_services` when the page lists no services.',
   '- The screens, in order:',
 ].join('\n');
@@ -293,6 +306,12 @@ export const toDemoVsl = (texts: DemoVslTexts): Omit<DemoVsl, 'generatedAt'> => 
     customerName: cleanReply(texts.recensione.nome_cliente),
     message: cleanReply(texts.recensione.messaggio),
     reply: cleanReply(texts.recensione.risposta),
+  },
+  socialRequest: {
+    customerName: cleanReply(texts.social.nome_cliente),
+    comment: cleanReply(texts.social.commento),
+    message: cleanReply(texts.social.messaggio),
+    reply: cleanReply(texts.social.risposta),
   },
   images: Object.fromEntries(
     VIDEO_PHOTO_LINES.flatMap((line) => {

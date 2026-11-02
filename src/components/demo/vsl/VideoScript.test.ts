@@ -78,6 +78,7 @@ describe('VideoScript', () => {
         'not_found',
         'not_chosen',
         'lost',
+        'social',
         'not_back',
       ]);
     });
