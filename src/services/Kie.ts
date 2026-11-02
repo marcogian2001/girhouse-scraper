@@ -10,6 +10,8 @@ const KIE_UPLOAD_URL = 'https://kieai.redpandaai.co';
 
 const POLL_INTERVAL_MS = 5000;
 
+const CALL_TIMEOUT_MS = 30_000;
+
 const MAX_POLLS = 240;
 
 const DOWNLOAD_ATTEMPTS = 6;
@@ -59,8 +61,10 @@ const kie = async (url: string, body?: Record<string, unknown>) => {
       await sleep(RATE_LIMIT_WAIT_MS * 2 ** (attempt - 1));
     }
 
+    // A call Kie never answers must fail, or the job waits on it for good
     // oxlint-disable-next-line no-await-in-loop
     const response = await fetch(url, {
+      signal: AbortSignal.timeout(CALL_TIMEOUT_MS),
       method: body ? 'POST' : 'GET',
       headers: {
         Authorization: `Bearer ${requireEnv('KIE_API_KEY', Env.KIE_API_KEY)}`,
