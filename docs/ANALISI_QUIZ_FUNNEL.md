@@ -277,3 +277,12 @@ L'avviso chiede di attivare "Creazione account durante il checkout" (`woocommerc
 - **Limiti**: funziona solo per gli split dopo il quiz (`GH_FUNNEL_SPLIT_PAGES`), uno per quiz. Una variante di tipo Pagamento usa i testi dell'acquisto, tutte le altre quelli della videochiamata. Il lead riceve `split_variante`.
 - **Funnel F1**: dopo "Punteggio e offerta" c'è lo split 50/50 tra "Checkout a 47 €" e "Prenotazione videochiamata". Copia precedente in `~/backups-girhouse/funnel-f1-pre-split.json`.
 
+## Schermata Analisi quiz (2 novembre 2026)
+
+- **Dove**: bacheca, Funnel, Analisi quiz (`mu-plugins/girhouse-funnels/analisi.php`, `analisi.js`, `analisi.css`).
+- **Dati**: tabella `wp_gh_quiz_sessions`, una riga per visitatore, anche senza contatti. Non salva IP, nome, email o telefono; restano però i testi liberi, come nome dell'attività, città e descrizione. Il codice della sessione arriva a Go High Level nel campo `quiz_sessione`.
+- **Raccolta**: il browser manda ogni step a `POST /gh-q`, gestito prima dei plugin e con la riga bloccata in transazione, perché due eventi simultanei si perdevano. Sessione in `localStorage` (`gh_qs`, 12 ore). Sono esclusi i browser automatici e i link con `?chiusura=`.
+- **Step dopo il quiz**: `checkout_vista`, `pagato`, `prenota_vista`, `prenota_orario`, `prenotato`. Il pagamento e la prenotazione risultano solo a chi arriva dal quiz e torna alla pagina di conferma.
+- **Schermata**: filtri custom con icone, periodo personalizzato, mappa su una linea con zoom e trascinamento, divisa alla fine tra checkout e calendario, risposte per domanda, elenco delle persone. Da aggiornare in privacy policy e cookie policy.
+- **Grafica lavagna**: percentuali con controllo custom meno e più; il bordo della card resta arrotondato dopo il clic.
+
