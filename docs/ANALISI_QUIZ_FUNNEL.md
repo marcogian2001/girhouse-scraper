@@ -265,5 +265,6 @@ L'avviso chiede di attivare "Creazione account durante il checkout" (`woocommerc
 ## Lavagna e pagine WooPayments in bacheca (2 novembre 2026)
 
 - **Lavagna**: su `rest_cookie_invalid_nonce` `board.js` chiede una chiave nuova a `admin-ajax.php?action=rest-nonce` e riprova una volta. Se non si è più collegati chiede di ricaricare la pagina.
-- **WooPayments che carica all'infinito** (`page=wc-admin&path=/payments/overview`): ancora aperto. Lato server è tutto a posto: account e Jetpack collegati, rotte `/wc/v3/payments/*` con codice 200 in massimo 1,1 s, `dist/index.js` raggiungibile. Il blocco è nel browser dell'utente; va provata una finestra in incognito, come già successo con l'errore di sessione dall'iPhone.
-
+- **WooPayments che caricava all'infinito** (`page=wc-admin&path=/payments/overview`): lato server era tutto a posto e in incognito la pagina si carica, quindi il blocco era nel browser normale dell'utente (cookie o estensioni).
+- **Immagine del prodotto**: il mockup è l'immagine del prodotto 21633 (allegato 21644).
+- **Calendario su schermi grandi**: il margine sinistro cresceva con lo schermo e schiacciava il mese. Ora la scheda è centrata nella colonna, larga al massimo 1000 px.
