@@ -297,6 +297,7 @@ L'avviso chiede di attivare "Creazione account durante il checkout" (`woocommerc
 - **Barra rapida**: il primo 15% del video riempie il 40% della barra, poi scorre normale (`FAST_UNTIL`, `FAST_SHOWS` in `vsl.js`). La durata non è mostrata, quindi la barra non indica il tempo reale.
 - **Da sostituire**: `vsl-segnaposto.mp4` e `.png` sono di esempio. Con la VSL vera vanno cambiati `src`, `poster` e il nome di `STORE` in `vsl.js`, così chi aveva sbloccato con il segnaposto riparte da zero.
 - **Tracciamento**: eventi Meta `VslVisto` (25, 50, 70, 100) e `VslClic`, eventi Clarity equivalenti. Le prenotazioni arrivano in GHL con fonte "Funnel F2 prenotazione". La schermata Analisi quiz non include F2.
+- **Collaboriamo con**: sotto il bottone della landing, loghi di Enel, Hera, Intesa Sanpaolo, UniCredit, Poste Italiane, Giorgio Armani e Barilla in `uploads/girhouse/funnels/loghi/`. Collaborazioni confermate dall'utente il 2 novembre 2026. I file vengono da Wikimedia Commons: vanno controllati o sostituiti con quelli ufficiali.
 - **Non copiato**: le due recensioni della landing F1, perché la loro data si aggiorna da sola in base al giorno di visita.
 
 ## Prestazioni del checkout (2 novembre 2026)
