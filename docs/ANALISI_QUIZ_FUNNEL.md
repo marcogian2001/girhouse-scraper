@@ -253,9 +253,10 @@ Il tasso di abbandono di una schermata è la differenza con l'evento successivo,
 - **Interfaccia**: `uploads/girhouse/funnels/prenota.js` riprende Cal.com con i colori Girhouse: informazioni, mese e orari affiancati, poi il modulo e la conferma. Sotto 1180 px le informazioni vanno sopra, su telefono è tutto in colonna. Nome, email e telefono si precompilano da `sessionStorage`, senza passare dall'indirizzo.
 - **Server**: `mu-plugins/girhouse-funnels/prenota.php` espone `GET /wp-json/gh-funnels/v1/calendario/orari` e `POST .../prenota`. La chiave `GH_GHL_TOKEN` è in `wp-config.php` e non arriva al browser. Prima di prenotare ricontrolla che l'orario sia libero; poi fa upsert del contatto e crea l'appuntamento. Limiti: 120 letture e 10 prenotazioni l'ora per IP, cache degli orari di 60 s.
 - **Provato**: orari veri, dati errati (400), orario non libero (409), interfaccia su desktop, tablet, mobile e Safari. La conferma è stata simulata nel browser: **nessun appuntamento vero è stato creato**, quindi la scrittura su GHL va provata con una prenotazione reale.
-- **Da sistemare in GHL**: `allowBookingFor` è 4 giorni, per questo si possono prenotare solo due date.
+- **Finestra**: `allowBookingFor` portato da 4 a 5 giorni via API, con il giorno dopo ancora escluso: il 2 si prenota dal 4 al 6. L'aggiornamento ha cambiato `formSubmitType`, riportato a `RedirectURL`. Sono rimasti `slotBuffer` e `preBuffer` da null a 0. Copia precedente in `~/backups-girhouse/ghl-calendario-pre-finestra.json`.
+- **Orari**: sei alla prima schermata, divisi tra mattina, pomeriggio e sera, poi "Carica altri orari".
+- **Fuso**: all'apertura si ricava il paese dall'IP con `WC_Geolocation`, limitato a ipinfo.io, che quindi riceve l'IP del visitatore. Se il fuso del dispositivo è in quel paese si tiene quello. Il selettore cerca per continente, paese e città. Il prefisso del telefono parte dal paese dell'IP, oppure dal numero già inserito nel quiz.
 
 ## Avviso WPSubscription sull'account al checkout
 
 L'avviso chiede di attivare "Creazione account durante il checkout" (`woocommerce_enable_signup_and_login_from_checkout`). Resta spenta. Con `wp_subscription_allow_guest_checkout=1` e `wp_subscription_enforce_login=0` il plugin crea da solo l'account e fa l'accesso solo per gli account nuovi. L'ordine 21642 ha creato cliente, abbonamento #21643 attivo a 97 € e carta salvata. Il rinnovo automatico non si può ancora verificare: prossima data 1 dicembre 2026. L'ordine e l'abbonamento di prova vanno tolti prima del lancio.
-
