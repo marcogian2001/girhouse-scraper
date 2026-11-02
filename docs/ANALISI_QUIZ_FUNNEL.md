@@ -291,7 +291,8 @@ L'avviso chiede di attivare "Creazione account durante il checkout" (`woocommerc
 ## Funnel F2: VSL + checkout / chiamata - 47 € (2 novembre 2026)
 
 - **Percorso**: annunci, landing con video `/fnl/f2/` (`pages/vsl-47.html`, `vsl.js`), split test 50/50, poi `/attiva/?funnel=f2` oppure `/fnl/f2/prenota/` (`pages/vsl-47-prenota.html`, copia della prenotazione F1 con `data-funnel="F2"`). Sulla lavagna è il funnel 21645, in stato Bozza.
-- **Video obbligatorio**: player custom senza barra di avanzamento. Contano i secondi guardati davvero: salti in avanti e velocità diverse vengono annullati. Al 70% si sblocca il bottone. Lo stato resta in `localStorage` (`gh_vsl_f2`) e il video riprende da dove era.
+- **Video obbligatorio**: all'apertura parte senza audio con il rettangolo "Il video è partito, clicca per ascoltare". Al clic riparte dall'inizio con l'audio, e solo da quel momento il tempo conta. Salti in avanti e velocità diverse vengono annullati; al 70% reale (42 s su 60 nel segnaposto) si sblocca il bottone. Lo stato resta in `localStorage` (`gh_vsl_f2_v2`).
+- **Barra rapida**: il primo 15% del video riempie il 40% della barra, poi scorre normale (`FAST_UNTIL`, `FAST_SHOWS` in `vsl.js`). La durata non è mostrata, quindi la barra non indica il tempo reale.
 - **Da sostituire**: `vsl-segnaposto.mp4` e `.png` sono di esempio. Con la VSL vera vanno cambiati `src`, `poster` e il nome di `STORE` in `vsl.js`, così chi aveva sbloccato con il segnaposto riparte da zero.
 - **Tracciamento**: eventi Meta `VslVisto` (25, 50, 70, 100) e `VslClic`, eventi Clarity equivalenti. Le prenotazioni arrivano in GHL con fonte "Funnel F2 prenotazione". La schermata Analisi quiz non include F2.
 - **Non copiato**: le due recensioni della landing F1, perché la loro data si aggiorna da sola in base al giorno di visita.
