@@ -268,3 +268,12 @@ L'avviso chiede di attivare "Creazione account durante il checkout" (`woocommerc
 - **WooPayments che caricava all'infinito** (`page=wc-admin&path=/payments/overview`): lato server era tutto a posto e in incognito la pagina si carica, quindi il blocco era nel browser normale dell'utente (cookie o estensioni).
 - **Immagine del prodotto**: il mockup è l'immagine del prodotto 21633 (allegato 21644).
 - **Calendario su schermi grandi**: il margine sinistro cresceva con lo schermo e schiacciava il mese. Ora la scheda è centrata nella colonna, larga al massimo 1000 px.
+
+## Split test nella lavagna (2 novembre 2026)
+
+- **Lavagna**: nuovo tipo di step "Split test". Ogni uscita è una variante con la sua percentuale, senza limite di varianti. Il pannello mostra il totale, divide in parti uguali e dice cosa manca. Quando si aggiunge o si toglie una variante le percentuali si ridividono in parti uguali.
+- **Sito**: al salvataggio `gh_funnels_write_splits()` scrive `uploads/girhouse/funnels/splits.json`. `gh_funnels_serve_page()` lo inserisce come `window.ghSplit` nella pagina del quiz; le modifiche arrivano entro 60 s di cache. Uno split non valido (totale diverso da 100, meno di due varianti, destinazione mancante) lascia attive le ultime percentuali valide.
+- **Assegnazione**: `pickVariant()` nel quiz sceglie a caso in base alle percentuali e tiene la variante in `localStorage` (`gh_split_<id>`). Quindi la divisione è statistica: su pochi visitatori può scostarsi. Chi è già assegnato resta sulla sua variante anche se le percentuali cambiano, a meno che scenda a 0% o venga tolta.
+- **Limiti**: funziona solo per gli split dopo il quiz (`GH_FUNNEL_SPLIT_PAGES`), uno per quiz. Una variante di tipo Pagamento usa i testi dell'acquisto, tutte le altre quelli della videochiamata. Il lead riceve `split_variante`.
+- **Funnel F1**: dopo "Punteggio e offerta" c'è lo split 50/50 tra "Checkout a 47 €" e "Prenotazione videochiamata". Copia precedente in `~/backups-girhouse/funnel-f1-pre-split.json`.
+
