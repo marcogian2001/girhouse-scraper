@@ -236,5 +236,5 @@ Il tasso di abbandono di una schermata è la differenza con l'evento successivo,
 - **Correzione**: `gh_funnels_fix_session_cookie()` in `girhouse-funnels.php` sceglie il cookie valido con la scadenza più lontana e reimposta quello normale, solo sulle richieste del checkout.
 - **Registrazione temporanea**: `gh_funnels_debug_line()` in `checkout.php` scrive stati e nomi in `~/domains/girhouse.com/gh-checkout-debug.log`, fuori dal sito. Da togliere, insieme al file, dopo la prova dall'iPhone.
 - **Pagina di conferma**: rifatta sul modello Shopify nel template. I dati del cliente si vedono solo con la chiave giusta e nella prima ora, oppure al proprietario dell'ordine. Gli hook `woocommerce_thankyou` restano attivi, senza la tabella standard.
+- **Favicon**: aggiunta a `piu-clienti.html` e `piu-clienti-quiz.html`, con le icone del sito caricate in WordPress.
 - **Salita su Google**: da circa 5,4 s a circa 2,4 s in "Dove potresti essere". Più veloce anche nella simulazione di "Cosa è incluso".
-
