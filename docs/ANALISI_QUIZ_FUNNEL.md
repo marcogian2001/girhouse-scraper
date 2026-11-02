@@ -307,3 +307,15 @@ L'avviso chiede di attivare "Creazione account durante il checkout" (`woocommerc
 - **Misure locali** (Chrome con rete lenta e CPU rallentata, 3 prove): CLS da 0,119 a 0,026; CSS e script bloccanti da 10 a 5; KB nostri da 567 a 518. L'API di PageSpeed ha risposto 429, quindi il punteggio ufficiale è da rifare.
 - **Non dipende da noi**: Stripe, hCaptcha e Google Pay pesano oltre 3 MB e determinano Speed Index e cookie di terze parti. Il blocco dell'indicizzazione è voluto. Non sono stati aggiunti gli header di sicurezza (HSTS, COOP, CSP).
 
+## Modifiche a domande, stima e prezzo di chi prenota (2 novembre 2026)
+
+Questa sezione prevale sulle tabelle precedenti per le domande e il calcolo.
+
+- **Tolte**: "In che settore lavori?", "Chi decide per l'attività?" e l'opzione "Cerco solo pubblicità a pagamento". Con loro sono sparite tutte le uscite del quiz, quindi non c'è più nessun filtro per chi vende solo online, per chi non ha ancora aperto e per chi cerca solo pubblicità.
+- **Prima domanda**: "Descrivi di cosa ti occupi in poche parole:", campo su una riga, massimo 60 caratteri. Da qui il quiz ricava anche "pazienti" o "clienti" (elenco di parole in `people()`).
+- **Fasce e valori nel calcolo**: richieste a settimana meno di 3 (2), 3-5 (4), 6-10 (8), 11-20 (15), più di 20 (30). Perse su 10: quasi nessuna (nessuna stima), 1 (1), 2-3 (2,5), più di 3 (4), non so (1). Valore nel primo anno: meno di 50 € (30), 50-150 € (100), 150-500 € (300), 500-1.500 € (900), più di 1.500 € (2.000), non so (nessuna stima).
+- **Stima**: richieste × 4,33 × perse su 10 × 30% × 50% × valore. Il 30% e il 50% sono ipotesi nostre, non dati misurati, e la schermata lo dice. Si mostrano prima i clienti, poi gli euro. Sotto i 100 € al mese la schermata non compare.
+- **Esempi provati**: nutrizionista 1-2 pazienti e 390 €, officina 4 clienti e 3.500 €, avvocato meno di 1 cliente e 520 €.
+- **Prezzo di chi prenota**: nella pagina del prezzo del quiz, chi va verso la chiamata vede 97 € al mese e non più 47 €. Le due pagine di prenotazione hanno il riquadro `.pc-offer` con lo sconto di 50 € sul primo mese, che porta a `/attiva/` (F1) o `/attiva/?funnel=f2` (F2) con i parametri della campagna.
+- **Testo F2**: il calendario di F2 non parla più di punteggio.
+- **Analisi quiz**: `GH_QS_STEPS` è rinumerato. Le 3 sessioni di prova già salvate compaiono con i vecchi nomi.

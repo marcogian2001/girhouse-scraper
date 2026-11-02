@@ -164,6 +164,13 @@ Poi un consulente ti contatta.
 E crea il tuo gruppo WhatsApp.
 Ci vediamo dall'altra parte.
 
+### Offerta per chi prenota
+
+Nel video con la chiamata, sostituisce le prime tre righe de "L'offerta".
+
+Costa 97 euro al mese, tutto incluso.
+E nella prossima pagina trovi uno sconto sul primo mese.
+
 ### Chiusura per chi prenota
 
 Clicca il bottone.
