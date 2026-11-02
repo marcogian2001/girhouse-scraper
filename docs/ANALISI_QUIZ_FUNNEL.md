@@ -283,6 +283,7 @@ L'avviso chiede di attivare "Creazione account durante il checkout" (`woocommerc
 - **Dati**: tabella `wp_gh_quiz_sessions`, una riga per visitatore, anche senza contatti. Non salva IP, nome, email o telefono; restano però i testi liberi, come nome dell'attività, città e descrizione. Il codice della sessione arriva a Go High Level nel campo `quiz_sessione`.
 - **Raccolta**: il browser manda ogni step a `POST /gh-q`, gestito prima dei plugin e con `GET_LOCK` per sessione, perché due eventi simultanei si perdevano; le transazioni con `FOR UPDATE` perdevano comunque eventi. Sessione in `localStorage` (`gh_qs`, 12 ore). Sono esclusi i browser automatici e i link con `?chiusura=`.
 - **Step dopo il quiz**: `checkout_vista`, `pagato`, `prenota_vista`, `prenota_orario`, `prenotato`. Il pagamento e la prenotazione risultano solo a chi arriva dal quiz e torna alla pagina di conferma.
+- **Step a 0**: `GH_QS_STEPS` in `analisi.php` elenca tutto il percorso, compresi checkout e prenotazione, così la mappa li mostra anche a 0. Va aggiornato quando cambiano gli `STEPS` di `quiz.js`.
 - **Schermata**: filtri custom con icone, periodo personalizzato, mappa su una linea con zoom e trascinamento, divisa alla fine tra checkout e calendario, risposte per domanda, elenco delle persone. Da aggiornare in privacy policy e cookie policy.
 - **Grafica lavagna**: percentuali con controllo custom meno e più; il bordo della card resta arrotondato dopo il clic.
 
