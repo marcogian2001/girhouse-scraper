@@ -192,7 +192,7 @@ export const jobTypeEnum = pgEnum('job_type', [
   'reply_send',
   // The next follow-up of a silent lead, due at `conversation.next_action_at`
   'conversation_tick',
-  // Hands a bot-managed lead's GHL contact and opportunity to the "Bot AI" user
+  // Retired: handed a bot-managed lead to the "Bot AI" user on GHL; no longer queued
   'ghl_bot_assign',
   // Puts a lead with a positive reply in the GHL sales pipeline, with the email source
   'ghl_lead',

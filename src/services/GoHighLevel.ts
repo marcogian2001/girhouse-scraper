@@ -325,25 +325,17 @@ export const setContactDnd = async (contactId: string) => {
 };
 
 /**
- * Gives an existing opportunity the email source and, when one is set, an owner,
- * leaving its stage as it is.
+ * Gives an existing opportunity the email source, leaving its stage and owner as they are.
  * @param options The update.
  * @param options.opportunityId The GHL opportunity.
- * @param options.assignedTo The GHL user who owns it, when one is set.
  * @throws {Error} When GHL is not configured or rejects the request.
  */
-export const updateLeadOpportunity = async (options: {
-  opportunityId: string;
-  assignedTo?: string;
-}) => {
+export const updateLeadOpportunity = async (options: { opportunityId: string }) => {
   await request({
     path: `/opportunities/${options.opportunityId}`,
     family: 'opportunities',
     method: 'PUT',
-    body: {
-      source: OPPORTUNITY_SOURCE,
-      ...(options.assignedTo ? { assignedTo: options.assignedTo } : {}),
-    },
+    body: { source: OPPORTUNITY_SOURCE },
   });
 };
 
@@ -383,15 +375,10 @@ export const upsertBookedOpportunity = async (options: { contactId: string; name
  * @param options The opportunity.
  * @param options.contactId The GHL contact.
  * @param options.name The opportunity name, the business name.
- * @param options.assignedTo The GHL user who owns it, when one is set.
  * @returns The GHL opportunity id.
  * @throws {Error} When GHL or the pipeline is not configured, or GHL rejects the request.
  */
-export const upsertLeadOpportunity = async (options: {
-  contactId: string;
-  name: string;
-  assignedTo?: string;
-}) => {
+export const upsertLeadOpportunity = async (options: { contactId: string; name: string }) => {
   const { opportunity } = opportunitySchema.parse(
     await request({
       path: '/opportunities/upsert',
@@ -406,7 +393,6 @@ export const upsertLeadOpportunity = async (options: {
         contactId: options.contactId,
         name: options.name,
         status: 'open',
-        ...(options.assignedTo ? { assignedTo: options.assignedTo } : {}),
       },
     }),
   );
@@ -415,31 +401,6 @@ export const upsertLeadOpportunity = async (options: {
   await updateLeadOpportunity({ opportunityId: opportunity.id });
 
   return opportunity.id;
-};
-
-/**
- * Assigns a contact to a GHL user, creating the contact from its email when GHL has none.
- * Only the email and the owner are sent, so the name and tags GHL holds stay as they are.
- * @param options The contact.
- * @param options.email The email the lead replied from.
- * @param options.userId The GHL user who owns the contact.
- * @returns The GHL contact id.
- * @throws {Error} When GHL is not configured or rejects the request.
- */
-export const assignContact = async (options: { email: string; userId: string }) => {
-  const { contact } = upsertContactSchema.parse(
-    await request({
-      path: '/contacts/upsert',
-      family: 'contacts',
-      body: {
-        locationId: requireEnv('GHL_LOCATION_ID', Env.GHL_LOCATION_ID),
-        email: options.email,
-        assignedTo: options.userId,
-      },
-    }),
-  );
-
-  return contact.id;
 };
 
 /**

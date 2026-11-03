@@ -551,7 +551,7 @@
     "button_select_all": "Select all",
     "button_clear": "Clear",
     "label_bot": "Handle replies with the bot",
-    "hint_bot": "The bot answers the leads, sends the demo and follows up, and on GHL the lead goes to the Bot AI user. When unselected, leads reach the sales reps as always. You can change it later on the Automation page."
+    "hint_bot": "The bot answers the leads, sends the demo and follows up. When unselected, leads reach the sales reps as always. On GHL you assign the lead either way. You can change it later on the Automation page."
   },
   "KnowledgeManager": {
     "prompt_description": "Positioning, tone, offer, anything the AI should know for every campaign.",
@@ -717,7 +717,7 @@
   },
   "BotCampaignsCard": {
     "title": "Campaigns handled by the bot",
-    "description": "On bot campaigns the bot answers, sends the demo and follows up, and on GHL the lead goes to Bot AI. On sales rep campaigns the lead reaches the reps and the bot does not answer. Stop requests are blocked either way.",
+    "description": "On bot campaigns the bot answers, sends the demo and follows up. On sales rep campaigns the lead reaches the reps and the bot does not answer. Stop requests are blocked either way.",
     "summary": "{bot} of {total} with the bot",
     "empty": "No campaign launched on Instantly",
     "placeholder_search": "Search a campaign",

@@ -25,8 +25,6 @@ export const Env = createEnv({
     GHL_PIPELINE_NEW_LEAD_STAGE_ID: z.string().min(1).optional(),
     GHL_PIPELINE_STAGE_ID: z.string().min(1).optional(),
     GHL_WEBHOOK_SECRET: z.string().min(16).optional(),
-    // The GHL user that bot-managed campaigns' leads are assigned to
-    GHL_BOT_USER_ID: z.string().min(1).optional(),
     // Kie AI: makes Gigi's videos (`scripts/generate-gigi-video.ts`) and voices version B demos
     KIE_API_KEY: z.string().min(1).optional(),
     APIFY_API_TOKEN: z.string().min(1).optional(),
@@ -75,7 +73,6 @@ export const Env = createEnv({
     GHL_PIPELINE_NEW_LEAD_STAGE_ID: process.env.GHL_PIPELINE_NEW_LEAD_STAGE_ID,
     GHL_PIPELINE_STAGE_ID: process.env.GHL_PIPELINE_STAGE_ID,
     GHL_WEBHOOK_SECRET: process.env.GHL_WEBHOOK_SECRET,
-    GHL_BOT_USER_ID: process.env.GHL_BOT_USER_ID,
     KIE_API_KEY: process.env.KIE_API_KEY,
     APIFY_API_TOKEN: process.env.APIFY_API_TOKEN,
     PROSPEO_API_KEY: process.env.PROSPEO_API_KEY,

@@ -9,9 +9,8 @@ import {
   upsertContact,
   upsertLeadOpportunity,
 } from '@/services/GoHighLevel';
-import { isBotManaged, logEvent } from './Conversations';
+import { logEvent } from './Conversations';
 import { db } from './DB';
-import { Env } from './Env';
 import { completeJob } from './JobQueue';
 
 type Job = typeof jobSchema.$inferSelect;
@@ -20,8 +19,8 @@ const leadPayloadSchema = z.object({ conversationId: z.uuid() });
 
 /**
  * Puts a lead who replied in the sales pipeline with the email source: a new opportunity
- * in the "new lead" stage, or the one a GHL workflow already made, left in its stage. A
- * bot-managed lead's opportunity goes to the "Bot AI" user.
+ * in the "new lead" stage, or the one a GHL workflow already made, left in its stage. Who
+ * owns it is set on GHL.
  * @param job The ghl_lead job being processed.
  * @throws {Error} When GHL rejects a call.
  */
@@ -47,15 +46,13 @@ const runGhlLeadJob = async (job: Job) => {
       name,
       companyName: name,
     }));
-  const assignedTo = (await isBotManaged(conversation)) ? Env.GHL_BOT_USER_ID : undefined;
   const existing = await findPipelineOpportunity(contactId);
 
   if (existing) {
-    await updateLeadOpportunity({ opportunityId: existing.id, assignedTo });
+    await updateLeadOpportunity({ opportunityId: existing.id });
   }
 
-  const opportunityId =
-    existing?.id ?? (await upsertLeadOpportunity({ contactId, name, assignedTo }));
+  const opportunityId = existing?.id ?? (await upsertLeadOpportunity({ contactId, name }));
 
   if (!conversation.ghlContactId) {
     await db

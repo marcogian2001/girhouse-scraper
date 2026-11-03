@@ -551,7 +551,7 @@
     "button_select_all": "Seleziona tutte",
     "button_clear": "Deseleziona",
     "label_bot": "Gestisci le risposte con il bot",
-    "hint_bot": "Il bot risponde ai lead, manda la demo e fa i follow-up, e su GHL il lead va all'utente Bot AI. Se non la selezioni, i lead arrivano ai venditori come sempre. Puoi cambiarlo dopo dalla pagina Automazione."
+    "hint_bot": "Il bot risponde ai lead, manda la demo e fa i follow-up. Se non la selezioni, i lead arrivano ai venditori come sempre. Su GHL l'assegnazione la fai tu in entrambi i casi. Puoi cambiarlo dopo dalla pagina Automazione."
   },
   "KnowledgeManager": {
     "prompt_description": "Posizionamento, tono, offerta: tutto ciò che l'AI deve sapere per ogni campagna.",
@@ -717,7 +717,7 @@
   },
   "BotCampaignsCard": {
     "title": "Campagne gestite dal bot",
-    "description": "Sulle campagne del bot, il bot risponde, manda la demo e fa i follow-up, e su GHL il lead va a Bot AI. Su quelle dei venditori il lead arriva ai venditori e il bot non risponde. Le richieste di stop vengono bloccate in entrambi i casi.",
+    "description": "Sulle campagne del bot, il bot risponde, manda la demo e fa i follow-up. Su quelle dei venditori il lead arriva ai venditori e il bot non risponde. Le richieste di stop vengono bloccate in entrambi i casi.",
     "summary": "{bot} su {total} col bot",
     "empty": "Nessuna campagna lanciata su Instantly",
     "placeholder_search": "Cerca una campagna",

@@ -72,7 +72,7 @@ Tutto il codice è committato su `main`. Restano fuori solo le modifiche `bg-whi
 - [ ] `NEXT_PUBLIC_APP_URL`: il dominio vero, da cui nascono i link delle demo.
 - [ ] `INSTANTLY_WEBHOOK_SECRET`.
 - [ ] `GHL_API_TOKEN`, `GHL_LOCATION_ID`, `GHL_CALENDAR_ID`, `GHL_PIPELINE_ID`, `GHL_PIPELINE_NEW_LEAD_STAGE_ID`, `GHL_PIPELINE_STAGE_ID`, `GHL_WEBHOOK_SECRET` (pipeline e fasi: vedi "Setting Pipeline" nella sezione 4).
-- [ ] `GHL_BOT_USER_ID=QO51qnqUW9vkBaEyKdNj`, l'utente "Bot AI" a cui vanno i lead delle campagne gestite dal bot. Senza, l'assegnazione non parte.
+- [x] `GHL_BOT_USER_ID` non serve più dal 4/11 (niente più assegnazione a Bot AI): si può togliere da Vercel.
 - [ ] Controllare che ci siano anche `ANTHROPIC_API_KEY`, `GOOGLE_MAPS_API_KEY`, `INSTANTLY_API_KEY` e `CRON_SECRET` (il cron ogni minuto fa girare risposte, follow-up e WhatsApp).
 
 **3. Instantly**
@@ -81,11 +81,8 @@ Tutto il codice è committato su `main`. Restano fuori solo le modifiche `bg-whi
 - [ ] **Permessi della chiave API:** anche `leads:update`, che serve a fermare la sequenza dei lead prenotati da un setter.
 
 **4. Go High Level**
-- [ ] **Permessi del token:** `calendars.readonly`, `calendars/events.write`, `contacts.write`, `opportunities.readonly`, `opportunities.write`, `locations/customFields.readonly`. `opportunities.readonly` serve a trovare l'opportunità da passare a Bot AI.
-- [ ] **Workflow "Go High Level" e "Risposta Positiva"** (partono dai webhook di Instantly e creano o spostano l'opportunità): prima dell'assegnazione aggiungere "Wait 3 minuti" e un If/Else "il contatto ha il tag `bot-ai`":
-  - sì: assegna a Bot AI;
-  - no: la rotazione di oggi tra i venditori.
-- [ ] **Workflow "Trial Schedulata":** se l'opportunità è di Bot AI, riassegnarla a rotazione a un venditore, che fa la call.
+- [ ] **Permessi del token:** `calendars.readonly`, `calendars/events.write`, `contacts.write`, `opportunities.readonly`, `opportunities.write`, `locations/customFields.readonly`. `opportunities.readonly` serve a trovare l'opportunità a cui mettere la fonte `email`.
+- [ ] **Workflow "Go High Level" e "Risposta Positiva"** (partono dai webhook di Instantly e creano o spostano l'opportunità): dal 4/11 l'app non manda più il tag `bot-ai` né assegna a Bot AI. L'assegnazione la fa il titolare su GHL: l'If/Else sul tag `bot-ai`, se è stato aggiunto, va tolto.
 - [x] **Campi personalizzati WhatsApp:** creati il 20/10.
 - [x] **Workflow "call prenotata"** con webhook `event = appointment_booked`: fatto dal titolare. Va bene anche per le call prenotate dai setter.
 - [ ] **Workflow "DND attivato"**: webhook con `event = dnd`.
@@ -384,11 +381,10 @@ Tutto il codice è committato su `main`. Restano fuori solo le modifiche `bg-whi
   - Le richieste di stop vengono bloccate lo stesso: blocklist Instantly e DND su GHL.
   - Se la campagna passa ai venditori a sequenza in corso, il prossimo follow-up mette in pausa la conversazione e gli invii programmati vengono annullati.
   - Riattivando il bot, le conversazioni già in pausa restano dei venditori.
-- [x] **Campagna del bot:** insieme alla risposta parte il job `ghl_bot_assign` (`src/libs/GhlBotAssign.ts`). Il job:
-  - assegna il contatto GHL a Bot AI e gli mette il tag `bot-ai`;
-  - dal 3/11 non aspetta più l'opportunità: la crea o la aggiorna il job `ghl_lead`, solo per le risposte positive (vedi "Setting Pipeline");
-  - non tocca le conversazioni con la call già prenotata.
-- [x] **Verifica su PGlite:** la campagna del bot accoda la risposta e l'assegnazione; quella dei venditori va in pausa senza chiamate AI e annulla gli invii programmati.
+- [x] **Campagna del bot:** il bot classifica, scrive la bozza della risposta (in modalità bozza resta un suggerimento da approvare), manda la demo e fa i follow-up.
+  - **Niente più Bot AI su GHL (4/11):** il job `ghl_bot_assign` non parte più e `src/libs/GhlBotAssign.ts` è stato tolto. Il contatto non riceve il tag `bot-ai` e né contatto né opportunità vengono assegnati: lo fa il titolare su GHL, dopo il workflow classico di Instantly. Il valore `ghl_bot_assign` resta nell'enum dei job per la cronologia; se ne restasse uno in coda, si chiude senza fare nulla.
+  - Il job `ghl_lead` crea o aggiorna l'opportunità per le risposte positive, con la fonte `email`, senza toccarne il proprietario (vedi "Setting Pipeline").
+- [x] **Verifica su PGlite:** la campagna del bot accoda la risposta; quella dei venditori va in pausa senza chiamate AI e annulla gli invii programmati.
 
 ### Pagina Risposte e risposte automatiche [x] (22/10)
 
@@ -541,7 +537,7 @@ Il titolare ha sostituito le pipeline di GHL: per i lead ora c'è solo **📞 Se
   - `GHL_PIPELINE_STAGE_ID=32e315b7-4372-4185-b600-39cd9edc2970` (Call schedulata).
 - **Job `ghl_lead`** (`src/libs/GhlLead.ts`, migrazione `0048`). Parte dopo la classificazione, solo per le risposte interessato, domanda, obiezione o non ora (`entersPipeline` in `src/utils/ReplyRouting.ts`). Vale per le campagne del bot e per quelle dei venditori. Il job:
   - trova o crea il contatto GHL;
-  - se il contatto ha già un'opportunità nella pipeline (per esempio dal workflow "Risposta Positiva"), le mette la fonte `email` e, per le campagne del bot, il proprietario Bot AI, senza cambiarle fase;
+  - se il contatto ha già un'opportunità nella pipeline (per esempio dal workflow "Risposta Positiva"), le mette la fonte `email`, senza cambiarle fase né proprietario;
   - altrimenti la crea in Nuovo Lead con fonte `email`.
   - Negativi, stop e risposte automatiche non entrano in pipeline.
 - **Fonte `email`:** l'upsert di GHL non accetta `source`, quindi si mette con un `PUT /opportunities/{id}` subito dopo. Questo vale anche per l'opportunità della call prenotata.

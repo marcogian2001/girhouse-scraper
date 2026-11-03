@@ -25,7 +25,6 @@ import {
 import { db } from './DB';
 import { demoVslJobHandlers, markDemoVslAbandoned } from './DemoVsl';
 import { followUpJobHandlers, markConversationTickAbandoned } from './FollowUps';
-import { ghlBotJobHandlers, markGhlBotAssignAbandoned } from './GhlBotAssign';
 import { ghlLeadJobHandlers, markGhlLeadAbandoned } from './GhlLead';
 import { instantlySyncJobHandlers, markInstantlySyncAbandoned } from './InstantlySync';
 import {
@@ -312,12 +311,6 @@ const markAbandoned = async (job: Job, message: string) => {
     return;
   }
 
-  if (job.type === 'ghl_bot_assign') {
-    await markGhlBotAssignAbandoned(job, message);
-
-    return;
-  }
-
   if (job.type === 'ghl_lead') {
     await markGhlLeadAbandoned(job, message);
 
@@ -369,7 +362,10 @@ const handlers = {
   ...replyJobHandlers,
   ...outboundJobHandlers,
   ...followUpJobHandlers,
-  ...ghlBotJobHandlers,
+  // Retired: leads are no longer handed to the bot user on GHL, so a queued one just ends
+  ghl_bot_assign: async (job: Job) => {
+    await completeJob(job.id);
+  },
   ...ghlLeadJobHandlers,
   ...instantlySyncJobHandlers,
   ...demoVslJobHandlers,

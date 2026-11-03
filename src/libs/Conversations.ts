@@ -42,7 +42,6 @@ import type { InstantlyWebhook } from '@/validations/InstantlyWebhookValidation'
 import { REPLY_EVENTS } from '@/validations/InstantlyWebhookValidation';
 import { listInstantlyEmails } from './ConversationThread';
 import { db } from './DB';
-import { Env } from './Env';
 import { enqueue } from './JobQueue';
 import { logger } from './Logger';
 import { scheduleNextAction } from './NextAction';
@@ -422,15 +421,7 @@ export const receiveInstantlyReply = async (webhook: InstantlyWebhook) => {
     payload: { inboundMessageId: message.id, eventType: webhook.event_type },
   });
 
-  // A bot-managed lead goes to the bot user on GHL, before the GHL workflows assign a rep
-  const handToBot = campaign.botManaged && isGhlConfigured() && Boolean(Env.GHL_BOT_USER_ID);
-
-  await enqueue([
-    { type: 'reply_process', payload: { inboundMessageId: message.id } },
-    ...(handToBot
-      ? [{ type: 'ghl_bot_assign' as const, payload: { conversationId: conversation.id } }]
-      : []),
-  ]);
+  await enqueue([{ type: 'reply_process', payload: { inboundMessageId: message.id } }]);
 
   return { status: 'queued' as const, conversationId: conversation.id };
 };
