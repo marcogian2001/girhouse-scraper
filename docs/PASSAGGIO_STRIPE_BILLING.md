@@ -114,7 +114,12 @@ Il codice del checkout nuovo è sul server ma spento: si accende solo quando in 
   - Pagina di conferma `/attiva/?conferma=<sub>&k=<firma>`: dati da Stripe, mostrati solo nella prima ora.
 - `template-attiva.php`: stesso HTML di `template-checkout.php`, senza WooCommerce.
 - `uploads/girhouse/funnels/attiva.js` e `attiva.css`.
-- Webhook di test `we_1UXoZlRpePwqv78HMnmXHKkI`. Costanti già presenti: `GH_STRIPE_MODE = test` e `GH_STRIPE_TEST_WEBHOOK`. Mancano `GH_STRIPE_TEST_SECRET` e `GH_STRIPE_TEST_PUBLISHABLE`, da mettere a cura del proprietario.
+- Webhook di test `we_1UXoZlRpePwqv78HMnmXHKkI`. Costanti in `wp-config.php`: `GH_STRIPE_MODE = test`, `GH_STRIPE_TEST_WEBHOOK`, `GH_STRIPE_TEST_PUBLISHABLE` e `GH_STRIPE_TEST_SECRET`, le ultime due messe dal proprietario. `gh_billing_ready()` accetta solo chiavi che iniziano con `pk_test_` e `sk_test_` o `rk_test_`, quindi i segnaposto non passano.
+- Dominio `girhouse.com` registrato per i portafogli anche in test (`pmd_1UXoryRpePwqv78Hy60lYI3y`): senza, Apple Pay e Google Pay non comparivano.
+- Più abbonamenti attivi per la stessa persona sono ammessi. Di quelli ancora da pagare (carta rifiutata, pagina chiusa) uno con lo stesso importo si riusa, uno con importo diverso si annulla, così i tentativi non lasciano abbonamenti vuoti.
+- Il Payment Element usa `terms: { card: 'never' }`: l'autorizzazione agli addebiti è la riga sotto il bottone, come nel checkout WooCommerce.
+- Provato senza carte il 4 novembre: aspetto uguale al checkout WooCommerce su 1366×900 e 390×844 (sul telefono scadenza e CVC sono affiancati); errori in italiano a modulo vuoto; "Il numero della carta è incompleto" senza carta e senza chiamare il server; endpoint con abbonamento a 47 € e fonte fb-ads, funnel F1; secondo tentativo sullo stesso abbonamento; conferma "Stiamo confermando il pagamento" e "Link non valido"; webhook con firma giusta, sbagliata ed evento doppio. L'abbonamento di prova è stato annullato.
+- Da provare a cura del proprietario: pagamento con carta, con 3D Secure, carta rifiutata, Apple Pay e Google Pay.
 - Backup prima delle modifiche: `~/backups-girhouse/20261104-pre-checkout-stripe/`.
 
 ## Primo passo
