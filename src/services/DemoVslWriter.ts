@@ -96,7 +96,7 @@ const SCENES: Record<VideoWrittenLine, string> = {
   video_line_loss_not_found:
     'FIRST STRETCH, "ti cercano, ma non ti trovano", over a photo. Someone in this city needs this kind of business and looks on Google: whoever does not show up gets passed over. Say it about the sector, never about this business.',
   video_line_google:
-    'The Google profile of the business as it could be: the search, the name, the buttons to call and get directions. Say that Girhouse takes care of the Google profile and of being found for this kind of search in this area, and that it takes a few months. Never promise a position.',
+    'The Google results page as it could be: the search, the site of the business among the results and its Google profile. Say that Girhouse takes care of the site and the Google profile so that people searching this in the area find it. Then say plainly that on Google you climb one step at a time, and that meanwhile whoever already writes to them is never lost again. Never "servono mesi, ma è la strada giusta", never promise a position.',
   video_line_site_hero:
     'The site as it could be, the top part. Say clearly that this is an example of how it could look ("potrebbe essere così") and that the buttons to book and write are always in view.',
   video_line_site_services:

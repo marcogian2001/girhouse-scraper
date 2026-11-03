@@ -1259,7 +1259,7 @@
     "video_loss_lost": "Ti scrivono, ma si perdono",
     "video_loss_not_back": "Sono già clienti, ma non tornano",
     "video_line_loss_not_found": "Chi ha bisogno di te apre Google e guarda i primi risultati. <hl>Se non ti trova lì, sceglie un altro.</hl>",
-    "video_line_google": "Ti facciamo trovare così: curiamo la <b>scheda Google</b> e la presenza per chi cerca nella tua zona. <hl>Richiede qualche mese</hl>, e te lo diciamo subito.",
+    "video_line_google": "Ti facciamo trovare così: curiamo il <b>sito e la scheda Google</b> per chi cerca nella tua zona. Su Google si sale un passo alla volta. <hl>Intanto, chi ti scrive già non lo perdi più.</hl>",
     "video_line_site_hero": "Il sito <hl>potrebbe essere così</hl>: veloce dal telefono, con i pulsanti per prenotare e scrivere sempre in vista.",
     "video_line_site_services": "Chi arriva capisce subito <b>cosa fai</b> e <hl>come prenotare</hl>.",
     "video_line_loss_not_chosen": "Prima di scrivere a qualcuno, le persone confrontano due o tre nomi e <hl>leggono le recensioni</hl>.",
@@ -1345,7 +1345,10 @@
     "video_seal_bottom": "giorni",
     "video_closing_book": "Scegli giorno e ora",
     "video_booking_discount_notice": "Prenotando la chiamata perdi lo sconto di 50 € sul primo mese: vale solo se attivi ora da questa pagina.",
-    "video_booking_back": "Torna all'offerta"
+    "video_booking_back": "Torna all'offerta",
+    "video_google_tab_all": "Tutti",
+    "video_google_tab_maps": "Maps",
+    "video_google_tab_images": "Immagini"
   },
   "ConversationDemoCard": {
     "title": "Demo",

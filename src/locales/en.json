@@ -1259,7 +1259,7 @@
     "video_loss_lost": "They write to you, but get lost",
     "video_loss_not_back": "They are customers, but don't come back",
     "video_line_loss_not_found": "People who need you open Google and look at the first results. <hl>If they don't find you there, they choose someone else.</hl>",
-    "video_line_google": "This is how we get you found: we look after your <b>Google profile</b> and your presence for people searching in your area. <hl>It takes a few months</hl>, and we say so upfront.",
+    "video_line_google": "This is how we get you found: we look after your <b>site and Google profile</b> for people searching in your area. On Google you climb one step at a time. <hl>Meanwhile, whoever already writes to you is never lost again.</hl>",
     "video_line_site_hero": "The site <hl>could look like this</hl>: fast on a phone, with the buttons to book and write always in view.",
     "video_line_site_services": "Visitors understand right away <b>what you do</b> and <hl>how to book</hl>.",
     "video_line_loss_not_chosen": "Before writing to anyone, people compare two or three names and <hl>read the reviews</hl>.",
@@ -1345,7 +1345,10 @@
     "video_seal_bottom": "days",
     "video_closing_book": "Pick a day and time",
     "video_booking_discount_notice": "By booking the call you lose the 50 € discount on the first month: it only applies if you activate now from this page.",
-    "video_booking_back": "Back to the offer"
+    "video_booking_back": "Back to the offer",
+    "video_google_tab_all": "All",
+    "video_google_tab_maps": "Maps",
+    "video_google_tab_images": "Images"
   },
   "ConversationDemoCard": {
     "title": "Demo",
