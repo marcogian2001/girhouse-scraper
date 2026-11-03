@@ -243,7 +243,7 @@ export const BookingStep = (props: {
               {isBusy ? t('booking_loading') : t('booking_phone_submit')}
             </button>
             {props.phoneNotice && (
-              <p className="text-center text-xs leading-snug text-neutral-500">
+              <p className="rounded-xl bg-amber-50 px-3 py-2 text-center text-sm leading-snug font-semibold text-amber-900 ring-1 ring-amber-200 md:text-base">
                 {props.phoneNotice}
               </p>
             )}
