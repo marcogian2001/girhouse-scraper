@@ -161,31 +161,47 @@ export const uploadToKie = async (options: { data: Buffer; mimeType: string; fil
   ).downloadUrl;
 
 /**
+ * Asks Kie for a signed link to a file it generated, served from its storage directly.
+ * @param url The file URL Kie gave.
+ * @returns The signed link, valid for 20 minutes.
+ */
+const signedDownloadLink = async (url: string) =>
+  z.string().parse(await kie(`${KIE_API_URL}/api/v1/common/download-url`, { url }));
+
+/**
  * Downloads a file Kie generated. Its file host sometimes drops connections for a few
- * minutes, so a failed download is tried again after a pause.
+ * minutes, and some networks block it, so after a failed attempt the file is fetched
+ * from Kie's storage through a signed link.
  * @param url The file URL.
  * @returns The file content.
  * @throws {Error} When every attempt fails.
  */
 export const downloadFromKie = async (url: string) => {
+  let link = url;
+
   for (let attempt = 1; attempt < DOWNLOAD_ATTEMPTS; attempt += 1) {
     try {
       // oxlint-disable-next-line no-await-in-loop
-      const response = await fetch(url, { signal: AbortSignal.timeout(DOWNLOAD_RETRY_MS) });
+      const response = await fetch(link, { signal: AbortSignal.timeout(DOWNLOAD_RETRY_MS) });
 
       if (response.ok) {
         // oxlint-disable-next-line no-await-in-loop
         return Buffer.from(await response.arrayBuffer());
       }
     } catch {
-      // Dropped or timed out: wait and try again
+      // Dropped, timed out or blocked: try again, from storage when Kie gives a link
     }
 
-    // oxlint-disable-next-line no-await-in-loop
-    await sleep(DOWNLOAD_RETRY_MS);
+    try {
+      // oxlint-disable-next-line no-await-in-loop
+      link = await signedDownloadLink(url);
+    } catch {
+      // oxlint-disable-next-line no-await-in-loop
+      await sleep(DOWNLOAD_RETRY_MS);
+    }
   }
 
-  const response = await fetch(url);
+  const response = await fetch(link);
 
   return Buffer.from(await response.arrayBuffer());
 };
