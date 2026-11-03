@@ -104,6 +104,19 @@ Sono tutte fattibili:
 
 Fatto in modalità test: prodotto `prod_VYw9HnkZedewiJ`, prezzo `price_1UXoH6RpePwqv78H2Z6dWfa1` (lookup key `sistema_girhouse_mensile`), coupon `primomese47`. In Stripe esistono già prodotti e abbonamenti creati da GHL, compreso un suo "Sistema Girhouse": dettagli in `docs/ANALISI_QUIZ_FUNNEL.md`.
 
+## Stato del passo 2 (4 novembre 2026, in corso)
+
+Il codice del checkout nuovo è sul server ma spento: si accende solo quando in `wp-config.php` ci sono le chiavi di test, e anche allora solo con il link di anteprima `/attiva/?anteprima=<codice>` (codice da `wp eval 'echo gh_billing_preview_code();'`). Il checkout WooCommerce resta quello di tutti.
+
+- `mu-plugins/girhouse-funnels/billing.php`:
+  - `POST /wp-json/gh-funnels/v1/attiva/abbonamento`: cliente Stripe trovato per email o creato; abbonamento `default_incomplete` al prezzo di test; coupon solo con il timer `gh_offer` valido; restituisce il segreto del primo pagamento e il link di conferma firmato. Abbonamenti incompleti della stessa persona riusati o annullati; niente secondo abbonamento se ne ha già uno attivo; limite di 12 tentativi l'ora per IP; campo trappola `sito`.
+  - `POST /wp-json/gh-funnels/v1/stripe/webhook`: firma verificata con `GH_STRIPE_TEST_WEBHOOK`; eventi doppi ignorati. `invoice.paid` con `subscription_create` avvia `gh_billing_first_payment` (utente WordPress con `gh_stripe_customer`, poi GHL solo in live). In test GHL non riceve niente: il registro `~/domains/girhouse.com/gh-billing.log` dice cosa sarebbe partito.
+  - Pagina di conferma `/attiva/?conferma=<sub>&k=<firma>`: dati da Stripe, mostrati solo nella prima ora.
+- `template-attiva.php`: stesso HTML di `template-checkout.php`, senza WooCommerce.
+- `uploads/girhouse/funnels/attiva.js` e `attiva.css`.
+- Webhook di test `we_1UXoZlRpePwqv78HMnmXHKkI`. Costanti già presenti: `GH_STRIPE_MODE = test` e `GH_STRIPE_TEST_WEBHOOK`. Mancano `GH_STRIPE_TEST_SECRET` e `GH_STRIPE_TEST_PUBLISHABLE`, da mettere a cura del proprietario.
+- Backup prima delle modifiche: `~/backups-girhouse/20261104-pre-checkout-stripe/`.
+
 ## Primo passo
 
 Controllare se il connettore Stripe è disponibile. Se c'è, creare in modalità test prodotto, prezzo e coupon e riportare gli id. Poi leggere `checkout.php` e `template-checkout.php` sul server prima di scrivere il nuovo checkout.
