@@ -4,7 +4,7 @@ export const DEMO_LINK_PLACEHOLDER = '{{link_demo}}';
 /** Where the two free call times go; the platform fills them from the calendar, never the writer. */
 export const SLOTS_PLACEHOLDER = '{{orari}}';
 
-/** Every rule a reply can break; `checkReply` reports all but the check of the video. */
+/** Every rule `checkReply` can report. */
 export const REPLY_ISSUES = [
   'too_long',
   'too_short',
@@ -12,7 +12,6 @@ export const REPLY_ISSUES = [
   'demo_link_missing',
   'slots_missing',
   'unknown_price',
-  'demo_not_checked',
 ] as const;
 
 /** Greeting and signature lines come on top of the 3 to 6 lines of the body. */

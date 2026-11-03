@@ -1,7 +1,7 @@
 'use client';
 
-import { AlertTriangle, CheckCircle2 } from 'lucide-react';
-import { useFormatter, useTranslations } from 'next-intl';
+import { AlertTriangle } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { findBannedWords } from '@/components/demo/vsl/VideoScript';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -12,56 +12,8 @@ import type { demoVslStatus } from '@/libs/DemoVsl';
 import { useRouter } from '@/libs/I18nNavigation';
 import type { DemoVsl } from '@/models/Schema';
 
-const CHECKS = ['check_name', 'check_italian', 'check_images'] as const;
-
 /**
- * The one-minute check a person makes before the link goes out, or when it was made.
- * @param props Component props.
- * @param props.checkedAt When a person checked the video, if they did.
- * @param props.isBusy Whether the panel is saving.
- * @param props.onCheck Records the check.
- * @returns The check.
- */
-const VideoCheck = (props: {
-  checkedAt: string | null;
-  isBusy: boolean;
-  onCheck: () => Promise<void>;
-}) => {
-  const t = useTranslations('ConversationDemoCard');
-  const format = useFormatter();
-
-  if (props.checkedAt) {
-    return (
-      <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
-        <CheckCircle2 className="size-4 text-green-600" />
-        {t('video_checked', {
-          date: format.dateTime(new Date(props.checkedAt), {
-            dateStyle: 'medium',
-            timeStyle: 'short',
-          }),
-        })}
-      </p>
-    );
-  }
-
-  return (
-    <div className="space-y-2">
-      <p className="text-sm font-medium">{t('video_check_title')}</p>
-      <ul className="list-disc space-y-0.5 pl-5 text-sm">
-        {CHECKS.map((check) => (
-          <li key={check}>{t(check)}</li>
-        ))}
-      </ul>
-      <Button type="button" size="sm" disabled={props.isBusy} onClick={props.onCheck}>
-        {props.isBusy && <Spinner />}
-        {t('button_check')}
-      </Button>
-    </div>
-  );
-};
-
-/**
- * The demo's video: where it stands, how it closes and its check. A demo from before the
+ * The demo's video: where it stands and the words to avoid it uses. A demo from before the
  * video stays as it is until someone asks for the new one.
  * @param props Component props.
  * @param props.conversationId The conversation.
@@ -81,14 +33,12 @@ export const DemoVersionPanel = (props: {
   const [isBusy, setIsBusy] = useState(false);
   const [hasError, setHasError] = useState(false);
 
-  const send = async (action: 'regenerate' | 'check') => {
+  const regenerate = async () => {
     setIsBusy(true);
     setHasError(false);
 
     const response = await fetch(`/api/replies/${props.conversationId}/demo/version`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action }),
     });
 
     setIsBusy(false);
@@ -118,16 +68,6 @@ export const DemoVersionPanel = (props: {
         </Alert>
       )}
 
-      {isReady && (
-        <VideoCheck
-          checkedAt={props.vsl?.checkedAt ?? null}
-          isBusy={isBusy}
-          onCheck={async () => {
-            await send('check');
-          }}
-        />
-      )}
-
       {props.vslStatus !== 'building' && (
         <Button
           type="button"
@@ -136,7 +76,7 @@ export const DemoVersionPanel = (props: {
           className="w-fit"
           disabled={isBusy}
           onClick={async () => {
-            await send('regenerate');
+            await regenerate();
           }}
         >
           {isBusy && <Spinner />}

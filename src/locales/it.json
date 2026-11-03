@@ -1004,8 +1004,7 @@
     "version_a": "Versione A",
     "version_b": "Versione B",
     "hint_version_a": "Rispetta il no, presenta l'offerta in due righe e chiede se può mandare la demo. Nessun link.",
-    "hint_version_b": "Rispetta il no e condivide subito il link alla demo, \"visto che era già pronta\". Niente prezzo e nessun follow-up dopo.",
-    "issue_demo_not_checked": "Il video demo va controllato prima dell'invio"
+    "hint_version_b": "Rispetta il no e condivide subito il link alla demo, \"visto che era già pronta\". Niente prezzo e nessun follow-up dopo."
   },
   "DemoPage": {
     "meta_title": "La demo per {company}",
@@ -1387,12 +1386,6 @@
     "label_video": "Video demo",
     "video_old_version": "Questa demo è precedente al nuovo video e resta com'è. Puoi crearlo se vuoi rimandarla.",
     "video_banned": "Il copione usa parole da evitare con il cliente: {words}. Rigenera il video.",
-    "video_check_title": "Prima di inviare il link, apri l'anteprima e controlla:",
-    "check_name": "Il nome dell'attività è giusto",
-    "check_italian": "L'italiano è corretto",
-    "check_images": "Nessuna immagine è fuori contesto",
-    "button_check": "Ho controllato il video",
-    "video_checked": "Controllato il {date}",
     "button_create_video": "Crea il nuovo video",
     "button_regenerate_video": "Rigenera il video"
   },

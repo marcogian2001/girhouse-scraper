@@ -505,27 +505,6 @@ export const demoVslStatus = async (demo: Demo) => {
 };
 
 /**
- * Records that a person checked the video before its link goes out.
- * @param demoId The demo.
- */
-export const markDemoVideoChecked = async (demoId: string) => {
-  await db
-    .update(demoSchema)
-    .set({
-      vsl: sql`jsonb_set(${demoSchema.vsl}, '{checkedAt}', ${JSON.stringify(new Date().toISOString())}::jsonb)`,
-    })
-    .where(eq(demoSchema.id, demoId));
-};
-
-/**
- * Tells whether a demo's link may go out: the demos before the video have nothing to check.
- * @param demo The demo.
- * @returns Whether a person checked the video, or it has nothing to check.
- */
-export const isDemoCleared = (demo: Pick<Demo, 'version' | 'vsl'>) =>
-  demo.version !== 'c' || Boolean(demo.vsl?.checkedAt);
-
-/**
  * Lists the voices of a demo's version B, without their files.
  * @param demoId The demo.
  * @returns Each line's voice: its id, what it says and its length.

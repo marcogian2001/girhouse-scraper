@@ -1229,8 +1229,6 @@ export type DemoVsl = {
   diy?: { keywords: string[]; blogTitles: string[] };
   // How the video ends, a test of the three closings; version C only
   closing?: 'purchase' | 'call' | 'both';
-  // When a person checked name, Italian and images before the link goes out; version C only
-  checkedAt?: string;
   // The follow-up automation, chasing the customer this business most often loses; version B only
   followUp?: {
     customerName: string;

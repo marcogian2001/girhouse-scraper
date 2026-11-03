@@ -31,8 +31,3 @@ export const DemoRebuildValidation = z.object({
   // What the Girhouse team tells the demo to use, links to the business's pages included
   guidance: z.string().trim().max(4000),
 });
-
-export const DemoVideoActionValidation = z.object({
-  // Writes the video again, or records that a person checked it
-  action: z.enum(['regenerate', 'check']),
-});
