@@ -9,6 +9,7 @@ import {
   replyClassificationSchema,
   whatsappHandoffSchema,
 } from '@/models/Schema';
+import { isGhlConfigured, isLeadPipelineConfigured } from '@/services/GoHighLevel';
 import type { InstantlyEmail } from '@/services/Instantly';
 import {
   emailText,
@@ -27,6 +28,7 @@ import { toE164 } from '@/utils/Phone';
 import {
   CATEGORY_FROM_CLASSIFIER,
   decideState,
+  entersPipeline,
   FINAL_STATES,
   needsAnswer,
   parseReturnDate,
@@ -795,6 +797,15 @@ const runReplyProcessJob = async (job: Job) => {
     await (current.state === 'paused'
       ? recordPausedClassification({ conversation: current, message, classification })
       : routeClassification({ conversation: current, message, classification, settings }));
+
+    if (
+      !conversation.isTest &&
+      entersPipeline(classification.category) &&
+      isGhlConfigured() &&
+      isLeadPipelineConfigured()
+    ) {
+      await enqueue([{ type: 'ghl_lead', payload: { conversationId: conversation.id } }]);
+    }
   }
 
   await completeJob(job.id);

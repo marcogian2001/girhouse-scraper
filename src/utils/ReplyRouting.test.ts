@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { decideState, needsAnswer, parseReturnDate, toObjectionKey } from './ReplyRouting';
+import {
+  decideState,
+  entersPipeline,
+  needsAnswer,
+  parseReturnDate,
+  toObjectionKey,
+} from './ReplyRouting';
 
 const decision = (overrides: Partial<Parameters<typeof decideState>[0]> = {}) =>
   decideState({
@@ -101,6 +107,22 @@ describe('ReplyRouting', () => {
       expect(
         needsAnswer({ category: 'wrong_person', state: 'wrong_person', hasReferral: false }),
       ).toBeFalsy();
+    });
+  });
+
+  describe('Pipeline', () => {
+    it('puts positive and open replies in the pipeline', () => {
+      expect(entersPipeline('interested')).toBeTruthy();
+      expect(entersPipeline('question')).toBeTruthy();
+      expect(entersPipeline('objection')).toBeTruthy();
+      expect(entersPipeline('not_now')).toBeTruthy();
+    });
+
+    it('keeps negative and automatic replies out of the pipeline', () => {
+      expect(entersPipeline('not_interested')).toBeFalsy();
+      expect(entersPipeline('stop')).toBeFalsy();
+      expect(entersPipeline('auto_reply')).toBeFalsy();
+      expect(entersPipeline('out_of_office')).toBeFalsy();
     });
   });
 

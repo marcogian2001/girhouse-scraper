@@ -20,7 +20,9 @@ export const Env = createEnv({
     GHL_API_TOKEN: z.string().min(1).optional(),
     GHL_LOCATION_ID: z.string().min(1).optional(),
     GHL_CALENDAR_ID: z.string().min(1).optional(),
+    // The setting pipeline: the stage replied leads land in, and the "call booked" stage
     GHL_PIPELINE_ID: z.string().min(1).optional(),
+    GHL_PIPELINE_NEW_LEAD_STAGE_ID: z.string().min(1).optional(),
     GHL_PIPELINE_STAGE_ID: z.string().min(1).optional(),
     GHL_WEBHOOK_SECRET: z.string().min(16).optional(),
     // The GHL user that bot-managed campaigns' leads are assigned to
@@ -70,6 +72,7 @@ export const Env = createEnv({
     GHL_LOCATION_ID: process.env.GHL_LOCATION_ID,
     GHL_CALENDAR_ID: process.env.GHL_CALENDAR_ID,
     GHL_PIPELINE_ID: process.env.GHL_PIPELINE_ID,
+    GHL_PIPELINE_NEW_LEAD_STAGE_ID: process.env.GHL_PIPELINE_NEW_LEAD_STAGE_ID,
     GHL_PIPELINE_STAGE_ID: process.env.GHL_PIPELINE_STAGE_ID,
     GHL_WEBHOOK_SECRET: process.env.GHL_WEBHOOK_SECRET,
     GHL_BOT_USER_ID: process.env.GHL_BOT_USER_ID,

@@ -10,6 +10,8 @@ const stageNames = new Map([
   ['no-show', 'No Show'],
   ['closed', 'Chiuso'],
   ['disqualified', 'Squalificato'],
+  ['setting-not-scheduled', 'Interessato - Call non schedulata'],
+  ['setting-scheduled', 'Call schedulata'],
 ]);
 
 const opportunity = (overrides: Partial<PipelineOpportunity>): PipelineOpportunity => ({
@@ -52,10 +54,25 @@ describe('GHL outcomes', () => {
       });
     });
 
+    it('counts a call for a lead in the setting pipeline call stage', () => {
+      const outcomes = toGhlOutcomes({
+        opportunities: [opportunity({ pipelineStageId: 'setting-scheduled' })],
+        stageNames,
+        appointments: [],
+      });
+
+      expect(outcomes.get('lead@example.it')?.callBookedAt).toStrictEqual(
+        new Date('2026-10-05T10:00:00.000Z'),
+      );
+    });
+
     it('leaves out a lead interested without a scheduled call', () => {
       expect(
         toGhlOutcomes({
-          opportunities: [opportunity({ pipelineStageId: 'not-scheduled' })],
+          opportunities: [
+            opportunity({ pipelineStageId: 'not-scheduled' }),
+            opportunity({ contactId: 'contact-2', pipelineStageId: 'setting-not-scheduled' }),
+          ],
           stageNames,
           appointments: [],
         }).size,

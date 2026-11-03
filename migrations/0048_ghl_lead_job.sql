@@ -1,0 +1,1 @@
+ALTER TYPE "public"."job_type" ADD VALUE 'ghl_lead' BEFORE 'instantly_sync';

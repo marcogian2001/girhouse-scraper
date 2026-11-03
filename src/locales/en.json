@@ -946,7 +946,9 @@
     "badge_whatsapp": "WhatsApp",
     "event_campaign_unmanaged": "Campaign handled by the sales reps: the bot does not answer",
     "event_ghl_bot_assigned": "Lead assigned to Bot AI on GHL",
-    "event_ghl_bot_assign_failed": "Could not assign the lead to Bot AI on GHL"
+    "event_ghl_bot_assign_failed": "Could not assign the lead to Bot AI on GHL",
+    "event_ghl_lead_saved": "Lead in the GHL setting pipeline",
+    "event_ghl_lead_failed": "Could not put the lead in the GHL setting pipeline"
   },
   "ObjectionsPage": {
     "title": "Objections",

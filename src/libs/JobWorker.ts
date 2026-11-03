@@ -26,6 +26,7 @@ import { db } from './DB';
 import { demoVslJobHandlers, markDemoVslAbandoned } from './DemoVsl';
 import { followUpJobHandlers, markConversationTickAbandoned } from './FollowUps';
 import { ghlBotJobHandlers, markGhlBotAssignAbandoned } from './GhlBotAssign';
+import { ghlLeadJobHandlers, markGhlLeadAbandoned } from './GhlLead';
 import { instantlySyncJobHandlers, markInstantlySyncAbandoned } from './InstantlySync';
 import {
   claimJobs,
@@ -317,6 +318,12 @@ const markAbandoned = async (job: Job, message: string) => {
     return;
   }
 
+  if (job.type === 'ghl_lead') {
+    await markGhlLeadAbandoned(job, message);
+
+    return;
+  }
+
   if (job.type === 'instantly_sync') {
     markInstantlySyncAbandoned(message);
 
@@ -363,6 +370,7 @@ const handlers = {
   ...outboundJobHandlers,
   ...followUpJobHandlers,
   ...ghlBotJobHandlers,
+  ...ghlLeadJobHandlers,
   ...instantlySyncJobHandlers,
   ...demoVslJobHandlers,
 };

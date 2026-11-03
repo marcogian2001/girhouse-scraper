@@ -71,7 +71,7 @@ Tutto il codice è committato su `main`. Restano fuori solo le modifiche `bg-whi
 **2. Variabili d'ambiente su Vercel**, gli stessi valori del `.env` locale:
 - [ ] `NEXT_PUBLIC_APP_URL`: il dominio vero, da cui nascono i link delle demo.
 - [ ] `INSTANTLY_WEBHOOK_SECRET`.
-- [ ] `GHL_API_TOKEN`, `GHL_LOCATION_ID`, `GHL_CALENDAR_ID`, `GHL_PIPELINE_ID`, `GHL_PIPELINE_STAGE_ID`, `GHL_WEBHOOK_SECRET`.
+- [ ] `GHL_API_TOKEN`, `GHL_LOCATION_ID`, `GHL_CALENDAR_ID`, `GHL_PIPELINE_ID`, `GHL_PIPELINE_NEW_LEAD_STAGE_ID`, `GHL_PIPELINE_STAGE_ID`, `GHL_WEBHOOK_SECRET` (pipeline e fasi: vedi "Setting Pipeline" nella sezione 4).
 - [ ] `GHL_BOT_USER_ID=QO51qnqUW9vkBaEyKdNj`, l'utente "Bot AI" a cui vanno i lead delle campagne gestite dal bot. Senza, l'assegnazione non parte.
 - [ ] Controllare che ci siano anche `ANTHROPIC_API_KEY`, `GOOGLE_MAPS_API_KEY`, `INSTANTLY_API_KEY` e `CRON_SECRET` (il cron ogni minuto fa girare risposte, follow-up e WhatsApp).
 
@@ -386,7 +386,7 @@ Tutto il codice è committato su `main`. Restano fuori solo le modifiche `bg-whi
   - Riattivando il bot, le conversazioni già in pausa restano dei venditori.
 - [x] **Campagna del bot:** insieme alla risposta parte il job `ghl_bot_assign` (`src/libs/GhlBotAssign.ts`). Il job:
   - assegna il contatto GHL a Bot AI e gli mette il tag `bot-ai`;
-  - aspetta l'opportunità creata dal workflow, riprovando con attese crescenti, e la passa a Bot AI;
+  - dal 3/11 non aspetta più l'opportunità: la crea o la aggiorna il job `ghl_lead`, solo per le risposte positive (vedi "Setting Pipeline");
   - non tocca le conversazioni con la call già prenotata.
 - [x] **Verifica su PGlite:** la campagna del bot accoda la risposta e l'assegnazione; quella dei venditori va in pausa senza chiamate AI e annulla gli invii programmati.
 
@@ -529,6 +529,24 @@ Da "Cosa cambiamo: target, offerta, funnel e vendita". Sostituisce A e B per tut
 - **Cold email, Prompt v4 (3/11):** nella sezione prompt, parte dalla v1 (la più convertente: oggetto breve, Lei/Tu, una domanda finale). Regola madre: email il più personalizzata possibile, con il problema più probabile del lead scelto dalla ricerca (non trovato su Google, scelto un altro, richieste perse mentre lavora, clienti che non tornano, richieste sparse tra telefono e social). Cosa facciamo in una frase scritta per lui, sempre con le due parti della promessa (trovato su Google senza pubblicità, e nessuno che scrive o chiama resta senza risposta o senza essere richiamato), senza spiegare il meccanismo né elencare servizi: lo fa il video. Chiusura fissa sul video di 2 minuti ("Glielo mando?"). Nessuna affermazione su cosa manca al loro sito, nessun numero di clienti, niente prezzi, prove, "Re:", "ultimo messaggio", firma o PS (li mette Instantly). In campagna va selezionato solo "Prompt v4": i due PDF di ispirazione si caricano da soli; non vanno aggiunti "ICP e Offer.pdf" né "Girhouse_Piano_Operativo.pdf". Provata su 12 lead reali, circa 0,15 $ a lead con Sonnet 5.5.
 - **Prompt v4.1 e v4.2 (3/11), test A/B:** email 1 a testo fisso sulla bozza del titolare (agenzia che aiuta [nicchia] a farsi trovare su Google e a non perdere le richieste, "Sistemiamo la sua presenza su Google per presentare [cosa fa], così che venga trovato online, poi colleghiamo un sistema che raccoglie le richieste" (mai "infrastruttura", Analytics o Search Console nell'email), mai "il nostro programma", perché la v4.2 dice che parte del lavoro si può fare da soli su WhatsApp o email e fissa l'appuntamento, "Ho preparato un video… vuole vederlo?", firma "Cordiali saluti, Gianmarco Scandale"), con le parti tra [ ] personalizzate dalla ricerca. Con il Lei i pronomi sono minuscoli ("le", "la", "suo", "mostrarle"). La v4.2 aggiunge "Nel video le mostro anche cosa può sistemare da solo, anche se poi non lavoriamo insieme", ripresa in breve nelle email 2 e 3: **il video demo non ha ancora quella parte**. Le due versioni vanno su metà lista ciascuna, nella stessa nicchia. La firma è nel testo: in Instantly non va aggiunta una seconda.
 - **Da fare a parte:** le email di risposta e il bot GHL parlano ancora della vecchia offerta (`buildOfferBrief` in `src/utils/Offer.ts`: landing, "follow-up", {slots} attività al mese).
+
+### Setting Pipeline su GHL [x] (3/11)
+
+Il titolare ha sostituito le pipeline di GHL: per i lead ora c'è solo **📞 Setting Pipeline** (`jlmfevdaXmmF2rME99nM`). La vecchia "4. Cold Email | Instantly" non esiste più, e dal 29/10 `ghl_bot_assign` falliva (54 job) perché cercava l'opportunità lì.
+
+- **Variabili:**
+  - `GHL_PIPELINE_ID=jlmfevdaXmmF2rME99nM`;
+  - `GHL_PIPELINE_NEW_LEAD_STAGE_ID=0154c664-7f0f-4881-b5d1-0952dbfea1c4` (Nuovo Lead);
+  - `GHL_PIPELINE_STAGE_ID=32e315b7-4372-4185-b600-39cd9edc2970` (Call schedulata).
+- **Job `ghl_lead`** (`src/libs/GhlLead.ts`, migrazione `0048`). Parte dopo la classificazione, solo per le risposte interessato, domanda, obiezione o non ora (`entersPipeline` in `src/utils/ReplyRouting.ts`). Vale per le campagne del bot e per quelle dei venditori. Il job:
+  - trova o crea il contatto GHL;
+  - se il contatto ha già un'opportunità nella pipeline (per esempio dal workflow "Risposta Positiva"), le mette la fonte `email` e, per le campagne del bot, il proprietario Bot AI, senza cambiarle fase;
+  - altrimenti la crea in Nuovo Lead con fonte `email`.
+  - Negativi, stop e risposte automatiche non entrano in pipeline.
+- **Fonte `email`:** l'upsert di GHL non accetta `source`, quindi si mette con un `PUT /opportunities/{id}` subito dopo. Questo vale anche per l'opportunità della call prenotata.
+- **Esiti:** `BOOKED_STAGES` riconosce anche "Call schedulata". No show e chiusure ora stanno nella "💰 Sales Pipeline", che il recupero non legge: arrivano dal calendario e dai webhook.
+- **Recupero del 3/11:** ai 64 lead segnati Interessato su Instantly. Erano già tutti nella Setting Pipeline, creati dal workflow "Risposta Positiva": è stata aggiunta solo la fonte `email`.
+- [ ] **Titolare:** il workflow GHL "Go High Level" (tutte le risposte da Instantly) punta ancora alla pipeline cancellata. Va spento, oppure va tolto il passo che crea l'opportunità.
 
 ---
 

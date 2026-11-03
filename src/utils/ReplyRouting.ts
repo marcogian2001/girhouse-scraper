@@ -84,6 +84,21 @@ const ANSWERED_CATEGORIES = new Set<ReplyCategory>([
   'wrong_person',
 ]);
 
+/** The replies that put a lead in the GHL sales pipeline: the rest never reach it. */
+const PIPELINE_CATEGORIES = new Set<ReplyCategory>([
+  'interested',
+  'question',
+  'objection',
+  'not_now',
+]);
+
+/**
+ * Tells whether a reply puts its lead in the GHL sales pipeline.
+ * @param category The reply's category.
+ * @returns True for a positive or open reply.
+ */
+export const entersPipeline = (category: ReplyCategory) => PIPELINE_CATEGORIES.has(category);
+
 /**
  * Tells whether a classified reply gets an answer. Replies in manual review get a
  * draft too, so the person reviewing starts from a proposal.

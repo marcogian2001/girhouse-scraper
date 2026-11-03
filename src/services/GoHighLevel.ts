@@ -13,6 +13,9 @@ const API_VERSIONS = {
   locations: '2021-07-28',
 } as const;
 
+/** The source every opportunity of a cold email lead carries. */
+const OPPORTUNITY_SOURCE = 'email';
+
 const freeSlotsSchema = z.record(z.string(), z.unknown());
 
 const daySlotsSchema = z.object({ slots: z.array(z.string()) });
@@ -93,6 +96,13 @@ export const isGhlConfigured = () =>
  * @returns True when the pipeline and its "call booked" stage are set.
  */
 export const isPipelineConfigured = () => Boolean(Env.GHL_PIPELINE_ID && Env.GHL_PIPELINE_STAGE_ID);
+
+/**
+ * Tells whether leads who replied land in the sales pipeline.
+ * @returns True when the pipeline and its "new lead" stage are set.
+ */
+export const isLeadPipelineConfigured = () =>
+  Boolean(Env.GHL_PIPELINE_ID && Env.GHL_PIPELINE_NEW_LEAD_STAGE_ID);
 
 /**
  * Calls the GHL API and fails loudly on a non-2xx response.
@@ -315,8 +325,31 @@ export const setContactDnd = async (contactId: string) => {
 };
 
 /**
- * Puts the lead's opportunity in the "call booked" stage of the sales pipeline,
- * creating it when the contact has none there yet.
+ * Gives an existing opportunity the email source and, when one is set, an owner,
+ * leaving its stage as it is.
+ * @param options The update.
+ * @param options.opportunityId The GHL opportunity.
+ * @param options.assignedTo The GHL user who owns it, when one is set.
+ * @throws {Error} When GHL is not configured or rejects the request.
+ */
+export const updateLeadOpportunity = async (options: {
+  opportunityId: string;
+  assignedTo?: string;
+}) => {
+  await request({
+    path: `/opportunities/${options.opportunityId}`,
+    family: 'opportunities',
+    method: 'PUT',
+    body: {
+      source: OPPORTUNITY_SOURCE,
+      ...(options.assignedTo ? { assignedTo: options.assignedTo } : {}),
+    },
+  });
+};
+
+/**
+ * Puts the lead's opportunity in the "call booked" stage of the sales pipeline, with the
+ * email source, creating it when the contact has none there yet.
  * @param options The opportunity.
  * @param options.contactId The GHL contact.
  * @param options.name The opportunity name, the business name.
@@ -338,6 +371,48 @@ export const upsertBookedOpportunity = async (options: { contactId: string; name
       },
     }),
   );
+
+  await updateLeadOpportunity({ opportunityId: opportunity.id });
+
+  return opportunity.id;
+};
+
+/**
+ * Puts a lead who replied in the "new lead" stage of the sales pipeline, with the email
+ * source. GHL keeps one opportunity per contact there, so a workflow's one is reused.
+ * @param options The opportunity.
+ * @param options.contactId The GHL contact.
+ * @param options.name The opportunity name, the business name.
+ * @param options.assignedTo The GHL user who owns it, when one is set.
+ * @returns The GHL opportunity id.
+ * @throws {Error} When GHL or the pipeline is not configured, or GHL rejects the request.
+ */
+export const upsertLeadOpportunity = async (options: {
+  contactId: string;
+  name: string;
+  assignedTo?: string;
+}) => {
+  const { opportunity } = opportunitySchema.parse(
+    await request({
+      path: '/opportunities/upsert',
+      family: 'opportunities',
+      body: {
+        locationId: requireEnv('GHL_LOCATION_ID', Env.GHL_LOCATION_ID),
+        pipelineId: requireEnv('GHL_PIPELINE_ID', Env.GHL_PIPELINE_ID),
+        pipelineStageId: requireEnv(
+          'GHL_PIPELINE_NEW_LEAD_STAGE_ID',
+          Env.GHL_PIPELINE_NEW_LEAD_STAGE_ID,
+        ),
+        contactId: options.contactId,
+        name: options.name,
+        status: 'open',
+        ...(options.assignedTo ? { assignedTo: options.assignedTo } : {}),
+      },
+    }),
+  );
+
+  // The upsert does not take the source, so it is set apart
+  await updateLeadOpportunity({ opportunityId: opportunity.id });
 
   return opportunity.id;
 };
@@ -384,22 +459,6 @@ export const findPipelineOpportunity = async (contactId: string) => {
   );
 
   return opportunities[0];
-};
-
-/**
- * Assigns an opportunity to a GHL user.
- * @param options The assignment.
- * @param options.opportunityId The GHL opportunity.
- * @param options.userId The GHL user who owns it.
- * @throws {Error} When GHL is not configured or rejects the request.
- */
-export const assignOpportunity = async (options: { opportunityId: string; userId: string }) => {
-  await request({
-    path: `/opportunities/${options.opportunityId}`,
-    family: 'opportunities',
-    method: 'PUT',
-    body: { assignedTo: options.userId },
-  });
 };
 
 /**

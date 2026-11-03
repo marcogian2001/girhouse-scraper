@@ -12,10 +12,17 @@ export type GhlOutcome = {
 };
 
 /**
- * The stages of the cold email pipeline a lead only reaches after booking a call, by
- * the start of their lower-cased name. "Chiamata Non Schedulata" is not one of them.
+ * The stages of the setting pipeline, and of the cold email one before it, a lead only
+ * reaches after booking a call, by the start of their lower-cased name. "Chiamata Non
+ * Schedulata" and "Interessato - Call non schedulata" are not among them.
  */
-const BOOKED_STAGES = ['chiamata schedulata', 'chiamata completata', 'no show', 'chiuso'];
+const BOOKED_STAGES = [
+  'call schedulata',
+  'chiamata schedulata',
+  'chiamata completata',
+  'no show',
+  'chiuso',
+];
 
 const NO_SHOW_STAGE = 'no show';
 

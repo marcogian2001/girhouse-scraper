@@ -2,12 +2,7 @@ import { eq } from 'drizzle-orm';
 import * as z from 'zod';
 import type { jobSchema } from '@/models/Schema';
 import { conversationSchema } from '@/models/Schema';
-import {
-  addContactTags,
-  assignContact,
-  assignOpportunity,
-  findPipelineOpportunity,
-} from '@/services/GoHighLevel';
+import { addContactTags, assignContact } from '@/services/GoHighLevel';
 import { logEvent } from './Conversations';
 import { db } from './DB';
 import { Env } from './Env';
@@ -21,11 +16,11 @@ const BOT_TAG = 'bot-ai';
 const assignPayloadSchema = z.object({ conversationId: z.uuid() });
 
 /**
- * Hands a bot-managed lead to the "Bot AI" user on GHL: owns the contact, tags it so the
- * GHL workflows skip the sales reps, and takes over the opportunity they created. Throws
- * while the opportunity is not there yet, so the job retries until the workflow made it.
+ * Hands a bot-managed lead to the "Bot AI" user on GHL: owns the contact and tags it so the
+ * GHL workflows skip the sales reps. The opportunity, for a positive reply, is the
+ * ghl_lead job's.
  * @param job The ghl_bot_assign job being processed.
- * @throws {Error} When GHL rejects a call or the opportunity does not exist yet.
+ * @throws {Error} When GHL rejects a call.
  */
 const runGhlBotAssignJob = async (job: Job) => {
   const { conversationId } = assignPayloadSchema.parse(job.payload);
@@ -52,20 +47,10 @@ const runGhlBotAssignJob = async (job: Job) => {
       .where(eq(conversationSchema.id, conversation.id));
   }
 
-  const opportunity = await findPipelineOpportunity(contactId);
-
-  if (!opportunity) {
-    throw new Error(`No pipeline opportunity yet for GHL contact ${contactId}`);
-  }
-
-  if (opportunity.assignedTo !== userId) {
-    await assignOpportunity({ opportunityId: opportunity.id, userId });
-  }
-
   await logEvent({
     conversationId: conversation.id,
     type: 'ghl_bot_assigned',
-    payload: { contactId, opportunityId: opportunity.id },
+    payload: { contactId },
   });
   await completeJob(job.id);
 };
