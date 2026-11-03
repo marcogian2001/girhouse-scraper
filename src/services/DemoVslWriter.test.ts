@@ -60,8 +60,6 @@ const texts: DemoVslTexts = {
     video_line_inbox: '',
     video_line_loss_not_back: '',
     video_line_reminder: '',
-    video_line_diy_site: '',
-    video_line_diy_google: '',
   },
   foto: {
     video_line_loss_not_found: 'A woman searches on her phone at home.',

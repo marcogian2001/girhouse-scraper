@@ -28,8 +28,6 @@ export const VIDEO_WRITTEN_LINES = [
   'video_line_inbox',
   'video_line_loss_not_back',
   'video_line_reminder',
-  'video_line_diy_site',
-  'video_line_diy_google',
 ] as const;
 
 export type VideoWrittenLine = (typeof VIDEO_WRITTEN_LINES)[number];
@@ -48,7 +46,10 @@ export type VideoPhotoLine = (typeof VIDEO_PHOTO_LINES)[number];
 /** Lines said the same for everyone: the offer never depends on what the AI writes. */
 type VideoFixedLine =
   | 'video_line_intro'
+  | 'video_line_diy_site'
+  | 'video_line_diy_google'
   | 'video_line_diy_or_us'
+  | 'video_line_booking_phone_both'
   | 'video_line_offer_price_direct'
   | 'video_line_offer_price_call'
   | 'video_line_offer_included'
@@ -304,6 +305,22 @@ export const buildVideoScenes = (options: { data: DemoSnapshot; closing: VideoCl
 };
 
 /**
+ * Names what Gigi says at a moment of the booking. When buying was on offer too, the first
+ * one warns that the call costs the first month's discount.
+ * @param options The booking.
+ * @param options.phase Where the booking stands.
+ * @param options.closing How the video ends.
+ * @returns The line.
+ */
+export const videoBookingLine = (options: {
+  phase: BookingPhase;
+  closing: VideoClosing;
+}): VideoLine =>
+  options.phase === 'phone' && options.closing === 'both'
+    ? 'video_line_booking_phone_both'
+    : `video_line_booking_${options.phase}`;
+
+/**
  * Lists every line version C may say, to voice them all in advance.
  * @param scenes The scenes.
  * @param closing How the video ends: a video that only sells needs no booking lines.
@@ -315,7 +332,7 @@ export const videoLinesToVoice = (scenes: VslScene[], closing: VideoClosing) => 
       ...scenes.map((scene) => scene.line),
       ...(closing === 'purchase'
         ? []
-        : VSL_BOOKING_PHASES.map((phase) => `video_line_booking_${phase}` as const)),
+        : VSL_BOOKING_PHASES.map((phase) => videoBookingLine({ phase, closing }))),
     ].filter(isVideoLine),
   ),
 ];

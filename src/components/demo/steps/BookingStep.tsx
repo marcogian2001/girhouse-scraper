@@ -16,6 +16,7 @@ import { googleCalendarUrl } from '../CalendarLinks';
 import { captureDemoEvent } from '../DemoAnalytics';
 import { getDemoSessionId, sendDemoEvent } from '../DemoSession';
 import { PHONE_PREFIXES, withPrefix } from '../PhonePrefix';
+import { PrefixPicker } from '../PrefixPicker';
 import { WhatsAppIcon } from '../WhatsAppIcon';
 
 export type BookingPhase = 'phone' | 'slots' | 'confirm' | 'booked' | 'unavailable';
@@ -46,6 +47,51 @@ const loadSlots = async (slug: string): Promise<Slots | null> => {
 };
 
 /**
+ * The way out of the booking when no time suits: a chat on WhatsApp with Girhouse.
+ * @param props Component props.
+ * @param props.slug The demo slug.
+ * @param props.company The business name.
+ * @param props.whatsappNumber The Girhouse WhatsApp number in E.164, if configured.
+ * @param props.track Whether clicks are reported; off in dashboard previews.
+ * @param props.isText Shows it as a text link rather than a green button.
+ * @returns The link, or nothing without a number.
+ */
+const WhatsAppFallback = (props: {
+  slug: string;
+  company: string;
+  whatsappNumber: string | null;
+  track: boolean;
+  isText: boolean;
+}) => {
+  const t = useTranslations('DemoPage');
+
+  if (!props.whatsappNumber) {
+    return null;
+  }
+
+  return (
+    <a
+      href={`https://wa.me/${props.whatsappNumber.replace('+', '')}?text=${encodeURIComponent(t('whatsapp_prefill', { company: props.company }))}`}
+      target="_blank"
+      rel="noopener noreferrer"
+      onClick={() => {
+        if (props.track) {
+          sendDemoEvent(props.slug, { type: 'whatsapp_click' });
+        }
+      }}
+      className={
+        props.isText
+          ? 'flex items-center justify-center gap-2 text-sm font-semibold text-neutral-600 underline-offset-4 hover:underline'
+          : 'flex items-center justify-center gap-2 rounded-2xl bg-[#25d366] px-5 py-3.5 text-sm font-semibold text-white shadow-lg'
+      }
+    >
+      <WhatsAppIcon className={props.isText ? 'size-4 text-[#25d366]' : 'size-5'} />
+      {t('whatsapp_link')}
+    </a>
+  );
+};
+
+/**
  * The last step: the lead leaves their WhatsApp number, picks one of the free
  * times from the GHL calendar, confirms, and the call is booked.
  * @param props Component props.
@@ -57,6 +103,9 @@ const loadSlots = async (slug: string): Promise<Slots | null> => {
  * @param props.onPhase Moves the booking on, so the giraffe says the matching line.
  * @param props.hasPlainNotice Reminds of the reminders, without the "one call only" warning.
  * @param props.phoneNotice A line in small print under the button that asks for the number.
+ * @param props.isOfferFirst Leaves the main button to going back to the offer: the booking's
+ * own buttons go quiet and WhatsApp becomes a text link.
+ * @param props.afterCard What goes between the booking and the WhatsApp link.
  * @returns The booking flow.
  */
 export const BookingStep = (props: {
@@ -68,6 +117,8 @@ export const BookingStep = (props: {
   onPhase: (phase: BookingPhase) => void;
   hasPlainNotice?: boolean;
   phoneNotice?: string;
+  isOfferFirst?: boolean;
+  afterCard?: React.ReactNode;
 }) => {
   const t = useTranslations('DemoPage');
   const format = useFormatter();
@@ -171,10 +222,6 @@ export const BookingStep = (props: {
     setFailure('book_error');
   };
 
-  const whatsappHref = props.whatsappNumber
-    ? `https://wa.me/${props.whatsappNumber.replace('+', '')}?text=${encodeURIComponent(t('whatsapp_prefill', { company: props.company }))}`
-    : null;
-
   const pick = (slot: string) => {
     setChosen(slot);
     setFailure(null);
@@ -198,29 +245,8 @@ export const BookingStep = (props: {
             <label htmlFor="demo-phone" className="block font-semibold">
               {t('booking_phone_label')}
             </label>
-            <div className="flex overflow-hidden rounded-2xl border border-neutral-300 focus-within:border-(--demo-primary) focus-within:ring-2 focus-within:ring-(--demo-primary)/25">
-              <label className="relative flex items-center border-r border-neutral-200 bg-neutral-50">
-                <span className="sr-only">{t('booking_prefix_label')}</span>
-                <select
-                  value={dial}
-                  onChange={(event) => {
-                    setDial(event.target.value);
-                  }}
-                  className="h-full cursor-pointer appearance-none bg-transparent py-3 pr-7 pl-3 text-base text-neutral-800 outline-none"
-                >
-                  {PHONE_PREFIXES.map((prefix) => (
-                    <option key={prefix.country} value={prefix.dial}>
-                      {prefix.flag} {prefix.dial}
-                    </option>
-                  ))}
-                </select>
-                <span
-                  className="pointer-events-none absolute right-2 text-xs text-neutral-400"
-                  aria-hidden
-                >
-                  ▾
-                </span>
-              </label>
+            <div className="flex rounded-2xl border border-neutral-300 focus-within:border-(--demo-primary) focus-within:ring-2 focus-within:ring-(--demo-primary)/25 [&>*:first-child]:rounded-l-2xl [&>*:last-child]:rounded-r-2xl">
+              <PrefixPicker dial={dial} label={t('booking_prefix_label')} onChange={setDial} />
               <input
                 id="demo-phone"
                 type="tel"
@@ -238,7 +264,7 @@ export const BookingStep = (props: {
             <button
               type="submit"
               disabled={isBusy}
-              className="h-13 w-full rounded-2xl bg-(--demo-primary) font-semibold text-(--demo-on-primary) shadow-lg disabled:opacity-60"
+              className={`h-13 w-full rounded-2xl font-semibold disabled:opacity-60 ${props.isOfferFirst ? 'border-2 border-(--demo-primary) text-(--demo-primary)' : 'bg-(--demo-primary) text-(--demo-on-primary) shadow-lg'}`}
             >
               {isBusy ? t('booking_loading') : t('booking_phone_submit')}
             </button>
@@ -382,21 +408,16 @@ export const BookingStep = (props: {
         {failure && <p className="text-sm text-red-600">{t(`booking_error_${failure}`)}</p>}
       </div>
 
-      {whatsappHref && props.phase !== 'booked' && (
-        <a
-          href={whatsappHref}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={() => {
-            if (props.track) {
-              sendDemoEvent(props.slug, { type: 'whatsapp_click' });
-            }
-          }}
-          className="flex items-center justify-center gap-2 rounded-2xl bg-[#25d366] px-5 py-3.5 text-sm font-semibold text-white shadow-lg"
-        >
-          <WhatsAppIcon className="size-5" />
-          {t('whatsapp_link')}
-        </a>
+      {props.afterCard}
+
+      {props.phase !== 'booked' && (
+        <WhatsAppFallback
+          slug={props.slug}
+          company={props.company}
+          whatsappNumber={props.whatsappNumber}
+          track={props.track}
+          isText={Boolean(props.isOfferFirst)}
+        />
       )}
     </div>
   );

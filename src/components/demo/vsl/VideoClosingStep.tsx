@@ -103,27 +103,24 @@ export const VideoCallBooking = (props: {
   const canBuy = props.closing === 'both';
 
   return (
-    <div className="space-y-3">
-      <BookingStep
-        slug={props.slug}
-        company={props.company}
-        whatsappNumber={props.whatsappNumber}
-        track={props.track}
-        phase={props.bookingPhase}
-        onPhase={props.onBookingPhase}
-        phoneNotice={canBuy ? t('video_booking_discount_notice') : undefined}
-        hasPlainNotice
-      />
-      {canBuy && props.bookingPhase !== 'booked' && (
-        <button
-          type="button"
-          onClick={props.onBack}
-          className="mx-auto flex items-center gap-1.5 text-sm font-semibold text-neutral-600 underline-offset-4 hover:underline"
-        >
-          <ArrowLeft className="size-4" />
-          {t('video_booking_back')}
-        </button>
-      )}
-    </div>
+    <BookingStep
+      slug={props.slug}
+      company={props.company}
+      whatsappNumber={props.whatsappNumber}
+      track={props.track}
+      phase={props.bookingPhase}
+      onPhase={props.onBookingPhase}
+      phoneNotice={canBuy ? t('video_booking_discount_notice') : undefined}
+      isOfferFirst={canBuy}
+      afterCard={
+        canBuy && props.bookingPhase !== 'booked' ? (
+          <button type="button" onClick={props.onBack} className={MAIN_BUTTON}>
+            <ArrowLeft className="size-5 shrink-0 stroke-3 sm:size-6" />
+            {t('video_booking_back')}
+          </button>
+        ) : undefined
+      }
+      hasPlainNotice
+    />
   );
 };

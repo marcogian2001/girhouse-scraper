@@ -4,6 +4,7 @@ import type { LucideIcon } from 'lucide-react';
 import {
   Check,
   ChartColumnIncreasing,
+  Coins,
   CreditCard,
   Link2,
   MapPinned,
@@ -13,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import type React from 'react';
+import { useRef } from 'react';
 import { ScrollAnchor } from '../ScrollAnchor';
 
 type DiyKey = 'seo' | 'analytics' | 'blog' | 'console' | 'profile' | 'consistent' | 'tool';
@@ -65,7 +67,7 @@ const reachedCues = (options: { cues: RegExp[]; spoken: { text: string; typed: n
 
   for (const [index, cue] of options.cues.entries()) {
     const at = text.search(cue);
-    const position = at >= 0 ? at : (index / options.cues.length) * text.length;
+    const position = at === -1 ? (index / options.cues.length) * text.length : at;
 
     if (typed < position) {
       break;
@@ -158,14 +160,18 @@ const DiyExample = (props: {
  * @param props.part Which screen, from 1 to 3.
  * @param props.texts The keywords and blog titles written for this business.
  * @param props.spoken What Gigi says on the screen and how much of it is out.
+ * @param props.onCost Plays a sound when a card and its cost show.
  * @returns The checklist.
  */
 export const DiyScene = (props: {
   part: number;
   texts: { keywords: string[]; blogTitles: string[] } | undefined;
   spoken: { text: string; typed: number };
+  onCost: () => void;
 }) => {
   const t = useTranslations('DemoPage');
+  // The cards whose cost already rang, so each rings once
+  const rung = useRef(new Set<DiyKey>());
   const texts = props.texts ?? { keywords: [], blogTitles: [] };
   const screen = SCREENS[Math.min(Math.max(props.part, 1), SCREENS.length) - 1] ?? SCREENS[0];
   const isLast = props.part >= SCREENS.length;
@@ -193,6 +199,12 @@ export const DiyScene = (props: {
           return (
             <li
               key={item.key}
+              ref={(node) => {
+                if (node && index >= screen.from && !rung.current.has(item.key)) {
+                  rung.current.add(item.key);
+                  props.onCost();
+                }
+              }}
               className={`relative flex min-w-0 animate-pop items-start gap-3 rounded-2xl bg-white p-3.5 shadow-lg ring-1 ring-neutral-200 sm:p-4 ${item.key === 'tool' ? 'md:col-span-2' : ''}`}
             >
               {index === shown - 1 && <ScrollAnchor className="absolute inset-0" />}
@@ -209,6 +221,10 @@ export const DiyScene = (props: {
                   {t(`video_diy_${item.key}_text`)}
                 </span>
                 <DiyExample item={item.key} texts={texts} />
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-900">
+                  <Coins className="size-3.5 shrink-0" />
+                  {t(`video_diy_${item.key}_cost`)}
+                </span>
               </span>
             </li>
           );

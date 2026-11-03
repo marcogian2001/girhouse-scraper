@@ -16,14 +16,41 @@ const INCLUDED = [
 /** Girhouse's own green, the same on the checkout whatever the business's colour. */
 const GREEN = 'text-[#3f8f5f]';
 
-/** The price stays on 97, is struck through, then 47 takes its place. */
-const PRICE_STAGES = 2;
+/** Where the line starts saying the first month's price, which strikes the full one. */
+const STRIKE_CUE = /se attivi|primo mese/iu;
+
+/**
+ * Says how far the price has gone, in step with Gigi: the full price, struck through once
+ * he gets to the first month, then the first month's price as he says it.
+ * @param options The scene.
+ * @param options.part How much of the offer shows.
+ * @param options.spoken What Gigi says and how much of it is out.
+ * @returns 0, 1 or 2.
+ */
+const priceStage = (options: { part: number; spoken: { text: string; typed: number } }) => {
+  if (options.part > 1) {
+    return 2;
+  }
+
+  const { text, typed } = options.spoken;
+  const strikeAt = text.search(STRIKE_CUE);
+  const newAt = text.indexOf(String(VIDEO_FIRST_MONTH_PRICE));
+  const strike = strikeAt === -1 ? text.length * 0.6 : strikeAt;
+  const reveal = newAt === -1 ? text.length * 0.85 : newAt;
+
+  if (typed >= reveal) {
+    return 2;
+  }
+
+  return typed >= strike ? 1 : 0;
+};
 
 /**
  * The offer as the checkout shows it: the Girhouse system, the monthly price struck from
  * the full one to the first month's, what it holds and the guarantee.
  * @param props Component props.
  * @param props.part How much this scene shows, from 1 to 3.
+ * @param props.spoken What Gigi says, so the price changes as he says it.
  * @param props.price The monthly price.
  * @param props.isCallOnly Whether the first month's price is given in the call.
  * @param props.actions The buttons under what is included.
@@ -31,12 +58,13 @@ const PRICE_STAGES = 2;
  */
 export const VideoOfferStep = (props: {
   part: number;
+  spoken: { text: string; typed: number };
   price: number;
   isCallOnly: boolean;
   actions: React.ReactNode;
 }) => {
   const t = useTranslations('DemoPage');
-  const stage = useTimedSequence({ target: PRICE_STAGES, intervalMs: 1100 });
+  const stage = priceStage({ part: props.part, spoken: props.spoken });
   const included = useTimedSequence({
     target: props.part >= 2 ? INCLUDED[0].length : 0,
     intervalMs: 350,

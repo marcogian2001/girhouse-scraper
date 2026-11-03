@@ -31,7 +31,7 @@ import { LandingStep } from '../steps/LandingStep';
 import { PricingStep } from '../steps/PricingStep';
 import { WhatsAppStep } from '../steps/WhatsAppStep';
 import { TOUR_STEPS } from '../TourScenes';
-import { useTimedSequence } from '../useTimedSequence';
+import { TimelinePause, useTimedSequence } from '../useTimedSequence';
 import { WhatsAppChat } from '../WhatsAppChat';
 import { DiyScene } from './DiyScene';
 import { GoogleScene } from './GoogleScene';
@@ -48,6 +48,7 @@ import type { VideoClosing, VideoLine } from './VideoScript';
 import {
   buildVideoScenes,
   isPortraitLine,
+  videoBookingLine,
   isVideoLine,
   landscapeLine,
   portraitLine,
@@ -438,8 +439,8 @@ const lineOfScene = (options: {
   bookingPhase: BookingPhase;
   isCallOpen: boolean;
 }) =>
-  options.scene.kind === 'closing' && options.isCallOpen
-    ? (`video_line_booking_${options.bookingPhase}` as const)
+  options.scene.kind === 'closing' && options.scene.closing && options.isCallOpen
+    ? videoBookingLine({ phase: options.bookingPhase, closing: options.scene.closing })
     : vslLineOf(options.scene, options.bookingPhase);
 
 /**
@@ -521,6 +522,7 @@ const VslStoryVisual = (props: {
  * @param options.closing How the video ends.
  * @param options.company The business name.
  * @param options.part How much of the offer shows, from 1 to 3.
+ * @param options.spoken What Gigi says, so the price changes as he says it.
  * @param options.isCallOpen Whether the booking shows.
  * @param options.bookingPhase Where the booking stands.
  * @param options.onBookingPhase Moves the booking on.
@@ -533,6 +535,7 @@ const VideoOfferScreen = (options: {
   closing: VideoClosing;
   company: string;
   part: number;
+  spoken: { text: string; typed: number };
   isCallOpen: boolean;
   bookingPhase: BookingPhase;
   onBookingPhase: (phase: BookingPhase) => void;
@@ -558,6 +561,7 @@ const VideoOfferScreen = (options: {
   ) : (
     <VideoOfferStep
       part={options.part}
+      spoken={options.spoken}
       price={props.pricing.price}
       isCallOnly={options.closing === 'call'}
       actions={
@@ -580,6 +584,7 @@ const VideoOfferScreen = (options: {
  * @param options.data The snapshot with version B's chat.
  * @param options.photo The photo of the problem or the dream, if made.
  * @param options.spoken What Gigi says on the scene and how much of it is out, to show things as he names them.
+ * @param options.onCost Plays the sound of a cost that just showed.
  * @param options.bookingPhase Where the booking stands.
  * @param options.handleBookingPhase Moves the booking on.
  * @param options.isCallOpen Whether the closing shows the booking.
@@ -593,6 +598,7 @@ const VslSceneVisual = (options: {
   data: DemoTourProps['data'];
   photo: ScenePhoto;
   spoken: { text: string; typed: number };
+  onCost: () => void;
   bookingPhase: BookingPhase;
   handleBookingPhase: (phase: BookingPhase) => void;
   isCallOpen: boolean;
@@ -601,6 +607,7 @@ const VslSceneVisual = (options: {
 }) => {
   const t = useTranslations('DemoPage');
   const { scene, props, data } = options;
+  const handleCost = options.onCost;
   const story = <VslStoryVisual scene={scene} vsl={props.vsl} data={data} photo={options.photo} />;
 
   if (STORY_KINDS.has(scene.kind)) {
@@ -645,7 +652,14 @@ const VslSceneVisual = (options: {
   }
 
   if (scene.kind === 'diy') {
-    return <DiyScene part={scene.part} texts={props.vsl.diy} spoken={options.spoken} />;
+    return (
+      <DiyScene
+        part={scene.part}
+        texts={props.vsl.diy}
+        spoken={options.spoken}
+        onCost={handleCost}
+      />
+    );
   }
 
   // The offer and the closing are one screen: the price with its button, or the booking
@@ -656,6 +670,7 @@ const VslSceneVisual = (options: {
         closing={props.vsl.closing}
         company={data.company}
         part={scene.kind === 'offer' ? scene.part : 3}
+        spoken={options.spoken}
         isCallOpen={options.isCallOpen}
         bookingPhase={options.bookingPhase}
         onBookingPhase={options.handleBookingPhase}
@@ -790,6 +805,7 @@ export const DemoVsl = (
     target: isStarted ? total : 0,
     intervalMs: (lineMs * TYPING_SHARE) / Math.max(total, 1),
     restartKey: `${index}-${line}`,
+    isPaused,
   });
 
   // Moves on once Gigi is done and the scene has played what it shows
@@ -991,7 +1007,7 @@ export const DemoVsl = (
     setBookingPhase(phase);
     void say({
       index,
-      line: closing ? `video_line_booking_${phase}` : `booking_${phase}`,
+      line: closing ? videoBookingLine({ phase, closing }) : `booking_${phase}`,
       advance: goTo,
     });
   };
@@ -1012,7 +1028,11 @@ export const DemoVsl = (
       enterScene(target);
     }
 
-    void say({ index: last, line: `video_line_booking_${bookingPhase}`, advance: goTo });
+    void say({
+      index: last,
+      line: target ? lineOfScene({ scene: target, bookingPhase, isCallOpen: true }) : 'intro',
+      advance: goTo,
+    });
   };
 
   const handleCloseCall = () => {
@@ -1157,6 +1177,9 @@ export const DemoVsl = (
             data={data}
             photo={photoOf(line)}
             spoken={{ text: segments.map((segment) => segment.text).join(''), typed }}
+            onCost={() => {
+              musicRef.current.sound('ping');
+            }}
             bookingPhase={bookingPhase}
             handleBookingPhase={handleBookingPhase}
             isCallOpen={isCallOpen}
@@ -1185,7 +1208,7 @@ export const DemoVsl = (
 
   // The audio element keeps its place whatever the screen, so the one a tap unlocked plays to the end
   return (
-    <>
+    <TimelinePause value={isPaused}>
       {tracking}
       {audio}
       {/* The photos load while Gigi introduces himself; React moves these into the head */}
@@ -1198,7 +1221,14 @@ export const DemoVsl = (
           media={isPortraitLine(photoLine) ? '(max-width: 767px)' : '(min-width: 768px)'}
         />
       ))}
-      {content}
-    </>
+      {/* On pause everything holds still: the reveals wait and the slow zoom stops; the
+          short entrances end, so a scene paused as it comes in still shows */}
+      <div
+        data-paused={isPaused}
+        className="data-[paused=true]:[&_.animate-ken-burns]:[animation-play-state:paused] data-[paused=true]:[&_.animate-pulse]:[animation-play-state:paused]"
+      >
+        {content}
+      </div>
+    </TimelinePause>
   );
 };

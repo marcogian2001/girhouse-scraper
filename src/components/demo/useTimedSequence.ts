@@ -1,4 +1,7 @@
-import { useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
+
+/** True while the demo is on pause: every reveal waits where it is. */
+export const TimelinePause = createContext(false);
 
 /**
  * Counts up to a target one tick at a time, so a step can reveal its parts in order.
@@ -8,13 +11,16 @@ import { useEffect, useState } from 'react';
  * @param options.target How many parts should end up shown.
  * @param options.intervalMs The pause between two parts.
  * @param options.restartKey Changes when the sequence must start again from zero.
+ * @param options.isPaused Holds the count where it is, on top of the demo's own pause.
  * @returns How many parts are shown now.
  */
 export const useTimedSequence = (options: {
   target: number;
   intervalMs: number;
   restartKey?: string | number;
+  isPaused?: boolean;
 }) => {
+  const isPaused = useContext(TimelinePause) || Boolean(options.isPaused);
   const [state, setState] = useState({ key: options.restartKey, shown: 0 });
   const shown = state.key === options.restartKey ? state.shown : 0;
 
@@ -26,7 +32,7 @@ export const useTimedSequence = (options: {
   useEffect(() => {
     const isReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const timer =
-      shown < options.target
+      shown < options.target && !isPaused
         ? setTimeout(
             () => {
               setState({ key: options.restartKey, shown: isReduced ? options.target : shown + 1 });
@@ -38,7 +44,7 @@ export const useTimedSequence = (options: {
     return () => {
       clearTimeout(timer);
     };
-  }, [shown, options.target, options.intervalMs, options.restartKey]);
+  }, [shown, options.target, options.intervalMs, options.restartKey, isPaused]);
 
   return Math.min(shown, options.target);
 };
