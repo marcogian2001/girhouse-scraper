@@ -9,7 +9,7 @@ import {
   leadSchema,
 } from '@/models/Schema';
 import { isReadableWebsite } from '@/services/Apify';
-import { toDemoContent, writeDemoTexts } from '@/services/DemoWriter';
+import { pickDisplayName, toDemoContent, writeDemoTexts } from '@/services/DemoWriter';
 import type { MioDottoreProfile } from '@/services/MioDottore';
 import { fetchMioDottoreProfile, guessMioDottoreUrl, isMioDottoreUrl } from '@/services/MioDottore';
 import { fetchWebsiteBrand } from '@/services/WebsiteBrand';
@@ -406,12 +406,18 @@ const buildSnapshot = async (
     throw new Error(`${call.model} returned no parsable demo texts for ${conversation.id}`);
   }
 
-  const { landing, chat, design, colors: picked } = toDemoContent(texts);
+  const { name, landing, chat, design, colors: picked } = toDemoContent(texts);
   const colors = pickColors({ brand: own.brand, picked });
 
   return {
     version: DEMO_SNAPSHOT_VERSION,
     ...facts,
+    // "Nutrizionista Garofalo Francesco Raffaele" shows as "Francesco Raffaele Garofalo"
+    company: pickDisplayName({
+      proposed: name,
+      company: facts.company,
+      person: research.personName,
+    }),
     category,
     website: own.website,
     categories: extras.categories,

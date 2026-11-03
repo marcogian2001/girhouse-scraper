@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { renderDemoSources, toDemoContent } from './DemoWriter';
+import { pickDisplayName, renderDemoSources, toDemoContent } from './DemoWriter';
 
 describe('DemoWriter', () => {
   it('lists the known facts and leaves the unknown ones out', () => {
@@ -138,6 +138,7 @@ describe('DemoWriter', () => {
 
 describe('DemoWriter content', () => {
   const content = toDemoContent({
+    nome: 'Studio Osteopatico Bianchi',
     titolo: 'Osteopatia a Roma — per tutta la famiglia',
     sottotitolo: 'Prenota su WhatsApp',
     chi_siamo: null,
@@ -215,5 +216,39 @@ describe('DemoWriter content', () => {
         options: ['Martedì alle 10:00', 'Giovedì alle 17:30'],
       },
     ]);
+  });
+});
+
+describe('Display name', () => {
+  it('keeps the name and surname the AI took out of a listing name', () => {
+    expect(
+      pickDisplayName({
+        proposed: 'Francesco Raffaele Garofalo',
+        company: 'Nutrizionista Garofalo Francesco Raffaele',
+        person: null,
+      }),
+    ).toBe('Francesco Raffaele Garofalo');
+  });
+
+  it('keeps the business name when the AI adds a word of its own', () => {
+    expect(
+      pickDisplayName({
+        proposed: 'Dott. Francesco Garofalo',
+        company: 'Nutrizionista Garofalo Francesco Raffaele',
+        person: null,
+      }),
+    ).toBe('Nutrizionista Garofalo Francesco Raffaele');
+  });
+
+  it('accepts words from the name of the professional behind the business', () => {
+    expect(
+      pickDisplayName({ proposed: 'Giulia Neri', company: 'Studio Neri', person: 'Giulia Neri' }),
+    ).toBe('Giulia Neri');
+  });
+
+  it('keeps the business name when the AI proposes none', () => {
+    expect(pickDisplayName({ proposed: ' ', company: 'Autofficina Rossi', person: null })).toBe(
+      'Autofficina Rossi',
+    );
   });
 });

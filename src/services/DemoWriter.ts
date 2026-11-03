@@ -20,6 +20,7 @@ import { toBilledCall } from './ReplyPrompt';
 const MAX_TOKENS = 6000;
 
 const demoTextsSchema = z.object({
+  nome: z.string(),
   titolo: z.string(),
   sottotitolo: z.string(),
   chi_siamo: z.string().nullable(),
@@ -95,6 +96,8 @@ export type DemoSources = {
 
 const INSTRUCTIONS = [
   "You write the texts of a guided demo Girhouse shows an Italian small business: the landing page Girhouse would build for it, and an example WhatsApp chat where Girhouse's assistant books a customer on the business's behalf.",
+  '',
+  '`nome`: the name the demo shows for the business. When the listing name mixes a role or a category with a person, like "Nutrizionista Garofalo Francesco Raffaele" or "Avv. Rossi Mario - Studio Legale", keep only first name and surname, in that order, with no title: "Francesco Raffaele Garofalo", "Mario Rossi". When it is a real brand, like "Autofficina Rossi" or "Studio Legale Galluccio", keep it as it is, without the city or the keywords added for search. Only words from the business name or the professional\'s name, never new ones.',
   '',
   'Rules for every text:',
   '- Italian, plain and warm, written as the business speaking to its own customers. When the business is one professional, they speak in the first person singular ("ti aspetto", "il mio studio"), never "noi".',
@@ -237,12 +240,46 @@ const completeSectionOrder = (order: LandingBodySection[]) => [
 ];
 
 /**
+ * Splits a name into its words, lowercased, for comparing names however they are written.
+ * @param name The name.
+ * @returns The words.
+ */
+const wordsOf = (name: string) =>
+  name
+    .toLocaleLowerCase('it')
+    .split(/[^\p{L}\p{N}']+/u)
+    .filter(Boolean);
+
+/**
+ * Picks the name the demo shows: the AI's, without the role words a listing often adds,
+ * unless it brings a word from neither the business name nor the professional's.
+ * @param options The names.
+ * @param options.proposed The name the AI proposed.
+ * @param options.company The business name the sources gave.
+ * @param options.person The professional's name, when known.
+ * @returns The name to show.
+ */
+export const pickDisplayName = (options: {
+  proposed: string;
+  company: string;
+  person: string | null;
+}) => {
+  const known = new Set([...wordsOf(options.company), ...wordsOf(options.person ?? '')]);
+  const words = wordsOf(options.proposed);
+
+  return words.length > 0 && words.every((word) => known.has(word))
+    ? options.proposed
+    : options.company;
+};
+
+/**
  * Turns the AI's texts into the landing, chat and design a demo stores, cleaned of the
  * dashes the writing rules forbid and trimmed to what the page has room for.
  * @param texts The parsed AI answer.
  * @returns The landing, chat and design of the snapshot, and the colours the AI picked.
  */
 export const toDemoContent = (texts: DemoTexts) => ({
+  name: cleanReply(texts.nome).trim(),
   landing: {
     headline: cleanReply(texts.titolo),
     subheadline: cleanReply(texts.sottotitolo),
