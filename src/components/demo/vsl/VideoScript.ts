@@ -120,15 +120,10 @@ export const landscapeLine = (line: string) =>
 export const isVideoLine = (line: string): line is VideoLine => line.startsWith('video_line_');
 
 /**
- * Picks a demo's closing, the same every time, so the three share the demos evenly.
- * @param demoId The demo.
- * @returns Its closing.
+ * The closing every video ends on: buying now, with the call one tap away. The other two
+ * are kept only to read videos written while the three were under test.
  */
-export const pickVideoClosing = (demoId: string): VideoClosing => {
-  const digits = demoId.replaceAll(/\D/gu, '').slice(-6);
-
-  return VIDEO_CLOSINGS[Number(digits) % VIDEO_CLOSINGS.length] ?? 'call';
-};
+export const VIDEO_CLOSING: VideoClosing = 'both';
 
 /**
  * Builds the opening of one stretch of the path: where customers get lost, over a photo.

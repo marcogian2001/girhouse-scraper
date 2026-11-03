@@ -49,6 +49,7 @@ import type { VideoClosing, VideoLine } from './VideoScript';
 import {
   buildVideoScenes,
   isPortraitLine,
+  VIDEO_CLOSING,
   videoBookingLine,
   isVideoLine,
   landscapeLine,
@@ -404,6 +405,14 @@ const estimateMinutes = (voices: DemoVoice[]) => {
 };
 
 /**
+ * Reads how a video ends: every version C on buying now, whatever closing it was written
+ * with while the three were under test; version B has none.
+ * @param vsl The demo's script.
+ * @returns The closing, or nothing for version B.
+ */
+const closingOf = (vsl: Pick<DemoVslData, 'closing'>) => (vsl.closing ? VIDEO_CLOSING : undefined);
+
+/**
  * Builds the scenes: a video with a closing is version C, one without is version B.
  * @param options What is known.
  * @param options.data The snapshot with the video's chat.
@@ -669,7 +678,7 @@ const VslSceneVisual = (options: {
     return (
       <VideoOfferScreen
         props={props}
-        closing={props.vsl.closing}
+        closing={VIDEO_CLOSING}
         company={data.company}
         part={scene.kind === 'offer' ? scene.part : 3}
         spoken={options.spoken}
@@ -733,7 +742,7 @@ export const DemoVsl = (
 ) => {
   const t = useTranslations('DemoPage');
   const data = withVslChat(props.data, props.vsl);
-  const { closing } = props.vsl;
+  const closing = closingOf(props.vsl);
   const startCopy = closing ? START_COPY.video : START_COPY.vsl;
   // Version C has a closing; version B never does
   const scenes = scenesOf({ data, closing, hasReviews: props.reviews.items.length > 0 });

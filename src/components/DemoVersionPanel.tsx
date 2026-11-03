@@ -102,7 +102,6 @@ export const DemoVersionPanel = (props: {
   const isReady =
     !props.isOldVersion && (props.vslStatus === 'ready' || props.vslStatus === 'unvoiced');
   const banned = isReady && props.vsl ? findBannedWords(props.vsl.lines) : [];
-  const closing = props.isOldVersion ? undefined : props.vsl?.closing;
   const canCreate = props.isOldVersion || props.vslStatus === 'none';
 
   return (
@@ -111,12 +110,6 @@ export const DemoVersionPanel = (props: {
       <FieldDescription>
         {props.isOldVersion ? t('video_old_version') : t(`vsl_status_${props.vslStatus}`)}
       </FieldDescription>
-
-      {closing && (
-        <p className="text-sm">
-          {t('video_closing_label')}: {t(`video_closing_${closing}`)}
-        </p>
-      )}
 
       {banned.length > 0 && (
         <Alert variant="destructive">

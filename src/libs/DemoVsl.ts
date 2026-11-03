@@ -5,7 +5,7 @@ import * as z from 'zod';
 import {
   buildVideoScenes,
   isPortraitLine,
-  pickVideoClosing,
+  VIDEO_CLOSING,
   portraitLine,
   videoLineMarkup,
   videoLinesToVoice,
@@ -142,7 +142,7 @@ const writeScript = async (demo: Demo, generatedAt: string) => {
 
   const vsl: DemoVsl = {
     ...toDemoVsl(texts),
-    closing: demo.vsl?.closing ?? pickVideoClosing(demo.id),
+    closing: VIDEO_CLOSING,
     generatedAt,
   };
 
@@ -158,7 +158,7 @@ const writeScript = async (demo: Demo, generatedAt: string) => {
 const renderVoiceLines = async (demo: Demo, vsl: DemoVsl) => {
   const context = await loadLineContext(demo, vsl);
   const t = createTranslator({ locale: 'it', messages, namespace: 'DemoPage' });
-  const closing = vsl.closing ?? pickVideoClosing(demo.id);
+  const closing = VIDEO_CLOSING;
   const scenes = buildVideoScenes({ data: context.data, closing });
 
   return videoLinesToVoice(scenes, closing)

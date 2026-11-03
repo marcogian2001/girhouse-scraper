@@ -8,7 +8,7 @@ import type { VideoLine } from './VideoScript';
 import {
   buildVideoScenes,
   findBannedWords,
-  pickVideoClosing,
+  VIDEO_CLOSING,
   VIDEO_CLOSINGS,
   videoLineMarkup,
   videoLinesToVoice,
@@ -173,18 +173,8 @@ describe('VideoScript', () => {
   });
 
   describe('Closing', () => {
-    it('picks the same closing for the same demo', () => {
-      const id = '6f9619ff-8b86-4d01-b42d-00c04fc964ff';
-
-      expect(pickVideoClosing(id)).toBe(pickVideoClosing(id));
-    });
-
-    it('shares the demos among the three closings', () => {
-      const picked = new Set(
-        Array.from({ length: 30 }, (_unused, index) => pickVideoClosing(`demo-${index}`)),
-      );
-
-      expect(picked).toStrictEqual(new Set(VIDEO_CLOSINGS));
+    it('ends every video on buying now with the call as a second choice', () => {
+      expect(VIDEO_CLOSING).toBe('both');
     });
   });
 
