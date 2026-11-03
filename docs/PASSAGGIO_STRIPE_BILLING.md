@@ -104,6 +104,29 @@ Sono tutte fattibili:
 
 Fatto in modalità test: prodotto `prod_VYw9HnkZedewiJ`, prezzo `price_1UXoH6RpePwqv78H2Z6dWfa1` (lookup key `sistema_girhouse_mensile`), coupon `primomese47`. In Stripe esistono già prodotti e abbonamenti creati da GHL, compreso un suo "Sistema Girhouse": dettagli in `docs/ANALISI_QUIZ_FUNNEL.md`.
 
+## Stato al 4 novembre 2026, sera: checkout live, WooCommerce eliminato
+
+Passi 1-4 e la parte "plugin" del passo 8 sono fatti. Restano i passi 5 (email GHL), 6 (area clienti `/account/`), 7 (fatture) e la pulizia delle tabelle WooCommerce nel database.
+
+- **Live**: `GH_STRIPE_MODE = live`, `GH_BILLING_ON = true`. Chiavi `GH_STRIPE_LIVE_PUBLISHABLE`, `GH_STRIPE_LIVE_SECRET`, `GH_STRIPE_LIVE_WEBHOOK` messe dal proprietario. Prodotto `prod_VYxHgHBHa1wjLd`, prezzo `price_1UXpMrRpePwqv78HZOelpAJ5` (`GH_STRIPE_LIVE_PRICE`), coupon `primomese47` da 50 € una volta (`GH_STRIPE_LIVE_COUPON`). Webhook live `we_1UXpK7RpePwqv78HrPqaC77M`, creato dal proprietario con API `2024-06-20`: il codice legge l'abbonamento della fattura in entrambi i formati.
+- **Dominio dei portafogli in live**: `girhouse.com` non era registrato come payment method domain (WooCommerce usava un sistema precedente). Registrato: `pmd_1UXpNyRpePwqv78Hn5GOfUlY`. Pulsanti rapidi in colonna (`layout.maxColumns: 1`), come prima.
+- **Plugin eliminati** su richiesta del proprietario: WooCommerce, WooCommerce Stripe Gateway, WPSubscription, WooPayments (`wp plugin delete`, che non esegue la disinstallazione: le tabelle restano nel database). All-in-One WP Migration e Duplicate Post non c'erano già più prima di oggi.
+- **Webhook WooCommerce disattivati** in Stripe: `we_1UXfotRpePwqv78HDEUAV4id` (live) e `we_1UXfosRpePwqv78HJ8hikVHC` (test).
+- **Codice senza WooCommerce**:
+  - `checkout.php` riconosce `/attiva/` e `/condizioni-di-vendita/` dallo slug, tiene timer, riga delle condizioni, modelli, noindex, asset leggeri ed elenco degli script per il quiz.
+  - `girhouse-funnels.php` senza correzione dei cookie di sessione e senza `wc-ajax`.
+  - `billing.php` avvia `gh_billing_first_payment` dopo la risposta a Stripe (`litespeed_finish_request` o `fastcgi_finish_request`), non più con Action Scheduler.
+  - `prenota.php`: paese dall'IP con ipinfo.io e, se risponde 429 (limite pieno: l'IP del server è condiviso), con api.country.is. Paese in cache un giorno, errore 10 minuti. Entrambi i servizi ricevono l'IP del visitatore: da citare nella privacy.
+- **Il cron `action_scheduler_run_queue` resta**: è di Rank Math, che include Action Scheduler.
+- **Backup**: `~/backups-girhouse/20261104-pre-live/` (database, codice con i plugin WooCommerce, upload dei funnel) ed esportazione leggibile in `woocommerce-export/` (ordini, meta, impostazioni, prodotti, tabelle).
+- **Controllato**: `/attiva/` con `pk_live_`, 47 €, nessun errore e senza jQuery su 1366×900 e 390×844; condizioni di vendita; calendario con gli orari; quiz e landing; homepage e pagine servizio; webhook live con firma; diagnosi dei pulsanti rapidi spenta in live.
+- **Da fare**:
+  - primo pagamento vero, a cura del proprietario;
+  - togliere i meta di test (`gh_stripe_mode = test`) dall'utente WordPress 2;
+  - eliminare `template-checkout.php`, che non si usa più;
+  - rigenerare la chiave segreta di test, che è passata in chat;
+  - decidere se tenere il "Sistema Girhouse" creato da GHL accanto a quello del sito.
+
 ## Stato del passo 2 (4 novembre 2026, in corso)
 
 Il codice del checkout nuovo è sul server ma spento: si accende solo quando in `wp-config.php` ci sono le chiavi di test, e anche allora solo con il link di anteprima `/attiva/?anteprima=<codice>` (codice da `wp eval 'echo gh_billing_preview_code();'`). Il checkout WooCommerce resta quello di tutti.

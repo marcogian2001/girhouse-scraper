@@ -343,3 +343,11 @@ Questa sezione prevale sulle tabelle precedenti per le domande e il calcolo.
   - Stripe non elimina prodotti con prezzi, e il connettore non ha l'operazione di eliminazione: archiviare è il massimo e si può annullare.
 - **Tenuti attivi su richiesta del cliente**: i due "Pagamento Girhouse LLC" con i loro link, tutti i prodotti con abbonamenti e tre prodotti senza uso (Sito + CRM Girhouse, il doppione "Abbonamento Mensile Whatsapp" `prod_TMOlFO1aTCrRGE`, "Copy of Abbonamento Mensile GoHighLevel").
 - **Verifica**: dopo la pulizia i 139 abbonamenti hanno lo stesso stato di prima; in live restano 18 prodotti attivi.
+
+## Checkout con Stripe Billing in live (4 novembre 2026)
+
+- `/attiva/` ora usa Stripe Billing: stesso aspetto di prima, cliente e abbonamento creati dal server (`billing.php`), pagamento confermato nel browser con Payment Element e pulsanti rapidi. Dettagli in `docs/PASSAGGIO_STRIPE_BILLING.md`.
+- WooCommerce, WooCommerce Stripe Gateway, WPSubscription e WooPayments sono eliminati. `checkout.css` resta e vale uguale, perché il modello riproduce l'HTML di WooCommerce. Va comunque rigenerato da `quiz.css` dopo ogni modifica che tocca il checkout.
+- Il webhook F9 (`GH_FUNNEL_WEBHOOK`) non parte più; al primo pagamento si avvia solo l'automazione GHL "3. Demo Iniziata (NO Trial)", con fonte e funnel.
+- Le pagine di conferma WooCommerce (`/attiva/order-received/...`) non esistono più: la conferma è `/attiva/?conferma=<sub>&k=<firma>`. Lo step `pagato` dell'Analisi quiz continua a partire dalla pagina di conferma.
+- Il calendario ricava il paese senza WooCommerce: ipinfo.io e, quando ha il limite pieno, api.country.is.
