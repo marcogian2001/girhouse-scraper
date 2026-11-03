@@ -444,18 +444,6 @@ export const vslLinesToVoice = (scenes: VslScene[]) => [
   ]),
 ];
 
-/** How long the recap of what it costs alone stays, once said, before the price. */
-const RECAP_PAUSE_MS = 2000;
-
-/**
- * Says how long a scene waits once Gigi is done, on top of the usual gap: the recap of
- * the costs stays a moment, so it can be read before the price.
- * @param scene The scene.
- * @returns The extra wait, in milliseconds.
- */
-export const vslPauseAfterMs = (scene: VslScene) =>
-  scene.kind === 'diy' && scene.part === 3 ? RECAP_PAUSE_MS : 0;
-
 /**
  * Says how long a scene must stay on screen for what it plays to finish, whatever the voice.
  * @param options The scene.

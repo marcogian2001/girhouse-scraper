@@ -65,7 +65,6 @@ import {
   spokenDurationMs,
   VSL_FOLLOW_UP_STEP_MS,
   VSL_GAP_MS,
-  vslPauseAfterMs,
   VSL_VOICE_TEMPO,
   vslLineMarkup,
   vslLineOf,
@@ -840,7 +839,7 @@ export const DemoVsl = (
     });
 
     clockRef.current.wait(
-      Math.max(minimum - clockRef.current.sceneElapsed(), 0) + VSL_GAP_MS + vslPauseAfterMs(target),
+      Math.max(minimum - clockRef.current.sceneElapsed(), 0) + VSL_GAP_MS,
       () => {
         advance(current + 1);
       },

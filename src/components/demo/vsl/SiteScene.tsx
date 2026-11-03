@@ -18,9 +18,9 @@ const siteSectionsFor = (options: { data: DemoSnapshot; hasReviews: boolean }) =
   landingSectionsFor(options).filter((section) => section !== 'funnel');
 
 /**
- * The example site scrolling on its own from the top to the closing call to action, one
- * section at a time while Gigi talks about it. The review system is left out: the video
- * shows its own.
+ * The example site scrolling on its own from the top to the closing call to action, in
+ * step with Gigi: each section shows at its share of his line, so the page reaches the
+ * bottom as he finishes. The review system is left out: the video shows its own.
  * @param props Component props.
  * @param props.data The demo snapshot.
  * @param props.reviews The reviews the demo found.
