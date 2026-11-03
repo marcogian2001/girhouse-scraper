@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import messages from '@/locales/it.json';
 import type { DemoSnapshot } from '@/models/Schema';
 import { toSpokenText } from '@/utils/GigiVoice';
+import { firstYearSaving } from './DiyCosts';
 import type { VideoLine } from './VideoScript';
 import {
   buildVideoScenes,
@@ -97,17 +98,6 @@ describe('VideoScript', () => {
       expect(scenes.at(-1)).toMatchObject({ kind: 'closing', closing: 'both', step: 6 });
     });
 
-    it('leaves out the services scene for a business without services', () => {
-      const bare = {
-        ...data,
-        landing: { ...data.landing, services: [] },
-      };
-
-      expect(
-        buildVideoScenes({ data: bare, closing: 'call' }).map((scene) => scene.line),
-      ).not.toContain('video_line_site_services');
-    });
-
     it('gives the price in the call for the closing that only books', () => {
       expect(buildVideoScenes({ data, closing: 'call' }).map((scene) => scene.line)).toContain(
         'video_line_offer_price_call',
@@ -119,7 +109,7 @@ describe('VideoScript', () => {
 
       expect(
         request && vslSceneMinimumMs({ scene: request, previous: undefined, reminderMessages: 0 }),
-      ).toBe(4500);
+      ).toBe(5400);
     });
   });
 
@@ -195,6 +185,12 @@ describe('VideoScript', () => {
       );
 
       expect(picked).toStrictEqual(new Set(VIDEO_CLOSINGS));
+    });
+  });
+
+  describe('First year saving', () => {
+    it('sets everything done alone against the first year with Girhouse', () => {
+      expect(firstYearSaving(97)).toStrictEqual({ alone: 4450, withUs: 1114, saving: 3300 });
     });
   });
 });

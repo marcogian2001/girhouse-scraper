@@ -41,8 +41,9 @@ import { PhotoScene } from './PhotoScene';
 import { ReviewRequestScene } from './ReviewRequestScene';
 import { ReviewsScene } from './ReviewsScene';
 import { SceneLabel } from './SceneLabel';
+import { SiteScene, siteSectionsFor } from './SiteScene';
 import { SocialRequestScene } from './SocialRequestScene';
-import { VideoCallBooking, VideoClosingActions } from './VideoClosingStep';
+import { VideoCallBooking, VideoCallLink, VideoMainAction } from './VideoClosingStep';
 import { VideoOfferStep } from './VideoOfferStep';
 import type { VideoClosing, VideoLine } from './VideoScript';
 import {
@@ -55,6 +56,7 @@ import {
   videoLineMarkup,
   videoLinesToVoice,
 } from './VideoScript';
+import { VolumeHint } from './VolumeHint';
 import { VslBar } from './VslBar';
 import type { VslLine, VslScene } from './VslScript';
 import {
@@ -62,6 +64,7 @@ import {
   spokenDurationMs,
   VSL_FOLLOW_UP_STEP_MS,
   VSL_GAP_MS,
+  vslPauseAfterMs,
   VSL_VOICE_TEMPO,
   vslLineMarkup,
   vslLineOf,
@@ -563,14 +566,18 @@ const VideoOfferScreen = (options: {
       part={options.part}
       spoken={options.spoken}
       price={props.pricing.price}
-      isCallOnly={options.closing === 'call'}
-      actions={
-        <VideoClosingActions
+      action={
+        <VideoMainAction
           slug={props.slug}
           track={props.track}
           closing={options.closing}
           onOpenCall={handleOpenCall}
         />
+      }
+      callLink={
+        options.closing === 'both' ? (
+          <VideoCallLink track={props.track} onOpenCall={handleOpenCall} />
+        ) : null
       }
     />
   );
@@ -633,12 +640,7 @@ const VslSceneVisual = (options: {
     return (
       <div className="space-y-4">
         <SceneLabel>{t('video_site_label')}</SceneLabel>
-        <LandingStep
-          data={data}
-          reviews={props.reviews}
-          photos={props.photos}
-          sections={scene.sections}
-        />
+        <SiteScene data={data} reviews={props.reviews} photos={props.photos} />
       </div>
     );
   }
@@ -821,10 +823,11 @@ export const DemoVsl = (
       scene: target,
       previous: scenes[current - 1],
       reminderMessages: props.vsl.reminder.messages.length,
+      siteSections: siteSectionsFor({ data, hasReviews: props.reviews.items.length > 0 }).length,
     });
 
     clockRef.current.wait(
-      Math.max(minimum - clockRef.current.sceneElapsed(), 0) + VSL_GAP_MS,
+      Math.max(minimum - clockRef.current.sceneElapsed(), 0) + VSL_GAP_MS + vslPauseAfterMs(target),
       () => {
         advance(current + 1);
       },
@@ -1078,14 +1081,17 @@ export const DemoVsl = (
             <HostTalkingFull isTalking={isTalking} />
           ) : (
             <div className="flex flex-col items-center gap-4">
-              <Image
-                src={HOST_POSTER.src}
-                alt=""
-                width={HOST_POSTER.width}
-                height={HOST_POSTER.height}
-                priority
-                className="h-[min(18rem,29svh)] w-auto rounded-3xl mix-blend-multiply md:h-80"
-              />
+              <div className="flex items-center gap-5">
+                <Image
+                  src={HOST_POSTER.src}
+                  alt=""
+                  width={HOST_POSTER.width}
+                  height={HOST_POSTER.height}
+                  priority
+                  className="h-[min(18rem,29svh)] w-auto rounded-3xl mix-blend-multiply md:h-80"
+                />
+                <VolumeHint isShown={Boolean(closing)} />
+              </div>
               <button
                 type="button"
                 onClick={() => {

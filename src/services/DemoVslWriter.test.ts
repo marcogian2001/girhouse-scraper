@@ -48,7 +48,6 @@ const texts: DemoVslTexts = {
     video_line_loss_not_found: 'Ciao! <b>Gianmarco</b> qui.',
     video_line_google: '',
     video_line_site_hero: '',
-    video_line_site_services: '',
     video_line_loss_not_chosen: '',
     video_line_review_request: '',
     video_line_loss_lost: '',

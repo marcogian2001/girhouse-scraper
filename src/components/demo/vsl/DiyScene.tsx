@@ -5,6 +5,7 @@ import {
   Check,
   ChartColumnIncreasing,
   Coins,
+  Globe,
   CreditCard,
   Link2,
   MapPinned,
@@ -15,9 +16,10 @@ import {
 import { useTranslations } from 'next-intl';
 import type React from 'react';
 import { useRef } from 'react';
+import { GoogleLogo } from '../GoogleReviews';
 import { ScrollAnchor } from '../ScrollAnchor';
-
-type DiyKey = 'seo' | 'analytics' | 'blog' | 'console' | 'profile' | 'consistent' | 'tool';
+import type { DiyKey } from './DiyCosts';
+import { DIY_COSTS } from './DiyCosts';
 
 type DiyItem = { key: DiyKey; icon: LucideIcon; cue: RegExp };
 
@@ -32,6 +34,26 @@ const ITEMS: DiyItem[] = [
   { key: 'tool', icon: CreditCard, cue: /gestionale|abbonamento|150/iu },
 ];
 
+/**
+ * Writes what a basic costs done alone: once, each month, or in hours of work.
+ * @param options The cost.
+ * @param options.cost Its euros, once or each month; none for the hours of work.
+ * @param options.t The demo's messages.
+ * @returns The label.
+ */
+const costLabel = (options: {
+  cost: { once?: number; monthly?: number };
+  t: ReturnType<typeof useTranslations<'DemoPage'>>;
+}) => {
+  const { cost, t } = options;
+
+  if (cost.monthly) {
+    return t('video_diy_cost_monthly', { amount: cost.monthly });
+  }
+
+  return cost.once ? t('video_diy_cost_once', { amount: cost.once }) : t('video_diy_cost_hours');
+};
+
 /** Where "or we do it" starts in the last screen's line. */
 const US_CUE = /oppure|lo facciamo noi/iu;
 
@@ -42,14 +64,65 @@ const SCREENS = [
   { from: 6, to: 7 },
 ] as const;
 
-/** The channels whose information must match, as coloured badges. */
-const CHANNELS = [
-  { label: 'video_diy_site', className: 'bg-neutral-800' },
-  { label: 'Google', className: 'bg-[#4285f4]' },
-  { label: 'Facebook', className: 'bg-[#1877f2]' },
-  { label: 'Instagram', className: 'bg-gradient-to-tr from-[#feda75] via-[#d62976] to-[#4f5bd5]' },
-  { label: 'LinkedIn', className: 'bg-[#0a66c2]' },
-] as const;
+/** The channels whose information must match, as their logos, on one line. */
+const CHANNELS = ['site', 'google', 'facebook', 'instagram', 'linkedin'] as const;
+
+/**
+ * The logo of one channel, small and round.
+ * @param props Component props.
+ * @param props.channel The channel.
+ * @returns The logo.
+ */
+const ChannelLogo = (props: { channel: (typeof CHANNELS)[number] }) => {
+  const box = 'flex size-8 shrink-0 items-center justify-center rounded-full shadow-sm';
+
+  if (props.channel === 'site') {
+    return (
+      <span className={`${box} bg-neutral-800 text-white`}>
+        <Globe className="size-4" />
+      </span>
+    );
+  }
+
+  if (props.channel === 'google') {
+    return (
+      <span className={`${box} bg-white ring-1 ring-neutral-200`}>
+        <GoogleLogo className="size-4.5" />
+      </span>
+    );
+  }
+
+  if (props.channel === 'facebook') {
+    return (
+      <span className={`${box} bg-[#1877f2] text-white`}>
+        <svg viewBox="0 0 24 24" aria-hidden className="size-4.5 fill-current">
+          <path d="M14 8V6.3c0-.8.2-1.3 1.4-1.3H17V2h-2.5C11.8 2 11 3.7 11 6v2H9v3h2v11h3V11h2.6l.4-3z" />
+        </svg>
+      </span>
+    );
+  }
+
+  if (props.channel === 'instagram') {
+    return (
+      <span
+        className={`${box} bg-gradient-to-tr from-[#feda75] via-[#d62976] to-[#4f5bd5] text-white`}
+      >
+        <svg viewBox="0 0 24 24" aria-hidden className="size-4.5 fill-none stroke-current stroke-2">
+          <rect x="3.5" y="3.5" width="17" height="17" rx="5" />
+          <circle cx="12" cy="12" r="4" />
+          <circle cx="17.3" cy="6.7" r="0.6" className="fill-current" />
+        </svg>
+      </span>
+    );
+  }
+
+  return <span className={`${box} bg-[#0a66c2] text-[13px] font-black text-white`}>in</span>;
+};
+
+/** Leaves room under what just showed, above Gigi's bar. */
+const ROOM_BELOW = {
+  scrollMarginBottom: 'calc(var(--demo-bar-h, 12rem) + 2.5rem)',
+} satisfies React.CSSProperties;
 
 const BARS = ['h-3', 'h-5', 'h-4', 'h-7', 'h-6', 'h-9'] as const;
 
@@ -91,8 +164,6 @@ const DiyExample = (props: {
   item: DiyKey;
   texts: { keywords: string[]; blogTitles: string[] };
 }) => {
-  const t = useTranslations('DemoPage');
-
   if (props.item === 'seo' && props.texts.keywords.length > 0) {
     return (
       <span className="flex flex-wrap gap-1.5">
@@ -136,14 +207,9 @@ const DiyExample = (props: {
 
   if (props.item === 'consistent') {
     return (
-      <span className="flex flex-wrap gap-1.5">
+      <span className="flex gap-1.5">
         {CHANNELS.map((channel) => (
-          <span
-            key={channel.label}
-            className={`rounded-full px-2.5 py-1 text-xs font-semibold text-white ${channel.className}`}
-          >
-            {channel.label === 'video_diy_site' ? t('video_diy_site') : channel.label}
-          </span>
+          <ChannelLogo key={channel} channel={channel} />
         ))}
       </span>
     );
@@ -184,7 +250,7 @@ export const DiyScene = (props: {
   const isUsShown = isLast && reached > screen.to - screen.from;
 
   return (
-    <div className="mx-auto w-full max-w-3xl min-w-0 space-y-4">
+    <div className="mx-auto w-full max-w-3xl min-w-0 space-y-4 pb-10">
       <header className="space-y-1 text-center">
         <h2 className="text-2xl font-bold tracking-tight text-neutral-950 md:text-3xl">
           {t('video_diy_title')}
@@ -194,7 +260,8 @@ export const DiyScene = (props: {
 
       <ol className="grid min-w-0 gap-3 md:grid-cols-2">
         {ITEMS.slice(0, shown).map((item, index) => {
-          const isDone = isLast && item.key !== 'tool';
+          // Everything turns green once Gigi says we can do it all
+          const isDone = isUsShown;
 
           return (
             <li
@@ -205,9 +272,11 @@ export const DiyScene = (props: {
                   props.onCost();
                 }
               }}
-              className={`relative flex min-w-0 animate-pop items-start gap-3 rounded-2xl bg-white p-3.5 shadow-lg ring-1 ring-neutral-200 sm:p-4 ${item.key === 'tool' ? 'md:col-span-2' : ''}`}
+              className={`relative flex min-w-0 animate-pop items-start gap-3 rounded-2xl p-3.5 shadow-lg ring-1 transition-colors duration-700 sm:p-4 ${isDone ? 'bg-emerald-50 ring-emerald-200' : 'bg-white ring-neutral-200'} ${item.key === 'tool' ? 'md:col-span-2' : ''}`}
             >
-              {index === shown - 1 && <ScrollAnchor className="absolute inset-0" />}
+              {index === shown - 1 && (
+                <ScrollAnchor className="absolute inset-0" style={ROOM_BELOW} />
+              )}
               <span
                 className={`flex size-10 shrink-0 items-center justify-center rounded-xl transition-colors duration-500 ${isDone ? 'bg-emerald-500 text-white' : 'bg-(--demo-primary)/10 text-(--demo-primary)'}`}
               >
@@ -223,7 +292,7 @@ export const DiyScene = (props: {
                 <DiyExample item={item.key} texts={texts} />
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-900">
                   <Coins className="size-3.5 shrink-0" />
-                  {t(`video_diy_${item.key}_cost`)}
+                  {costLabel({ cost: DIY_COSTS[item.key], t })}
                 </span>
               </span>
             </li>
@@ -232,13 +301,9 @@ export const DiyScene = (props: {
       </ol>
 
       {isUsShown && (
-        <div className="relative flex animate-in items-center gap-3 pt-2 fade-in slide-in-from-bottom-3">
-          <ScrollAnchor className="absolute inset-0" />
-          <span className="h-px flex-1 bg-neutral-300" />
-          <p className="text-center text-xl font-black text-balance text-(--demo-primary) md:text-2xl">
-            {t('video_diy_us')}
-          </p>
-          <span className="h-px flex-1 bg-neutral-300" />
+        <div className="relative animate-in rounded-2xl bg-emerald-600 p-4 text-center text-white shadow-xl fade-in slide-in-from-bottom-3 sm:p-5">
+          <ScrollAnchor className="absolute inset-0" style={ROOM_BELOW} />
+          <p className="text-xl font-black text-balance sm:text-2xl">{t('video_diy_us')}</p>
         </div>
       )}
     </div>

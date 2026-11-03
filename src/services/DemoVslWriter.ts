@@ -64,7 +64,6 @@ const vslTextsSchema = z.object({
     video_line_loss_not_found: z.string(),
     video_line_google: z.string(),
     video_line_site_hero: z.string(),
-    video_line_site_services: z.string(),
     video_line_loss_not_chosen: z.string(),
     video_line_review_request: z.string(),
     video_line_loss_lost: z.string(),
@@ -96,9 +95,7 @@ const SCENES: Record<VideoWrittenLine, string> = {
   video_line_google:
     'The Google results page as it could be: the search, the site of the business among the results and its Google profile. Say that Girhouse takes care of the site and the Google profile so that people searching this in the area find it. Then say plainly that on Google you climb one step at a time, and that meanwhile whoever already writes to them is never lost again. Never "servono mesi, ma è la strada giusta", never promise a position.',
   video_line_site_hero:
-    'The site as it could be, the top part. Say clearly that this is an example of how it could look ("potrebbe essere così") and that the buttons to book and write are always in view.',
-  video_line_site_services:
-    'The services section of the example site: whoever arrives understands at once what the business does and how to book.',
+    'The site as it could be, scrolling on its own from the top: the headline with the buttons to book and write, then who the professional is, the services and the closing call to book. Say clearly once that this is an example of how it could look, and walk through the page in 2 short sentences, at most 200 characters.',
   video_line_loss_not_chosen:
     'SECOND STRETCH, "ti trovano, ma non ti scelgono", over a photo. Someone compares two or three businesses on the phone and reads the reviews before writing to anyone. Say it about how people choose, never about this business.',
   video_line_review_request:
@@ -185,7 +182,6 @@ const INSTRUCTIONS = [
   '- Never name precise gestures or body parts: the photo may get them wrong.',
   '- Name things plainly. Never soften them with adjectives such as "gentile", "delicato", "con calma".',
   '- Use the customer names you wrote for the missed call, the chat, the social request, the review request and the reminder.',
-  '- An empty string for `video_line_site_services` when the page lists no services.',
   '- The screens, in order:',
 ].join('\n');
 

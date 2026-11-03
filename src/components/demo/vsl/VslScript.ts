@@ -4,6 +4,7 @@ import type { DemoReviews } from '../GoogleReviews';
 import { HIGHLIGHT_TAGS, parseHighlights, visibleLength } from '../Highlights';
 import type { LandingSection } from '../TourScenes';
 import { landingSectionsFor } from '../TourScenes';
+import { firstYearSaving, VIDEO_FIRST_MONTH_PRICE } from './DiyCosts';
 import type { VideoClosing, VideoLine, VideoLoss } from './VideoScript';
 
 /** The new page's sections: its review system has a case of its own earlier on. */
@@ -152,9 +153,6 @@ export type VslTranslate = {
   tour: (line: VslTourLine) => string;
 };
 
-/** What the first month costs in version C, the first step of the price ladder. */
-export const VIDEO_FIRST_MONTH_PRICE = 47;
-
 /** The pause between the end of a line and the next scene. */
 export const VSL_GAP_MS = 200;
 
@@ -179,8 +177,11 @@ const FOLLOW_UP_MS = 7 * VSL_FOLLOW_UP_STEP_MS;
 /** The review system: the star is tapped after 1.5 seconds, then three replies 0.7 seconds apart. */
 const FUNNEL_MS = 1500 + 3 * 700;
 
-/** The review request: its two messages, then the review. */
-const REVIEW_REQUEST_MS = 4500;
+/** How long each section of the example site stays before the frame scrolls to the next. */
+export const VSL_SITE_SECTION_MS = 2000;
+
+/** The review request: the question, five stars, two messages, then the review. */
+const REVIEW_REQUEST_MS = 9 * 600;
 
 /** The social request: the comment, the private message and the answer. */
 const SOCIAL_MS = 5000;
@@ -260,6 +261,7 @@ export const vslLineValues = (options: {
   source: options.reviews.source,
   price: options.price,
   firstPrice: VIDEO_FIRST_MONTH_PRICE,
+  saving: firstYearSaving(options.price).saving,
   slots: options.slots,
 });
 
@@ -445,18 +447,32 @@ export const vslLinesToVoice = (scenes: VslScene[]) => [
   ]),
 ];
 
+/** How long the recap of what it costs alone stays, once said, before the price. */
+const RECAP_PAUSE_MS = 2000;
+
+/**
+ * Says how long a scene waits once Gigi is done, on top of the usual gap: the recap of
+ * the costs stays a moment, so it can be read before the price.
+ * @param scene The scene.
+ * @returns The extra wait, in milliseconds.
+ */
+export const vslPauseAfterMs = (scene: VslScene) =>
+  scene.kind === 'diy' && scene.part === 3 ? RECAP_PAUSE_MS : 0;
+
 /**
  * Says how long a scene must stay on screen for what it plays to finish, whatever the voice.
  * @param options The scene.
  * @param options.scene The scene.
  * @param options.previous The scene before it, whose chat this one may continue.
  * @param options.reminderMessages How many messages the reminder chat has.
+ * @param options.siteSections How many sections the example site scrolls through.
  * @returns The minimum, in milliseconds.
  */
 export const vslSceneMinimumMs = (options: {
   scene: VslScene;
   previous: VslScene | undefined;
   reminderMessages: number;
+  siteSections?: number;
 }) => {
   const { scene, previous } = options;
 
@@ -469,6 +485,8 @@ export const vslSceneMinimumMs = (options: {
 
   const minimums: Partial<Record<VslScene['kind'], number>> = {
     review_request: REVIEW_REQUEST_MS,
+    // The site scrolls to its last section, which then stays a moment
+    site: (options.siteSections ?? 1) * VSL_SITE_SECTION_MS,
     social: SOCIAL_MS,
     diy: DIY_MS,
     google: GOOGLE_MS,

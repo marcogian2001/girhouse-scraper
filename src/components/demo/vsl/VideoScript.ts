@@ -16,7 +16,6 @@ export const VIDEO_WRITTEN_LINES = [
   'video_line_loss_not_found',
   'video_line_google',
   'video_line_site_hero',
-  'video_line_site_services',
   'video_line_loss_not_chosen',
   'video_line_review_request',
   'video_line_loss_lost',
@@ -164,7 +163,6 @@ export const buildVideoScenes = (options: { data: DemoSnapshot; closing: VideoCl
   const { data, closing } = options;
   const { messages } = data.chat;
   const firstReply = messages.findIndex((message) => message.from === 'business');
-  const hasServices = data.landing.services.length > 0;
 
   const scenes: VslScene[] = [
     { step: 0, kind: 'intro', line: 'video_line_intro', chapter: 'opening', cues: [] },
@@ -184,18 +182,6 @@ export const buildVideoScenes = (options: { data: DemoSnapshot; closing: VideoCl
       chapter: 'solution',
       cues: [],
     },
-    ...(hasServices
-      ? [
-          {
-            step: 1,
-            kind: 'site',
-            sections: ['hero', 'services'],
-            line: 'video_line_site_services',
-            chapter: 'solution',
-            cues: [],
-          } satisfies VslScene,
-        ]
-      : []),
     lossScene({ step: 2, loss: 'not_chosen', sound: 'hit' }),
     {
       step: 2,
