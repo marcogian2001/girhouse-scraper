@@ -319,3 +319,13 @@ Questa sezione prevale sulle tabelle precedenti per le domande e il calcolo.
 - **Prezzo di chi prenota**: nella pagina del prezzo del quiz, chi va verso la chiamata vede 97 € al mese e non più 47 €. Le due pagine di prenotazione hanno il riquadro `.pc-offer` con lo sconto di 50 € sul primo mese, che porta a `/attiva/` (F1) o `/attiva/?funnel=f2` (F2) con i parametri della campagna.
 - **Testo F2**: il calendario di F2 non parla più di punteggio.
 - **Analisi quiz**: `GH_QS_STEPS` è rinumerato. Le 3 sessioni di prova già salvate compaiono con i vecchi nomi.
+
+## Fonte e funnel su ogni contatto GHL (3 novembre 2026)
+
+- **Impostazioni**: nella lavagna di ogni funnel, con nessuno step selezionato, ci sono i campi "Fonte" e "Funnel" (testo libero, meta `_gh_funnel_fonte` e `_gh_funnel_codice`). F1 = fb-ads / F1, F2 = fb-ads / F2. Al salvataggio il sito riscrive `uploads/girhouse/funnels/fonti.json` (pagina → fonte e funnel); se una pagina sta in più funnel vale il più vecchio non archiviato.
+- **Pagine**: ogni pagina funnel ha `<body data-fonte data-funnel>`. `?fonte=` e `?funnel=` nell'indirizzo li sostituiscono solo per quella visita.
+- **Prenotazione**: `/calendario/prenota` ricava i valori dal Referer (o dal campo `pagina`) e li manda nell'upsert del contatto come campi personalizzati, prima dell'appuntamento. Gli id dei campi `contact.fonte` e `contact.funnel` si leggono da GHL e restano in cache un giorno. Il campo `source` resta "Funnel F1 prenotazione" / "Funnel F2 prenotazione".
+- **Quiz**: il webhook ha le chiavi `fonte` e `funnel`; `funnel` prima valeva sempre "F9" e ora vale F1.
+- **Sito**: la pagina WordPress "Prenota una chiamata" (`/prenota/`, id 21647, modello "Calendario Girhouse") ha lo stesso calendario senza il pop-up dello sconto. Fonte e funnel sono nei campi personalizzati `gh_fonte` = sito e `gh_funnel` = organico-sito. In homepage i 4 pulsanti "Prenota una chiamata" aprono questo calendario in un pop-up (`/prenota/?vista=popup`); senza JavaScript portano alla pagina. Le altre pagine del sito, la barra e il modello delle pagine servizio puntano ancora a `call.girhouse.com/onboarding-call`, con `?fonte=sito&funnel=organico-sito`.
+- **Calendario GHL**: ne esiste uno solo, `whN4d9cWfVthRdofYTh7` "Call Demo - 30 min", ed è quello usato dal sito e dalla pagina GHL. Si prenota da 1 a 5 giorni avanti, dalle 10:00 alle 18:30, su Google Meet.
+- **Prova senza prenotare**: `wp gh-funnels prova-prenotazione "<indirizzo della pagina>"` stampa il contatto che verrebbe mandato a GHL. Lo script Playwright `fonte-test.cjs` blocca le chiamate a GHL e legge cosa partirebbe dal calendario e dal quiz.
