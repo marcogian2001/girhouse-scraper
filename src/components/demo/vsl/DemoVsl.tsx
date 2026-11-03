@@ -41,7 +41,7 @@ import { PhotoScene } from './PhotoScene';
 import { ReviewRequestScene } from './ReviewRequestScene';
 import { ReviewsScene } from './ReviewsScene';
 import { SceneLabel } from './SceneLabel';
-import { SiteScene, siteSectionsFor } from './SiteScene';
+import { SiteScene } from './SiteScene';
 import { SocialRequestScene } from './SocialRequestScene';
 import { VideoCallBooking, VideoCallLink, VideoMainAction } from './VideoClosingStep';
 import { VideoOfferStep } from './VideoOfferStep';
@@ -649,7 +649,12 @@ const VslSceneVisual = (options: {
     return (
       <div className="space-y-4">
         <SceneLabel>{t('video_site_label')}</SceneLabel>
-        <SiteScene data={data} reviews={props.reviews} photos={props.photos} />
+        <SiteScene
+          data={data}
+          reviews={props.reviews}
+          photos={props.photos}
+          spoken={options.spoken}
+        />
       </div>
     );
   }
@@ -832,7 +837,6 @@ export const DemoVsl = (
       scene: target,
       previous: scenes[current - 1],
       reminderMessages: props.vsl.reminder.messages.length,
-      siteSections: siteSectionsFor({ data, hasReviews: props.reviews.items.length > 0 }).length,
     });
 
     clockRef.current.wait(

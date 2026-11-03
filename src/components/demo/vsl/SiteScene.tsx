@@ -5,8 +5,6 @@ import type { DemoReviews } from '../GoogleReviews';
 import type { DemoPhoto } from '../steps/LandingStep';
 import { LandingStep } from '../steps/LandingStep';
 import { landingSectionsFor } from '../TourScenes';
-import { useTimedSequence } from '../useTimedSequence';
-import { VSL_SITE_SECTION_MS } from './VslScript';
 
 /**
  * Lists the sections the example site scrolls through: all the page has but the review
@@ -16,7 +14,7 @@ import { VSL_SITE_SECTION_MS } from './VslScript';
  * @param options.hasReviews Whether Google returned reviews to show.
  * @returns The sections, in page order.
  */
-export const siteSectionsFor = (options: { data: DemoSnapshot; hasReviews: boolean }) =>
+const siteSectionsFor = (options: { data: DemoSnapshot; hasReviews: boolean }) =>
   landingSectionsFor(options).filter((section) => section !== 'funnel');
 
 /**
@@ -27,18 +25,21 @@ export const siteSectionsFor = (options: { data: DemoSnapshot; hasReviews: boole
  * @param props.data The demo snapshot.
  * @param props.reviews The reviews the demo found.
  * @param props.photos The business's photos.
+ * @param props.spoken What Gigi says and how much of it is out.
  * @returns The site.
  */
 export const SiteScene = (props: {
   data: DemoSnapshot;
   reviews: DemoReviews;
   photos: DemoPhoto[];
+  spoken: { text: string; typed: number };
 }) => {
   const sections = siteSectionsFor({
     data: props.data,
     hasReviews: props.reviews.items.length > 0,
   });
-  const shown = useTimedSequence({ target: sections.length - 1, intervalMs: VSL_SITE_SECTION_MS });
+  const progress = props.spoken.typed / Math.max(props.spoken.text.length, 1);
+  const shown = Math.min(Math.floor(progress * sections.length), sections.length - 1);
 
   return (
     <LandingStep

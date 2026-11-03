@@ -177,9 +177,6 @@ const FOLLOW_UP_MS = 7 * VSL_FOLLOW_UP_STEP_MS;
 /** The review system: the star is tapped after 1.5 seconds, then three replies 0.7 seconds apart. */
 const FUNNEL_MS = 1500 + 3 * 700;
 
-/** How long each section of the example site stays before the frame scrolls to the next. */
-export const VSL_SITE_SECTION_MS = 2000;
-
 /** The review request: the question, five stars, two messages, then the review. */
 const REVIEW_REQUEST_MS = 9 * 600;
 
@@ -465,14 +462,12 @@ export const vslPauseAfterMs = (scene: VslScene) =>
  * @param options.scene The scene.
  * @param options.previous The scene before it, whose chat this one may continue.
  * @param options.reminderMessages How many messages the reminder chat has.
- * @param options.siteSections How many sections the example site scrolls through.
  * @returns The minimum, in milliseconds.
  */
 export const vslSceneMinimumMs = (options: {
   scene: VslScene;
   previous: VslScene | undefined;
   reminderMessages: number;
-  siteSections?: number;
 }) => {
   const { scene, previous } = options;
 
@@ -485,8 +480,6 @@ export const vslSceneMinimumMs = (options: {
 
   const minimums: Partial<Record<VslScene['kind'], number>> = {
     review_request: REVIEW_REQUEST_MS,
-    // The site scrolls to its last section, which then stays a moment
-    site: (options.siteSections ?? 1) * VSL_SITE_SECTION_MS,
     social: SOCIAL_MS,
     diy: DIY_MS,
     google: GOOGLE_MS,
