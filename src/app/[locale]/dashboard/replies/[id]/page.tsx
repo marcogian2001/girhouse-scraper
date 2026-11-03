@@ -6,13 +6,11 @@ import { ConversationProgress } from '@/components/ConversationProgress';
 import { ConversationThread } from '@/components/ConversationThread';
 import { ConversationTimeline } from '@/components/ConversationTimeline';
 import { DeleteConversationButton } from '@/components/DeleteConversationButton';
-import { RunNextActionButton } from '@/components/RunNextActionButton';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { getApiContext } from '@/libs/ApiAuth';
 import { EVENT_TYPES, getConversationDetail } from '@/libs/Conversations';
 import { getConversationDemo } from '@/libs/Demos';
-import { canRunNextActionNow, canSkipToWhatsapp } from '@/libs/FollowUps';
 import { conversationStateEnum, replyCategoryEnum } from '@/models/Schema';
 
 export default async function ReplyDetailPage(props: {
@@ -39,11 +37,7 @@ export default async function ReplyDetailPage(props: {
   }
 
   const { conversation, events } = detail;
-  const [demo, canRunNow, canSkip] = await Promise.all([
-    getConversationDemo(conversation.id),
-    canRunNextActionNow(conversation),
-    canSkipToWhatsapp(conversation),
-  ]);
+  const demo = await getConversationDemo(conversation.id);
 
   const stateLabel = (value: unknown) => {
     const state = conversationStateEnum.enumValues.find((option) => option === value);
@@ -139,12 +133,6 @@ export default async function ReplyDetailPage(props: {
               </div>
             ))}
           </dl>
-          {(canRunNow || canSkip) && (
-            <div className="flex flex-wrap gap-2">
-              {canRunNow && <RunNextActionButton conversationId={conversation.id} />}
-              {canSkip && <RunNextActionButton conversationId={conversation.id} to="whatsapp" />}
-            </div>
-          )}
         </CardContent>
       </Card>
 

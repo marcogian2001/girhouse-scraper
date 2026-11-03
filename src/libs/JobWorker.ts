@@ -24,7 +24,6 @@ import {
 } from './CampaignWriting';
 import { db } from './DB';
 import { demoVslJobHandlers, markDemoVslAbandoned } from './DemoVsl';
-import { followUpJobHandlers, markConversationTickAbandoned } from './FollowUps';
 import { ghlLeadJobHandlers, markGhlLeadAbandoned } from './GhlLead';
 import { instantlySyncJobHandlers, markInstantlySyncAbandoned } from './InstantlySync';
 import {
@@ -37,6 +36,7 @@ import {
 } from './JobQueue';
 import { leadJobHandlers, markLeadJobAbandoned } from './LeadJobs';
 import { logger } from './Logger';
+import { scheduleNextAction } from './NextAction';
 import { markReplySendAbandoned, outboundJobHandlers } from './OutboundEmails';
 import { markReplyJobAbandoned, replyJobHandlers } from './ReplyJobs';
 import { recordParallelUsage } from './Usage';
@@ -46,6 +46,8 @@ import { markWriteBatchAbandoned, writeBatchJobHandlers } from './WriteBatchJobs
 const PARALLEL_POLL_TIMEOUT_SECONDS = 5;
 
 type Job = typeof jobSchema.$inferSelect;
+
+const tickPayloadSchema = z.object({ conversationId: z.uuid() });
 
 const pushPayloadSchema = z.object({
   emailList: z.array(z.string()).min(1),
@@ -305,12 +307,6 @@ const markAbandoned = async (job: Job, message: string) => {
     return;
   }
 
-  if (job.type === 'conversation_tick') {
-    await markConversationTickAbandoned(job, message);
-
-    return;
-  }
-
   if (job.type === 'ghl_lead') {
     await markGhlLeadAbandoned(job, message);
 
@@ -353,6 +349,21 @@ const markAbandoned = async (job: Job, message: string) => {
     .where(eq(campaignSchema.id, job.campaignId));
 };
 
+/**
+ * Ends a follow-up queued before follow-ups were turned off, clearing the time it was due
+ * at so the conversation no longer shows one.
+ * @param job The conversation_tick job.
+ */
+const runRetiredTickJob = async (job: Job) => {
+  const parse = tickPayloadSchema.safeParse(job.payload);
+
+  if (parse.success) {
+    await scheduleNextAction(parse.data.conversationId, null);
+  }
+
+  await completeJob(job.id);
+};
+
 const handlers = {
   enrich: runEnrichJob,
   write: runWriteJob,
@@ -361,7 +372,8 @@ const handlers = {
   ...leadJobHandlers,
   ...replyJobHandlers,
   ...outboundJobHandlers,
-  ...followUpJobHandlers,
+  // Retired: replies are handled by hand, so a follow-up still queued only clears its time
+  conversation_tick: runRetiredTickJob,
   // Retired: leads are no longer handed to the bot user on GHL, so a queued one just ends
   ghl_bot_assign: async (job: Job) => {
     await completeJob(job.id);

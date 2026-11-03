@@ -45,24 +45,28 @@ type NumberField = {
   [Key in SettingName]: AutomationSettingsInput[Key] extends number ? Key : never;
 }[SettingName];
 
-type SectionId = 'general' | 'sending' | 'follow_up' | 'nurturing' | 'offer' | 'demo' | 'ai';
+type SectionId = 'general' | 'sending' | 'offer' | 'demo' | 'ai';
 
 /** The numeric settings of each section that is only numbers, as the form shows them. */
 const NUMBER_SECTIONS = {
   sending: ['replyDelayMinMinutes', 'replyDelayMaxMinutes', 'businessHourStart', 'businessHourEnd'],
-  follow_up: ['demoNotOpenedBusinessDays', 'maxFollowUps', 'whatsappAfterBusinessDays'],
-  nurturing: ['nurturingIntervalDays', 'nurturingMaxCount'],
   offer: ['monthlyPrice', 'newMonthlyPrice', 'priceIncreaseDays', 'onboardingSlotsPerMonth'],
 } satisfies Partial<Record<SectionId, NumberField[]>>;
 
+/** The numeric settings the form shows. */
+type ShownNumberField =
+  | (typeof NUMBER_SECTIONS)[keyof typeof NUMBER_SECTIONS][number]
+  | 'confidenceThreshold';
+
 const MODEL_FIELDS = ['classificationModel', 'writingModel'] as const;
 
-/** The form's sections, in order, with the settings each one holds. */
+/**
+ * The form's sections, in order, with the settings each one holds. Replies are handled by
+ * hand, so the mode, follow-up and nurturing settings are kept as they are but not shown.
+ */
 const SECTIONS: { id: SectionId; fields: SettingName[] }[] = [
-  { id: 'general', fields: ['enabled', 'mode'] },
+  { id: 'general', fields: ['enabled'] },
   { id: 'sending', fields: NUMBER_SECTIONS.sending },
-  { id: 'follow_up', fields: NUMBER_SECTIONS.follow_up },
-  { id: 'nurturing', fields: NUMBER_SECTIONS.nurturing },
   { id: 'offer', fields: NUMBER_SECTIONS.offer },
   { id: 'demo', fields: ['whatsappBusinessNumber'] },
   { id: 'ai', fields: ['confidenceThreshold', ...MODEL_FIELDS] },
@@ -78,16 +82,9 @@ export const AutomationSettingsForm = (props: { settings: AutomationSettingsInpu
     resolver: zodResolver(AutomationSettingsValidation),
     defaultValues: props.settings,
   });
-  const [enabled, mode, followUps, followUpDays, whatsappDays, ...models] = useWatch({
+  const [enabled, ...models] = useWatch({
     control: form.control,
-    name: [
-      'enabled',
-      'mode',
-      'maxFollowUps',
-      'demoNotOpenedBusinessDays',
-      'whatsappAfterBusinessDays',
-      ...MODEL_FIELDS,
-    ],
+    name: ['enabled', ...MODEL_FIELDS],
   });
 
   const handleSave = form.handleSubmit(
@@ -116,7 +113,7 @@ export const AutomationSettingsForm = (props: { settings: AutomationSettingsInpu
     },
   );
 
-  const numberInput = (name: NumberField) => (
+  const numberInput = (name: ShownNumberField) => (
     <Field key={name}>
       <FieldLabel htmlFor={name}>{t(`field_${name}`)}</FieldLabel>
       <Input
@@ -130,67 +127,27 @@ export const AutomationSettingsForm = (props: { settings: AutomationSettingsInpu
     </Field>
   );
 
-  const numberInputs = (fields: NumberField[]) => (
+  const numberInputs = (fields: ShownNumberField[]) => (
     <div className="grid gap-6 sm:grid-cols-2">{fields.map(numberInput)}</div>
   );
 
-  const sequence = [followUps, followUpDays, whatsappDays];
-
   const sectionContent: Record<SectionId, React.ReactNode> = {
     general: (
-      <div className="space-y-6">
-        <Field orientation="horizontal">
-          <Checkbox
-            id="enabled"
-            checked={enabled}
-            onCheckedChange={(checked) => {
-              form.setValue('enabled', checked === true, { shouldDirty: true });
-            }}
-          />
-          <FieldContent>
-            <FieldLabel htmlFor="enabled">{t('label_enabled')}</FieldLabel>
-            <FieldDescription>{t('hint_enabled')}</FieldDescription>
-          </FieldContent>
-        </Field>
-
-        <Field>
-          <FieldLabel htmlFor="mode">{t('label_mode')}</FieldLabel>
-          <Select
-            value={mode}
-            onValueChange={(value) => {
-              if (value === 'draft' || value === 'auto') {
-                form.setValue('mode', value, { shouldDirty: true });
-              }
-            }}
-          >
-            <SelectTrigger id="mode" className="w-full sm:w-72">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="draft">{t('mode_draft')}</SelectItem>
-              <SelectItem value="auto">{t('mode_auto')}</SelectItem>
-            </SelectContent>
-          </Select>
-          <FieldDescription>{t('hint_mode')}</FieldDescription>
-        </Field>
-      </div>
+      <Field orientation="horizontal">
+        <Checkbox
+          id="enabled"
+          checked={enabled}
+          onCheckedChange={(checked) => {
+            form.setValue('enabled', checked === true, { shouldDirty: true });
+          }}
+        />
+        <FieldContent>
+          <FieldLabel htmlFor="enabled">{t('label_enabled')}</FieldLabel>
+          <FieldDescription>{t('hint_enabled')}</FieldDescription>
+        </FieldContent>
+      </Field>
     ),
     sending: numberInputs(NUMBER_SECTIONS.sending),
-    follow_up: (
-      <div className="space-y-6">
-        {numberInputs(NUMBER_SECTIONS.follow_up)}
-        {sequence.every(Number.isFinite) && (
-          <p className="rounded-lg bg-muted/50 p-3 text-sm">
-            {t('sequence_summary', {
-              count: followUps,
-              days: followUpDays,
-              whatsappDays,
-            })}
-          </p>
-        )}
-      </div>
-    ),
-    nurturing: numberInputs(NUMBER_SECTIONS.nurturing),
     offer: numberInputs(NUMBER_SECTIONS.offer),
     demo: (
       <Field>
@@ -262,8 +219,6 @@ export const AutomationSettingsForm = (props: { settings: AutomationSettingsInpu
                     {section.id === 'general' && (
                       <Badge variant={enabled ? 'secondary' : 'destructive'}>
                         {enabled ? t('status_on') : t('status_off')}
-                        {' · '}
-                        {mode === 'draft' ? t('mode_short_draft') : t('mode_short_auto')}
                       </Badge>
                     )}
                   </span>

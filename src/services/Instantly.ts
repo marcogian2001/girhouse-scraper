@@ -79,9 +79,6 @@ const INTEREST_LABELS: Record<number, string> = {
 /** Instantly's interest value for a lead who booked a meeting. */
 export const MEETING_BOOKED_INTEREST = 2;
 
-/** Instantly's lead status while the campaign is still sending to the lead. */
-export const ACTIVE_LEAD_STATUS = 1;
-
 const campaignAnalyticsSchema = z.array(
   z.looseObject({
     campaign_id: z.string(),
@@ -115,10 +112,6 @@ const repliedLeadsSchema = z.object({
     }),
   ),
   next_starting_after: z.string().nullish(),
-});
-
-const campaignLeadsSchema = z.object({
-  items: z.array(z.looseObject({ status: z.number().nullish() })),
 });
 
 /**
@@ -389,26 +382,6 @@ export const updateLeadInterest = async (options: {
       campaign_id: options.campaignId,
     }),
   });
-};
-
-/**
- * Reads a lead's status in one campaign: 1 while the campaign still sends to them,
- * 3 once their sequence is completed or stopped.
- * @param options The lookup.
- * @param options.email The lead's email.
- * @param options.campaignId The Instantly campaign.
- * @returns The status, or null when the lead is not in the campaign.
- * @throws {Error} When the API key is missing or Instantly rejects the request.
- */
-export const getCampaignLeadStatus = async (options: { email: string; campaignId: string }) => {
-  const payload = campaignLeadsSchema.parse(
-    await request('/leads/list', {
-      method: 'POST',
-      body: JSON.stringify({ campaign: options.campaignId, contacts: [options.email], limit: 1 }),
-    }),
-  );
-
-  return payload.items[0]?.status ?? null;
 };
 
 /**

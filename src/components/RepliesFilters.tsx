@@ -1,7 +1,7 @@
 'use client';
 
 import { cn } from 'cn';
-import { Bot, CircleCheck, CircleDot, Clock, Reply, UserRound, X } from 'lucide-react';
+import { CircleCheck, CircleDot, Clock, Reply, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useRef, useState, useTransition } from 'react';
 import { CampaignsFilter } from '@/components/CampaignsFilter';
@@ -141,35 +141,6 @@ export const RepliesFilters = (props: {
           <SelectItem value="no">
             <Clock className="text-warning" />
             {t('filter_answered_no')}
-          </SelectItem>
-        </SelectContent>
-      </Select>
-
-      <Select
-        value={query.bot ?? ALL}
-        onValueChange={(value) => {
-          apply({ ...query, bot: YES_NO.find((option) => option === value) });
-        }}
-      >
-        <SelectTrigger
-          aria-label={t('filter_bot_label')}
-          className={cn('w-full sm:w-48', query.bot && ACTIVE_FILTER_CLASS)}
-        >
-          <SelectValue />
-        </SelectTrigger>
-
-        <SelectContent>
-          <SelectItem value={ALL}>
-            <Bot className="text-muted-foreground" />
-            {t('filter_bot_all')}
-          </SelectItem>
-          <SelectItem value="yes">
-            <Bot className="text-primary" />
-            {t('filter_bot_yes')}
-          </SelectItem>
-          <SelectItem value="no">
-            <UserRound className="text-muted-foreground" />
-            {t('filter_bot_no')}
           </SelectItem>
         </SelectContent>
       </Select>

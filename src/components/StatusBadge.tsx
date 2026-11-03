@@ -61,22 +61,7 @@ const LEAD_TONE: Record<LeadStatus, Tone> = {
 const REPLY_STATUS_TONE: Record<ReplyStatus, Tone> = {
   pending: 'info',
   interested: 'success',
-  question: 'info',
-  objection: 'warning',
-  not_now: 'neutral',
   not_interested: 'neutral',
-  manual_review: 'warning',
-  demo_sent: 'info',
-  demo_viewed: 'info',
-  follow_up: 'info',
-  whatsapp: 'info',
-  call_booked: 'success',
-  nurturing: 'neutral',
-  out_of_office: 'neutral',
-  auto_reply: 'neutral',
-  no_reply: 'neutral',
-  stop: 'danger',
-  wrong_person: 'neutral',
 };
 
 const REPLY_CATEGORY_TONE: Record<ReplyCategory, Tone> = {

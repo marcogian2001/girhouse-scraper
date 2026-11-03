@@ -11,7 +11,6 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
-import { WhatsappHandoffPanel } from '@/components/WhatsappHandoffPanel';
 import type { getConversationDetail } from '@/libs/Conversations';
 import { Link } from '@/libs/I18nNavigation';
 import type { ThreadItem as ThreadItemOf } from '@/utils/MailThread';
@@ -220,11 +219,7 @@ export const ConversationThread = (props: { detail: Detail }) => {
               <p className="text-sm whitespace-pre-wrap">{item.email.body}</p>
             )}
             {item.kind === 'whatsapp' && (
-              <WhatsappHandoffPanel
-                conversationId={props.detail.conversation.id}
-                handoff={item.handoff}
-                messages={props.detail.whatsappMessages}
-              />
+              <p className="text-sm whitespace-pre-wrap">{item.handoff.firstMessage}</p>
             )}
           </AccordionContent>
         </AccordionItem>

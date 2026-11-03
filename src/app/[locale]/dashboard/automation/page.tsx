@@ -1,14 +1,10 @@
-import { and, desc, eq, isNotNull, isNull } from 'drizzle-orm';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { AutomationSettingsForm } from '@/components/AutomationSettingsForm';
-import { BotCampaignsCard } from '@/components/BotCampaignsCard';
 import { PageHeader } from '@/components/PageHeader';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getApiContext } from '@/libs/ApiAuth';
 import { getAutomationSettings } from '@/libs/AutomationSettings';
-import { db } from '@/libs/DB';
 import { Env } from '@/libs/Env';
-import { campaignSchema } from '@/models/Schema';
 import { getBaseUrl } from '@/utils/Helpers';
 
 export default async function AutomationPage(props: { params: Promise<{ locale: string }> }) {
@@ -17,28 +13,7 @@ export default async function AutomationPage(props: { params: Promise<{ locale: 
 
   const t = await getTranslations({ locale, namespace: 'AutomationPage' });
   const context = await getApiContext();
-  const [settings, campaigns] = context
-    ? await Promise.all([
-        getAutomationSettings(context.organizationId),
-        // Only campaigns already on Instantly can receive replies
-        db
-          .select({
-            id: campaignSchema.id,
-            name: campaignSchema.name,
-            botManaged: campaignSchema.botManaged,
-            createdAt: campaignSchema.createdAt,
-          })
-          .from(campaignSchema)
-          .where(
-            and(
-              eq(campaignSchema.organizationId, context.organizationId),
-              isNotNull(campaignSchema.instantlyCampaignId),
-              isNull(campaignSchema.archivedAt),
-            ),
-          )
-          .orderBy(desc(campaignSchema.createdAt)),
-      ])
-    : [null, []];
+  const settings = context ? await getAutomationSettings(context.organizationId) : null;
 
   return (
     <div className="max-w-3xl space-y-6">
@@ -57,8 +32,6 @@ export default async function AutomationPage(props: { params: Promise<{ locale: 
           </code>
         </CardContent>
       </Card>
-
-      <BotCampaignsCard campaigns={campaigns} />
 
       {settings && (
         <AutomationSettingsForm

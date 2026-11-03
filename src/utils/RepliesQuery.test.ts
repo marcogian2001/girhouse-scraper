@@ -5,12 +5,11 @@ describe('RepliesQuery', () => {
   describe('Parsing', () => {
     it('reads every filter from the search params', () => {
       expect(
-        parseRepliesQuery({ q: ' rossi ', state: 'interested', answered: 'no', bot: 'yes' }),
+        parseRepliesQuery({ q: ' rossi ', state: 'interested', answered: 'no' }),
       ).toStrictEqual({
         search: 'rossi',
         state: 'interested',
         answered: 'no',
-        bot: 'yes',
         campaigns: [],
       });
     });
@@ -26,17 +25,20 @@ describe('RepliesQuery', () => {
     });
 
     it('drops unknown values and internal states', () => {
-      expect(parseRepliesQuery({ state: 'paused', answered: 'maybe', bot: ['yes'] })).toStrictEqual(
-        { search: '', state: undefined, answered: undefined, bot: undefined, campaigns: [] },
-      );
+      expect(parseRepliesQuery({ state: 'demo_sent', answered: 'maybe' })).toStrictEqual({
+        search: '',
+        state: undefined,
+        answered: undefined,
+        campaigns: [],
+      });
     });
   });
 
   describe('Link', () => {
     it('keeps the filters and the page', () => {
       expect(
-        repliesHref({ search: 'mario rossi', state: 'manual_review', answered: 'yes' }, 2),
-      ).toBe('/dashboard/replies/?q=mario+rossi&state=manual_review&answered=yes&page=2');
+        repliesHref({ search: 'mario rossi', state: 'not_interested', answered: 'yes' }, 2),
+      ).toBe('/dashboard/replies/?q=mario+rossi&state=not_interested&answered=yes&page=2');
     });
 
     it('repeats the campaign param for each campaign', () => {
@@ -56,7 +58,7 @@ describe('RepliesQuery', () => {
     });
 
     it('detects a set filter', () => {
-      expect(hasRepliesFilters({ search: '', bot: 'no' })).toBeTruthy();
+      expect(hasRepliesFilters({ search: '', answered: 'no' })).toBeTruthy();
     });
 
     it('ignores an empty campaign list', () => {

@@ -24,7 +24,6 @@ export const InstantlyPushForm = (props: {
   const [accounts, setAccounts] = useState<string[]>([]);
   const [selected, setSelected] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [botManaged, setBotManaged] = useState(false);
 
   // Recipients are Italian, so the schedule follows Italian time wherever the sender is
   const timezone = AppConfig.timeZone;
@@ -68,7 +67,7 @@ export const InstantlyPushForm = (props: {
     const response = await fetch(`/api/campaigns/${props.campaignId}/push`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ emailList: selected, timezone, botManaged }),
+      body: JSON.stringify({ emailList: selected, timezone }),
     });
 
     if (!response.ok) {
@@ -133,20 +132,6 @@ export const InstantlyPushForm = (props: {
           )}
 
           <p className="text-sm text-muted-foreground">{t('timezone', { timezone })}</p>
-
-          <Label className="flex items-start gap-3 rounded-xl border p-3 font-normal hover:bg-accent/40">
-            <Checkbox
-              className="mt-0.5"
-              checked={botManaged}
-              onCheckedChange={(checked) => {
-                setBotManaged(checked === true);
-              }}
-            />
-            <span className="space-y-1">
-              <span className="block text-sm font-medium">{t('label_bot')}</span>
-              <span className="block text-sm text-muted-foreground">{t('hint_bot')}</span>
-            </span>
-          </Label>
 
           <Button
             type="button"

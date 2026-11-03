@@ -1,4 +1,4 @@
-import type { ReplyStatus } from './ReplyStatus';
+import type { ClassifiedReplyStatus } from './ReplyStatus';
 import { REPLY_STATUSES } from './ReplyStatus';
 
 /** The answers a yes-or-no filter takes in the URL. */
@@ -12,9 +12,8 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{
 /** The filters of the replies list, as kept in the URL. */
 export type RepliesQuery = {
   search: string;
-  state?: ReplyStatus;
+  state?: ClassifiedReplyStatus;
   answered?: YesNo;
-  bot?: YesNo;
   campaigns?: string[];
 };
 
@@ -29,7 +28,6 @@ export const parseRepliesQuery = (
   search: typeof params.q === 'string' ? params.q.trim() : '',
   state: REPLY_STATUSES.find((status) => status === params.state),
   answered: YES_NO.find((value) => value === params.answered),
-  bot: YES_NO.find((value) => value === params.bot),
   // Repeated in the URL, one `campaign` per picked campaign
   campaigns: [...new Set([params.campaign ?? []].flat())].filter((id) => UUID_PATTERN.test(id)),
 });
@@ -43,7 +41,6 @@ export const hasRepliesFilters = (query: RepliesQuery) =>
   query.search.trim() !== '' ||
   query.state !== undefined ||
   query.answered !== undefined ||
-  query.bot !== undefined ||
   (query.campaigns?.length ?? 0) > 0;
 
 /**
@@ -66,10 +63,6 @@ export const repliesHref = (query: RepliesQuery, page = 1) => {
 
   if (query.answered) {
     params.set('answered', query.answered);
-  }
-
-  if (query.bot) {
-    params.set('bot', query.bot);
   }
 
   for (const campaignId of query.campaigns ?? []) {

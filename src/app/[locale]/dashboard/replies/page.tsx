@@ -55,7 +55,6 @@ export default async function RepliesPage(props: {
           status: query.state,
           search: query.search || undefined,
           answered: query.answered ? query.answered === 'yes' : undefined,
-          botManaged: query.bot ? query.bot === 'yes' : undefined,
           campaignIds: query.campaigns,
           page,
         }),

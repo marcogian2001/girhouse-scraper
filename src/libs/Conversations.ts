@@ -1,11 +1,10 @@
 import type { SQLWrapper } from 'drizzle-orm';
-import { and, desc, eq, inArray, isNotNull, isNull, lte, not, or, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNotNull, isNull, lte, or, sql } from 'drizzle-orm';
 import {
   campaignSchema,
   contactSchema,
   conversationEventSchema,
   conversationSchema,
-  conversationStateEnum,
   demoSchema,
   emailSuppressionSchema,
   inboundMessageSchema,
@@ -29,8 +28,8 @@ import {
 } from '@/services/Instantly';
 import type { ConversationState, ReplyCategory } from '@/utils/ReplyRouting';
 import { decideState, needsAnswer } from '@/utils/ReplyRouting';
-import type { ReplyStatus } from '@/utils/ReplyStatus';
-import { CATEGORY_STATES, replyStatusFilter, toReplyStatus } from '@/utils/ReplyStatus';
+import type { ClassifiedReplyStatus } from '@/utils/ReplyStatus';
+import { categoriesShowing, toReplyStatus } from '@/utils/ReplyStatus';
 import {
   ACCENTED_LETTERS,
   PLAIN_LETTERS,
@@ -137,27 +136,6 @@ export const logEvent = async (
     payload: options.payload ?? {},
     actorUserId: options.actorUserId ?? null,
   });
-};
-
-/**
- * Tells whether the reply bot handles a conversation: always for a simulated one, otherwise
- * only when its campaign was marked as handled by the bot.
- * @param conversation The conversation.
- * @returns True when the bot may classify, answer and follow up.
- */
-export const isBotManaged = async (conversation: Conversation) => {
-  if (conversation.isTest) {
-    return true;
-  }
-
-  const campaign = conversation.campaignId
-    ? await db.query.campaignSchema.findFirst({
-        where: eq(campaignSchema.id, conversation.campaignId),
-        columns: { botManaged: true },
-      })
-    : undefined;
-
-  return campaign?.botManaged ?? false;
 };
 
 /**
@@ -586,21 +564,18 @@ const latestCategorySql = (conversationId: SQLWrapper) =>
  * @param status The status to match.
  * @returns The SQL condition.
  */
-const replyStatusSql = (status: ReplyStatus) => {
-  const filter = replyStatusFilter({
-    status,
-    states: conversationStateEnum.enumValues,
-    categories: replyCategoryEnum.enumValues,
-  });
+const replyStatusSql = (status: ClassifiedReplyStatus) => {
   const latestCategory = latestCategorySql(conversationSchema.id);
-  const inCategoryState = inArray(conversationSchema.state, [...CATEGORY_STATES]);
 
   return or(
-    filter.states.length > 0 ? inArray(conversationSchema.state, filter.states) : undefined,
-    filter.categories.length > 0
-      ? and(inCategoryState, inArray(latestCategory, filter.categories))
+    inArray(
+      latestCategory,
+      categoriesShowing({ status, categories: replyCategoryEnum.enumValues }),
+    ),
+    // Same rule as `toReplyStatus`: a stop caught before any classification
+    status === 'not_interested'
+      ? and(eq(conversationSchema.state, 'stop'), sql`${latestCategory} is null`)
       : undefined,
-    filter.unclassified ? and(inCategoryState, sql`${latestCategory} is null`) : undefined,
   );
 };
 
@@ -612,17 +587,15 @@ const replyStatusSql = (status: ReplyStatus) => {
  * @param options.status Only conversations showing this status, when given.
  * @param options.search Words the lead's email, company, first or last name must all contain.
  * @param options.answered Only conversations we did (true) or did not (false) reply to, when given.
- * @param options.botManaged Only conversations the bot does (true) or does not (false) handle, when given.
  * @param options.campaignIds Only conversations of these campaigns, when not empty.
  * @param options.page The 1-based page to read.
  * @returns The page of conversations and how many match in all.
  */
 export const listConversations = async (options: {
   organizationId: string;
-  status?: ReplyStatus;
+  status?: ClassifiedReplyStatus;
   search?: string;
   answered?: boolean;
-  botManaged?: boolean;
   campaignIds?: string[];
   page: number;
 }) => {
@@ -631,17 +604,13 @@ export const listConversations = async (options: {
     string | null
   >`coalesce(${contactSchema.firstName}, ${leadSchema.firstName})`;
   const lastName = sql<string | null>`coalesce(${contactSchema.lastName}, ${leadSchema.lastName})`;
-  // Same rule as `isBotManaged`: simulated conversations always belong to the bot
   const searchable = sql`translate(lower(concat_ws(' ', ${conversationSchema.leadEmail}, ${conversationSchema.company}, ${firstName}, ${lastName})), ${ACCENTED_LETTERS}, ${PLAIN_LETTERS})`;
-  const isBotManagedSql = sql`(${conversationSchema.isTest} or coalesce(${campaignSchema.botManaged}, false))`;
 
   const where = and(
     eq(conversationSchema.organizationId, options.organizationId),
     options.status ? replyStatusSql(options.status) : undefined,
     options.answered === true ? isNotNull(conversationSchema.lastOutboundAt) : undefined,
     options.answered === false ? isNull(conversationSchema.lastOutboundAt) : undefined,
-    options.botManaged === true ? isBotManagedSql : undefined,
-    options.botManaged === false ? not(isBotManagedSql) : undefined,
     options.campaignIds?.length
       ? inArray(conversationSchema.campaignId, options.campaignIds)
       : undefined,
@@ -661,7 +630,6 @@ export const listConversations = async (options: {
     .from(conversationSchema)
     .leftJoin(contactSchema, eq(contactSchema.id, conversationSchema.contactId))
     .leftJoin(leadSchema, eq(leadSchema.id, conversationSchema.leadId))
-    .leftJoin(campaignSchema, eq(campaignSchema.id, conversationSchema.campaignId))
     .where(where)
     .orderBy(desc(conversationSchema.lastInboundAt), desc(conversationSchema.id))
     .limit(CONVERSATIONS_PAGE_SIZE)
@@ -930,16 +898,6 @@ export const overrideClassification = async (options: {
   // An older reply no longer decides where the conversation stands, and a stop
   // is permanent: the lead is suppressed and blocked whatever the correction
   if (latest?.id !== row.message.id || conversation.state === 'stop') {
-    return updated;
-  }
-
-  // A paused conversation belongs to the sales reps: the category is only recorded, and
-  // nothing is written, though a stop still blocks the lead
-  if (conversation.state === 'paused') {
-    if (options.category === 'stop') {
-      await applyStop({ conversation, reason: 'manual_override', actorUserId: options.userId });
-    }
-
     return updated;
   }
 

@@ -14,13 +14,7 @@ import { isGhlConfigured } from '@/services/GoHighLevel';
 import { replyToEmail } from '@/services/Instantly';
 import type { CallPlan, WriteReplyOptions } from '@/services/ReplyWriter';
 import { renderScarcity, replySubject, writeReply } from '@/services/ReplyWriter';
-import {
-  addBusinessDays,
-  fromItalianTime,
-  scheduleRecontact,
-  scheduleReplySend,
-  toBusinessTime,
-} from '@/utils/BusinessHours';
+import { fromItalianTime, scheduleRecontact, scheduleReplySend } from '@/utils/BusinessHours';
 import { DEMO_STEPS } from '@/utils/DemoStats';
 import { FOLLOW_UP_STATES } from '@/utils/FollowUps';
 import { buildOfferBrief } from '@/utils/Offer';
@@ -38,7 +32,7 @@ import { dayLabel, joinSlotLabels, matchSlot, slotKey, slotLabel } from '@/utils
 import type { NotInterestedVersion } from '@/validations/AutomationValidation';
 import { getAutomationSettings } from './AutomationSettings';
 import type { Conversation } from './Conversations';
-import { isBotManaged, logEvent, setConversationState } from './Conversations';
+import { logEvent, setConversationState } from './Conversations';
 import { db } from './DB';
 import { bookCall, earliestBookable, getDemoSlots } from './DemoBooking';
 import { demoUrl, ensureDemo, getConversationDemo } from './Demos';
@@ -111,7 +105,7 @@ const answerSharesDemo = (category: ReplyCategory, version: NotInterestedVersion
  * @param options.carriesDemo Whether the email carries the demo link.
  * @returns The send time.
  */
-export const sendTimeFor = (options: {
+const sendTimeFor = (options: {
   conversation: Conversation;
   settings: AutomationSettings;
   repliedAt?: Date;
@@ -140,7 +134,7 @@ export const sendTimeFor = (options: {
  * Queues the send of a scheduled email at its send time.
  * @param email The scheduled email.
  */
-export const enqueueSend = async (email: OutboundEmail) => {
+const enqueueSend = async (email: OutboundEmail) => {
   await enqueue([
     {
       type: 'reply_send',
@@ -188,7 +182,7 @@ const chosenSendTime = (value: string | null | undefined, current: Date | null) 
  * @returns The body, the rules it still breaks and the model that wrote it.
  * @throws {Error} When no attempt returns a parsable answer, so the job retries.
  */
-export const writeCheckedReply = async (
+const writeCheckedReply = async (
   options: Omit<WriteReplyOptions, 'issues'> & {
     prices: number[];
     demoUrl: string | null;
@@ -421,8 +415,8 @@ const replyWriterInput = async (options: {
 };
 
 /**
- * Stores a written reply: scheduled when it may go out on its own, a draft otherwise.
- * A booking confirmation may go out on its own even though the conversation moved on.
+ * Stores a written reply as a draft: replies are handled by hand, so the automation only
+ * suggests what to answer.
  * @param options The reply.
  * @param options.conversation The conversation, as read for this job.
  * @param options.message The reply being answered.
@@ -446,12 +440,7 @@ const saveWrittenReply = async (options: {
   notInterestedVersion: NotInterestedVersion | null;
   sendAt: Date | null;
 }) => {
-  const { conversation, settings, written } = options;
-  const sendsItself =
-    settings.enabled &&
-    settings.mode === 'auto' &&
-    (conversation.state === 'classified' || options.isBooked) &&
-    written.issues.length === 0;
+  const { conversation, written } = options;
 
   const [created] = await db
     .insert(outboundEmailSchema)
@@ -463,16 +452,8 @@ const saveWrittenReply = async (options: {
       body: written.body,
       issues: written.issues,
       offeredSlots: options.offeredSlots,
-      status: sendsItself ? 'scheduled' : 'draft',
-      scheduledFor: sendsItself
-        ? (options.sendAt ??
-          sendTimeFor({
-            conversation,
-            settings,
-            repliedAt: options.message.receivedAt,
-            carriesDemo: options.carriesDemo,
-          }))
-        : options.sendAt,
+      status: 'draft',
+      scheduledFor: options.sendAt,
       model: written.model,
       notInterestedVersion: options.notInterestedVersion,
     })
@@ -485,22 +466,17 @@ const saveWrittenReply = async (options: {
 
   await logEvent({
     conversationId: conversation.id,
-    type: sendsItself ? 'reply_scheduled' : 'reply_drafted',
+    type: 'reply_drafted',
     payload: {
       outboundEmailId: created.id,
       issues: created.issues,
       scheduledFor: created.scheduledFor,
     },
   });
-
-  if (sendsItself) {
-    await enqueueSend(created);
-  }
 };
 
 /**
- * Writes the answer to a classified reply. It is sent on its own only in automatic
- * mode, for a confident classification and an answer that breaks no rule.
+ * Writes the suggested answer to a classified reply, as a draft.
  * @param job The reply_write job being processed.
  */
 const runReplyWriteJob = async (job: Job) => {
@@ -883,11 +859,6 @@ const findCancelReason = async (options: { email: OutboundEmail; conversation: C
     return conversation.state;
   }
 
-  // The campaign was handed to the sales reps after this email was written
-  if (!(await isBotManaged(conversation))) {
-    return 'campaign_unmanaged';
-  }
-
   // A follow-up only makes sense while the lead is still in the sequence
   if (FOLLOW_UP_KINDS.has(options.email.kind) && !FOLLOW_UP_STATES.has(conversation.state)) {
     return conversation.state;
@@ -962,17 +933,7 @@ const afterSend = async (options: {
   settings: AutomationSettings;
   sentAt: Date;
 }) => {
-  const { email, conversation, settings } = options;
-  const hours = { startHour: settings.businessHourStart, endHour: settings.businessHourEnd };
-  const followUpAt = addBusinessDays({
-    from: options.sentAt,
-    days: settings.demoNotOpenedBusinessDays,
-    hours,
-  });
-  const nurturingAt = toBusinessTime(
-    new Date(options.sentAt.getTime() + settings.nurturingIntervalDays * 86_400_000),
-    hours,
-  );
+  const { email, conversation } = options;
 
   // The email to a lead back from holiday picks the thread up; their answer decides the rest
   if (conversation.state === 'out_of_office') {
@@ -998,35 +959,19 @@ const afterSend = async (options: {
       await setConversationState({ conversation, state: 'follow_up' });
     }
 
-    // After the closing email the next step is WhatsApp, after its own wait
-    const whatsappAt = addBusinessDays({
-      from: options.sentAt,
-      days: settings.whatsappAfterBusinessDays,
-      hours,
-    });
-    const nextAt = email.kind === 'closing' ? whatsappAt : followUpAt;
-
-    await scheduleNextAction(conversation.id, isNurturing ? nurturingAt : nextAt);
-
     return;
   }
 
   const demo = await getConversationDemo(conversation.id);
 
-  // The demo is out: the follow-ups start counting from here. A no that got the demo as a
-  // parting gift is not followed up, but still shows the demo as sent
+  // The demo is out. Nothing is followed up on its own: replies are handled by hand
   if (demo && email.body.includes(demo.url) && DEMO_SENT_FROM.has(conversation.state)) {
     await setConversationState({ conversation, state: 'demo_sent' });
-
-    if (options.category !== 'not_interested') {
-      await scheduleNextAction(conversation.id, followUpAt);
-    }
   }
 
   // A "not now" moves to nurturing; a thanked wrong person is done
   if (options.category === 'not_now') {
     await setConversationState({ conversation, state: 'nurturing' });
-    await scheduleNextAction(conversation.id, nurturingAt);
   }
 
   if (options.category === 'wrong_person') {

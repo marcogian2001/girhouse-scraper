@@ -1,60 +1,45 @@
 import { describe, expect, it } from 'vitest';
-import { conversationStateEnum, replyCategoryEnum } from '@/models/Schema';
-import { replyStatusFilter, toReplyStatus } from './ReplyStatus';
-
-const filter = (status: Parameters<typeof replyStatusFilter>[0]['status']) =>
-  replyStatusFilter({
-    status,
-    states: conversationStateEnum.enumValues,
-    categories: replyCategoryEnum.enumValues,
-  });
+import { replyCategoryEnum } from '@/models/Schema';
+import { categoriesShowing, toReplyStatus } from './ReplyStatus';
 
 describe('ReplyStatus', () => {
   describe('Status', () => {
-    it('shows the category of a classified reply', () => {
-      expect(toReplyStatus('classified', 'not_interested')).toBe('not_interested');
+    it('shows a positive reply as interested', () => {
+      expect(toReplyStatus('classified', 'interested')).toBe('interested');
     });
 
-    it('shows the category of a paused conversation', () => {
-      expect(toReplyStatus('paused', 'interested')).toBe('interested');
+    it('shows an open reply as interested', () => {
+      expect(toReplyStatus('demo_sent', 'objection')).toBe('interested');
+    });
+
+    it('shows an unclassifiable reply as interested', () => {
+      expect(toReplyStatus('manual_review', 'other')).toBe('interested');
+    });
+
+    it('shows an automatic reply as not interested', () => {
+      expect(toReplyStatus('auto_reply', 'auto_reply')).toBe('not_interested');
+    });
+
+    it('shows an unclassified stop as not interested', () => {
+      expect(toReplyStatus('stop', null)).toBe('not_interested');
     });
 
     it('shows an unclassified reply as pending', () => {
-      expect(toReplyStatus('paused', null)).toBe('pending');
-    });
-
-    it('sends an unclassifiable reply to manual review', () => {
-      expect(toReplyStatus('classified', 'other')).toBe('manual_review');
-    });
-
-    it('shows a closed lead as not interested', () => {
-      expect(toReplyStatus('closed_not_interested', 'not_interested')).toBe('not_interested');
-    });
-
-    it('keeps the state once the conversation moved on', () => {
-      expect(toReplyStatus('demo_sent', 'interested')).toBe('demo_sent');
+      expect(toReplyStatus('replied', null)).toBe('pending');
     });
   });
 
   describe('Filter', () => {
-    it('matches closed and classified negative leads', () => {
-      expect(filter('not_interested')).toStrictEqual({
-        states: ['closed_not_interested'],
-        categories: ['not_interested'],
-        unclassified: false,
-      });
+    it('matches the positive and open categories for interested', () => {
+      expect(
+        categoriesShowing({ status: 'interested', categories: replyCategoryEnum.enumValues }),
+      ).toStrictEqual(['interested', 'question', 'objection', 'not_now', 'other']);
     });
 
-    it('matches unclassified replies for pending', () => {
-      expect(filter('pending')).toStrictEqual({ states: [], categories: [], unclassified: true });
-    });
-
-    it('matches both the state and the category for manual review', () => {
-      expect(filter('manual_review')).toStrictEqual({
-        states: ['manual_review'],
-        categories: ['other'],
-        unclassified: false,
-      });
+    it('matches the rest for not interested', () => {
+      expect(
+        categoriesShowing({ status: 'not_interested', categories: replyCategoryEnum.enumValues }),
+      ).toStrictEqual(['not_interested', 'stop', 'out_of_office', 'auto_reply', 'wrong_person']);
     });
   });
 });

@@ -70,11 +70,6 @@ export const CampaignValidation = campaignSettingsShape
 
 export type CampaignInput = z.output<typeof CampaignValidation>;
 
-export const CampaignBotValidation = z.object({
-  campaignIds: z.array(z.uuid()).min(1).max(500),
-  botManaged: z.boolean(),
-});
-
 /**
  * A free-text field where empty clears the value, so the record falls back to what it reads by itself.
  * @param max The longest accepted text.

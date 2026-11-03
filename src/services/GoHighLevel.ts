@@ -75,15 +75,6 @@ const calendarEventSchema = z.object({
 
 const calendarEventListSchema = z.object({ events: z.array(calendarEventSchema) });
 
-const customFieldSchema = z.object({ id: z.string(), name: z.string(), fieldKey: z.string() });
-
-const customFieldListSchema = z.object({ customFields: z.array(customFieldSchema) });
-
-const customFieldCreatedSchema = z.object({ customField: customFieldSchema });
-
-/** The ids of the contact fields already found or created, by key, for this process. */
-const contactFieldIds = new Map<string, string>();
-
 /**
  * Tells whether the calendar booking is configured.
  * @returns True when the token, location and calendar are all set.
@@ -497,51 +488,6 @@ export const listCalendarAppointments = async (options: { from: Date; to: Date }
   );
 
   return events;
-};
-
-/** A custom field the platform writes on GHL contacts, by its key without the `contact.` prefix. */
-export type ContactFieldSpec = { key: string; name: string; dataType: 'TEXT' | 'LARGE_TEXT' };
-
-/**
- * Makes sure the contact custom fields exist on the location, creating the missing ones,
- * so GHL workflows can read them as `{{contact.<key>}}`.
- * @param fields The fields the platform writes.
- * @returns The GHL id of each field, by key.
- * @throws {Error} When GHL is not configured or the token lacks the custom fields scopes.
- */
-export const ensureContactFields = async (fields: ContactFieldSpec[]) => {
-  const missing = fields.filter((field) => !contactFieldIds.has(field.key));
-
-  if (missing.length > 0) {
-    const locationId = requireEnv('GHL_LOCATION_ID', Env.GHL_LOCATION_ID);
-    const { customFields } = customFieldListSchema.parse(
-      await request({
-        path: `/locations/${locationId}/customFields?model=contact`,
-        family: 'locations',
-      }),
-    );
-
-    for (const field of missing) {
-      const existing = customFields.find(
-        (candidate) =>
-          candidate.fieldKey === `contact.${field.key}` || candidate.name === field.name,
-      );
-      const id =
-        existing?.id ??
-        customFieldCreatedSchema.parse(
-          // oxlint-disable-next-line no-await-in-loop
-          await request({
-            path: `/locations/${locationId}/customFields`,
-            family: 'locations',
-            body: { name: field.name, dataType: field.dataType, model: 'contact' },
-          }),
-        ).customField.id;
-
-      contactFieldIds.set(field.key, id);
-    }
-  }
-
-  return new Map(fields.map((field) => [field.key, contactFieldIds.get(field.key) ?? '']));
 };
 
 /**
