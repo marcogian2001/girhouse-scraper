@@ -100,6 +100,10 @@ Sono tutte fattibili:
 - Dopo ogni lavoro finito si aggiorna `docs/ANALISI_QUIZ_FUNNEL.md` e si fa il commit in stile Conventional Commits.
 - La cartella `.claude/` non tracciata non si tocca.
 
+## Stato del passo 1 (4 novembre 2026)
+
+Fatto in modalità test: prodotto `prod_VYw9HnkZedewiJ`, prezzo `price_1UXoH6RpePwqv78H2Z6dWfa1` (lookup key `sistema_girhouse_mensile`), coupon `primomese47`. In Stripe esistono già prodotti e abbonamenti creati da GHL, compreso un suo "Sistema Girhouse": dettagli in `docs/ANALISI_QUIZ_FUNNEL.md`.
+
 ## Primo passo
 
 Controllare se il connettore Stripe è disponibile. Se c'è, creare in modalità test prodotto, prezzo e coupon e riportare gli id. Poi leggere `checkout.php` e `template-checkout.php` sul server prima di scrivere il nuovo checkout.

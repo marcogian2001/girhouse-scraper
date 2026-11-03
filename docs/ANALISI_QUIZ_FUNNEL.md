@@ -329,3 +329,17 @@ Questa sezione prevale sulle tabelle precedenti per le domande e il calcolo.
 - **Sito**: la pagina WordPress "Prenota una chiamata" (`/prenota/`, id 21647, modello "Calendario Girhouse") ha lo stesso calendario senza il pop-up dello sconto. Fonte e funnel sono nei campi personalizzati `gh_fonte` = sito e `gh_funnel` = organico-sito. In homepage i 4 pulsanti "Prenota una chiamata" aprono questo calendario in un pop-up (`/prenota/?vista=popup`); senza JavaScript portano alla pagina. Le altre pagine del sito, la barra e il modello delle pagine servizio puntano ancora a `call.girhouse.com/onboarding-call`, con `?fonte=sito&funnel=organico-sito`.
 - **Calendario GHL**: ne esiste uno solo, `whN4d9cWfVthRdofYTh7` "Call Demo - 30 min", ed è quello usato dal sito e dalla pagina GHL. Si prenota da 1 a 5 giorni avanti, dalle 10:00 alle 18:30, su Google Meet.
 - **Prova senza prenotare**: `wp gh-funnels prova-prenotazione "<indirizzo della pagina>"` stampa il contatto che verrebbe mandato a GHL. Lo script Playwright `fonte-test.cjs` blocca le chiamate a GHL e legge cosa partirebbe dal calendario e dal quiz.
+
+## Stripe Billing: oggetti di test e pulizia dei prodotti (4 novembre 2026)
+
+- **Oggetti in modalità test**, gestiti dal sito (metadato `gestito_da = sito-girhouse`):
+  - prodotto "Sistema Girhouse" `prod_VYw9HnkZedewiJ`;
+  - prezzo 97 € al mese `price_1UXoH6RpePwqv78H2Z6dWfa1`, con lookup key `sistema_girhouse_mensile`;
+  - coupon `primomese47`: 50 € una volta, in EUR, valido solo su quel prodotto.
+- **Il "Sistema Girhouse" di GHL è un'altra cosa**: GHL (LeadConnector) ha già un suo "Sistema Girhouse", `prod_VRfvDIKYDu9byW` in test e `prod_VRfvMzjlM9NpZH` in live. Quello live ha 2 abbonamenti in prova a 97 €, venduti da un checkout GHL. Il checkout del sito non si aggancia lì, perché GHL gestisce quei prezzi. Prima del passaggio a live va deciso con il cliente se i due prodotti devono convivere.
+- **Pulizia dei prodotti in live**:
+  - Prima: 27 prodotti attivi, 139 abbonamenti (47 attivi, 15 in ritardo, 2 in prova, 62 disdetti, 13 scaduti incompleti), 12 link di pagamento attivi.
+  - Archiviati 9 prodotti senza abbonamenti, con il loro link disattivato: Saldo Sito GB Agency, Saldo Sito Web, Saldo Landing Page Vetri, Saldo Landing Page, Acconto Sito Web, Tech Support, e i tre "The Feminine Way - 1 to 1".
+  - Stripe non elimina prodotti con prezzi, e il connettore non ha l'operazione di eliminazione: archiviare è il massimo e si può annullare.
+- **Tenuti attivi su richiesta del cliente**: i due "Pagamento Girhouse LLC" con i loro link, tutti i prodotti con abbonamenti e tre prodotti senza uso (Sito + CRM Girhouse, il doppione "Abbonamento Mensile Whatsapp" `prod_TMOlFO1aTCrRGE`, "Copy of Abbonamento Mensile GoHighLevel").
+- **Verifica**: dopo la pulizia i 139 abbonamenti hanno lo stesso stato di prima; in live restano 18 prodotti attivi.
