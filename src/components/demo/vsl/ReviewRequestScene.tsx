@@ -5,6 +5,7 @@ import { GoogleLogo } from '../GoogleReviews';
 import { IPhoneFrame } from '../IPhoneFrame';
 import { useTimedSequence } from '../useTimedSequence';
 import { WhatsAppChat } from '../WhatsAppChat';
+import { SceneLabel } from './SceneLabel';
 
 /** How long the two messages take before the review shows. */
 const REVIEW_DELAY_MS = 3000;
@@ -26,9 +27,7 @@ export const ReviewRequestScene = (props: {
 
   return (
     <div className="flex flex-col items-center gap-3">
-      <p className="rounded-full bg-(--demo-primary) px-4 py-1.5 text-center text-sm font-semibold text-(--demo-on-primary) shadow">
-        {t('video_review_label')}
-      </p>
+      <SceneLabel>{t('video_review_label')}</SceneLabel>
       <IPhoneFrame statusBarClassName="bg-[#f6f6f6] text-neutral-900">
         <WhatsAppChat
           company={props.company}

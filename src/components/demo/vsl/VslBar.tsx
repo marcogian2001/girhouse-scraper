@@ -47,25 +47,28 @@ export const VslBar = (props: {
       <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-2 md:gap-6 md:py-3">
         <HostTalkingFace isTalking={props.isTalking} className="size-12 md:size-16" />
 
+        {/* Always two lines high: the words already said scroll out of the top */}
         <p
           aria-live="polite"
-          className={`min-h-[2lh] min-w-0 flex-1 text-sm leading-snug md:text-base md:leading-relaxed ${props.isQuiet ? 'text-white' : 'text-neutral-700'}`}
+          className={`flex h-[2lh] min-w-0 flex-1 flex-col justify-end overflow-hidden text-sm leading-snug md:text-base md:leading-relaxed ${props.isQuiet ? 'text-white' : 'text-neutral-700'}`}
         >
-          {props.isPaused && (
-            <span className="mr-2 inline-flex rounded-full bg-amber-100 px-2 py-0.5 align-middle text-xs font-semibold text-amber-800">
-              {t('vsl_paused')}
-            </span>
-          )}
-          {!props.isQuiet && (
-            <>
-              <span className="sr-only">
-                {props.segments.map((segment) => segment.text).join('')}
+          <span className="block">
+            {props.isPaused && (
+              <span className="mr-2 inline-flex rounded-full bg-amber-100 px-2 py-0.5 align-middle text-xs font-semibold text-amber-800">
+                {t('vsl_paused')}
               </span>
-              <span aria-hidden>
-                <TypedText segments={caption.segments} typed={caption.typed} />
-              </span>
-            </>
-          )}
+            )}
+            {!props.isQuiet && (
+              <>
+                <span className="sr-only">
+                  {props.segments.map((segment) => segment.text).join('')}
+                </span>
+                <span aria-hidden>
+                  <TypedText segments={caption.segments} typed={caption.typed} />
+                </span>
+              </>
+            )}
+          </span>
         </p>
 
         <div className="flex shrink-0 items-center gap-1.5">

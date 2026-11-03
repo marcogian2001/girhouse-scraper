@@ -4,6 +4,7 @@ import Image from 'next/image';
 import type { DemoSnapshot } from '@/models/Schema';
 import type { DemoReviews } from '../GoogleReviews';
 import { GoogleLogo, GoogleStars } from '../GoogleReviews';
+import { SceneLabel } from './SceneLabel';
 
 const ACTIONS = [
   { key: 'video_google_call', icon: Phone },
@@ -31,9 +32,7 @@ export const GoogleScene = (props: {
 
   return (
     <div className="mx-auto max-w-xl space-y-4">
-      <p className="mx-auto w-fit rounded-full bg-(--demo-primary) px-4 py-1.5 text-center text-sm font-semibold text-(--demo-on-primary) shadow">
-        {t('video_google_label')}
-      </p>
+      <SceneLabel>{t('video_google_label')}</SceneLabel>
 
       <div className="flex items-center gap-3 rounded-full border border-neutral-200 bg-white px-4 py-3 shadow-lg">
         <GoogleLogo className="size-6 shrink-0" />

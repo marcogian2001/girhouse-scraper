@@ -87,6 +87,31 @@ const DIY_LINES = ['video_line_diy_site', 'video_line_diy_google', 'video_line_d
 
 const CHAT_MESSAGE_MS = 1500;
 
+/** Marks the tall photo of a line, made for phones next to the wide one. */
+const PORTRAIT_SUFFIX = ':portrait';
+
+/**
+ * Names the tall photo of a line.
+ * @param line The line.
+ * @returns The key its tall photo is stored under.
+ */
+export const portraitLine = (line: string) => `${line}${PORTRAIT_SUFFIX}`;
+
+/**
+ * Tells whether a stored photo is the tall one.
+ * @param line The key the photo is stored under.
+ * @returns Whether it is.
+ */
+export const isPortraitLine = (line: string) => line.endsWith(PORTRAIT_SUFFIX);
+
+/**
+ * Names the line a stored photo goes behind, tall or wide.
+ * @param line The key the photo is stored under.
+ * @returns The line.
+ */
+export const landscapeLine = (line: string) =>
+  isPortraitLine(line) ? line.slice(0, -PORTRAIT_SUFFIX.length) : line;
+
 /**
  * Tells whether a line belongs to version C.
  * @param line The line.

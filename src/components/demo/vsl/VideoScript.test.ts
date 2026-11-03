@@ -156,8 +156,13 @@ describe('VideoScript', () => {
       );
     });
 
-    it('keeps the words to avoid out of every fixed line', () => {
-      const lines = Object.fromEntries(allLines.map((line) => [line, fixedLine(line)]));
+    it('keeps the words to avoid out of every fixed line but the paid tool', () => {
+      // The owner asked to name the management tool one can subscribe to instead
+      const lines = Object.fromEntries(
+        allLines
+          .filter((line) => line !== 'video_line_diy_or_us')
+          .map((line) => [line, fixedLine(line)]),
+      );
 
       expect(findBannedWords(lines)).toStrictEqual([]);
     });

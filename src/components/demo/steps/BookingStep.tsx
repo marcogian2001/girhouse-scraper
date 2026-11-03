@@ -56,6 +56,7 @@ const loadSlots = async (slug: string): Promise<Slots | null> => {
  * @param props.phase Where the booking stands.
  * @param props.onPhase Moves the booking on, so the giraffe says the matching line.
  * @param props.hasPlainNotice Reminds of the reminders, without the "one call only" warning.
+ * @param props.phoneNotice A line in small print under the button that asks for the number.
  * @returns The booking flow.
  */
 export const BookingStep = (props: {
@@ -66,6 +67,7 @@ export const BookingStep = (props: {
   phase: BookingPhase;
   onPhase: (phase: BookingPhase) => void;
   hasPlainNotice?: boolean;
+  phoneNotice?: string;
 }) => {
   const t = useTranslations('DemoPage');
   const format = useFormatter();
@@ -240,6 +242,11 @@ export const BookingStep = (props: {
             >
               {isBusy ? t('booking_loading') : t('booking_phone_submit')}
             </button>
+            {props.phoneNotice && (
+              <p className="text-center text-xs leading-snug text-neutral-500">
+                {props.phoneNotice}
+              </p>
+            )}
           </form>
         )}
 

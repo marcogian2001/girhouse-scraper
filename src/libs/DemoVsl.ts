@@ -4,7 +4,9 @@ import sharp from 'sharp';
 import * as z from 'zod';
 import {
   buildVideoScenes,
+  isPortraitLine,
   pickVideoClosing,
+  portraitLine,
   videoLineMarkup,
   videoLinesToVoice,
 } from '@/components/demo/vsl/VideoScript';
@@ -43,6 +45,9 @@ const PHOTO_STYLE =
 
 /** Wide enough for the frame on a large screen. */
 const PHOTO_WIDTH = 1920;
+
+/** The tall photos for phones: sharp on a phone held upright. */
+const PORTRAIT_WIDTH = 1080;
 
 const PHOTO_QUALITY = 86;
 
@@ -183,14 +188,15 @@ const startVoice = async (text: string) =>
   });
 
 /**
- * Asks Kie for the photo behind one of Gigi's lines.
+ * Asks Kie for the photo behind one of Gigi's lines, wide or tall.
  * @param prompt What it shows, as the AI wrote it.
+ * @param isPortrait Whether it is the tall one for phones.
  * @returns The Kie task.
  */
-const startPhoto = async (prompt: string) =>
+const startPhoto = async (prompt: string, isPortrait: boolean) =>
   await createKieTask(PHOTO_MODEL, {
     prompt: `${prompt} ${PHOTO_STYLE}`,
-    aspect_ratio: '16:9',
+    aspect_ratio: isPortrait ? '9:16' : '16:9',
     resolution: '2K',
     output_format: 'jpg',
   });
@@ -200,8 +206,10 @@ const startPhoto = async (prompt: string) =>
  * @param task What to make.
  * @returns The Kie task.
  */
-const startTask = async (task: Pick<KieTask, 'kind' | 'text'>) =>
-  await (task.kind === 'photo' ? startPhoto(task.text) : startVoice(task.text));
+const startTask = async (task: Pick<KieTask, 'kind' | 'line' | 'text'>) =>
+  await (task.kind === 'photo'
+    ? startPhoto(task.text, isPortraitLine(task.line))
+    : startVoice(task.text));
 
 /**
  * Reads where one voice or photo stands, asking again once when Kie failed it.
@@ -250,7 +258,10 @@ const downloadPhoto = async (task: KieTask & { url: string }) => ({
   line: task.line,
   prompt: task.text,
   data: await sharp(await downloadFromKie(task.url))
-    .resize({ width: PHOTO_WIDTH, withoutEnlargement: true })
+    .resize({
+      width: isPortraitLine(task.line) ? PORTRAIT_WIDTH : PHOTO_WIDTH,
+      withoutEnlargement: true,
+    })
     .jpeg({ quality: PHOTO_QUALITY, mozjpeg: true })
     .toBuffer(),
 });
@@ -343,11 +354,14 @@ export const advanceDemoVsl = async (
         ...entry,
         kind: 'voice' as const,
       })),
-      ...Object.entries(demo.vsl.images ?? {}).map(([line, text]) => ({
-        line,
-        text,
-        kind: 'photo' as const,
-      })),
+      // Version C has a tall photo for phones next to each wide one
+      ...Object.entries(demo.vsl.images ?? {}).flatMap(([line, text]) =>
+        (demo.version === 'c' ? [line, portraitLine(line)] : [line]).map((key) => ({
+          line: key,
+          text,
+          kind: 'photo' as const,
+        })),
+      ),
     ];
 
     // One at a time: Kie refuses calls that come too fast

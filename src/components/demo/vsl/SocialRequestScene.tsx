@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { IPhoneFrame } from '../IPhoneFrame';
 import { useTimedSequence } from '../useTimedSequence';
+import { SceneLabel } from './SceneLabel';
 
 /** How long each part of the exchange waits for the one before. */
 const PART_MS = 1500;
@@ -25,9 +26,7 @@ export const SocialRequestScene = (props: {
 
   return (
     <div className="flex flex-col items-center gap-3">
-      <p className="rounded-full bg-(--demo-primary) px-4 py-1.5 text-center text-sm font-semibold text-(--demo-on-primary) shadow">
-        {t('video_social_label')}
-      </p>
+      <SceneLabel>{t('video_social_label')}</SceneLabel>
       <IPhoneFrame statusBarClassName="bg-white text-neutral-900">
         <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto bg-white p-3">
           <p className="truncate border-b border-neutral-100 pb-2 text-center text-sm font-semibold text-neutral-950">

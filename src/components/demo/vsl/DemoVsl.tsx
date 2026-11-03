@@ -40,12 +40,20 @@ import { MissedCallScene } from './MissedCallScene';
 import { PhotoScene } from './PhotoScene';
 import { ReviewRequestScene } from './ReviewRequestScene';
 import { ReviewsScene } from './ReviewsScene';
+import { SceneLabel } from './SceneLabel';
 import { SocialRequestScene } from './SocialRequestScene';
-import { VideoClosingStep } from './VideoClosingStep';
-import { VideoGraphic } from './VideoGraphic';
+import { VideoCallBooking, VideoClosingActions } from './VideoClosingStep';
 import { VideoOfferStep } from './VideoOfferStep';
 import type { VideoClosing, VideoLine } from './VideoScript';
-import { buildVideoScenes, isVideoLine, videoLineMarkup, videoLinesToVoice } from './VideoScript';
+import {
+  buildVideoScenes,
+  isPortraitLine,
+  isVideoLine,
+  landscapeLine,
+  portraitLine,
+  videoLineMarkup,
+  videoLinesToVoice,
+} from './VideoScript';
 import { VslBar } from './VslBar';
 import type { VslLine, VslScene } from './VslScript';
 import {
@@ -78,6 +86,9 @@ export type DemoVoice = { id: string; line: string; text: string; seconds: numbe
 
 /** The photo Kie made behind one of Gigi's lines. */
 export type VslPhoto = { id: string; line: string; prompt: string };
+
+/** A scene's photo, wide for large screens and tall for phones, either one if made. */
+type ScenePhoto = { landscape: string | null; portrait: string | null };
 
 /** The typing ends a little before the voice, so the words are never behind it. */
 const TYPING_SHARE = 0.9;
@@ -365,8 +376,14 @@ const CONTINUED_KINDS = new Set<VslScene['kind']>([
  * @param index Its place in the demo.
  * @returns The key of what it shows.
  */
-const sceneGroup = (scene: VslScene, index: number) =>
-  CONTINUED_KINDS.has(scene.kind) ? scene.kind : `${scene.kind}-${index}`;
+const sceneGroup = (scene: VslScene, index: number) => {
+  // The closing stays on the offer's screen
+  if (scene.kind === 'closing') {
+    return 'offer';
+  }
+
+  return CONTINUED_KINDS.has(scene.kind) ? scene.kind : `${scene.kind}-${index}`;
+};
 
 /**
  * Says how long the whole demo lasts, from its voices.
@@ -439,21 +456,23 @@ const VslStoryVisual = (props: {
   scene: VslScene;
   vsl: DemoVslData;
   data: DemoTourProps['data'];
-  photo: string | null;
+  photo: ScenePhoto;
 }) => {
   const t = useTranslations('DemoPage');
   const { scene, data } = props;
 
   if (scene.kind === 'problem') {
-    return <PhotoScene src={props.photo} problem={scene.case} />;
+    return <PhotoScene src={props.photo.landscape} problem={scene.case} />;
   }
 
   if (scene.kind === 'loss') {
-    return <PhotoScene src={props.photo} loss={scene.loss} />;
+    return (
+      <PhotoScene src={props.photo.landscape} portrait={props.photo.portrait} loss={scene.loss} />
+    );
   }
 
   if (scene.kind === 'dream') {
-    return <PhotoScene src={props.photo} />;
+    return <PhotoScene src={props.photo.landscape} />;
   }
 
   if (scene.kind === 'missed_call') {
@@ -473,9 +492,13 @@ const VslStoryVisual = (props: {
   if (scene.kind === 'reminder') {
     return (
       <div className="flex flex-col items-center gap-3">
-        <p className="rounded-full bg-(--demo-primary) px-4 py-1.5 text-sm font-semibold text-(--demo-on-primary) shadow">
-          {t('vsl_reminder_label', { title: props.vsl.reminder.title })}
-        </p>
+        {props.vsl.closing ? (
+          <SceneLabel>{t('vsl_reminder_label', { title: props.vsl.reminder.title })}</SceneLabel>
+        ) : (
+          <p className="rounded-full bg-(--demo-primary) px-4 py-1.5 text-sm font-semibold text-(--demo-on-primary) shadow">
+            {t('vsl_reminder_label', { title: props.vsl.reminder.title })}
+          </p>
+        )}
         <IPhoneFrame statusBarClassName="bg-[#f6f6f6] text-neutral-900">
           <WhatsAppChat
             company={data.company}
@@ -492,27 +515,89 @@ const VslStoryVisual = (props: {
 };
 
 /**
+ * The offer of version C with its buttons, or the booking once a call is asked for.
+ * @param options The screen.
+ * @param options.props The demo props.
+ * @param options.closing How the video ends.
+ * @param options.company The business name.
+ * @param options.part How much of the offer shows, from 1 to 3.
+ * @param options.isCallOpen Whether the booking shows.
+ * @param options.bookingPhase Where the booking stands.
+ * @param options.onBookingPhase Moves the booking on.
+ * @param options.onOpenCall Opens the booking.
+ * @param options.onCloseCall Goes back to the offer.
+ * @returns The screen.
+ */
+const VideoOfferScreen = (options: {
+  props: DemoTourProps;
+  closing: VideoClosing;
+  company: string;
+  part: number;
+  isCallOpen: boolean;
+  bookingPhase: BookingPhase;
+  onBookingPhase: (phase: BookingPhase) => void;
+  onOpenCall: () => void;
+  onCloseCall: () => void;
+}) => {
+  const { props } = options;
+  const handleBookingPhase = options.onBookingPhase;
+  const handleOpenCall = options.onOpenCall;
+  const handleCloseCall = options.onCloseCall;
+
+  return options.isCallOpen ? (
+    <VideoCallBooking
+      slug={props.slug}
+      company={options.company}
+      whatsappNumber={props.whatsappNumber}
+      track={props.track}
+      closing={options.closing}
+      bookingPhase={options.bookingPhase}
+      onBookingPhase={handleBookingPhase}
+      onBack={handleCloseCall}
+    />
+  ) : (
+    <VideoOfferStep
+      part={options.part}
+      price={props.pricing.price}
+      isCallOnly={options.closing === 'call'}
+      actions={
+        <VideoClosingActions
+          slug={props.slug}
+          track={props.track}
+          closing={options.closing}
+          onOpenCall={handleOpenCall}
+        />
+      }
+    />
+  );
+};
+
+/**
  * Picks the visual of a scene of version B.
  * @param options The scene and the demo data.
  * @param options.scene The current scene.
  * @param options.props The demo props.
  * @param options.data The snapshot with version B's chat.
  * @param options.photo The photo of the problem or the dream, if made.
+ * @param options.spoken What Gigi says on the scene and how much of it is out, to show things as he names them.
  * @param options.bookingPhase Where the booking stands.
  * @param options.handleBookingPhase Moves the booking on.
  * @param options.isCallOpen Whether the closing shows the booking.
- * @param options.handleOpenCall Opens the booking from the closing.
+ * @param options.handleOpenCall Opens the booking from the offer.
+ * @param options.handleCloseCall Goes back from the booking to the offer.
  * @returns The scene's visual.
  */
 const VslSceneVisual = (options: {
   scene: VslScene;
   props: DemoTourProps & { vsl: DemoVslData };
   data: DemoTourProps['data'];
-  photo: string | null;
+  photo: ScenePhoto;
+  spoken: { text: string; typed: number };
   bookingPhase: BookingPhase;
   handleBookingPhase: (phase: BookingPhase) => void;
   isCallOpen: boolean;
   handleOpenCall: () => void;
+  handleCloseCall: () => void;
 }) => {
   const t = useTranslations('DemoPage');
   const { scene, props, data } = options;
@@ -540,9 +625,7 @@ const VslSceneVisual = (options: {
   if (scene.kind === 'site') {
     return (
       <div className="space-y-4">
-        <p className="mx-auto w-fit rounded-full bg-(--demo-primary) px-4 py-1.5 text-center text-sm font-semibold text-(--demo-on-primary) shadow">
-          {t('video_site_label')}
-        </p>
+        <SceneLabel>{t('video_site_label')}</SceneLabel>
         <LandingStep
           data={data}
           reviews={props.reviews}
@@ -562,31 +645,22 @@ const VslSceneVisual = (options: {
   }
 
   if (scene.kind === 'diy') {
-    return <DiyScene part={scene.part} texts={props.vsl.diy} />;
+    return <DiyScene part={scene.part} texts={props.vsl.diy} spoken={options.spoken} />;
   }
 
-  if (scene.kind === 'offer') {
+  // The offer and the closing are one screen: the price with its button, or the booking
+  if ((scene.kind === 'offer' || scene.kind === 'closing') && props.vsl.closing) {
     return (
-      <VideoOfferStep
-        part={scene.part}
-        price={props.pricing.price}
-        isCallOnly={props.vsl.closing === 'call'}
-      />
-    );
-  }
-
-  if (scene.kind === 'closing') {
-    return (
-      <VideoClosingStep
-        slug={props.slug}
+      <VideoOfferScreen
+        props={props}
+        closing={props.vsl.closing}
         company={data.company}
-        whatsappNumber={props.whatsappNumber}
-        track={props.track}
-        closing={scene.closing}
+        part={scene.kind === 'offer' ? scene.part : 3}
         isCallOpen={options.isCallOpen}
-        onOpenCall={options.handleOpenCall}
         bookingPhase={options.bookingPhase}
         onBookingPhase={options.handleBookingPhase}
+        onOpenCall={options.handleOpenCall}
+        onCloseCall={options.handleCloseCall}
       />
     );
   }
@@ -651,7 +725,7 @@ export const DemoVsl = (
   const [isPaused, setIsPaused] = useState(false);
   const [isTalking, setIsTalking] = useState(false);
   const [bookingPhase, setBookingPhase] = useState<BookingPhase>('phone');
-  const [isCallOpen, setIsCallOpen] = useState(closing === 'call');
+  const [isCallOpen, setIsCallOpen] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const musicRef = useRef(createSoundtrack());
   // The sounds the scene on screen still has to play
@@ -692,13 +766,16 @@ export const DemoVsl = (
 
     return voice && voice.text === toSpokenText(markupOf(line)) ? voice : null;
   };
-  // A photo goes behind its line only while version B still asks for it
+  // A photo goes behind its line only while the script still asks for it
   const photos = new Map(
     props.vslPhotos
-      .filter((photo) => photo.prompt === props.vsl.images?.[photo.line])
+      .filter((photo) => photo.prompt === props.vsl.images?.[landscapeLine(photo.line)])
       .map((photo) => [photo.line, `/api/demo-photos/${photo.id}`]),
   );
-  const photoOf = (line: VslLine | VideoLine) => photos.get(line) ?? null;
+  const photoOf = (line: VslLine | VideoLine): ScenePhoto => ({
+    landscape: photos.get(line) ?? null,
+    portrait: photos.get(portraitLine(line)) ?? null,
+  });
 
   const line: VslLine | VideoLine = scene
     ? lineOfScene({ scene, bookingPhase, isCallOpen })
@@ -919,9 +996,32 @@ export const DemoVsl = (
     });
   };
 
+  // The booking belongs to the last scene, whichever offer scene it is opened from
   const handleOpenCall = () => {
+    const last = scenes.length - 1;
+    const target = scenes[last];
+
     setIsCallOpen(true);
-    void say({ index, line: `video_line_booking_${bookingPhase}`, advance: goTo });
+
+    if (target && last !== index) {
+      if (props.track) {
+        sendDemoEvent(props.slug, { type: 'step', step: target.step });
+      }
+
+      setIndex(last);
+      enterScene(target);
+    }
+
+    void say({ index: last, line: `video_line_booking_${bookingPhase}`, advance: goTo });
+  };
+
+  const handleCloseCall = () => {
+    setIsCallOpen(false);
+    void say({
+      index,
+      line: lineOfScene({ scene, bookingPhase, isCallOpen: false }),
+      advance: goTo,
+    });
   };
 
   const togglePause = () => {
@@ -1023,7 +1123,7 @@ export const DemoVsl = (
       </>
     ) : (
       <div
-        className={`min-h-svh overflow-x-clip pb-[calc(var(--demo-bar-h,6rem)+1.5rem)] ${startCopy.page} ${isPricing ? 'bg-gradient-to-b from-[#0074F2] via-[#0a52d4] to-[#06287f]' : ''}`}
+        className={`min-h-svh overflow-x-clip pb-[calc(var(--demo-bar-h,6rem)+1.5rem)] ${isPricing ? 'bg-gradient-to-b from-[#0074F2] via-[#0a52d4] to-[#06287f]' : ''}`}
       >
         {/* Above the mockups, whose own layers stay inside `main` */}
         <header className="sticky top-0 z-20 border-b border-neutral-100 bg-white/90 backdrop-blur">
@@ -1049,21 +1149,21 @@ export const DemoVsl = (
 
         <main
           key={sceneGroup(scene, index)}
-          className={`isolate mx-auto max-w-7xl animate-in px-4 duration-500 fade-in ${startCopy.main} ${isPricing ? 'py-4 md:py-6' : 'py-6 md:py-10'}`}
+          className={`isolate mx-auto max-w-7xl animate-in px-4 duration-500 fade-in ${isPricing ? 'py-4 md:py-6' : 'py-6 md:py-10'}`}
         >
           <VslSceneVisual
             scene={scene}
             props={props}
             data={data}
             photo={photoOf(line)}
+            spoken={{ text: segments.map((segment) => segment.text).join(''), typed }}
             bookingPhase={bookingPhase}
             handleBookingPhase={handleBookingPhase}
             isCallOpen={isCallOpen}
             handleOpenCall={handleOpenCall}
+            handleCloseCall={handleCloseCall}
           />
         </main>
-
-        <VideoGraphic scene={scene} isVideo={Boolean(closing)} />
 
         <VslBar
           segments={segments}
@@ -1089,8 +1189,14 @@ export const DemoVsl = (
       {tracking}
       {audio}
       {/* The photos load while Gigi introduces himself; React moves these into the head */}
-      {[...photos.values()].map((src) => (
-        <link key={src} rel="preload" as="image" href={src} />
+      {[...photos].map(([photoLine, src]) => (
+        <link
+          key={src}
+          rel="preload"
+          as="image"
+          href={src}
+          media={isPortraitLine(photoLine) ? '(max-width: 767px)' : '(min-width: 768px)'}
+        />
       ))}
       {content}
     </>
