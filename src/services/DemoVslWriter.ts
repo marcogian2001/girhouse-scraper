@@ -18,6 +18,8 @@ const MAX_CHAT_MESSAGES = 10;
 
 const MAX_REMINDER_MESSAGES = 5;
 
+const MAX_DIY_EXAMPLES = 3;
+
 const messageSchema = z.object({
   da: z.enum(['cliente', 'attivita']),
   testo: z.string(),
@@ -53,6 +55,10 @@ const vslTextsSchema = z.object({
     messaggio: z.string(),
     risposta: z.string(),
   }),
+  fai_da_te: z.object({
+    parole_chiave: z.array(z.string()),
+    articoli_blog: z.array(z.string()),
+  }),
   // One per line of `VIDEO_WRITTEN_LINES`, which `satisfies` keeps in step
   battute: z.object({
     video_line_loss_not_found: z.string(),
@@ -70,6 +76,8 @@ const vslTextsSchema = z.object({
     video_line_inbox: z.string(),
     video_line_loss_not_back: z.string(),
     video_line_reminder: z.string(),
+    video_line_diy_site: z.string(),
+    video_line_diy_google: z.string(),
   } satisfies Record<VideoWrittenLine, z.ZodString>),
   // The prompt of the photo behind each of these lines, in English
   foto: z.object({
@@ -113,6 +121,10 @@ const SCENES: Record<VideoWrittenLine, string> = {
     'One place where every message, call and appointment of that customer arrives. Say "un posto unico" and what the owner sees, without naming any software.',
   video_line_loss_not_back:
     'FOURTH STRETCH, "sono già clienti, ma non tornano", over a photo. People who came once, forget the next check or renewal, and nobody has the time to call them all.',
+  video_line_diy_site:
+    'WHAT YOU CAN DO ALONE, part 1, on a checklist: a site optimised for the words people search (SEO on keywords, show one of your `parole_chiave`), Google Analytics connected to see who visits, a blog that answers what people look for online (name one of your `articoli_blog`). Say plainly that anyone can start on these alone, even without Girhouse.',
+  video_line_diy_google:
+    'WHAT YOU CAN DO ALONE, part 2, on the same checklist: Google Search Console connected to see which searches bring people to the site, a complete and cared for Google profile, and the same information everywhere (site, Google, Facebook, Instagram, LinkedIn: name, address, phone, hours). Say why each one matters for being found, in one short sentence.',
   video_line_reminder:
     'A second WhatsApp chat: the reminder typical of this sector (`promemoria`) goes out on its own and the customer books again.',
 };
@@ -306,6 +318,14 @@ export const toDemoVsl = (texts: DemoVslTexts): Omit<DemoVsl, 'generatedAt'> => 
     customerName: cleanReply(texts.recensione.nome_cliente),
     message: cleanReply(texts.recensione.messaggio),
     reply: cleanReply(texts.recensione.risposta),
+  },
+  diy: {
+    keywords: texts.fai_da_te.parole_chiave
+      .slice(0, MAX_DIY_EXAMPLES)
+      .map((keyword) => cleanReply(keyword)),
+    blogTitles: texts.fai_da_te.articoli_blog
+      .slice(0, MAX_DIY_EXAMPLES)
+      .map((title) => cleanReply(title)),
   },
   socialRequest: {
     customerName: cleanReply(texts.social.nome_cliente),

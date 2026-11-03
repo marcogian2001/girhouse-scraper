@@ -33,6 +33,7 @@ import { WhatsAppStep } from '../steps/WhatsAppStep';
 import { TOUR_STEPS } from '../TourScenes';
 import { useTimedSequence } from '../useTimedSequence';
 import { WhatsAppChat } from '../WhatsAppChat';
+import { DiyScene } from './DiyScene';
 import { GoogleScene } from './GoogleScene';
 import { HOST_POSTER, HostTalkingFull } from './HostTalking';
 import { MissedCallScene } from './MissedCallScene';
@@ -348,6 +349,7 @@ const STORY_KINDS = new Set<VslScene['kind']>([
 
 /** Scenes that build on the one before, staying on screen while they change. */
 const CONTINUED_KINDS = new Set<VslScene['kind']>([
+  'diy',
   'chat',
   'crm',
   'landing',
@@ -557,6 +559,10 @@ const VslSceneVisual = (options: {
 
   if (scene.kind === 'social' && props.vsl.socialRequest) {
     return <SocialRequestScene company={data.company} texts={props.vsl.socialRequest} />;
+  }
+
+  if (scene.kind === 'diy') {
+    return <DiyScene part={scene.part} texts={props.vsl.diy} />;
   }
 
   if (scene.kind === 'offer') {

@@ -1223,6 +1223,8 @@ export type DemoVsl = {
   reviewRequest?: { customerName: string; message: string; reply: string };
   // The comment on a post that opens an automatic private message; version C only
   socialRequest?: { customerName: string; comment: string; message: string; reply: string };
+  // What the owner could set up alone, with examples for this business; version C only
+  diy?: { keywords: string[]; blogTitles: string[] };
   // How the video ends, a test of the three closings; version C only
   closing?: 'purchase' | 'call' | 'both';
   // When a person checked name, Italian and images before the link goes out; version C only

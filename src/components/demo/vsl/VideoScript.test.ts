@@ -83,6 +83,16 @@ describe('VideoScript', () => {
       ]);
     });
 
+    it('shows what can be done alone right before the offer', () => {
+      const kinds = scenes.map((scene) => scene.kind);
+
+      expect(kinds.slice(kinds.indexOf('diy'), kinds.indexOf('offer'))).toStrictEqual([
+        'diy',
+        'diy',
+        'diy',
+      ]);
+    });
+
     it('ends on the closing of the demo', () => {
       expect(scenes.at(-1)).toMatchObject({ kind: 'closing', closing: 'both', step: 6 });
     });

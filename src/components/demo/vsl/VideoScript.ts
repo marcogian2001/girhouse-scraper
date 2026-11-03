@@ -28,6 +28,8 @@ export const VIDEO_WRITTEN_LINES = [
   'video_line_inbox',
   'video_line_loss_not_back',
   'video_line_reminder',
+  'video_line_diy_site',
+  'video_line_diy_google',
 ] as const;
 
 export type VideoWrittenLine = (typeof VIDEO_WRITTEN_LINES)[number];
@@ -46,6 +48,7 @@ export type VideoPhotoLine = (typeof VIDEO_PHOTO_LINES)[number];
 /** Lines said the same for everyone: the offer never depends on what the AI writes. */
 type VideoFixedLine =
   | 'video_line_intro'
+  | 'video_line_diy_or_us'
   | 'video_line_offer_price_direct'
   | 'video_line_offer_price_call'
   | 'video_line_offer_included'
@@ -78,6 +81,9 @@ const BANNED_WORDS = [
 ];
 
 const WRITTEN = new Set<string>(VIDEO_WRITTEN_LINES);
+
+/** What can be done alone, in three screens: the site, then Google and the profiles, then "or we do it". */
+const DIY_LINES = ['video_line_diy_site', 'video_line_diy_google', 'video_line_diy_or_us'] as const;
 
 const CHAT_MESSAGE_MS = 1500;
 
@@ -227,6 +233,14 @@ export const buildVideoScenes = (options: { data: DemoSnapshot; closing: VideoCl
       chapter: 'solution',
       cues: [{ atMs: 0, sound: 'bell' }],
     },
+    ...([1, 2, 3] as const).map((part): VslScene => ({
+      step: 5,
+      kind: 'diy',
+      part,
+      line: DIY_LINES[part - 1] ?? 'video_line_diy_or_us',
+      chapter: part === 3 ? 'offer' : 'solution',
+      cues: part === 3 ? [{ atMs: 0, sound: 'hit' }] : [{ atMs: 0, sound: 'pop' }],
+    })),
     {
       step: 5,
       kind: 'offer',

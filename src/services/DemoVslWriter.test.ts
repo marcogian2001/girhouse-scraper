@@ -29,6 +29,10 @@ const texts: DemoVslTexts = {
     messaggio: 'Grazie Giulia — ci lasci una recensione su Google?',
     risposta: 'Fatto!',
   },
+  fai_da_te: {
+    parole_chiave: ['autofficina taranto', 'tagliando taranto', 'revisione auto taranto', 'gomme'],
+    articoli_blog: ['Ogni quanto fare il tagliando — davvero'],
+  },
   social: {
     nome_cliente: 'Elena',
     commento: 'Info?',
@@ -56,6 +60,8 @@ const texts: DemoVslTexts = {
     video_line_inbox: '',
     video_line_loss_not_back: '',
     video_line_reminder: '',
+    video_line_diy_site: '',
+    video_line_diy_google: '',
   },
   foto: {
     video_line_loss_not_found: 'A woman searches on her phone at home.',
@@ -102,6 +108,13 @@ describe('DemoVslWriter', () => {
       customerName: 'Giulia',
       message: 'Grazie Giulia, ci lasci una recensione su Google?',
       reply: 'Fatto!',
+    });
+  });
+
+  it('keeps three examples of what can be done alone, without dashes', () => {
+    expect(toDemoVsl(texts).diy).toStrictEqual({
+      keywords: ['autofficina taranto', 'tagliando taranto', 'revisione auto taranto'],
+      blogTitles: ['Ogni quanto fare il tagliando, davvero'],
     });
   });
 
