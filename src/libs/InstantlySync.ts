@@ -6,6 +6,7 @@ import { db } from './DB';
 import { syncGhlOutcomes } from './GhlSync';
 import { completeJob, enqueue } from './JobQueue';
 import { logger } from './Logger';
+import { syncManualReplies } from './ManualReplies';
 
 type Job = typeof jobSchema.$inferSelect;
 
@@ -18,8 +19,10 @@ const INSERT_CHUNK = 500;
 /**
  * Copies Instantly's totals of every campaign and every lead that replied, so the
  * campaign tests read old campaigns too, replies the platform never received included.
- * Then, when GHL is configured, copies the calls booked in its cold email pipeline.
- * @returns How many campaigns and replied leads were copied, and how many GHL leads booked.
+ * Then, when GHL is configured, copies the calls booked in its cold email pipeline, and
+ * records the replies a salesperson sent by hand from Instantly.
+ * @returns How many campaigns and replied leads were copied, how many GHL leads booked and
+ * how many conversations were found answered by hand.
  * @throws {Error} When the API key is missing, or Instantly or GHL rejects a request.
  */
 export const syncInstantlyStats = async () => {
@@ -83,8 +86,14 @@ export const syncInstantlyStats = async () => {
 
   // After the Instantly copy is saved, so a GHL failure does not lose it
   const ghl = isGhlConfigured() && isPipelineConfigured() ? await syncGhlOutcomes() : null;
+  const manualReplies = await syncManualReplies();
 
-  return { campaigns: stats.length, leads: uniqueLeads.length, ghlBooked: ghl?.booked ?? null };
+  return {
+    campaigns: stats.length,
+    leads: uniqueLeads.length,
+    ghlBooked: ghl?.booked ?? null,
+    manualReplies,
+  };
 };
 
 /**

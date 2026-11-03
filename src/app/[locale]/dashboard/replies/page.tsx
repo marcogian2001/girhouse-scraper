@@ -23,6 +23,7 @@ import {
   listReplyCampaigns,
 } from '@/libs/Conversations';
 import { Link } from '@/libs/I18nNavigation';
+import { getInstantlySyncedAt, refreshInstantlyStatsIfStale } from '@/libs/InstantlySync';
 import { parsePage } from '@/utils/Pagination';
 import { hasRepliesFilters, parseRepliesQuery, repliesHref } from '@/utils/RepliesQuery';
 
@@ -41,6 +42,11 @@ export default async function RepliesPage(props: {
   const t = await getTranslations({ locale, namespace: 'RepliesPage' });
   const format = await getFormatter({ locale });
   const context = await getApiContext();
+
+  // Picks up, among the rest, the replies a salesperson sent by hand from Instantly
+  if (context) {
+    await refreshInstantlyStatsIfStale(await getInstantlySyncedAt());
+  }
 
   const [{ conversations, total: matching }, campaigns] = context
     ? await Promise.all([

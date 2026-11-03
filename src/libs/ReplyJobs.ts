@@ -644,7 +644,11 @@ const handleWithoutAi = async (options: {
   ) {
     await db
       .update(conversationSchema)
-      .set({ pausedReason: 'manual_reply' })
+      .set({
+        pausedReason: 'manual_reply',
+        // The email a salesperson sent by hand is an answer too
+        lastOutboundAt: emailTimestamp(options.context.manualReply) ?? conversation.lastOutboundAt,
+      })
       .where(eq(conversationSchema.id, conversation.id));
     await setConversationState({ conversation, state: 'paused' });
     await logEvent({
