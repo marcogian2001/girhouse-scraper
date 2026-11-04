@@ -387,3 +387,16 @@ Questa sezione prevale su tutte le precedenti per percorso, risultato e dati. Ni
 - **Analisi quiz**: `GH_QS_STEPS` rinumerato (quiz_01_intro … quiz_17_gate, quiz_18_result), più `quiz_email_lasciata` e `quiz_dati_lasciati` (numero). Le sessioni salvate prima compaiono con i vecchi nomi.
 - **Introduzione**: le 3 parti compaiono una alla volta (0,7 s l'una), poi la frase finale e il bottone dopo circa 3 secondi; icone centrate nei riquadri.
 - **Versioni e copie**: `quiz.css?v=63`, `quiz.js?v=69`. Copia precedente in `~/backups-girhouse/20261104-quiz-v3/` (prima del quiz nuovo) e `~/backups-girhouse/20261104-quiz-intro/` (prima di questa modifica).
+
+### Ritocchi del 4 novembre 2026 (sera)
+
+- **Passaggio tra le parti**: schermate `parte_2` e `parte_3` ("Parte 1 completata: Google", icona grande, "Parte 2 di 3 · Il sito" e la frase di apertura in nero). Tolti i riquadri gialli sopra le domande.
+- **Soluzione Google**: elenco come Google Maps (logo, ricerca, schede Maps con nome, stelle, recensioni, categoria, "Aperto"). La scheda sale di una posizione alla volta e a ogni posizione le recensioni crescono fino a superare chi aveva davanti. Se Google dà meno di 4 concorrenti, l'elenco si completa con schede senza nome.
+- **Soluzione sito**: sito di esempio con i font del quiz (Gabarito e Inter) e il riquadro "SEO del sito" con 4 controlli (titolo e testi per "attività a città", velocità 98/100, dati strutturati, collegato alla scheda) prima della ricerca su Google. Risultato su una riga, non più tagliato.
+- **Soluzione richieste**: torna la chiamata con l'AI già pronta (chat, chiamata con "Ascolta la voce" e riepilogo). Il vocale su WhatsApp è tolto.
+- **Schermata del guadagno**: "Quanto potresti guadagnare dalle richieste perse", "Circa N clienti in più al mese" non in grassetto, grafico verde, nessuna nota sul calcolo. Opzione "Entro qualche ora" al posto di "Entro un’ora".
+- **Email**: tolta la frase sotto il campo.
+- **Risultato**: le 3 cose con un'icona ciascuna, una alla volta. Poi "Quanto ti costerebbe sistemare tutto senza di noi": scheda Google con agenzia 150 €, sito con SEO 350 €, persona per messaggi e chiamate 700 € al mese (prezzi medi indicativi in `COSTS`), ogni prezzo compare con un suono e alla fine il totale. Poi "Come ti possiamo aiutare:" con le soluzioni. Tolta la pagina "Cosa succede adesso".
+- **Pagina del prezzo**: "Rispetto a farlo senza di noi risparmi circa 1.103 € al mese" (totale meno 97 €). "Soddisfatti o rimborsati" più grande.
+- **Ripresa**: lo stato del quiz resta in questo browser (`gh_quiz_stato`, 30 giorni). Chi torna vede "Ciao di nuovo…" con "Riprendi il quiz" o "Ricomincia da capo".
+- **Versioni e copie**: `quiz.css?v=67`, `quiz.js?v=73`. Copie in `~/backups-girhouse/20261104-quiz-v3b/` e `20261104-quiz-v3c/`.
