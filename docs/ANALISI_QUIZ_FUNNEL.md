@@ -351,3 +351,8 @@ Questa sezione prevale sulle tabelle precedenti per le domande e il calcolo.
 - Il webhook F9 (`GH_FUNNEL_WEBHOOK`) non parte più; al primo pagamento si avvia solo l'automazione GHL "3. Demo Iniziata (NO Trial)", con fonte e funnel.
 - Le pagine di conferma WooCommerce (`/attiva/order-received/...`) non esistono più: la conferma è `/attiva/?conferma=<sub>&k=<firma>`. Lo step `pagato` dell'Analisi quiz continua a partire dalla pagina di conferma.
 - Il calendario ricava il paese senza WooCommerce: ipinfo.io e, quando ha il limite pieno, api.country.is.
+
+## Landing F1: sottotitolo e loghi (4 novembre 2026)
+
+- **Sottotitolo**: le due frasi ("Ti facciamo trovare su Google…" e "Completa il quiz…") sono sostituite da "Fai il quiz e scopri le 3 cose che oggi ti fanno perdere clienti, e come sistemarle.", con "Fai il quiz" in verde e sottolineatura a mano (`hx-mark`). Bottone: "Scopri cosa ti fa perdere clienti". Sotto: "Circa 3 minuti · Gratis", con l'icona dell'orologio della pagina al posto dell'emoji. Copia precedente in `~/backups-girhouse/20261104-sub-headline-f1/`.
+- **Loghi "Collaboriamo con"**: su F1 e F2 non si fermano più al passaggio del mouse. Su F2 si fermano ancora mentre il video è in riproduzione (`.vs-playing`). Copia precedente in `~/backups-girhouse/20261104-loghi-hover/`.
