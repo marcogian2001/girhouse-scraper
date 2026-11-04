@@ -358,3 +358,15 @@ Questa sezione prevale sulle tabelle precedenti per le domande e il calcolo.
 - **Loghi "Collaboriamo con"**: su F1 e F2 non si fermano più al passaggio del mouse. Su F2 si fermano ancora mentre il video è in riproduzione (`.vs-playing`). Copia precedente in `~/backups-girhouse/20261104-loghi-hover/`.
 - **Titolo F1**: "Guadagna fino a 100 clienti in più all’anno da Google e nessuna richiesta persa, senza pagare 1€ in pubblicità." Colori e sottolineatura a onda invariati.
 - **Parte alta su telefono e tablet** (sotto i 1024 px): badge, titolo, sottotitolo e "Circa 3 minuti · Gratis" allineati a sinistra come su desktop; il bottone resta a tutta larghezza. Copia precedente in `~/backups-girhouse/20261104-titolo-f1/`.
+
+## Quiz più corto, barra senza fasi e garanzia più grande (4 novembre 2026)
+
+Questa sezione prevale sulle precedenti per domande, calcolo e barra in alto. Il quiz passa da 23 a 20 schermate.
+
+- **Domande tolte**: "Quanti clienti in più al mese farebbero la differenza?", "Su 10 richieste, quante si perdono perché nessuno risponde in tempo?" e "Per sistemare tutto, cosa cerchi?".
+- **Opzioni tolte**: "Sì, e funziona bene" (Hai un sito?), "Entro pochi minuti" (tempo di risposta), "No, nessuna di queste…" (Ti è mai capitata…, che non ha più la risposta esclusiva), "Non so" (valore del cliente), "Lo faccio già in automatico" (ultimo ricontatto). Tolti anche i loro punteggi e le icone.
+- **Richieste perse su 10, ora stimate dal tempo di risposta**: entro un'ora 1, in giornata 2,5, a volte il giorno dopo 4. Il resto del calcolo non cambia (richieste × 4,33 × perse su 10 × 30% × 50% × valore). Dato che "Non so" e "Quasi nessuna" non esistono più, la schermata del guadagno compare sempre, salvo stime sotto i 100 € al mese. La nota sotto la stima dice che le perse sono ricavate dai tempi di risposta.
+- **Barra in alto**: niente più le 5 icone delle fasi (e il loro suono e avviso "Fase completata") né il nome della fase. Resta la barra a strisce, con la percentuale che corre sotto la fine del riempimento e conta in salita con la stessa durata della barra (0,6 s). Le fasi restano solo come dato per l'analisi.
+- **Pagina del prezzo**: sotto il prezzo c'è solo "Tutto incluso. Disdici quando vuoi." anche per chi va al checkout. Il sigillo della garanzia è più grande: 138 px normale, 100 px compatto, 76 px su telefono (prima 104, 70 e 42). Le regole valgono solo dentro `.qz-offer`, quindi il checkout `/attiva/` non cambia e `checkout.css` non va rigenerato.
+- **Analisi quiz**: `GH_QS_STEPS` rinumerato (quiz_07_canale … quiz_18_loader, quiz_19_gate, quiz_20_result). Le sessioni salvate prima compaiono con i vecchi nomi.
+- **Versioni**: `quiz.css?v=61`, `quiz.js?v=67`. Copia precedente di quiz.js, quiz.css, analisi.php e piu-clienti-quiz.html in `~/backups-girhouse/20261104-quiz-domande/`.
