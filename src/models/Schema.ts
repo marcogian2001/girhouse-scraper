@@ -218,6 +218,7 @@ export const usageProviderEnum = pgEnum('usage_provider', [
   'prospeo',
   'millionverifier',
   'reoon',
+  'kie',
 ]);
 
 export const leadSearchStatusEnum = pgEnum('lead_search_status', [
@@ -650,7 +651,7 @@ export const apiUsageSchema = pgTable(
     provider: usageProviderEnum('provider').notNull(),
     // Provider call id (message, run, request or lead id), so a retried job never counts twice
     externalId: text('external_id').notNull(),
-    // Copywriting model id, Parallel processor, or the kind of call for the other providers
+    // Copywriting model id, Parallel processor, Kie model, or the kind of call for the other providers
     model: text('model').notNull(),
     inputTokens: integer('input_tokens').notNull().default(0),
     outputTokens: integer('output_tokens').notNull().default(0),

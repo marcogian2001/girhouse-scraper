@@ -29,7 +29,7 @@ import { db } from './DB';
 import { loadDemoReviews } from './DemoReviews';
 import { completeJob, enqueue, pollDelaySeconds, rescheduleJob } from './JobQueue';
 import { logger } from './Logger';
-import { recordCopywritingUsage } from './Usage';
+import { recordCopywritingUsage, recordKieUsage } from './Usage';
 
 type Job = typeof jobSchema.$inferSelect;
 
@@ -66,6 +66,8 @@ const taskSchema = z.object({
   taskId: z.string(),
   retries: z.number().int(),
   url: z.string().nullable(),
+  // What Kie charged once it is made
+  credits: z.number().default(0),
   // Kie gave up on it for good
   isFailed: z.boolean(),
 });
@@ -108,6 +110,17 @@ const loadLineContext = async (demo: Demo, vsl: Pick<DemoVsl, 'chat'>) => {
 };
 
 /**
+ * Finds who a demo's spend is billed to: the conversation it was made for.
+ * @param demo The demo.
+ * @returns The conversation's owner and campaign, or undefined once it is gone.
+ */
+const findDemoOwner = async (demo: Demo) =>
+  await db.query.conversationSchema.findFirst({
+    columns: { userId: true, organizationId: true, campaignId: true },
+    where: eq(conversationSchema.id, demo.conversationId),
+  });
+
+/**
  * Writes version B's script from the demo already built, and stores it waiting for its voice.
  * @param demo The demo.
  * @param generatedAt The stamp of this version B.
@@ -122,9 +135,7 @@ const writeScript = async (demo: Demo, generatedAt: string) => {
     notes: demo.guidance,
   });
 
-  const conversation = await db.query.conversationSchema.findFirst({
-    where: eq(conversationSchema.id, demo.conversationId),
-  });
+  const conversation = await findDemoOwner(demo);
 
   // Recorded before the answer is checked: an unparsable answer is still billed
   if (conversation) {
@@ -222,7 +233,7 @@ const pollTask = async (task: KieTask): Promise<KieTask> => {
   }
 
   try {
-    return { ...task, url: await readKieTask(task.taskId) };
+    return { ...task, ...(await readKieTask(task.taskId)) };
   } catch (error) {
     if (task.retries >= VOICE_RETRIES) {
       logger.warn('Kie could not make the {kind} of {line}: {error}', {
@@ -369,7 +380,7 @@ export const advanceDemoVsl = async (
       // oxlint-disable-next-line no-await-in-loop
       const taskId = await startTask(entry);
 
-      tasks.push({ ...entry, taskId, retries: 0, url: null, isFailed: false });
+      tasks.push({ ...entry, taskId, retries: 0, url: null, credits: 0, isFailed: false });
     }
 
     return {
@@ -379,10 +390,26 @@ export const advanceDemoVsl = async (
   }
 
   const tasks: KieTask[] = [];
+  const owner = await findDemoOwner(demo);
 
   for (const task of payload.tasks) {
     // oxlint-disable-next-line no-await-in-loop
-    tasks.push(await pollTask(task));
+    const polled = await pollTask(task);
+
+    // Recorded as soon as it is made: Kie charges for it even if storing it fails
+    if (owner && polled.url && !task.url) {
+      // oxlint-disable-next-line no-await-in-loop
+      await recordKieUsage({
+        userId: owner.userId,
+        organizationId: owner.organizationId,
+        campaignId: owner.campaignId ?? undefined,
+        taskId: polled.taskId,
+        model: polled.kind === 'photo' ? PHOTO_MODEL : TTS_MODEL,
+        credits: polled.credits,
+      });
+    }
+
+    tasks.push(polled);
   }
 
   const elapsed = Date.now() - (payload.voiceStartedAt ?? Date.now());

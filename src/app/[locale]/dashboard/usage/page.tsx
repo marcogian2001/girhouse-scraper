@@ -1,4 +1,4 @@
-import { Coins, MapPin, Receipt, Sparkles, Wallet } from 'lucide-react';
+import { Clapperboard, Coins, MapPin, Receipt, Sparkles, Wallet } from 'lucide-react';
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 import { DatePicker } from '@/components/DatePicker';
 import { EmptyState } from '@/components/EmptyState';
@@ -86,6 +86,12 @@ export default async function UsagePage(props: {
       description: t('stat_parallel_note'),
     },
     {
+      label: t('stat_video_cost'),
+      value: usd(totals.videoCostMicros),
+      icon: <Clapperboard className="size-4" />,
+      description: t('stat_video_note'),
+    },
+    {
       label: t('stat_leads_cost'),
       value: usd(totals.leadsCostMicros),
       icon: <MapPin className="size-4" />,
@@ -127,7 +133,7 @@ export default async function UsagePage(props: {
         </div>
       </form>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         {stats.map((stat) => (
           <StatCard
             key={stat.label}

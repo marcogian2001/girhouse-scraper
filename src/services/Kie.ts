@@ -8,6 +8,9 @@ const KIE_API_URL = 'https://api.kie.ai';
 /** Uploads live on a host of their own, whatever the docs say. */
 const KIE_UPLOAD_URL = 'https://kieai.redpandaai.co';
 
+/** List price of one Kie credit, in millionths of a US dollar: 1,000 credits cost 5 dollars. */
+export const CREDIT_COST_MICROS = 5000;
+
 const POLL_INTERVAL_MS = 5000;
 
 const CALL_TIMEOUT_MS = 30_000;
@@ -30,6 +33,7 @@ const recordSchema = z.object({
   state: z.string(),
   resultJson: z.string().nullish(),
   failMsg: z.string().nullish(),
+  creditsConsumed: z.number().nullish(),
 });
 
 const resultSchema = z.object({ resultUrls: z.array(z.string()).min(1) });
@@ -99,7 +103,7 @@ export const createKieTask = async (model: string, input: Record<string, unknown
 /**
  * Reads where a Kie task stands.
  * @param taskId The task.
- * @returns The URL of the generated file, or null while the task is still running.
+ * @returns The URL of the generated file and the credits it took, or null while the task is still running.
  * @throws {Error} When the task failed.
  */
 export const readKieTask = async (taskId: string) => {
@@ -108,7 +112,10 @@ export const readKieTask = async (taskId: string) => {
   );
 
   if (record.state === 'success' && record.resultJson) {
-    return resultSchema.parse(JSON.parse(record.resultJson)).resultUrls[0] ?? '';
+    return {
+      url: resultSchema.parse(JSON.parse(record.resultJson)).resultUrls[0] ?? '',
+      credits: record.creditsConsumed ?? 0,
+    };
   }
 
   if (record.state === 'fail') {
@@ -130,10 +137,10 @@ export const runKieTask = async (model: string, input: Record<string, unknown>) 
 
   for (let poll = 0; poll < MAX_POLLS; poll += 1) {
     // oxlint-disable-next-line no-await-in-loop
-    const url = await readKieTask(taskId);
+    const result = await readKieTask(taskId);
 
-    if (url !== null) {
-      return url;
+    if (result !== null) {
+      return result.url;
     }
 
     // oxlint-disable-next-line no-await-in-loop

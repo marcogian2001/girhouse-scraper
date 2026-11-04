@@ -4,6 +4,7 @@ import { alias } from 'drizzle-orm/pg-core';
 import { apiUsageSchema, campaignSchema, leadSearchSchema } from '@/models/Schema';
 import { PLACE_COST_MICROS } from '@/services/Apify';
 import type { WrittenSequence } from '@/services/EmailPrompt';
+import { CREDIT_COST_MICROS } from '@/services/Kie';
 import { VERIFICATION_COST_MICROS } from '@/services/MillionVerifier';
 import type { ParallelProcessor } from '@/services/Parallel';
 import { PROCESSOR_RUN_COST_MICROS } from '@/services/Parallel';
@@ -63,6 +64,7 @@ const usageTotals = {
   parallelRuns:
     sql<number>`count(*) filter (where ${apiUsageSchema.provider} = 'parallel')`.mapWith(Number),
   parallelCostMicros: sumFor('parallel', apiUsageSchema.costMicros),
+  videoCostMicros: sumFor('kie', apiUsageSchema.costMicros),
   // Scraping, email lookup and verification, which only lead searches spend on
   leadsCostMicros:
     sql<number>`coalesce(sum(${apiUsageSchema.costMicros}) filter (where ${inArray(apiUsageSchema.provider, LEAD_PROVIDERS)}), 0)`.mapWith(
@@ -83,6 +85,7 @@ export const EMPTY_USAGE_TOTALS: UsageTotals = {
   copywritingCostMicros: 0,
   parallelRuns: 0,
   parallelCostMicros: 0,
+  videoCostMicros: 0,
   leadsCostMicros: 0,
   totalCostMicros: 0,
 };
@@ -265,6 +268,33 @@ export const recordVerificationUsage = async (
       model: 'verify',
       costMicros:
         options.provider === 'reoon' ? REOON_VERIFICATION_COST_MICROS : VERIFICATION_COST_MICROS,
+    })
+    .onConflictDoNothing();
+};
+
+/**
+ * Records one voice or photo Kie made for a demo video. Safe to repeat: a task is only counted once.
+ * @param options The call options.
+ * @param options.userId The owner of the conversation the demo was made for.
+ * @param options.organizationId The organization the demo belongs to.
+ * @param options.campaignId The campaign the conversation came from, if any.
+ * @param options.taskId The Kie task id.
+ * @param options.model The Kie model that made it.
+ * @param options.credits The credits Kie charged for it.
+ */
+export const recordKieUsage = async (
+  options: UsageOwner & { taskId: string; model: string; credits: number },
+) => {
+  await db
+    .insert(apiUsageSchema)
+    .values({
+      userId: options.userId,
+      organizationId: options.organizationId,
+      campaignId: options.campaignId,
+      provider: 'kie',
+      externalId: options.taskId,
+      model: options.model,
+      costMicros: Math.round(options.credits * CREDIT_COST_MICROS),
     })
     .onConflictDoNothing();
 };

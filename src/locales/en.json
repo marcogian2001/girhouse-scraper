@@ -93,7 +93,8 @@
     "parallel_line": "Parallel",
     "parallel_cost": "~{cost}",
     "tooltip": "{month} spend: {total}",
-    "apify_line": "Apify"
+    "apify_line": "Apify",
+    "kie_line": "Kie"
   },
   "DashboardHomePage": {
     "title": "Welcome back, {name}",
@@ -597,6 +598,8 @@
     "stat_copywriting_cost": "Claude spend",
     "stat_parallel_cost": "Parallel spend",
     "stat_parallel_note": "Estimate: free plan credits are not deducted",
+    "stat_video_cost": "Kie spend",
+    "stat_video_note": "Voices and photos of the demo videos",
     "campaigns_title": "By campaign",
     "daily_title": "By day",
     "column_campaign": "Campaign",
@@ -613,9 +616,10 @@
     "column_copywriting_cost": "Claude cost",
     "column_parallel_runs": "Parallel searches",
     "column_parallel_cost": "Parallel cost",
+    "column_video_cost": "Kie cost",
     "column_total": "Total",
     "row_total": "Total",
-    "row_meta": "Claude {tokens} tokens, {copywritingCost} · Parallel {runs, plural, one {# search} other {# searches}}, {parallelCost} · Apify {leadsCost}",
+    "row_meta": "Claude {tokens} tokens, {copywritingCost} · Parallel {runs, plural, one {# search} other {# searches}}, {parallelCost} · Kie {videoCost} · Apify {leadsCost}",
     "column_leads_cost": "Apify cost"
   },
   "NotFoundPage": {

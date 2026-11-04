@@ -33,6 +33,14 @@ export const UsageSummary = (props: { period: DateRange; totals: UsageTotals }) 
         cost: format.number(microsToUsd(props.totals.parallelCostMicros), USD_FORMAT),
       }),
     },
+    ...(props.totals.videoCostMicros > 0
+      ? [
+          {
+            label: t('kie_line'),
+            value: format.number(microsToUsd(props.totals.videoCostMicros), USD_FORMAT),
+          },
+        ]
+      : []),
     ...(props.totals.leadsCostMicros > 0
       ? [
           {

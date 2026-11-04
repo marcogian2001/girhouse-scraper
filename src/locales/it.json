@@ -93,7 +93,8 @@
     "parallel_line": "Parallel",
     "parallel_cost": "~{cost}",
     "tooltip": "Spesa di {month}: {total}",
-    "apify_line": "Apify"
+    "apify_line": "Apify",
+    "kie_line": "Kie"
   },
   "DashboardHomePage": {
     "title": "Bentornato, {name}",
@@ -597,6 +598,8 @@
     "stat_copywriting_cost": "Spesa Claude",
     "stat_parallel_cost": "Spesa Parallel",
     "stat_parallel_note": "Stima: i crediti del piano gratuito non sono scalati",
+    "stat_video_cost": "Spesa Kie",
+    "stat_video_note": "Voci e foto dei video delle demo",
     "campaigns_title": "Per campagna",
     "daily_title": "Per giorno",
     "column_campaign": "Campagna",
@@ -613,9 +616,10 @@
     "column_copywriting_cost": "Costo Claude",
     "column_parallel_runs": "Ricerche Parallel",
     "column_parallel_cost": "Costo Parallel",
+    "column_video_cost": "Costo Kie",
     "column_total": "Totale",
     "row_total": "Totale",
-    "row_meta": "Claude {tokens} token, {copywritingCost} · Parallel {runs, plural, one {# ricerca} other {# ricerche}}, {parallelCost} · Apify {leadsCost}",
+    "row_meta": "Claude {tokens} token, {copywritingCost} · Parallel {runs, plural, one {# ricerca} other {# ricerche}}, {parallelCost} · Kie {videoCost} · Apify {leadsCost}",
     "column_leads_cost": "Costo Apify"
   },
   "NotFoundPage": {
