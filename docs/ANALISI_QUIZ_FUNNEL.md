@@ -385,4 +385,5 @@ Questa sezione prevale su tutte le precedenti per percorso, risultato e dati. Ni
 - **Vocale di esempio**: `vocale-cliente.mp3` (4 secondi, ritagliato da `chiamata-ai.mp3`), si ascolta toccando la nuvola. Da sostituire con un vocale vero.
 - **Testi collegati**: titolo della pagina "Scopri cosa ti fa perdere clienti"; nel calendario dopo il quiz "Guardiamo insieme le 3 cose emerse dall’analisi e come sistemarle, poi decidi tu." (`prenota.js?v=13`); nella pagina del prezzo per chi prenota lo stesso concetto. La landing F1 non citava più il Punteggio Clienti; `piu-clienti-sezioni.html` non è usato.
 - **Analisi quiz**: `GH_QS_STEPS` rinumerato (quiz_01_intro … quiz_17_gate, quiz_18_result), più `quiz_email_lasciata` e `quiz_dati_lasciati` (numero). Le sessioni salvate prima compaiono con i vecchi nomi.
-- **Versioni e copie**: `quiz.css?v=62`, `quiz.js?v=68`. Copia precedente in `~/backups-girhouse/20261104-quiz-v3/`.
+- **Introduzione**: le 3 parti compaiono una alla volta (0,7 s l'una), poi la frase finale e il bottone dopo circa 3 secondi; icone centrate nei riquadri.
+- **Versioni e copie**: `quiz.css?v=63`, `quiz.js?v=69`. Copia precedente in `~/backups-girhouse/20261104-quiz-v3/` (prima del quiz nuovo) e `~/backups-girhouse/20261104-quiz-intro/` (prima di questa modifica).
