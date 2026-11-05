@@ -422,3 +422,12 @@ Questa sezione prevale su tutte le precedenti per percorso, risultato e dati. Ni
 - **Spazio in basso**: sotto i bottoni a tutta larghezza restano 76 px liberi per il volto; quando l'ultima riga è "Torna indietro" (corta, al centro) bastano 38 px, 22 px sulle schermate più strette.
 - **Risparmio sulla pagina del prezzo**: su telefono "Rispetto a farlo senza di noi" e "risparmi circa **1.103 € al mese**" su due righe quasi uguali, con la cifra sottolineata.
 - **Versioni e copie**: `quiz.css?v=70`, `quiz.js?v=76`. Copia di `quiz.js`, `quiz.css` e `piu-clienti-quiz.html` in `~/backups-girhouse/20261105-quiz-gigi/`.
+
+## Checkout da 149 € al mese senza scarsità (5 novembre 2026)
+
+- **Link**: `https://girhouse.com/attiva/?piano=149`. Stesso checkout di `/attiva/` (grafica, recensioni, garanzia, Apple Pay e Google Pay), ma senza il riquadro col timer e senza sconto: riepilogo, subtotale e totale di oggi a 149 €, riga legale "oggi paghi 149 €, poi 149 € al mese". Aprire questo link non fa partire il timer dei 10 minuti del checkout normale.
+- **Stripe**: prezzo live `price_1UYQmCRpePwqv78HK54bDOCb` ("Sistema Girhouse 149 € al mese", lookup key `sistema_girhouse_mensile_149`) sullo stesso prodotto `prod_VYxHgHBHa1wjLd` del prezzo da 97 €.
+- **Codice**: in `billing.php` l'elenco `GH_BILLING_PLANS` (chiave del piano → importo e prezzo Stripe per modalità) con `gh_billing_plan()`, `gh_billing_plan_price()` e `gh_billing_plan_amount()`. Il browser manda solo `piano`; prezzo e importo li decide il server, e una chiave che non è nell'elenco porta al checkout normale. Il coupon del primo mese vale solo senza piano. L'abbonamento ha `piano: 149` nei metadati (`97` per quelli normali). La pagina di grazie dice "Dal secondo mese <importo> al mese" leggendo il subtotale della fattura. Per un altro prezzo basta aggiungere una riga a `GH_BILLING_PLANS` dopo aver creato il prezzo su Stripe.
+- **Dopo il pagamento**: uguale al checkout normale (utente WordPress, contatto e automazione "3. Demo Iniziata (NO Trial)" in Go High Level).
+- **Verifica**: con un browser pulito `/attiva/?piano=149` mostra 149 €, nessun avviso e nessun cookie del timer; `/attiva/` mostra ancora 97 € barrato, 47 € e il timer; `?piano=999` porta al checkout normale. Nessun pagamento di prova fatto da qui.
+- **Copie**: `billing.php`, `checkout.php`, `template-attiva.php` e `attiva.js` di prima in `~/backups-girhouse/20261105-checkout-149/`.
