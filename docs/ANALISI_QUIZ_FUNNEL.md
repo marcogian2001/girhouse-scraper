@@ -400,3 +400,12 @@ Questa sezione prevale su tutte le precedenti per percorso, risultato e dati. Ni
 - **Pagina del prezzo**: "Rispetto a farlo senza di noi risparmi circa 1.103 € al mese" (totale meno 97 €). "Soddisfatti o rimborsati" più grande.
 - **Ripresa**: lo stato del quiz resta in questo browser (`gh_quiz_stato`, 30 giorni). Chi torna vede "Ciao di nuovo…" con "Riprendi il quiz" o "Ricomincia da capo".
 - **Versioni e copie**: `quiz.css?v=67`, `quiz.js?v=73`. Copie in `~/backups-girhouse/20261104-quiz-v3b/` e `20261104-quiz-v3c/`.
+
+### Categoria da Google Maps e voto che sale (5 novembre 2026)
+
+- **Problema**: Google Places restituisce solo categorie standard. Per schede come ENNE Energia SRL ("Fornitore di energia pulita" su Maps) dava solo `supplier`, la categoria arrivava vuota e il confronto cercava "Attività locale Bologna". Altre volte la categoria è troppo generica (un'autoscuola come "Istituto d'istruzione").
+- **Categoria di Maps**: nuova rotta `/wp-json/gh-funnels/v1/diagnosi/categoria` in `diagnosi.php` (`gh_diag_maps_category`), con la ricerca Maps di Serper (`google.serper.dev/maps`, ricerca "nome città"). Prende il campo `type` solo della scheda con lo stesso `placeId` trovato con Places, mai di un'altra attività. Cache di 30 giorni per scheda, conta nel tetto giornaliero di Serper. Nel quiz parte appena si sceglie la scheda e prevale sulla categoria di Places; confronto e posizione del sito partono dopo, con la categoria giusta. Restituisce anche se la scheda non è rivendicata (`isUnclaimedListing`), salvato in `diagnosi_scheda_rivendicata` e non ancora mostrato.
+- **Ripiego**: se nemmeno Maps dà la categoria, "Di cosa ti occupi?" compare anche con la scheda trovata ("Abbiamo trovato la tua scheda, ma Google non ci dice di preciso cosa fai…"). Il confronto e la posizione del sito si fanno nella schermata "Cosa dice Google oggi" con la descrizione, e si rifanno se la descrizione cambia.
+- **Soluzione Google**: a ogni posizione guadagnata sale anche il voto, fino a 4,8 al primo posto (ENNE Energia: da 2,2 con 57 recensioni a 4,8 con 221). Chi ha già 4,8 o più tiene il suo voto.
+- **Chiave Serper**: `GH_SERPER_KEY` inserita dal titolare in `wp-config.php` il 5 novembre: attive anche la posizione del sito su Google e la categoria di Maps.
+- **Versioni e copie**: `quiz.js?v=74`. Copia di `quiz.js`, `diagnosi.php` e `piu-clienti-quiz.html` in `~/backups-girhouse/20261105-quiz-categoria/`.
