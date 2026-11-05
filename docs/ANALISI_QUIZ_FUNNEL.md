@@ -409,3 +409,4 @@ Questa sezione prevale su tutte le precedenti per percorso, risultato e dati. Ni
 - **Soluzione Google**: a ogni posizione guadagnata sale anche il voto, fino a 4,8 al primo posto (ENNE Energia: da 2,2 con 57 recensioni a 4,8 con 221). Chi ha già 4,8 o più tiene il suo voto.
 - **Chiave Serper**: `GH_SERPER_KEY` inserita dal titolare in `wp-config.php` il 5 novembre: attive anche la posizione del sito su Google e la categoria di Maps.
 - **Versioni e copie**: `quiz.js?v=74`. Copia di `quiz.js`, `diagnosi.php` e `piu-clienti-quiz.html` in `~/backups-girhouse/20261105-quiz-categoria/`.
+- **Quanto ti costerebbe senza di noi (ritocco)**: "Totale senza di noi" e il prezzo totale al centro, uno sotto l'altro. I prezzi delle tre voci su due righe centrate ("da 150 €" e sotto "al mese"), non più spezzati a caso. `quiz.css?v=68`, `quiz.js?v=75`, copia in `~/backups-girhouse/20261105-quiz-totale/`.
