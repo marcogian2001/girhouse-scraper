@@ -1,6 +1,10 @@
+import { and, desc, eq } from 'drizzle-orm';
 import type { conversationSchema } from '@/models/Schema';
+import { inboundMessageSchema, outboundEmailSchema } from '@/models/Schema';
 import { emailText, emailTimestamp, listLeadEmails } from '@/services/Instantly';
+import type { ThreadMessage } from '@/services/ReplyPrompt';
 import { stripQuotedReply } from '@/utils/ReplyText';
+import { db } from './DB';
 import { logger } from './Logger';
 
 /** Instantly's email types for a campaign step and an email sent by hand or through the API. */
@@ -64,4 +68,63 @@ export const listInstantlyEmails = async (options: {
       },
     ];
   });
+};
+
+/**
+ * Rebuilds the thread a follow-up or a new email continues: what the lead's latest reply
+ * came after, the reply itself, and every email sent since, by the platform or by hand
+ * from Instantly.
+ * @param conversation The conversation.
+ * @returns The latest reply and the thread around it, or null when the lead never replied.
+ */
+export const loadThread = async (conversation: typeof conversationSchema.$inferSelect) => {
+  const [latest] = await db
+    .select()
+    .from(inboundMessageSchema)
+    .where(eq(inboundMessageSchema.conversationId, conversation.id))
+    .orderBy(desc(inboundMessageSchema.receivedAt))
+    .limit(1);
+
+  if (!latest) {
+    return null;
+  }
+
+  const sent = await db
+    .select({
+      body: outboundEmailSchema.body,
+      sentAt: outboundEmailSchema.sentAt,
+      instantlyEmailId: outboundEmailSchema.instantlyEmailId,
+    })
+    .from(outboundEmailSchema)
+    .where(
+      and(
+        eq(outboundEmailSchema.conversationId, conversation.id),
+        eq(outboundEmailSchema.status, 'sent'),
+      ),
+    );
+
+  const ownEmailIds = new Set(sent.flatMap((email) => email.instantlyEmailId ?? []));
+  const instantlyEmails = await listInstantlyEmails({ conversation, ownEmailIds });
+  const byHand = instantlyEmails.filter((email) => email.kind === 'team');
+
+  const since = [
+    ...sent.map((email) => ({ sentAt: email.sentAt, text: email.body })),
+    ...byHand.map((email) => ({ sentAt: email.sentAt, text: email.body })),
+  ]
+    .filter((email): email is { sentAt: Date; text: string } =>
+      Boolean(email.sentAt && email.sentAt > latest.receivedAt),
+    )
+    .toSorted((a, b) => a.sentAt.getTime() - b.sentAt.getTime());
+
+  const reply = stripQuotedReply(latest.bodyText) || latest.bodyText;
+  const thread: ThreadMessage[] = [
+    ...(latest.thread ?? []).map((item) => ({
+      ...item,
+      sentAt: item.sentAt ? new Date(item.sentAt) : null,
+    })),
+    { direction: 'inbound', sentAt: latest.receivedAt, text: reply },
+    ...since.map((email) => ({ direction: 'outbound' as const, ...email })),
+  ];
+
+  return { latest, reply, thread };
 };

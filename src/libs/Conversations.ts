@@ -93,6 +93,8 @@ export const EVENT_TYPES = [
   'follow_up_scheduled',
   'follow_up_drafted',
   'follow_up_held_kill_switch',
+  'follow_ups_started',
+  'nudge_drafted',
   'whatsapp_drafted',
   'whatsapp_started',
   'whatsapp_failed',

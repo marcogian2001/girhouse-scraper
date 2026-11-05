@@ -1092,6 +1092,8 @@ export const outboundKindEnum = pgEnum('outbound_kind', [
   'closing',
   // Answers a reply that picked a call time, once the call is on the calendar
   'booking_confirmation',
+  // A new email a person asks for while the latest one is still unanswered
+  'nudge',
 ]);
 
 export const outboundStatusEnum = pgEnum('outbound_status', [

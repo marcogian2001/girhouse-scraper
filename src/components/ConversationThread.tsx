@@ -2,6 +2,7 @@ import { cn } from 'cn';
 import { Mail, MessageCircle } from 'lucide-react';
 import { useFormatter, useTranslations } from 'next-intl';
 import { ClassificationEditor } from '@/components/ClassificationEditor';
+import { NudgeButton } from '@/components/NudgeButton';
 import { OutboundEmailEditor } from '@/components/OutboundEmailEditor';
 import { StatusBadge } from '@/components/StatusBadge';
 import {
@@ -19,6 +20,16 @@ import { buildThread, needsAction } from '@/utils/MailThread';
 type Detail = NonNullable<Awaited<ReturnType<typeof getConversationDetail>>>;
 
 type InboundEntry = Detail['messages'][number];
+
+/** States a person may not write to the lead from: they asked to stop, or the call is booked. */
+const NO_NUDGE_STATES = new Set<Detail['conversation']['state']>(['stop', 'call_booked']);
+
+/** Emails still waiting for a person or for their send time. */
+const PENDING_STATUSES = new Set<Detail['outbound'][number]['status']>([
+  'draft',
+  'scheduled',
+  'failed',
+]);
 
 type ThreadItem = ThreadItemOf<
   InboundEntry,
@@ -190,7 +201,8 @@ const ItemHeader = (props: { item: ThreadItem; detail: Detail }) => {
 
 /**
  * The conversation as a mail thread: every message can be opened and closed on its own,
- * with the latest one and those waiting for a person open.
+ * with the latest one and those waiting for a person open. With nothing waiting, a person
+ * can ask for a new email, even when the latest one is theirs.
  * @param props Component props.
  * @param props.detail The conversation.
  * @returns The thread.
@@ -201,29 +213,39 @@ export const ConversationThread = (props: { detail: Detail }) => {
   const open = thread
     .filter((item, index) => index === thread.length - 1 || needsAction(item))
     .map((item) => item.id);
+  // Only once the latest email is ours: a reply of the lead gets its own suggested answer
+  const canNudge =
+    thread.length > 0 &&
+    thread.at(-1)?.kind !== 'inbound' &&
+    !NO_NUDGE_STATES.has(props.detail.conversation.state) &&
+    !props.detail.outbound.some((email) => PENDING_STATUSES.has(email.status));
 
   return (
-    <Accordion type="multiple" defaultValue={open}>
-      {thread.map((item) => (
-        <AccordionItem key={item.id} value={item.id}>
-          <AccordionTrigger className="min-w-0 items-center py-4 hover:no-underline">
-            <ItemHeader item={item} detail={props.detail} />
-          </AccordionTrigger>
+    <div>
+      <Accordion type="multiple" defaultValue={open}>
+        {thread.map((item) => (
+          <AccordionItem key={item.id} value={item.id}>
+            <AccordionTrigger className="min-w-0 items-center py-4 hover:no-underline">
+              <ItemHeader item={item} detail={props.detail} />
+            </AccordionTrigger>
 
-          <AccordionContent className="pb-5 pl-11">
-            {item.kind === 'inbound' && (
-              <InboundBody entry={item.entry} isLatest={item.id === latestInboundId} />
-            )}
-            {item.kind === 'outbound' && <OutboundEmailEditor email={item.email} />}
-            {item.kind === 'instantly' && (
-              <p className="text-sm whitespace-pre-wrap">{item.email.body}</p>
-            )}
-            {item.kind === 'whatsapp' && (
-              <p className="text-sm whitespace-pre-wrap">{item.handoff.firstMessage}</p>
-            )}
-          </AccordionContent>
-        </AccordionItem>
-      ))}
-    </Accordion>
+            <AccordionContent className="pb-5 pl-11">
+              {item.kind === 'inbound' && (
+                <InboundBody entry={item.entry} isLatest={item.id === latestInboundId} />
+              )}
+              {item.kind === 'outbound' && <OutboundEmailEditor email={item.email} />}
+              {item.kind === 'instantly' && (
+                <p className="text-sm whitespace-pre-wrap">{item.email.body}</p>
+              )}
+              {item.kind === 'whatsapp' && (
+                <p className="text-sm whitespace-pre-wrap">{item.handoff.firstMessage}</p>
+              )}
+            </AccordionContent>
+          </AccordionItem>
+        ))}
+      </Accordion>
+
+      {canNudge && <NudgeButton conversationId={props.detail.conversation.id} />}
+    </div>
   );
 };

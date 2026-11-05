@@ -37,17 +37,28 @@ const SLOT_RULE = `the two free times are filled in for you, so never write a da
 const REACTIVATED_RULE =
   'say in the line right after it that you reactivated the page for another 24 hours, instead of saying it stays active for 24 hours';
 
-/** What each follow-up to a silent lead does. */
+/** What each follow-up to a lead who went silent after the demo does. */
 const FOLLOW_UP_GUIDANCE: Record<FollowUpKind, string> = {
-  demo_not_opened: `You sent the link to the page prepared for their business a few days ago and it was never opened. Ask lightly whether it arrived, put ${DEMO_LINK_PLACEHOLDER} alone on its own line again, ${REACTIVATED_RULE}, and ask nothing else. No guilt, no pressure.`,
+  demo_not_opened: `You sent the link to the page prepared for their business and it was never opened. Ask lightly whether it arrived, put ${DEMO_LINK_PLACEHOLDER} alone on its own line again, ${REACTIVATED_RULE}, and ask nothing else. No guilt, no pressure.`,
   demo_partial: `The lead opened the page prepared for their business but stopped halfway. Say in a few words that the most useful part comes next, put ${DEMO_LINK_PLACEHOLDER} alone on its own line (it opens where they stopped), ${REACTIVATED_RULE}, and ask nothing else: the page itself proposes the call at its end.`,
   demo_complete:
-    'The lead watched the whole page prepared for their business but did not book the call. Ask simply, without pressure, what held them back. That question is the only call to action: no link.',
-  closing: `This is the last email of the sequence. Say you will not write again about this, recall the real scarcity below in one line, and propose a short call in one line ending with ${SLOTS_PLACEHOLDER}: ${SLOT_RULE}. No link.`,
-  out_of_office_return:
-    'The lead answered with an out-of-office message and should be back now. Welcome them back in a few words, recall in one line what the first Girhouse email proposed, and end with one light question. No link, no pressure.',
-  nurturing:
-    'The lead said "not now" a while ago and asked to be contacted later. Write a short, warm check-in: one line on what the system does for a business like theirs, the real scarcity, and one light question asking whether now is a better time. No link.',
+    'The lead watched the whole page prepared for their business but did not answer. Ask simply, without pressure, what held them back. That question is the only call to action: no link.',
+};
+
+// The second follow-up is the last email that leaves on its own
+const LAST_FOLLOW_UP_RULE =
+  'This is your second follow-up: make it shorter than the one before and do not repeat its words. Never say it is the last email.';
+
+/** What a new email does when the lead has not answered the latest one, and what it leads to. */
+export type NudgeStep = 'offer_demo' | 'resend_demo' | 'propose_call';
+
+const NUDGE_INTRO =
+  'The lead has not answered your latest email yet and you write again before they do. Be more proactive than a usual reply: pick up the thread of your latest email without repeating it, give one concrete reason to act now that fits their business (such as the requests a business like theirs loses while the owner is busy working), and end with one direct question. Never sound like you are chasing them, never apologise for writing again, and never quote numbers that are not below.';
+
+const NUDGE_GUIDANCE: Record<NudgeStep, string> = {
+  offer_demo: `${NUDGE_INTRO} Then ask directly whether you can send the page you prepared for their business. No link.`,
+  resend_demo: `${NUDGE_INTRO} Put ${DEMO_LINK_PLACEHOLDER} alone on its own line, ${REACTIVATED_RULE}, and ask them directly to take a look at it today.`,
+  propose_call: `${NUDGE_INTRO} They already watched the page prepared for their business: propose a short call to set it up for them, in one line ending with ${SLOTS_PLACEHOLDER}: ${SLOT_RULE}. No link.`,
 };
 
 /** Version B of the answer to a no: the demo was ready anyway, so its link is shared as a parting gift. */
@@ -73,19 +84,25 @@ const RECONTACT_NOT_NOW_GUIDANCE =
   "This email leaves days after the lead's reply and picks the conversation up again. Recall in one line what Girhouse proposes for a business like theirs, mention the real scarcity below, and end with one light question: whether they want to see the page prepared for their business. No link.";
 
 /**
- * Picks what the reply does: a follow-up's guidance, the category's guidance, or the
- * booking confirmation once the lead's time is on the calendar.
+ * Picks what the reply does: a new email's or a follow-up's guidance, the category's
+ * guidance, or the booking confirmation once the lead's time is on the calendar.
  * @param options The writer inputs.
  * @returns The guidance for this reply.
  */
 const guidanceFor = (
   options: Pick<
     WriteReplyOptions,
-    'category' | 'call' | 'followUp' | 'recontactOn' | 'notInterestedVersion'
+    'category' | 'call' | 'followUp' | 'nudge' | 'recontactOn' | 'notInterestedVersion'
   >,
 ) => {
+  if (options.nudge) {
+    return NUDGE_GUIDANCE[options.nudge];
+  }
+
   if (options.followUp) {
-    return FOLLOW_UP_GUIDANCE[options.followUp];
+    const guidance = FOLLOW_UP_GUIDANCE[options.followUp.kind];
+
+    return options.followUp.isLast ? `${guidance} ${LAST_FOLLOW_UP_RULE}` : guidance;
   }
 
   if (options.call?.kind === 'booked') {
@@ -159,7 +176,9 @@ export type WriteReplyOptions = {
   // What the reply does about the call, when the calendar is connected
   call: CallPlan | null;
   // Set for an email to a lead who went silent; `reply` is then their last reply
-  followUp?: FollowUpKind;
+  followUp?: { kind: FollowUpKind; isLast: boolean };
+  // Set for a new email a person asks for while the latest one is still unanswered
+  nudge?: NudgeStep;
   // The day the email leaves, when the lead asked to be contacted again then
   recontactOn?: string;
   // How the answer to a "not interested" reads, version A when not given
@@ -185,8 +204,8 @@ export const buildWriterPrompt = (options: WriteReplyOptions) =>
     `## Real scarcity\n${options.scarcity}`,
     `## Business\n${renderLeadFacts(options.lead) || '(nothing known)'}`,
     options.thread.length > 0 ? `## Earlier emails\n${renderThread(options.thread)}` : '',
-    options.followUp
-      ? `## The lead's last reply, a while ago\n${options.reply}`
+    options.followUp || options.nudge
+      ? `## The lead's last reply, before your latest emails\n${options.reply}`
       : `## The lead's reply\n${options.reply}`,
     options.issues.length > 0
       ? `## Fix these problems of the previous attempt\n${options.issues.join(', ')}`
@@ -221,7 +240,9 @@ export const writeReply = async (options: WriteReplyOptions) => {
     messages: [{ role: 'user', content: buildWriterPrompt(options) }],
   });
 
-  logger.info(`Wrote a ${options.followUp ?? options.category} email with ${model.id}`);
+  logger.info(
+    `Wrote a ${options.nudge ?? options.followUp?.kind ?? options.category} email with ${model.id}`,
+  );
 
   return { body: response.parsed_output?.corpo ?? null, call: toBilledCall(response, model) };
 };

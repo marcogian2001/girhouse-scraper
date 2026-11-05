@@ -1,0 +1,1 @@
+ALTER TYPE "public"."outbound_kind" ADD VALUE 'nudge';

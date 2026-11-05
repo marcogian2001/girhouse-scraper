@@ -1,20 +1,22 @@
 import { describe, expect, it } from 'vitest';
-import { nextAction } from './FollowUps';
+import { followUpDueAt, mentionsDemo, nextAction } from './FollowUps';
 
 const base = {
   state: 'demo_sent' as const,
   followUpCount: 0,
-  nurturingCount: 0,
   demo: { behavior: 'not_opened' as const, maxStep: 0, booked: false },
-  maxFollowUps: 3,
-  nurturingMaxCount: 3,
-  whatsappEligible: true,
 };
+
+const hours = { startHour: 9, endHour: 18 };
 
 describe('Follow-ups', () => {
   describe('Behaviour on the demo', () => {
     it('asks whether the link arrived when the demo was never opened', () => {
-      expect(nextAction(base)).toStrictEqual({ type: 'email', kind: 'demo_not_opened' });
+      expect(nextAction(base)).toStrictEqual({
+        type: 'email',
+        kind: 'demo_not_opened',
+        isLast: false,
+      });
     });
 
     it('points to the first step not seen when the demo was left halfway', () => {
@@ -24,39 +26,29 @@ describe('Follow-ups', () => {
           state: 'demo_viewed',
           demo: { behavior: 'partial', maxStep: 3, booked: false },
         }),
-      ).toStrictEqual({ type: 'email', kind: 'demo_partial', step: 4 });
+      ).toStrictEqual({ type: 'email', kind: 'demo_partial', step: 4, isLast: false });
     });
 
     it('asks what held the lead back after the whole demo', () => {
       expect(
-        nextAction({
-          ...base,
-          state: 'follow_up',
-          followUpCount: 2,
-          demo: { behavior: 'complete', maxStep: 6, booked: false },
-        }),
-      ).toStrictEqual({ type: 'email', kind: 'demo_complete' });
+        nextAction({ ...base, demo: { behavior: 'complete', maxStep: 6, booked: false } }),
+      ).toStrictEqual({ type: 'email', kind: 'demo_complete', isLast: false });
     });
   });
 
   describe('End of the sequence', () => {
-    it('sends the closing email after the last follow-up', () => {
-      expect(nextAction({ ...base, state: 'follow_up', followUpCount: 3 })).toStrictEqual({
+    it('marks the second follow-up as the last one', () => {
+      expect(nextAction({ ...base, state: 'follow_up', followUpCount: 1 })).toStrictEqual({
         type: 'email',
-        kind: 'closing',
+        kind: 'demo_not_opened',
+        isLast: true,
       });
     });
 
-    it('hands over to WhatsApp when the lead said yes and has a mobile number', () => {
-      expect(nextAction({ ...base, state: 'follow_up', followUpCount: 4 })).toStrictEqual({
-        type: 'whatsapp',
+    it('stops after two follow-ups', () => {
+      expect(nextAction({ ...base, state: 'follow_up', followUpCount: 2 })).toStrictEqual({
+        type: 'none',
       });
-    });
-
-    it('closes when WhatsApp is not an option', () => {
-      expect(
-        nextAction({ ...base, state: 'follow_up', followUpCount: 4, whatsappEligible: false }),
-      ).toStrictEqual({ type: 'close' });
     });
   });
 
@@ -76,27 +68,37 @@ describe('Follow-ups', () => {
     });
   });
 
-  describe('Out of office', () => {
-    it('picks the thread up again once the lead is back', () => {
-      expect(nextAction({ ...base, state: 'out_of_office', demo: null })).toStrictEqual({
-        type: 'email',
-        kind: 'out_of_office_return',
-      });
+  describe('Due time', () => {
+    it('falls a day after the email inside business hours', () => {
+      expect(followUpDueAt({ from: new Date('2026-11-05T10:30:00Z'), hours }).toISOString()).toBe(
+        '2026-11-06T10:30:00.000Z',
+      );
+    });
+
+    it('falls on a Saturday too', () => {
+      expect(followUpDueAt({ from: new Date('2026-11-06T10:30:00Z'), hours }).toISOString()).toBe(
+        '2026-11-07T10:30:00.000Z',
+      );
+    });
+
+    it('moves an evening email to the opening after the next day', () => {
+      expect(followUpDueAt({ from: new Date('2026-11-05T20:00:00Z'), hours }).toISOString()).toBe(
+        '2026-11-07T08:00:00.000Z',
+      );
     });
   });
 
-  describe('Nurturing', () => {
-    it('sends a reminder until the limit', () => {
-      expect(nextAction({ ...base, state: 'nurturing', nurturingCount: 2 })).toStrictEqual({
-        type: 'email',
-        kind: 'nurturing',
-      });
+  describe('Demo link', () => {
+    it('finds the link pasted by hand with a query', () => {
+      expect(
+        mentionsDemo('Eccola:\nhttps://app.girhouse.com/it/demo/da-mario?passo=2', 'da-mario'),
+      ).toBeTruthy();
     });
 
-    it('closes after the last reminder', () => {
-      expect(nextAction({ ...base, state: 'nurturing', nurturingCount: 3 })).toStrictEqual({
-        type: 'close',
-      });
+    it('ignores the link to a longer slug', () => {
+      expect(
+        mentionsDemo('https://app.girhouse.com/it/demo/da-mario-roma', 'da-mario'),
+      ).toBeFalsy();
     });
   });
 });

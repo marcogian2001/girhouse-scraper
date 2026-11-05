@@ -96,18 +96,39 @@ describe('ReplyWriter', () => {
     });
 
     it('follows up a lead who never opened the demo with the link again', () => {
-      const prompt = buildWriterPrompt({ ...options, followUp: 'demo_not_opened' });
+      const prompt = buildWriterPrompt({
+        ...options,
+        followUp: { kind: 'demo_not_opened', isLast: false },
+      });
 
       expect(prompt).toContain('it was never opened');
       expect(prompt).toContain('{{link_demo}}');
       expect(prompt).toContain('reactivated the page for another 24 hours');
-      expect(prompt).toContain("## The lead's last reply, a while ago");
+      expect(prompt).toContain("## The lead's last reply, before your latest emails");
+      expect(prompt).not.toContain('second follow-up');
     });
 
-    it('closes the sequence with the call times', () => {
-      const prompt = buildWriterPrompt({ ...options, followUp: 'closing' });
+    it('keeps the second follow-up shorter', () => {
+      const prompt = buildWriterPrompt({
+        ...options,
+        followUp: { kind: 'demo_complete', isLast: true },
+      });
 
-      expect(prompt).toContain('This is the last email of the sequence');
+      expect(prompt).toContain('what held them back');
+      expect(prompt).toContain('This is your second follow-up');
+    });
+
+    it('resends the demo in a more proactive new email', () => {
+      const prompt = buildWriterPrompt({ ...options, nudge: 'resend_demo' });
+
+      expect(prompt).toContain('Be more proactive');
+      expect(prompt).toContain('{{link_demo}}');
+    });
+
+    it('proposes a call with the free times once the demo was watched', () => {
+      const prompt = buildWriterPrompt({ ...options, nudge: 'propose_call' });
+
+      expect(prompt).toContain('propose a short call');
       expect(prompt).toContain('{{orari}}');
     });
 

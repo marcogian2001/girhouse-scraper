@@ -78,7 +78,9 @@ export const OutboundEmailEditor = (props: { email: OutboundEmail }) => {
   const isScheduled = props.email.status === 'scheduled';
   const isEditable =
     isScheduled || props.email.status === 'draft' || props.email.status === 'failed';
-  const canRewrite = props.email.status === 'draft' && props.email.kind === 'reply';
+  const canRewrite =
+    props.email.status === 'draft' &&
+    (props.email.kind === 'reply' || props.email.kind === 'nudge');
   // Only the answer to a "not interested" comes in two versions
   const [version, setVersion] = useState(props.email.notInterestedVersion);
 

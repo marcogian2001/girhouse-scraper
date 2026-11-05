@@ -1,9 +1,11 @@
 import { setTimeout as sleep } from 'node:timers/promises';
-import { and, eq, gt, inArray, isNotNull, isNull, sql } from 'drizzle-orm';
+import { and, eq, gt, inArray, isNotNull, isNull, lt, or, sql } from 'drizzle-orm';
 import { conversationSchema, outboundEmailSchema } from '@/models/Schema';
-import { emailTimestamp, findManualReply, listLeadEmails } from '@/services/Instantly';
+import { emailText, emailTimestamp, findManualReply, listLeadEmails } from '@/services/Instantly';
+import { stripQuotedReply } from '@/utils/ReplyText';
 import { logEvent } from './Conversations';
 import { db } from './DB';
+import { startFollowUpsAfterHandSent } from './FollowUpStart';
 import { logger } from './Logger';
 
 /** Conversations read from Instantly per run: it allows 20 calls a minute. */
@@ -18,18 +20,26 @@ const WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
 /**
  * Finds the replies a salesperson sent by hand from Instantly, which the platform never
  * sends itself, and records them as answers: the conversation counts as answered from
- * when the email left. Looks at a random handful of recent unanswered conversations per
- * run, so every one is reached over a few runs.
+ * when the email left, and an email carrying the demo starts the follow-ups. Looks at a
+ * random handful of recent conversations whose latest reply is unanswered per run, so
+ * every one is reached over a few runs.
  * @returns How many conversations were found answered by hand.
  */
 export const syncManualReplies = async () => {
   const candidates = await db
-    .select({ id: conversationSchema.id, leadEmail: conversationSchema.leadEmail })
+    .select({
+      id: conversationSchema.id,
+      leadEmail: conversationSchema.leadEmail,
+      lastOutboundAt: conversationSchema.lastOutboundAt,
+    })
     .from(conversationSchema)
     .where(
       and(
         eq(conversationSchema.isTest, false),
-        isNull(conversationSchema.lastOutboundAt),
+        or(
+          isNull(conversationSchema.lastOutboundAt),
+          lt(conversationSchema.lastOutboundAt, conversationSchema.lastInboundAt),
+        ),
         isNotNull(conversationSchema.lastInboundAt),
         gt(conversationSchema.lastInboundAt, new Date(Date.now() - WINDOW_MS)),
       ),
@@ -73,13 +83,20 @@ export const syncManualReplies = async () => {
     const manual = findManualReply({ thread, ownEmailIds });
     const sentAt = manual ? emailTimestamp(manual) : null;
 
-    if (manual && sentAt) {
+    // Only an email newer than the latest answer on record is news
+    if (manual && sentAt && (!candidate.lastOutboundAt || sentAt > candidate.lastOutboundAt)) {
       // oxlint-disable-next-line no-await-in-loop
       const [updated] = await db
         .update(conversationSchema)
         .set({ lastOutboundAt: sentAt })
         .where(
-          and(eq(conversationSchema.id, candidate.id), isNull(conversationSchema.lastOutboundAt)),
+          and(
+            eq(conversationSchema.id, candidate.id),
+            or(
+              isNull(conversationSchema.lastOutboundAt),
+              lt(conversationSchema.lastOutboundAt, sentAt),
+            ),
+          ),
         )
         .returning({ id: conversationSchema.id });
 
@@ -90,6 +107,14 @@ export const syncManualReplies = async () => {
           conversationId: candidate.id,
           type: 'reply_sent',
           payload: { source: 'instantly_manual', instantlyEmailId: manual.id, sentAt },
+        });
+        // Only its own words count: a quoted earlier email may hold an older link
+        const text = emailText(manual);
+        // oxlint-disable-next-line no-await-in-loop
+        await startFollowUpsAfterHandSent({
+          conversationId: candidate.id,
+          text: stripQuotedReply(text) || text,
+          sentAt,
         });
       }
     }

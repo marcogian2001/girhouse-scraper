@@ -16,11 +16,12 @@ import {
   isLeadPipelineConfigured,
 } from '@/services/GoHighLevel';
 import { replyToEmail } from '@/services/Instantly';
-import type { CallPlan, WriteReplyOptions } from '@/services/ReplyWriter';
+import type { ThreadMessage } from '@/services/ReplyPrompt';
+import type { CallPlan, NudgeStep, WriteReplyOptions } from '@/services/ReplyWriter';
 import { renderScarcity, replySubject, writeReply } from '@/services/ReplyWriter';
 import { fromItalianTime, scheduleRecontact, scheduleReplySend } from '@/utils/BusinessHours';
 import { DEMO_STEPS } from '@/utils/DemoStats';
-import { FOLLOW_UP_STATES } from '@/utils/FollowUps';
+import { FOLLOW_UP_STATES, followUpDueAt, MAX_FOLLOW_UPS, mentionsDemo } from '@/utils/FollowUps';
 import { buildOfferBrief } from '@/utils/Offer';
 import {
   checkReply,
@@ -37,9 +38,11 @@ import type { NotInterestedVersion } from '@/validations/AutomationValidation';
 import { getAutomationSettings } from './AutomationSettings';
 import type { Conversation } from './Conversations';
 import { logEvent, setConversationState } from './Conversations';
+import { loadThread } from './ConversationThread';
 import { db } from './DB';
 import { bookCall, earliestBookable, getDemoSlots } from './DemoBooking';
 import { demoUrl, ensureDemo, getConversationDemo } from './Demos';
+import { startFollowUps } from './FollowUpStart';
 import { completeJob, enqueue } from './JobQueue';
 import { loadLeadContext } from './LeadContext';
 import { scheduleNextAction } from './NextAction';
@@ -65,7 +68,7 @@ const sendPayloadSchema = z.object({
 const DEMO_SENT_FROM = new Set<Conversation['state']>(['replied', 'classified', 'manual_review']);
 
 /** Rules a person cannot approve past: the email would go out broken. */
-const BLOCKING_ISSUES = new Set(['demo_link_missing', 'slots_missing', 'link']);
+export const BLOCKING_ISSUES = new Set(['demo_link_missing', 'slots_missing', 'link']);
 
 /** Emails written to a lead who went silent, rather than in answer to a reply. */
 const FOLLOW_UP_KINDS = new Set<OutboundEmail['kind']>(['follow_up', 'closing', 'nurturing']);
@@ -138,7 +141,7 @@ const sendTimeFor = (options: {
  * Queues the send of a scheduled email at its send time.
  * @param email The scheduled email.
  */
-const enqueueSend = async (email: OutboundEmail) => {
+export const enqueueSend = async (email: OutboundEmail) => {
   await enqueue([
     {
       type: 'reply_send',
@@ -186,7 +189,7 @@ const chosenSendTime = (value: string | null | undefined, current: Date | null) 
  * @returns The body, the rules it still breaks and the model that wrote it.
  * @throws {Error} When no attempt returns a parsable answer, so the job retries.
  */
-const writeCheckedReply = async (
+export const writeCheckedReply = async (
   options: Omit<WriteReplyOptions, 'issues'> & {
     prices: number[];
     demoUrl: string | null;
@@ -584,6 +587,231 @@ const findOutbound = async (options: { organizationId: string; outboundEmailId: 
   return row;
 };
 
+/** States a person may not write to the lead from: they asked to stop, or the call is booked. */
+const NO_NUDGE_STATES = new Set<Conversation['state']>(['stop', 'call_booked']);
+
+/** Emails still waiting for a person or for their send time, which a new one would cross. */
+const PENDING_STATUSES: OutboundEmail['status'][] = ['draft', 'scheduled', 'failed'];
+
+/**
+ * Picks where a new email leads, from what the lead did with the demo: ask to send it,
+ * send its link again, or propose the call once it was watched.
+ * @param options The conversation.
+ * @param options.conversation The conversation.
+ * @param options.thread The thread so far, to tell whether the demo link already went out.
+ * @returns The step, the link to carry and the call times to offer.
+ */
+const planNudge = async (options: {
+  conversation: Conversation;
+  thread: ThreadMessage[];
+}): Promise<{ step: NudgeStep; demoUrl: string | null; offeredSlots: string[] }> => {
+  const demo = await getConversationDemo(options.conversation.id);
+  const shared =
+    demo &&
+    options.thread.some(
+      (message) => message.direction === 'outbound' && mentionsDemo(message.text, demo.demo.slug),
+    );
+
+  if (!demo || !shared) {
+    return { step: 'offer_demo', demoUrl: null, offeredSlots: [] };
+  }
+
+  if (demo.summary.behavior === 'complete') {
+    const slots = await getDemoSlots();
+
+    if (slots && slots.suggested.length > 0) {
+      return { step: 'propose_call', demoUrl: null, offeredSlots: slots.suggested };
+    }
+  }
+
+  const step =
+    demo.summary.behavior === 'partial' ? Math.min(demo.summary.maxStep + 1, DEMO_STEPS) : null;
+
+  return {
+    step: 'resend_demo',
+    demoUrl: step ? `${demo.url}?passo=${step}` : demo.url,
+    offeredSlots: [],
+  };
+};
+
+/**
+ * Writes a new email to a lead who has not answered the latest one yet, more proactive
+ * than an answer.
+ * @param conversation The conversation.
+ * @returns The subject, the checked body and the call times offered, or null when the lead
+ * wrote last or never replied.
+ * @throws {Error} When the writer returns nothing usable.
+ */
+const writeNudgeBody = async (conversation: Conversation) => {
+  const context = await loadThread(conversation);
+
+  if (!context || context.thread.at(-1)?.direction !== 'outbound') {
+    return null;
+  }
+
+  const settings = await getAutomationSettings(conversation.organizationId);
+  const plan = await planNudge({ conversation, thread: context.thread });
+  const written = await writeCheckedReply(
+    {
+      model: settings.writingModel,
+      offer: buildOfferBrief(settings),
+      scarcity: renderScarcity(settings.onboardingSlotsPerMonth),
+      category: 'interested',
+      objection: null,
+      lead: await loadLeadContext(conversation),
+      thread: context.thread,
+      reply: context.reply,
+      call: null,
+      nudge: plan.step,
+      prices: [settings.monthlyPrice],
+      demoUrl: plan.demoUrl,
+      offeredSlots: plan.offeredSlots,
+    },
+    conversation,
+  );
+
+  return {
+    subject: replySubject(context.latest.subject, conversation.company ?? 'Girhouse'),
+    written,
+    offeredSlots: plan.offeredSlots,
+  };
+};
+
+/**
+ * Suggests a new email to a lead whose latest email is still unanswered, as a draft a
+ * person approves like any other.
+ * @param options The call options.
+ * @param options.organizationId The organization the conversation must belong to.
+ * @param options.userId The person asking, recorded in the log.
+ * @param options.conversationId The conversation.
+ * @returns The outcome: the draft, or why none was written.
+ * @throws {Error} When the writer returns nothing usable.
+ */
+export const writeNudge = async (options: {
+  organizationId: string;
+  userId: string;
+  conversationId: string;
+}) => {
+  const conversation = await db.query.conversationSchema.findFirst({
+    where: and(
+      eq(conversationSchema.id, options.conversationId),
+      eq(conversationSchema.organizationId, options.organizationId),
+    ),
+  });
+
+  if (!conversation) {
+    return { status: 'not_found' as const };
+  }
+
+  if (NO_NUDGE_STATES.has(conversation.state)) {
+    return { status: 'closed' as const };
+  }
+
+  const pending = await db.query.outboundEmailSchema.findFirst({
+    where: and(
+      eq(outboundEmailSchema.conversationId, conversation.id),
+      inArray(outboundEmailSchema.status, PENDING_STATUSES),
+    ),
+  });
+
+  if (pending) {
+    return { status: 'pending' as const };
+  }
+
+  const draft = await writeNudgeBody(conversation);
+
+  if (!draft) {
+    return { status: 'lead_last' as const };
+  }
+
+  const [created] = await db
+    .insert(outboundEmailSchema)
+    .values({
+      conversationId: conversation.id,
+      kind: 'nudge',
+      subject: draft.subject,
+      body: draft.written.body,
+      issues: draft.written.issues,
+      offeredSlots: draft.offeredSlots,
+      status: 'draft',
+      model: draft.written.model,
+    })
+    .returning();
+
+  if (!created) {
+    return { status: 'not_found' as const };
+  }
+
+  // A person writes again: a conversation set aside for the team is theirs to move on
+  if (conversation.state === 'paused') {
+    await setConversationState({
+      conversation,
+      state: 'classified',
+      actorUserId: options.userId,
+    });
+  }
+
+  await logEvent({
+    conversationId: conversation.id,
+    type: 'nudge_drafted',
+    actorUserId: options.userId,
+    payload: { outboundEmailId: created.id, issues: created.issues },
+  });
+
+  return { status: 'drafted' as const, email: created };
+};
+
+/**
+ * Writes a new email's draft again, keeping it a draft.
+ * @param options The call options.
+ * @param options.row The draft and its conversation.
+ * @param options.userId The person asking, recorded in the log.
+ * @param options.scheduledFor The send time chosen in the dashboard, in Italian time, or null
+ * to send as soon as possible; the draft's own when omitted.
+ * @returns The rewritten draft, or null when it is no longer a draft.
+ * @throws {Error} When the writer returns nothing usable.
+ */
+const rewriteNudge = async (options: {
+  row: NonNullable<Awaited<ReturnType<typeof findOutbound>>>;
+  userId: string;
+  scheduledFor?: string | null;
+}) => {
+  const { email, conversation } = options.row;
+
+  if (email.status !== 'draft') {
+    return null;
+  }
+
+  const draft = await writeNudgeBody(conversation);
+
+  if (!draft) {
+    return null;
+  }
+
+  const [updated] = await db
+    .update(outboundEmailSchema)
+    .set({
+      body: draft.written.body,
+      issues: draft.written.issues,
+      offeredSlots: draft.offeredSlots,
+      model: draft.written.model,
+      scheduledFor: chosenSendTime(options.scheduledFor, email.scheduledFor),
+    })
+    .where(and(eq(outboundEmailSchema.id, email.id), eq(outboundEmailSchema.status, 'draft')))
+    .returning();
+
+  if (updated) {
+    await logEvent({
+      conversationId: conversation.id,
+      type: 'reply_rewritten',
+      actorUserId: options.userId,
+      payload: { outboundEmailId: updated.id, issues: updated.issues },
+    });
+  }
+
+  return updated ?? null;
+};
+
 /**
  * Writes a draft answer again with the current instructions, keeping it a draft. A reply
  * that picked a call time is left alone, since writing it again would book again.
@@ -606,6 +834,11 @@ export const rewriteOutbound = async (options: {
   notInterestedVersion?: NotInterestedVersion;
 }) => {
   const row = await findOutbound(options);
+
+  if (row?.email.kind === 'nudge') {
+    return await rewriteNudge({ ...options, row });
+  }
+
   const message = row?.email.inboundMessageId
     ? await db.query.inboundMessageSchema.findFirst({
         where: eq(inboundMessageSchema.id, row.email.inboundMessageId),
@@ -959,17 +1192,33 @@ const afterSend = async (options: {
       )
       .where(eq(conversationSchema.id, conversation.id));
 
-    if (!isNurturing) {
-      await setConversationState({ conversation, state: 'follow_up' });
+    if (isNurturing) {
+      return;
+    }
+
+    await setConversationState({ conversation, state: 'follow_up' });
+
+    // The next follow-up comes a day after this one, until the last
+    if (conversation.followUpCount + 1 < MAX_FOLLOW_UPS) {
+      await scheduleNextAction(
+        conversation.id,
+        followUpDueAt({
+          from: options.sentAt,
+          hours: {
+            startHour: options.settings.businessHourStart,
+            endHour: options.settings.businessHourEnd,
+          },
+        }),
+      );
     }
 
     return;
   }
 
   const demo = await getConversationDemo(conversation.id);
+  const carriesDemo = Boolean(demo && email.body.includes(demo.url));
 
-  // The demo is out. Nothing is followed up on its own: replies are handled by hand
-  if (demo && email.body.includes(demo.url) && DEMO_SENT_FROM.has(conversation.state)) {
+  if (carriesDemo && DEMO_SENT_FROM.has(conversation.state)) {
     await setConversationState({ conversation, state: 'demo_sent' });
 
     if (
@@ -980,6 +1229,11 @@ const afterSend = async (options: {
     ) {
       await enqueue([{ type: 'ghl_demo_sent', payload: { conversationId: conversation.id } }]);
     }
+  }
+
+  // The demo is out: the follow-ups start, unless the lead is already in them
+  if (carriesDemo) {
+    await startFollowUps({ conversationId: conversation.id, sentAt: options.sentAt });
   }
 
   // A "not now" moves to nurturing; a thanked wrong person is done

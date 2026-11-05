@@ -528,12 +528,35 @@ Da "Cosa cambiamo: target, offerta, funnel e vendita". Sostituisce A e B per tut
 - **Risposte solo a mano (4/11):** il sistema non invia più niente da solo, suggerisce solo cosa rispondere.
   - Ogni risposta scritta dall'AI resta una bozza, anche se in Automazione c'era la modalità automatica. Il selettore della modalità e le sezioni follow-up e nurturing non si vedono più; i valori restano salvati.
   - Niente più follow-up, nurturing, ripresa dopo il fuori ufficio e passaggio a WhatsApp: `src/libs/FollowUps.ts`, `WhatsappHandoff.ts`, `WhatsappWriter.ts` e i pulsanti "prossima azione" e "passa a WhatsApp" sono stati tolti. I job `conversation_tick` già in coda si chiudono e azzerano la data del prossimo follow-up.
+  - **Superato dal 5/11:** i due follow-up dopo la demo sono tornati, e partono da soli (vedi "Follow-up dopo la demo e nuovo messaggio"). Nurturing, fuori ufficio e WhatsApp restano tolti.
   - Niente più differenza tra campagne del bot e dei venditori: ogni risposta, di ogni campagna, viene classificata e riceve il suggerimento. Sono spariti il riquadro "Campagne gestite dal bot", la casella al lancio della campagna e il filtro "Gestione" in Risposte; la colonna `bot_managed` resta nel DB.
   - Una risposta mandata a mano da Instantly non mette più in pausa la conversazione: segna solo "Risposta inviata" con la sua data (evento `reply_sent`, `source: instantly_manual`). Le 47 conversazioni già in pausa ricevono il suggerimento alla prossima risposta del lead.
   - Le richieste di stop restano bloccate da sole: blocklist Instantly, soppressione e DND su GHL.
 - **Stati in Risposte (4/11):** solo "Interessato" e "Non interessato" (più "In elaborazione" finché la risposta non è classificata), presi dalla categoria dell'ultima risposta (`src/utils/ReplyStatus.ts`). Interessato: interessato, domanda, obiezione, non ora e "altro" (da guardare). Non interessato: non interessato, stop, fuori ufficio, risposta automatica, persona sbagliata. Le categorie dettagliate restano per scrivere il suggerimento.
 - **Calendario della demo (4/11):** il titolare ha rifatto i calendari su GHL e il vecchio `GHL_CALENDAR_ID` (`V8lrPKIjN2AJ5RxHrOYN`) è cancellato: gli orari della demo davano errore 500. Il calendario nuovo è "Call Demo - 30 min", `whN4d9cWfVthRdofYTh7` (round robin, un utente, 30 minuti, prenotabile fino a 5 giorni avanti). Aggiornato nel `.env` locale; **su Vercel va cambiato a mano** e poi rifatto il deploy.
 - **Da fare a parte:** le email di risposta e il bot GHL parlano ancora della vecchia offerta (`buildOfferBrief` in `src/utils/Offer.ts`: landing, "follow-up", {slots} attività al mese).
+
+### Follow-up dopo la demo e nuovo messaggio [x] (5/11)
+
+Richiesta del titolare: poter scrivere di nuovo a un lead anche quando l'ultimo messaggio è suo, e riattivare i follow-up in automatico per chi ha ricevuto la demo.
+
+- **Nuovo messaggio:** in fondo al thread c'è "Suggerisci un nuovo messaggio". Compare quando l'ultimo messaggio è nostro e non c'è nessuna bozza o email in attesa; non compare con stop o call prenotata.
+  - L'AI scrive una bozza **più decisa** di una risposta (`NUDGE_GUIDANCE` in `src/services/ReplyWriter.ts`): riprende il filo, dà un motivo concreto per agire legato all'attività e chiude con una domanda diretta.
+  - Il passo dipende dalla demo (`planNudge` in `src/libs/OutboundEmails.ts`): se il link non è ancora partito chiede se può mandarla; se la demo non è stata aperta o è stata vista a metà, rimanda il link (`?passo=N`); se è stata vista tutta, propone una call con i due orari liberi.
+  - È un'email di tipo `nudge` (migrazione `0051`), da approvare, programmare o riscrivere come le altre. Risponde all'ultima email del lead nel thread Instantly. Se contiene il link della demo, avvia i follow-up.
+  - L'AI legge il thread vero da Instantly (`loadThread` in `src/libs/ConversationThread.ts`), compresi i messaggi mandati a mano.
+- **Follow-up automatici:** due, e **partono da soli**, senza bozza. Valgono per chi ha ricevuto il link della demo, non ha prenotato, non è in stop e la cui ultima risposta non è un "non interessato".
+  - Il primo arriva 24 ore dopo l'email con la demo, il secondo 24 ore dopo il primo. Contano i giorni di calendario, weekend compresi; un orario fuori dalle ore lavorative di Automazione passa all'apertura successiva (`followUpDueAt` in `src/utils/FollowUps.ts`).
+  - Il testo segue cosa il lead ha fatto sulla demo, come nella fase 5: non aperta, vista a metà o vista tutta. Il secondo è più corto e non dice di essere l'ultimo. Dopo il secondo non parte più niente da solo; niente chiusura né WhatsApp.
+  - Un follow-up che infrange una regola bloccante (per esempio il link mancante) resta in bozza da approvare.
+  - Si fermano con una risposta del lead, una prenotazione, uno stop o il kill switch (con l'automazione spenta il follow-up riprova dopo un'ora).
+- **Da dove partono:** `startFollowUps` (`src/libs/FollowUpStart.ts`):
+  - quando parte dalla dashboard un'email con il link della demo;
+  - quando la demo è stata mandata **a mano da Instantly**: `syncManualReplies` (`src/libs/ManualReplies.ts`) ora gira anche da un cron ogni 5 minuti (`/api/jobs/manual-sends` in `vercel.json`). Controlla le conversazioni con una risposta del lead ancora senza seguito; se l'email a mano contiene il link (`mentionsDemo`), porta la conversazione a `demo_sent` e avvia i follow-up dall'ora di invio vera.
+- **Recupero degli ultimi 10 giorni:** `npx dotenv -c -- npx tsx scripts/start-follow-ups.ts` elenca chi li riceverebbe; con `--apply` li avvia. Il primo follow-up arriva a 24 ore dall'email con la demo, o entro un'ora se quel momento è già passato. Va lanciato **dopo il deploy**: il codice di prima azzera la data a ogni `conversation_tick`.
+  - Prova a secco del 5/11: 31 lead su 35 candidati, tutti con la demo inviata dalla dashboard.
+  - [ ] Deploy, poi lo script con `--apply` (titolare).
+- **Verifica su PGlite:** demo approvata, follow-up a +24 ore, primo e secondo follow-up inviati con il link, nient'altro dopo; nuovo messaggio scritto con il link; un secondo nuovo messaggio rifiutato mentre il primo è in bozza; un lead con la call prenotata non riceve nulla.
 
 ### Setting Pipeline su GHL [x] (3/11)
 

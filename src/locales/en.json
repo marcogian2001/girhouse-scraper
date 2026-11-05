@@ -859,6 +859,8 @@
     "event_follow_up_scheduled": "Follow-up scheduled",
     "event_follow_up_drafted": "Follow-up drafted",
     "event_follow_up_held_kill_switch": "Follow-up held (automation off)",
+    "event_follow_ups_started": "Follow-ups started",
+    "event_nudge_drafted": "New email drafted",
     "event_whatsapp_drafted": "WhatsApp drafted",
     "event_whatsapp_started": "Handed to WhatsApp on GHL",
     "event_whatsapp_failed": "WhatsApp hand-off failed",
@@ -873,6 +875,7 @@
     "outbound_title_closing": "Closing email",
     "outbound_title_nurturing": "Nurturing email",
     "outbound_title_booking_confirmation": "Call confirmation",
+    "outbound_title_nudge": "New email",
     "event_out_of_office_sequence_running": "Back from out of office: the Instantly sequence carries on",
     "event_referral_contact_created": "Referral added to the campaign",
     "event_referral_contact_skipped": "Referral not added (already there or blocked)",
@@ -916,6 +919,12 @@
   },
   "DatePicker": {
     "placeholder": "Pick a date"
+  },
+  "NudgeButton": {
+    "button_nudge": "Suggest a new email",
+    "button_writing": "Writing…",
+    "hint": "The latest email is yours: the AI writes a more proactive one for you to review and approve.",
+    "error_nudge": "The email could not be written."
   },
   "OutboundEmailEditor": {
     "label_subject": "Subject",
