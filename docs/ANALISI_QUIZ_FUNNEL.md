@@ -426,6 +426,9 @@ Questa sezione prevale su tutte le precedenti per percorso, risultato e dati. Ni
 - **Un solo tocco**: Gigi partiva al `pointerdown`, ma sui telefoni il permesso per l'audio arriva quando il dito si stacca, quindi il primo tocco veniva rifiutato e ne servivano due. Ora ascolta il `click`, e il fumetto è cliccabile (prima lasciava passare il tocco alla pagina sotto).
 - **Pagina del prezzo senza scorrere**: nella versione videochiamata su 390×744 la pagina scorreva di 46 px (28 c'erano già prima di Gigi). `fit()` ora, se dopo `is-tiny` avanza ancora qualcosa, accorcia la foto del pacchetto di quanto serve (minimo 80 px). Sotto i bottoni a tutta larghezza 70 px liberi per Gigi sulle schermate più strette; la frase della videochiamata va a capo bilanciata.
 - **Versioni e copie**: `quiz.css?v=72`, `quiz.js?v=78`. Copia della versione precedente in `~/backups-girhouse/20261105-quiz-gigi-b/`.
+- **Fumetto accanto al volto (ritocco)**: il fumetto torna subito a destra del volto; la freccia disegnata a mano sta alla destra del fumetto e indica il fumetto stesso, oscillando verso di lui. `quiz.css?v=73`, `quiz.js?v=79`, copia in `~/backups-girhouse/20261105-quiz-gigi-c/`.
+- **Torna indietro più staccato**: spazio sopra il link da 12 a 20 px (da 4 a 10 px sulle schermate strette). Nessuna schermata scorre su 390×744 e 375×640. `quiz.css?v=74`, copia in `~/backups-girhouse/20261105-quiz-indietro/`.
+- **Cache del server**: oltre a WP-Optimize, la cache LiteSpeed di Hostinger (`x-litespeed-cache: hit`, max-age 60) può mostrare per qualche minuto la pagina vecchia dopo una pubblicazione; si svuota da sola. Con `?nc=` nell'indirizzo si vede la versione vera.
 
 ## Checkout da 149 € al mese senza scarsità (5 novembre 2026)
 
