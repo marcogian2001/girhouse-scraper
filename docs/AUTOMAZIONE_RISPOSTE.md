@@ -548,6 +548,8 @@ Il titolare ha sostituito le pipeline di GHL: per i lead ora c'è solo **📞 Se
   - se il contatto ha già un'opportunità nella pipeline (per esempio dal workflow "Risposta Positiva"), le mette la fonte `email`, senza cambiarle fase né proprietario;
   - altrimenti la crea in Nuovo Lead con fonte `email`.
   - Negativi, stop e risposte automatiche non entrano in pipeline.
+- **Job `ghl_demo_sent`** (5/11, `src/libs/GhlLead.ts`, migrazione `0050`). Quando un'email approvata dalla dashboard con il link della demo parte e la conversazione passa a `demo_sent`, spunta la checkbox **Demo Inviata** (`SI`) sull'opportunità della Setting Pipeline. Se il lead non è ancora in pipeline, prima ce lo mette come `ghl_lead`. Variabile: `GHL_OPPORTUNITY_DEMO_SENT_FIELD_ID=tes9vszv7DIXDRBJQvX2`; senza, il job non parte. Le demo mandate a mano da Instantly non la spuntano.
+  - [ ] **Su Vercel:** `GHL_OPPORTUNITY_DEMO_SENT_FIELD_ID`.
 - **Fonte `email`:** l'upsert di GHL non accetta `source`, quindi si mette con un `PUT /opportunities/{id}` subito dopo. Questo vale anche per l'opportunità della call prenotata.
 - **Esiti:** `BOOKED_STAGES` riconosce anche "Call schedulata". No show e chiusure ora stanno nella "💰 Sales Pipeline", che il recupero non legge: arrivano dal calendario e dai webhook.
 - **Recupero del 3/11:** ai 64 lead segnati Interessato su Instantly. Erano già tutti nella Setting Pipeline, creati dal workflow "Risposta Positiva": è stata aggiunta solo la fonte `email`.

@@ -351,6 +351,13 @@
       "when": 1793800353705,
       "tag": "0049_kie_usage",
       "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1793881019628,
+      "tag": "0050_ghl_demo_sent_job",
+      "breakpoints": true
     }
   ]
 }

@@ -196,6 +196,8 @@ export const jobTypeEnum = pgEnum('job_type', [
   'ghl_bot_assign',
   // Puts a lead with a positive reply in the GHL sales pipeline, with the email source
   'ghl_lead',
+  // Ticks "Demo Inviata" on the lead's GHL opportunity once the demo email is sent
+  'ghl_demo_sent',
   // Copies Instantly's sending totals and replied leads, for the campaign tests
   'instantly_sync',
   // Writes a demo's version B script and voices each of Gigi's lines with Kie

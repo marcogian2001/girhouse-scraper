@@ -10,7 +10,11 @@ import {
   outboundEmailSchema,
   replyClassificationSchema,
 } from '@/models/Schema';
-import { isGhlConfigured } from '@/services/GoHighLevel';
+import {
+  isDemoSentFieldConfigured,
+  isGhlConfigured,
+  isLeadPipelineConfigured,
+} from '@/services/GoHighLevel';
 import { replyToEmail } from '@/services/Instantly';
 import type { CallPlan, WriteReplyOptions } from '@/services/ReplyWriter';
 import { renderScarcity, replySubject, writeReply } from '@/services/ReplyWriter';
@@ -967,6 +971,15 @@ const afterSend = async (options: {
   // The demo is out. Nothing is followed up on its own: replies are handled by hand
   if (demo && email.body.includes(demo.url) && DEMO_SENT_FROM.has(conversation.state)) {
     await setConversationState({ conversation, state: 'demo_sent' });
+
+    if (
+      !conversation.isTest &&
+      isGhlConfigured() &&
+      isLeadPipelineConfigured() &&
+      isDemoSentFieldConfigured()
+    ) {
+      await enqueue([{ type: 'ghl_demo_sent', payload: { conversationId: conversation.id } }]);
+    }
   }
 
   // A "not now" moves to nurturing; a thanked wrong person is done

@@ -108,6 +108,8 @@ export const EVENT_TYPES = [
   'ghl_bot_assign_failed',
   'ghl_lead_saved',
   'ghl_lead_failed',
+  'ghl_demo_sent_saved',
+  'ghl_demo_sent_failed',
 ] as const;
 
 export type EventType = (typeof EVENT_TYPES)[number];

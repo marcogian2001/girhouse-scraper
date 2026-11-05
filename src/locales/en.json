@@ -889,7 +889,9 @@
     "event_ghl_bot_assigned": "Lead assigned to Bot AI on GHL",
     "event_ghl_bot_assign_failed": "Could not assign the lead to Bot AI on GHL",
     "event_ghl_lead_saved": "Lead in the GHL setting pipeline",
-    "event_ghl_lead_failed": "Could not put the lead in the GHL setting pipeline"
+    "event_ghl_lead_failed": "Could not put the lead in the GHL setting pipeline",
+    "event_ghl_demo_sent_saved": "Demo sent ticked on the GHL opportunity",
+    "event_ghl_demo_sent_failed": "Could not tick Demo sent on GHL"
   },
   "ObjectionsPage": {
     "title": "Objections",

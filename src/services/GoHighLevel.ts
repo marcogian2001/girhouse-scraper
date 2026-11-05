@@ -16,6 +16,9 @@ const API_VERSIONS = {
 /** The source every opportunity of a cold email lead carries. */
 const OPPORTUNITY_SOURCE = 'email';
 
+/** The only option of the opportunity's "Demo Inviata" checkbox. */
+const DEMO_SENT_OPTION = 'SI';
+
 const freeSlotsSchema = z.record(z.string(), z.unknown());
 
 const daySlotsSchema = z.object({ slots: z.array(z.string()) });
@@ -94,6 +97,12 @@ export const isPipelineConfigured = () => Boolean(Env.GHL_PIPELINE_ID && Env.GHL
  */
 export const isLeadPipelineConfigured = () =>
   Boolean(Env.GHL_PIPELINE_ID && Env.GHL_PIPELINE_NEW_LEAD_STAGE_ID);
+
+/**
+ * Tells whether a sent demo is ticked on the lead's opportunity.
+ * @returns True when the "Demo Inviata" field is set.
+ */
+export const isDemoSentFieldConfigured = () => Boolean(Env.GHL_OPPORTUNITY_DEMO_SENT_FIELD_ID);
 
 /**
  * Calls the GHL API and fails loudly on a non-2xx response.
@@ -327,6 +336,31 @@ export const updateLeadOpportunity = async (options: { opportunityId: string }) 
     family: 'opportunities',
     method: 'PUT',
     body: { source: OPPORTUNITY_SOURCE },
+  });
+};
+
+/**
+ * Ticks the opportunity's "Demo Inviata" checkbox.
+ * @param options The update.
+ * @param options.opportunityId The GHL opportunity.
+ * @throws {Error} When GHL or the field is not configured, or GHL rejects the request.
+ */
+export const markOpportunityDemoSent = async (options: { opportunityId: string }) => {
+  await request({
+    path: `/opportunities/${options.opportunityId}`,
+    family: 'opportunities',
+    method: 'PUT',
+    body: {
+      customFields: [
+        {
+          id: requireEnv(
+            'GHL_OPPORTUNITY_DEMO_SENT_FIELD_ID',
+            Env.GHL_OPPORTUNITY_DEMO_SENT_FIELD_ID,
+          ),
+          field_value: [DEMO_SENT_OPTION],
+        },
+      ],
+    },
   });
 };
 

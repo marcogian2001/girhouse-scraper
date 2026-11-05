@@ -24,6 +24,8 @@ export const Env = createEnv({
     GHL_PIPELINE_ID: z.string().min(1).optional(),
     GHL_PIPELINE_NEW_LEAD_STAGE_ID: z.string().min(1).optional(),
     GHL_PIPELINE_STAGE_ID: z.string().min(1).optional(),
+    // The opportunity's "Demo Inviata" checkbox, ticked when the demo email is sent
+    GHL_OPPORTUNITY_DEMO_SENT_FIELD_ID: z.string().min(1).optional(),
     GHL_WEBHOOK_SECRET: z.string().min(16).optional(),
     // Kie AI: makes Gigi's videos (`scripts/generate-gigi-video.ts`) and voices version B demos
     KIE_API_KEY: z.string().min(1).optional(),
@@ -72,6 +74,7 @@ export const Env = createEnv({
     GHL_PIPELINE_ID: process.env.GHL_PIPELINE_ID,
     GHL_PIPELINE_NEW_LEAD_STAGE_ID: process.env.GHL_PIPELINE_NEW_LEAD_STAGE_ID,
     GHL_PIPELINE_STAGE_ID: process.env.GHL_PIPELINE_STAGE_ID,
+    GHL_OPPORTUNITY_DEMO_SENT_FIELD_ID: process.env.GHL_OPPORTUNITY_DEMO_SENT_FIELD_ID,
     GHL_WEBHOOK_SECRET: process.env.GHL_WEBHOOK_SECRET,
     KIE_API_KEY: process.env.KIE_API_KEY,
     APIFY_API_TOKEN: process.env.APIFY_API_TOKEN,

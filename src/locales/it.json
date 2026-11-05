@@ -889,7 +889,9 @@
     "event_ghl_bot_assigned": "Lead assegnato a Bot AI su GHL",
     "event_ghl_bot_assign_failed": "Assegnazione a Bot AI su GHL non riuscita",
     "event_ghl_lead_saved": "Lead nella Setting Pipeline su GHL",
-    "event_ghl_lead_failed": "Inserimento nella Setting Pipeline su GHL non riuscito"
+    "event_ghl_lead_failed": "Inserimento nella Setting Pipeline su GHL non riuscito",
+    "event_ghl_demo_sent_saved": "Demo inviata segnata sull'opportunity GHL",
+    "event_ghl_demo_sent_failed": "Spunta di Demo inviata su GHL non riuscita"
   },
   "ObjectionsPage": {
     "title": "Obiezioni",
