@@ -422,6 +422,10 @@ Questa sezione prevale su tutte le precedenti per percorso, risultato e dati. Ni
 - **Spazio in basso**: sotto i bottoni a tutta larghezza restano 76 px liberi per il volto; quando l'ultima riga è "Torna indietro" (corta, al centro) bastano 38 px, 22 px sulle schermate più strette.
 - **Risparmio sulla pagina del prezzo**: su telefono "Rispetto a farlo senza di noi" e "risparmi circa **1.103 € al mese**" su due righe quasi uguali, con la cifra sottolineata.
 - **Versioni e copie**: `quiz.css?v=70`, `quiz.js?v=76`. Copia di `quiz.js`, `quiz.css` e `piu-clienti-quiz.html` in `~/backups-girhouse/20261105-quiz-gigi/`.
+- **Fumetto "Tocca per ascoltarmi" (ritocco)**: giallo come il bordo di Gigi (`#F3D27A`), con bordo bianco, ombra e testo scuro; tra il fumetto e Gigi una freccia nera "disegnata a mano" che si traccia da sola e oscilla verso l'altoparlante. Compare quando il browser blocca l'audio e ogni volta che qualcuno zittisce Gigi, e resta finché l'audio è spento; toccare il fumetto o il volto lo fa ripartire.
+- **Un solo tocco**: Gigi partiva al `pointerdown`, ma sui telefoni il permesso per l'audio arriva quando il dito si stacca, quindi il primo tocco veniva rifiutato e ne servivano due. Ora ascolta il `click`, e il fumetto è cliccabile (prima lasciava passare il tocco alla pagina sotto).
+- **Pagina del prezzo senza scorrere**: nella versione videochiamata su 390×744 la pagina scorreva di 46 px (28 c'erano già prima di Gigi). `fit()` ora, se dopo `is-tiny` avanza ancora qualcosa, accorcia la foto del pacchetto di quanto serve (minimo 80 px). Sotto i bottoni a tutta larghezza 70 px liberi per Gigi sulle schermate più strette; la frase della videochiamata va a capo bilanciata.
+- **Versioni e copie**: `quiz.css?v=72`, `quiz.js?v=78`. Copia della versione precedente in `~/backups-girhouse/20261105-quiz-gigi-b/`.
 
 ## Checkout da 149 € al mese senza scarsità (5 novembre 2026)
 
