@@ -41,7 +41,8 @@ const loadSlots = async (slug: string): Promise<Slots | null> => {
     return null;
   }
 
-  const slots: Slots = await response.json();
+  // A body that does not parse counts as a failure, so the button does not stay busy
+  const slots: Slots | null = await response.json().catch(() => null);
 
   return slots;
 };
