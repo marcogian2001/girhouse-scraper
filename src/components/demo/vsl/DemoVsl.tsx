@@ -391,6 +391,9 @@ const showsHostScreen = (options: { scene: VslScene; isStarted: boolean; isResum
   options.scene.kind === 'video' ||
   (!options.isStarted && !options.isResumed);
 
+/** Scenes that fill the screen with the offer, so they keep less room above and below. */
+const COMPACT_KINDS = new Set<VslScene['kind']>(['pricing', 'offer', 'closing']);
+
 /** Scenes only version B has, drawn by `VslStoryVisual`. */
 const STORY_KINDS = new Set<VslScene['kind']>([
   'problem',
@@ -1283,7 +1286,7 @@ export const DemoVsl = (
 
       <main
         key={sceneGroup(scene, index)}
-        className={`isolate mx-auto max-w-7xl animate-in px-4 duration-500 fade-in ${isPricing ? 'py-4 md:py-6' : 'py-6 md:py-10'}`}
+        className={`isolate mx-auto max-w-7xl animate-in px-4 duration-500 fade-in ${COMPACT_KINDS.has(scene.kind) ? 'py-4 md:py-6' : 'py-6 md:py-10'}`}
       >
         <VslSceneVisual
           scene={scene}

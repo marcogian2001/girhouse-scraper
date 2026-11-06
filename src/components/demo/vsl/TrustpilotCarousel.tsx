@@ -114,7 +114,9 @@ const TrustpilotCard = (props: { review: (typeof TRUSTPILOT_REVIEWS)[number]; co
       </div>
 
       <h4 className="line-clamp-1 text-base leading-tight font-bold">{review.title}</h4>
-      <p className="line-clamp-3 text-sm leading-snug">{review.text}</p>
+      <p className="line-clamp-3 text-sm leading-snug [@media(max-height:760px)]:line-clamp-2">
+        {review.text}
+      </p>
       <p className="mt-auto text-xs text-[#1c1c1c]">
         {t.rich('trustpilot_experience', {
           date: format.dateTime(new Date(review.experienceDate), {

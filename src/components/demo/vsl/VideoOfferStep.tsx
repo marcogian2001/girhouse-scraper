@@ -89,7 +89,7 @@ export const VideoOfferStep = (props: {
           height={972}
           sizes="(min-width: 1024px) 560px, (min-width: 640px) 576px, 100vw"
           priority
-          className="mx-auto mt-1 h-auto max-h-[17svh] w-auto object-contain sm:max-h-64 lg:mt-2 lg:max-h-[min(16rem,22svh)]"
+          className="mx-auto mt-1 h-auto max-h-[17svh] w-auto object-contain sm:max-h-64 lg:mt-2 lg:max-h-[min(16rem,19svh)]"
         />
         <TrustpilotCarousel className="order-3 mt-4 w-full lg:order-none lg:mt-[min(1rem,2svh)]" />
       </div>
@@ -99,9 +99,9 @@ export const VideoOfferStep = (props: {
           {t('video_offer_month')}
         </p>
         {/* 97 is struck through and steps aside, then 47 takes the stage next to it */}
-        <div className="flex h-12 items-center justify-center gap-3 sm:h-24 lg:h-[min(6rem,10.5svh)]">
+        <div className="flex h-12 items-center justify-center gap-3 sm:h-24 lg:h-[min(6rem,9.5svh)]">
           <span
-            className={`relative leading-none font-black tracking-tight tabular-nums transition-all duration-500 ${stage >= 2 ? 'text-3xl text-neutral-400 sm:text-4xl' : `text-6xl sm:text-8xl lg:text-[min(6rem,10.5svh)] ${GREEN}`}`}
+            className={`relative leading-none font-black tracking-tight tabular-nums transition-all duration-500 ${stage >= 2 ? 'text-3xl text-neutral-400 sm:text-4xl' : `text-6xl sm:text-8xl lg:text-[min(6rem,9.5svh)] ${GREEN}`}`}
           >
             {props.price} €
             {stage >= 1 && (
@@ -110,7 +110,7 @@ export const VideoOfferStep = (props: {
           </span>
           {stage >= 2 && (
             <span
-              className={`animate-pop text-6xl leading-none font-black tracking-tight tabular-nums sm:text-8xl lg:text-[min(6rem,10.5svh)] ${GREEN}`}
+              className={`animate-pop text-6xl leading-none font-black tracking-tight tabular-nums sm:text-8xl lg:text-[min(6rem,9.5svh)] ${GREEN}`}
             >
               {VIDEO_FIRST_MONTH_PRICE} €
             </span>
@@ -142,7 +142,7 @@ export const VideoOfferStep = (props: {
                   {column.slice(0, included).map((item) => (
                     <li
                       key={item}
-                      className="flex animate-in items-center gap-2 text-sm font-bold whitespace-nowrap text-neutral-900 fade-in slide-in-from-bottom-2 sm:text-base lg:[@media(max-height:700px)]:text-sm"
+                      className="flex animate-in items-center gap-2 text-sm font-bold whitespace-nowrap text-neutral-900 fade-in slide-in-from-bottom-2 sm:text-base lg:[@media(max-height:760px)]:text-sm"
                     >
                       <Check className={`size-4 shrink-0 stroke-3 ${GREEN}`} />
                       {t(`video_included_${item}`)}
@@ -157,7 +157,7 @@ export const VideoOfferStep = (props: {
         <div className="mt-3 lg:mt-[min(1.25rem,2.5svh)]">{props.action}</div>
 
         <p className="order-1 mt-3 flex items-center justify-center gap-4 text-left sm:gap-5 lg:order-none lg:mt-[min(0.75rem,1.5svh)] lg:gap-3">
-          <GuaranteeSeal className="size-14 shrink-0 drop-shadow-md sm:size-24 lg:size-[min(3.5rem,7svh)]" />
+          <GuaranteeSeal className="size-14 shrink-0 drop-shadow-md sm:size-24 lg:size-[min(3.5rem,6svh)]" />
           <span className="text-base leading-tight font-black text-neutral-900 sm:text-lg lg:text-base">
             {t('video_offer_guarantee_title')}
           </span>
