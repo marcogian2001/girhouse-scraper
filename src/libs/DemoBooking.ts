@@ -9,10 +9,12 @@ import {
 import {
   addContactTags,
   createAppointment,
+  getContactFieldIds,
   getFreeSlots,
   getSlotMinutes,
   isGhlConfigured,
   isPipelineConfigured,
+  toCustomFieldValues,
   upsertBookedOpportunity,
   upsertContact,
 } from '@/services/GoHighLevel';
@@ -30,6 +32,9 @@ const LOOKAHEAD_DAYS = 8;
 const MIN_NOTICE_MS = 2 * 3_600_000;
 
 const SHOWN_DAYS = 5;
+
+/** Where a booked lead came from, in the contact's "Fonte" and "Funnel" fields as on girhouse.com. */
+const BOOKING_ATTRIBUTION = { 'contact.fonte': 'mail', 'contact.funnel': 'cold-email' };
 
 /**
  * The earliest start a lead may be offered or book now.
@@ -178,6 +183,7 @@ export const bookCall = async (options: {
       email: conversation.leadEmail,
       name: options.company,
       companyName: options.company,
+      customFields: toCustomFieldValues(await getContactFieldIds(), BOOKING_ATTRIBUTION),
     });
 
     await addContactTags(contactId, ['demo-girhouse']);

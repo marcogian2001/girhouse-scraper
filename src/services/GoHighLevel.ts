@@ -23,12 +23,23 @@ const freeSlotsSchema = z.record(z.string(), z.unknown());
 
 const daySlotsSchema = z.object({ slots: z.array(z.string()) });
 
-const calendarSchema = z.object({
-  calendar: z.object({
-    slotDuration: z.number(),
-    slotDurationUnit: z.string().optional(),
-  }),
+const calendarListSchema = z.object({
+  calendars: z.array(
+    z.object({
+      id: z.string(),
+      isActive: z.boolean().nullish(),
+      slotDuration: z.number(),
+      slotDurationUnit: z.string().nullish(),
+    }),
+  ),
 });
+
+const customFieldListSchema = z.object({
+  customFields: z.array(z.object({ id: z.string(), fieldKey: z.string() })),
+});
+
+/** How long the calendar picked on GHL is trusted before looking again. */
+const CALENDAR_TTL_MS = 10 * 60_000;
 
 const upsertContactSchema = z.object({ contact: z.object({ id: z.string() }) });
 
@@ -80,10 +91,9 @@ const calendarEventListSchema = z.object({ events: z.array(calendarEventSchema) 
 
 /**
  * Tells whether the calendar booking is configured.
- * @returns True when the token, location and calendar are all set.
+ * @returns True when the token and location are set; the calendar is read from GHL.
  */
-export const isGhlConfigured = () =>
-  Boolean(Env.GHL_API_TOKEN && Env.GHL_LOCATION_ID && Env.GHL_CALENDAR_ID);
+export const isGhlConfigured = () => Boolean(Env.GHL_API_TOKEN && Env.GHL_LOCATION_ID);
 
 /**
  * Tells whether booked calls also land in the sales pipeline.
@@ -158,6 +168,37 @@ export const parseFreeSlots = (body: unknown) =>
     })
     .toSorted((a, b) => a.date.localeCompare(b.date));
 
+type BookingCalendar = z.infer<typeof calendarListSchema>['calendars'][number];
+
+let pickedCalendar: { calendar: BookingCalendar; at: number } | undefined;
+
+/**
+ * Finds the calendar the calls are booked on: `GHL_CALENDAR_ID` while it still exists,
+ * otherwise the location's active calendar, so a calendar rebuilt on GHL keeps bookings going.
+ * @returns The calendar, with how long one call lasts.
+ * @throws {Error} When GHL is not configured, rejects the request or has no active calendar.
+ */
+const getBookingCalendar = async () => {
+  if (pickedCalendar && Date.now() - pickedCalendar.at < CALENDAR_TTL_MS) {
+    return pickedCalendar.calendar;
+  }
+
+  const locationId = requireEnv('GHL_LOCATION_ID', Env.GHL_LOCATION_ID);
+  const { calendars } = calendarListSchema.parse(
+    await request({ path: `/calendars/?locationId=${locationId}`, family: 'calendars' }),
+  );
+  const active = calendars.filter((calendar) => calendar.isActive !== false);
+  const calendar = active.find((entry) => entry.id === Env.GHL_CALENDAR_ID) ?? active.at(0);
+
+  if (!calendar) {
+    throw new Error(`GHL location ${locationId} has no active calendar`);
+  }
+
+  pickedCalendar = { calendar, at: Date.now() };
+
+  return calendar;
+};
+
 /**
  * Lists the calendar's free slots in Italian time.
  * @param options The range.
@@ -167,7 +208,7 @@ export const parseFreeSlots = (body: unknown) =>
  * @throws {Error} When GHL is not configured or rejects the request.
  */
 export const getFreeSlots = async (options: { from: Date; to: Date }) => {
-  const calendarId = requireEnv('GHL_CALENDAR_ID', Env.GHL_CALENDAR_ID);
+  const { id: calendarId } = await getBookingCalendar();
   const query = new URLSearchParams({
     startDate: String(options.from.getTime()),
     endDate: String(options.to.getTime()),
@@ -188,10 +229,7 @@ export const getFreeSlots = async (options: { from: Date; to: Date }) => {
  * @throws {Error} When GHL is not configured or rejects the request.
  */
 export const getSlotMinutes = async () => {
-  const calendarId = requireEnv('GHL_CALENDAR_ID', Env.GHL_CALENDAR_ID);
-  const { calendar } = calendarSchema.parse(
-    await request({ path: `/calendars/${calendarId}`, family: 'calendars' }),
-  );
+  const calendar = await getBookingCalendar();
 
   return calendar.slotDurationUnit === 'hours' ? calendar.slotDuration * 60 : calendar.slotDuration;
 };
@@ -272,13 +310,14 @@ export const createAppointment = async (options: {
   title: string;
 }) => {
   const end = new Date(new Date(options.startTime).getTime() + options.minutes * 60_000);
+  const { id: calendarId } = await getBookingCalendar();
 
   const appointment = appointmentSchema.parse(
     await request({
       path: '/calendars/events/appointments',
       family: 'calendars',
       body: {
-        calendarId: requireEnv('GHL_CALENDAR_ID', Env.GHL_CALENDAR_ID),
+        calendarId,
         locationId: requireEnv('GHL_LOCATION_ID', Env.GHL_LOCATION_ID),
         contactId: options.contactId,
         startTime: options.startTime,
@@ -511,9 +550,10 @@ export type CalendarAppointment = z.infer<typeof calendarEventSchema>;
  * @throws {Error} When GHL is not configured or rejects the request.
  */
 export const listCalendarAppointments = async (options: { from: Date; to: Date }) => {
+  const calendar = await getBookingCalendar();
   const query = new URLSearchParams({
     locationId: requireEnv('GHL_LOCATION_ID', Env.GHL_LOCATION_ID),
-    calendarId: requireEnv('GHL_CALENDAR_ID', Env.GHL_CALENDAR_ID),
+    calendarId: calendar.id,
     startTime: String(options.from.getTime()),
     endTime: String(options.to.getTime()),
   });
@@ -536,3 +576,20 @@ export const toCustomFieldValues = (ids: Map<string, string>, values: Record<str
 
     return id ? [{ id, value }] : [];
   });
+
+/**
+ * Reads the GHL ids of the contact's custom fields, by their key such as `contact.fonte`.
+ * @returns The id of each field, by key.
+ * @throws {Error} When GHL is not configured or rejects the request.
+ */
+export const getContactFieldIds = async () => {
+  const locationId = requireEnv('GHL_LOCATION_ID', Env.GHL_LOCATION_ID);
+  const { customFields } = customFieldListSchema.parse(
+    await request({
+      path: `/locations/${locationId}/customFields?model=contact`,
+      family: 'locations',
+    }),
+  );
+
+  return new Map(customFields.map((field) => [field.fieldKey, field.id]));
+};

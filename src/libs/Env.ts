@@ -16,7 +16,8 @@ export const Env = createEnv({
     INSTANTLY_API_KEY: z.string().min(1).optional(),
     // Instantly does not sign its webhooks, so the URL carries this shared secret
     INSTANTLY_WEBHOOK_SECRET: z.string().min(16).optional(),
-    // Private integration token of the Girhouse location, and the calendar the calls are booked on
+    // Private integration token of the Girhouse location, and the calendar the calls are booked on:
+    // optional, the location's active calendar is used when it is unset or deleted
     GHL_API_TOKEN: z.string().min(1).optional(),
     GHL_LOCATION_ID: z.string().min(1).optional(),
     GHL_CALENDAR_ID: z.string().min(1).optional(),
