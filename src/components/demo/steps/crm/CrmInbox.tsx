@@ -63,7 +63,7 @@ export const CrmInbox = (props: { data: DemoSnapshot }) => {
   ];
 
   return (
-    <div className="grid h-[560px] overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-xl md:grid-cols-[280px_1fr]">
+    <div className="grid h-[560px] overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-xl md:h-[min(560px,calc(100svh-var(--demo-bar-h,6rem)-12rem))] md:grid-cols-[280px_1fr]">
       <aside className="hidden flex-col border-r border-neutral-200 bg-neutral-50 md:flex">
         <div className="flex items-center gap-2 border-b border-neutral-200 px-4 py-3">
           <Search className="size-4 text-neutral-400" />

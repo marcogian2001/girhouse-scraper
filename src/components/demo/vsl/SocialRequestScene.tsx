@@ -27,7 +27,7 @@ export const SocialRequestScene = (props: {
   return (
     <div className="flex flex-col items-center gap-3">
       <SceneLabel>{t('video_social_label')}</SceneLabel>
-      <IPhoneFrame statusBarClassName="bg-white text-neutral-900">
+      <IPhoneFrame statusBarClassName="bg-white text-neutral-900" reserve="label">
         <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto bg-white p-3">
           <p className="truncate border-b border-neutral-100 pb-2 text-center text-sm font-semibold text-neutral-950">
             {props.company}

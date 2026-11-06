@@ -28,6 +28,7 @@ export const MissedCallScene = (props: { company: string; message: string; reply
         {moment >= 2 ? t('vsl_missed_auto') : t('vsl_case_missed_call')}
       </p>
       <IPhoneFrame
+        reserve="label"
         statusBarClassName={
           moment >= 2 ? 'bg-[#f6f6f6] text-neutral-900' : 'bg-neutral-900 text-white'
         }

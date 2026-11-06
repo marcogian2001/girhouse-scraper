@@ -512,7 +512,7 @@ const VslStoryVisual = (props: {
             {t('vsl_reminder_label', { title: props.vsl.reminder.title })}
           </p>
         )}
-        <IPhoneFrame statusBarClassName="bg-[#f6f6f6] text-neutral-900">
+        <IPhoneFrame statusBarClassName="bg-[#f6f6f6] text-neutral-900" reserve="label">
           <WhatsAppChat
             company={data.company}
             messages={props.vsl.reminder.messages}
