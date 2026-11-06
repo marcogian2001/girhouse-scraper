@@ -621,7 +621,6 @@ const VslSceneVisual = (options: {
   handleOpenCall: () => void;
   handleCloseCall: () => void;
 }) => {
-  const t = useTranslations('DemoPage');
   const { scene, props, data } = options;
   const handleCost = options.onCost;
   const story = <VslStoryVisual scene={scene} vsl={props.vsl} data={data} photo={options.photo} />;
@@ -647,15 +646,12 @@ const VslSceneVisual = (options: {
 
   if (scene.kind === 'site') {
     return (
-      <div className="space-y-4">
-        <SceneLabel>{t('video_site_label')}</SceneLabel>
-        <SiteScene
-          data={data}
-          reviews={props.reviews}
-          photos={props.photos}
-          spoken={options.spoken}
-        />
-      </div>
+      <SiteScene
+        data={data}
+        reviews={props.reviews}
+        photos={props.photos}
+        spoken={options.spoken}
+      />
     );
   }
 

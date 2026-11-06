@@ -28,7 +28,7 @@ const PhotoHero = (props: HeroProps) => {
   const hero = props.photos.at(0);
 
   return (
-    <div className="relative isolate overflow-hidden px-6 py-16 text-white md:px-12 md:py-24">
+    <div className="relative isolate overflow-hidden px-6 py-16 text-white md:px-12 md:py-[min(6rem,7svh)]">
       {hero ? (
         <Image src={hero.src} alt="" fill unoptimized className="-z-10 object-cover" />
       ) : null}
@@ -36,19 +36,21 @@ const PhotoHero = (props: HeroProps) => {
         className={`absolute inset-0 -z-10 ${hero ? 'bg-gradient-to-r from-black/80 via-black/55 to-black/20' : 'bg-gradient-to-br from-(--demo-primary) to-neutral-900'}`}
       />
       <div className="flex flex-col-reverse items-start gap-8 md:flex-row md:items-center md:justify-between">
-        <div className="max-w-xl space-y-5">
+        <div className="max-w-xl space-y-5 md:space-y-[min(1.25rem,2.2svh)]">
           {data.city && (
             <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs backdrop-blur">
               <MapPin className="size-3.5" />
               {data.city}
             </span>
           )}
-          <h3 className={`text-3xl md:text-5xl ${HEADLINE}`}>{data.landing.headline}</h3>
+          <h3 className={`text-3xl md:text-[min(3rem,6.5svh)] ${HEADLINE}`}>
+            {data.landing.headline}
+          </h3>
           <p className="text-base text-white/85 md:text-lg">{data.landing.subheadline}</p>
           <HeroButtons ctaLabel={data.landing.ctaLabel} onDark />
         </div>
         {props.portraitUrl && (
-          <div className="relative size-28 shrink-0 overflow-hidden rounded-full shadow-2xl ring-4 ring-white/80 md:aspect-[4/5] md:size-auto md:w-56 md:rounded-(--demo-radius)">
+          <div className="relative size-28 shrink-0 overflow-hidden rounded-full shadow-2xl ring-4 ring-white/80 md:aspect-[4/5] md:size-auto md:h-[min(17.5rem,32svh)] md:rounded-(--demo-radius)">
             <Image
               src={props.portraitUrl}
               alt={t('landing_portrait_alt', { company: data.company })}
@@ -79,15 +81,17 @@ const SplitHero = (props: HeroProps) => {
   const photo = props.portraitUrl ? null : props.photos.at(0);
 
   return (
-    <div className="grid items-center gap-10 bg-(--demo-surface) px-6 py-12 md:grid-cols-2 md:px-12 md:py-16">
-      <div className="space-y-5">
+    <div className="grid items-center gap-10 bg-(--demo-surface) px-6 py-12 md:grid-cols-2 md:px-12 md:py-[min(4rem,5svh)]">
+      <div className="space-y-5 md:space-y-[min(1.25rem,2.2svh)]">
         {data.city && (
           <span className="inline-flex items-center gap-1.5 rounded-full bg-(--demo-primary)/10 px-3 py-1 text-xs font-medium text-(--demo-primary)">
             <MapPin className="size-3.5" />
             {data.city}
           </span>
         )}
-        <h3 className={`text-3xl md:text-5xl ${HEADLINE}`}>{data.landing.headline}</h3>
+        <h3 className={`text-3xl md:text-[min(3rem,6.5svh)] ${HEADLINE}`}>
+          {data.landing.headline}
+        </h3>
         <p className="text-base text-neutral-600 md:text-lg">{data.landing.subheadline}</p>
         <HeroButtons ctaLabel={data.landing.ctaLabel} onDark={false} />
       </div>
@@ -95,7 +99,7 @@ const SplitHero = (props: HeroProps) => {
         <div className="relative isolate pr-3 pb-3">
           <div className="absolute inset-0 top-6 left-6 -z-10 rounded-(--demo-radius) bg-(--demo-accent)/30" />
           {props.portraitUrl ? (
-            <div className="relative aspect-[4/3] overflow-hidden rounded-(--demo-radius) shadow-xl md:aspect-[4/5]">
+            <div className="relative aspect-[4/3] overflow-hidden rounded-(--demo-radius) shadow-xl md:aspect-auto md:h-[min(28rem,40svh)]">
               <Image
                 src={props.portraitUrl}
                 alt={t('landing_portrait_alt', { company: data.company })}
@@ -108,7 +112,7 @@ const SplitHero = (props: HeroProps) => {
             photo && (
               <PhotoFrame
                 photo={photo}
-                className="aspect-[4/3] rounded-(--demo-radius) shadow-xl md:aspect-[4/5]"
+                className="aspect-[4/3] rounded-(--demo-radius) shadow-xl md:aspect-auto md:h-[min(28rem,40svh)]"
               />
             )
           )}
@@ -128,10 +132,10 @@ const CenteredHero = (props: HeroProps) => {
   const { data } = props;
 
   return (
-    <div className="relative isolate overflow-hidden bg-(--demo-primary) px-6 py-16 text-center text-(--demo-on-primary) md:px-12 md:py-24">
+    <div className="relative isolate overflow-hidden bg-(--demo-primary) px-6 py-16 text-center text-(--demo-on-primary) md:px-12 md:py-[min(6rem,7svh)]">
       <div className="absolute -top-24 -right-24 -z-10 size-80 rounded-full bg-(--demo-accent) opacity-40 blur-3xl" />
       <div className="absolute -bottom-28 -left-20 -z-10 size-72 rounded-full bg-white opacity-10 blur-3xl" />
-      <div className="mx-auto flex max-w-2xl flex-col items-center space-y-5">
+      <div className="mx-auto flex max-w-2xl flex-col items-center space-y-5 md:space-y-[min(1.25rem,2.2svh)]">
         {props.portraitUrl && (
           <div className="relative size-24 overflow-hidden rounded-full shadow-xl ring-4 ring-white/70">
             <Image
@@ -149,7 +153,9 @@ const CenteredHero = (props: HeroProps) => {
             {data.city}
           </span>
         )}
-        <h3 className={`text-3xl md:text-5xl ${HEADLINE}`}>{data.landing.headline}</h3>
+        <h3 className={`text-3xl md:text-[min(3rem,6.5svh)] ${HEADLINE}`}>
+          {data.landing.headline}
+        </h3>
         <p className="text-base opacity-85 md:text-lg">{data.landing.subheadline}</p>
         <HeroButtons ctaLabel={data.landing.ctaLabel} onDark />
       </div>
@@ -166,7 +172,7 @@ const EditorialHero = (props: HeroProps) => {
   const { data, photos } = props;
 
   return (
-    <div className="space-y-8 bg-(--demo-surface) px-6 py-12 md:px-12 md:py-16">
+    <div className="space-y-8 bg-(--demo-surface) px-6 py-12 md:space-y-[min(2rem,3svh)] md:px-12 md:py-[min(4rem,5svh)]">
       <div className="grid gap-6 md:grid-cols-[1.4fr_1fr] md:items-end">
         <div className="space-y-4">
           {data.city && (
@@ -175,9 +181,11 @@ const EditorialHero = (props: HeroProps) => {
               {data.city}
             </p>
           )}
-          <h3 className={`text-4xl md:text-6xl ${HEADLINE}`}>{data.landing.headline}</h3>
+          <h3 className={`text-4xl md:text-[min(3.75rem,8svh)] ${HEADLINE}`}>
+            {data.landing.headline}
+          </h3>
         </div>
-        <div className="space-y-5 md:border-l md:border-(--demo-accent) md:pl-6">
+        <div className="space-y-5 md:space-y-[min(1.25rem,2.2svh)] md:border-l md:border-(--demo-accent) md:pl-6">
           <p className="text-base text-neutral-600 md:text-lg">{data.landing.subheadline}</p>
           <HeroButtons ctaLabel={data.landing.ctaLabel} onDark={false} />
         </div>
@@ -188,7 +196,7 @@ const EditorialHero = (props: HeroProps) => {
             <PhotoFrame
               key={photo.src}
               photo={photo}
-              className={`rounded-(--demo-radius) ${photos.length === 1 ? 'aspect-[16/7]' : 'aspect-[3/4]'} ${index === 2 ? 'hidden md:block' : ''}`}
+              className={`rounded-(--demo-radius) ${photos.length === 1 ? 'aspect-[16/7]' : 'aspect-[3/4]'} md:aspect-auto md:h-[min(25rem,26svh)] ${index === 2 ? 'hidden md:block' : ''}`}
             />
           ))}
         </div>

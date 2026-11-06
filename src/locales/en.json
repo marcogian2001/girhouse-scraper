@@ -1243,7 +1243,6 @@
     "video_google_site": "Website",
     "video_google_reviews": "{count} reviews",
     "video_google_hours": "Opening hours always up to date",
-    "video_site_label": "Example: how the site could look",
     "video_review_label": "Example: the review request after the service",
     "video_review_result": "New review from {customer} on Google",
     "video_offer_label": "All included. Cancel whenever you want.",

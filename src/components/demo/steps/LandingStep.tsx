@@ -59,11 +59,15 @@ const initialsOf = (company: string) =>
     .join('');
 
 /**
- * Scrolls the browser frame, and only the frame, to the section that just appeared.
+ * Scrolls the browser frame, and only the frame, to the section that just appeared, its top
+ * just under the site's sticky menu: the first section stays where it is, whole.
  * @param node The new section.
  */
 const scrollFrameTo = (node: HTMLElement | null) => {
-  node?.parentElement?.scrollTo({ top: node.offsetTop - 12, behavior: 'smooth' });
+  const frame = node?.parentElement;
+  const menu = frame?.querySelector('nav');
+
+  frame?.scrollTo({ top: (node?.offsetTop ?? 0) - (menu?.offsetHeight ?? 0), behavior: 'smooth' });
 };
 
 /**
@@ -156,7 +160,7 @@ export const LandingStep = (props: {
       </div>
 
       {/* Fits between the tour's header and Gigi's bar, so the site scrolls inside the frame */}
-      <div className="relative h-[calc(100svh-var(--demo-bar-h,12rem)-8rem)] min-h-80 overflow-y-auto scroll-smooth font-(family-name:--demo-body) md:h-[calc(100svh-9rem)]">
+      <div className="relative h-[calc(100svh-var(--demo-bar-h,12rem)-8rem)] min-h-80 overflow-y-auto scroll-smooth font-(family-name:--demo-body) md:h-[calc(100svh-var(--demo-bar-h,6rem)-9rem)]">
         <nav className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-neutral-100 bg-white/95 px-5 py-3 backdrop-blur">
           <div className="flex min-w-0 items-center gap-2.5">
             {navImage ? (
