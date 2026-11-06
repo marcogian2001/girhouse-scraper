@@ -74,9 +74,9 @@ export const VideoOfferStep = (props: {
 
   return (
     // On a phone one column, the guarantee under the button and the reviews last; from `lg`
-    // two columns, so the whole offer fits a laptop screen above Gigi's bar, with the system's
-    // picture left out on short screens. The two wrappers dissolve on a phone (`contents`)
-    // and `order` puts the guarantee, the call link and the reviews back at the end
+    // two columns, so the whole offer fits a laptop screen above Gigi's bar: the system and
+    // its reviews on the left, the price down to the guarantee on the right. The wrappers
+    // dissolve on a phone (`contents`) and `order` puts the call link and the reviews last
     <div className="mx-auto flex max-w-xl flex-col rounded-[1.75rem] border-2 border-[#4a9b6b] bg-gradient-to-b from-[#eef7e8] via-white to-white px-4 py-3 text-center shadow-xl sm:p-6 lg:grid lg:max-w-6xl lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:items-center lg:gap-x-10 lg:px-10 lg:py-[min(2rem,3svh)]">
       <div className="contents lg:flex lg:flex-col lg:items-center">
         <h2 className="text-xl font-black tracking-tight text-neutral-950 sm:text-4xl lg:text-[min(2.75rem,6svh)]">
@@ -89,14 +89,8 @@ export const VideoOfferStep = (props: {
           height={972}
           sizes="(min-width: 1024px) 560px, (min-width: 640px) 576px, 100vw"
           priority
-          className="mx-auto mt-1 h-auto max-h-[17svh] w-auto object-contain sm:max-h-64 lg:mt-2 lg:max-h-[min(16rem,22svh)] lg:[@media(max-height:880px)]:hidden"
+          className="mx-auto mt-1 h-auto max-h-[17svh] w-auto object-contain sm:max-h-64 lg:mt-2 lg:max-h-[min(16rem,22svh)]"
         />
-        <p className="order-1 mt-3 flex items-center justify-center gap-4 text-left sm:gap-5 lg:order-none lg:mt-[min(1rem,2svh)]">
-          <GuaranteeSeal className="size-14 shrink-0 drop-shadow-md sm:size-24 lg:size-[min(4rem,8svh)]" />
-          <span className="text-base leading-tight font-black text-neutral-900 sm:text-lg">
-            {t('video_offer_guarantee_title')}
-          </span>
-        </p>
         <TrustpilotCarousel className="order-3 mt-4 w-full lg:order-none lg:mt-[min(1rem,2svh)]" />
       </div>
 
@@ -161,6 +155,13 @@ export const VideoOfferStep = (props: {
         )}
 
         <div className="mt-3 lg:mt-[min(1.25rem,2.5svh)]">{props.action}</div>
+
+        <p className="order-1 mt-3 flex items-center justify-center gap-4 text-left sm:gap-5 lg:order-none lg:mt-[min(0.75rem,1.5svh)] lg:gap-3">
+          <GuaranteeSeal className="size-14 shrink-0 drop-shadow-md sm:size-24 lg:size-[min(3.5rem,7svh)]" />
+          <span className="text-base leading-tight font-black text-neutral-900 sm:text-lg lg:text-base">
+            {t('video_offer_guarantee_title')}
+          </span>
+        </p>
 
         {props.callLink && <div className="order-2 mt-2.5 lg:order-none">{props.callLink}</div>}
       </div>
