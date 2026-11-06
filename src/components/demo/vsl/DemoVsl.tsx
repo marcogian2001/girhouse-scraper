@@ -15,7 +15,7 @@ import {
   VSL_SOUNDS,
 } from '@/utils/VslMusic';
 import { captureDemoEvent } from '../DemoAnalytics';
-import { saveDemoProgress, useResumeScene } from '../DemoProgress';
+import { parseDemoProgress, saveDemoProgress } from '../DemoProgress';
 import { sendDemoEvent } from '../DemoSession';
 import type { DemoTourProps } from '../DemoTour';
 import { DemoTracking } from '../DemoTour';
@@ -352,6 +352,44 @@ const firstVslSceneOf = (scenes: VslScene[], step: number | null) =>
         0,
       )
     : 0;
+
+/**
+ * Picks the scene the demo opens on: the step a link points at, otherwise the scene this
+ * browser stopped on last time, otherwise the start.
+ * @param options The scenes and what the page was opened with.
+ * @param options.scenes The scenes.
+ * @param options.initialStep The step a link asked for, if any.
+ * @param options.savedProgress The progress cookie, if any.
+ * @returns The scene, and whether it picks up a previous visit.
+ */
+const openingSceneOf = (options: {
+  scenes: VslScene[];
+  initialStep: number | null;
+  savedProgress: string | null;
+}) => {
+  const resumed = options.initialStep
+    ? null
+    : parseDemoProgress({ saved: options.savedProgress, count: options.scenes.length });
+
+  return {
+    index: resumed ?? firstVslSceneOf(options.scenes, options.initialStep),
+    isResumed: resumed !== null,
+  };
+};
+
+/**
+ * Tells whether Gigi fills the screen: on his own scenes, and before the first tap unless
+ * the demo reopens on a scene it stopped on.
+ * @param options Where the demo stands.
+ * @param options.scene The scene on screen.
+ * @param options.isStarted Whether the first tap happened.
+ * @param options.isResumed Whether the demo reopened where it stopped.
+ * @returns True for the full-screen host.
+ */
+const showsHostScreen = (options: { scene: VslScene; isStarted: boolean; isResumed: boolean }) =>
+  options.scene.kind === 'intro' ||
+  options.scene.kind === 'video' ||
+  (!options.isStarted && !options.isResumed);
 
 /** Scenes only version B has, drawn by `VslStoryVisual`. */
 const STORY_KINDS = new Set<VslScene['kind']>([
@@ -728,16 +766,14 @@ const VslSceneVisual = (options: {
 };
 
 /**
- * The tap that starts the demo, or resumes it where this browser stopped last time.
+ * The tap that starts the demo.
  * @param props Component props.
  * @param props.label The start label of this version.
- * @param props.isResume Whether the tap picks up a saved scene.
  * @param props.onStart Starts the demo.
  * @returns The button.
  */
 const VslStartButton = (props: {
   label: (typeof START_COPY)[keyof typeof START_COPY]['start'];
-  isResume: boolean;
   onStart: () => void;
 }) => {
   const t = useTranslations('DemoPage');
@@ -749,7 +785,7 @@ const VslStartButton = (props: {
       className="flex animate-pop items-center gap-2 rounded-full bg-(--demo-primary) px-7 py-4 text-lg font-semibold whitespace-nowrap text-(--demo-on-primary) shadow-2xl"
     >
       <Play className="size-6 fill-current" />
-      {t(props.isResume ? 'resume_start' : props.label)}
+      {t(props.label)}
     </button>
   );
 };
@@ -774,17 +810,18 @@ export const DemoVsl = (
   const startCopy = closing ? START_COPY.video : START_COPY.vsl;
   // Version C has a closing; version B never does
   const scenes = scenesOf({ data, closing, hasReviews: props.reviews.items.length > 0 });
-  const [index, setIndex] = useState(() => firstVslSceneOf(scenes, props.initialStep));
+  // Reopened where it stopped, the demo shows that scene paused until a tap lets the voice play
+  const opening = openingSceneOf({
+    scenes,
+    initialStep: props.initialStep,
+    savedProgress: props.savedProgress,
+  });
+  const [index, setIndex] = useState(opening.index);
   const [isStarted, setIsStarted] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [isTalking, setIsTalking] = useState(false);
   const [bookingPhase, setBookingPhase] = useState<BookingPhase>('phone');
   const [isCallOpen, setIsCallOpen] = useState(false);
-  const resumeScene = useResumeScene({
-    slug: props.slug,
-    count: scenes.length,
-    initialStep: props.initialStep,
-  });
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const musicRef = useRef(createSoundtrack());
   // The sounds the scene on screen still has to play
@@ -957,7 +994,7 @@ export const DemoVsl = (
     }
 
     setIndex(next);
-    saveDemoProgress({ slug: props.slug, scene: next, count: scenes.length });
+    void saveDemoProgress({ slug: props.slug, scene: next, count: scenes.length });
     enterScene(target);
 
     if (target.step !== scene?.step || target.kind !== scene.kind) {
@@ -1070,7 +1107,7 @@ export const DemoVsl = (
       }
 
       setIndex(last);
-      saveDemoProgress({ slug: props.slug, scene: last, count: scenes.length });
+      void saveDemoProgress({ slug: props.slug, scene: last, count: scenes.length });
       enterScene(target);
     }
 
@@ -1090,7 +1127,48 @@ export const DemoVsl = (
     });
   };
 
+  // The first tap, on the start button or on the bar of a demo reopened where it stopped:
+  // played from it, the voice and the music are allowed to be heard
+  const start = (from: number) => {
+    const target = scenes[from] ?? scene;
+
+    setIsStarted(true);
+    setIndex(from);
+    void saveDemoProgress({ slug: props.slug, scene: from, count: scenes.length });
+
+    if (props.track) {
+      captureDemoEvent('demo_vsl_start', { scene: from, resumed: opening.isResumed });
+
+      if (opening.isResumed && target.step > 0) {
+        sendDemoEvent(props.slug, { type: 'step', step: target.step });
+      }
+    }
+
+    musicRef.current.start();
+    enterScene(target);
+    void say({
+      index: from,
+      line: lineOfScene({ scene: target, bookingPhase, isCallOpen }),
+      advance: goTo,
+    });
+  };
+
+  // Before the first tap the bar's buttons start the demo from where they point
+  const moveTo = (next: number) => {
+    if (isStarted) {
+      goTo(next);
+    } else {
+      start(next);
+    }
+  };
+
   const togglePause = () => {
+    if (!isStarted) {
+      start(index);
+
+      return;
+    }
+
     if (isPaused) {
       void resume();
     } else {
@@ -1098,175 +1176,153 @@ export const DemoVsl = (
     }
   };
 
-  const isHostScreen = scene.kind === 'intro' || scene.kind === 'video';
+  // A demo reopened where it stopped waits, paused, for the tap that lets the voice play
+  const isHeld = isPaused || !isStarted;
   const isPricing = scene.kind === 'pricing';
-  const content =
-    !isStarted || isHostScreen ? (
-      <>
-        {/* The landing's photos load while Gigi introduces himself; React moves these into the head */}
-        {props.photos.slice(0, 2).map((photo) => (
-          <link key={photo.src} rel="preload" as="image" href={photo.src} />
-        ))}
-        <header className="absolute inset-x-0 top-0 z-10 flex justify-center py-5">
-          <GirhouseLogo tone="black" className="h-8 md:h-9" />
-        </header>
-        <div className="mx-auto flex min-h-svh max-w-2xl flex-col items-center justify-center gap-4 px-4 py-6 text-center md:gap-6 md:py-10">
-          <h1 className="pt-10 text-3xl leading-tight font-bold tracking-tight text-balance wrap-anywhere text-neutral-950 md:text-4xl">
-            {scene.kind === 'video'
-              ? t('pricing_video_headline')
-              : t.rich(startCopy.headline, {
-                  company: data.company,
-                  b: (chunks) => <span className="text-(--demo-primary)">{chunks}</span>,
-                })}
-          </h1>
+  const content = showsHostScreen({ scene, isStarted, isResumed: opening.isResumed }) ? (
+    <>
+      {/* The landing's photos load while Gigi introduces himself; React moves these into the head */}
+      {props.photos.slice(0, 2).map((photo) => (
+        <link key={photo.src} rel="preload" as="image" href={photo.src} />
+      ))}
+      <header className="absolute inset-x-0 top-0 z-10 flex justify-center py-5">
+        <GirhouseLogo tone="black" className="h-8 md:h-9" />
+      </header>
+      <div className="mx-auto flex min-h-svh max-w-2xl flex-col items-center justify-center gap-4 px-4 py-6 text-center md:gap-6 md:py-10">
+        <h1 className="pt-10 text-3xl leading-tight font-bold tracking-tight text-balance wrap-anywhere text-neutral-950 md:text-4xl">
+          {scene.kind === 'video'
+            ? t('pricing_video_headline')
+            : t.rich(startCopy.headline, {
+                company: data.company,
+                b: (chunks) => <span className="text-(--demo-primary)">{chunks}</span>,
+              })}
+        </h1>
 
-          {isStarted ? (
-            <HostTalkingFull isTalking={isTalking} />
-          ) : (
-            <div className="flex flex-col items-center gap-4">
-              <div className="flex items-center gap-5">
-                <Image
-                  src={HOST_POSTER.src}
-                  alt=""
-                  width={HOST_POSTER.width}
-                  height={HOST_POSTER.height}
-                  priority
-                  className="h-[min(18rem,29svh)] w-auto rounded-3xl mix-blend-multiply md:h-80"
-                />
-                <VolumeHint isShown={Boolean(closing)} />
-              </div>
-              <VslStartButton
-                label={startCopy.start}
-                isResume={resumeScene !== null}
-                onStart={() => {
-                  const start = resumeScene ?? index;
-                  const startScene = scenes[start] ?? scene;
-
-                  setIsStarted(true);
-                  setIndex(start);
-
-                  if (props.track) {
-                    captureDemoEvent('demo_vsl_start', { scene: start, resumed: start !== index });
-
-                    if (start !== index && startScene.step > 0) {
-                      sendDemoEvent(props.slug, { type: 'step', step: startScene.step });
-                    }
-                  }
-
-                  // Played from the tap itself, which is what lets the voice and the music be heard
-                  musicRef.current.start();
-                  enterScene(startScene);
-                  void say({
-                    index: start,
-                    line: lineOfScene({ scene: startScene, bookingPhase, isCallOpen }),
-                    advance: goTo,
-                  });
-                }}
+        {isStarted ? (
+          <HostTalkingFull isTalking={isTalking} />
+        ) : (
+          <div className="flex flex-col items-center gap-4">
+            <div className="flex items-center gap-5">
+              <Image
+                src={HOST_POSTER.src}
+                alt=""
+                width={HOST_POSTER.width}
+                height={HOST_POSTER.height}
+                priority
+                className="h-[min(18rem,29svh)] w-auto rounded-3xl mix-blend-multiply md:h-80"
               />
+              <VolumeHint isShown={Boolean(closing)} />
             </div>
-          )}
-
-          {isStarted ? (
-            <p className="min-h-[4lh] text-base leading-relaxed text-neutral-800 md:text-lg">
-              <TypedText segments={segments} typed={typed} />
-            </p>
-          ) : (
-            <p className="text-sm text-neutral-500">
-              {t('vsl_start_hint', { minutes: estimateMinutes(props.voices) })}
-            </p>
-          )}
-
-          {scene.kind === 'video' && (
-            // The line says "the next few days": the real date is right here
-            <div className="w-full max-w-sm rounded-2xl bg-gradient-to-b from-[#0074F2] to-[#06287f] p-1 text-white empty:hidden">
-              <PriceCountdown
-                increaseOn={props.pricing.increaseOn}
-                increaseLabel={props.pricing.increaseLabel}
-                isBookingDeadline
-              />
-            </div>
-          )}
-
-          {isStarted && (
-            <button
-              type="button"
-              onClick={togglePause}
-              className="flex items-center gap-2 rounded-full border border-neutral-300 bg-white px-5 py-2.5 text-sm font-semibold text-neutral-700"
-            >
-              {isPaused ? <Play className="size-4" /> : <Pause className="size-4" />}
-              {isPaused ? t('vsl_resume') : t('vsl_pause')}
-            </button>
-          )}
-        </div>
-      </>
-    ) : (
-      <div
-        className={`min-h-svh overflow-x-clip pb-[calc(var(--demo-bar-h,6rem)+1.5rem)] ${isPricing ? 'bg-gradient-to-b from-[#0074F2] via-[#0a52d4] to-[#06287f]' : ''}`}
-      >
-        {/* Above the mockups, whose own layers stay inside `main` */}
-        <header className="sticky top-0 z-20 border-b border-neutral-100 bg-white/90 backdrop-blur">
-          <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-2 text-xs font-medium text-neutral-500">
-            <span className="flex min-w-0 items-center gap-2">
-              <GirhouseLogo tone="black" className="h-5 shrink-0" />
-              <span className="truncate font-semibold text-neutral-800">
-                {t('topbar_brand', { company: data.company })}
-              </span>
-            </span>
-            <span className="shrink-0">
-              {t('topbar_step', { step: scene.step, total: TOUR_STEPS })}
-            </span>
-          </div>
-          {/* Fills as the demo plays, scene by scene */}
-          <div aria-hidden className="h-1.5 bg-neutral-100">
-            <div
-              className="h-full rounded-r-full bg-(--demo-primary) transition-[width] duration-700 ease-out"
-              style={{ width: `${(index / (scenes.length - 1)) * 100}%` }}
+            <VslStartButton
+              label={startCopy.start}
+              onStart={() => {
+                start(index);
+              }}
             />
           </div>
-        </header>
+        )}
 
-        <main
-          key={sceneGroup(scene, index)}
-          className={`isolate mx-auto max-w-7xl animate-in px-4 duration-500 fade-in ${isPricing ? 'py-4 md:py-6' : 'py-6 md:py-10'}`}
-        >
-          <VslSceneVisual
-            scene={scene}
-            props={props}
-            data={data}
-            photo={photoOf(line)}
-            spoken={{ text: segments.map((segment) => segment.text).join(''), typed }}
-            onCost={() => {
-              musicRef.current.sound('ping');
-            }}
-            bookingPhase={bookingPhase}
-            handleBookingPhase={handleBookingPhase}
-            isCallOpen={isCallOpen}
-            handleOpenCall={handleOpenCall}
-            handleCloseCall={handleCloseCall}
-          />
-        </main>
+        {isStarted ? (
+          <p className="min-h-[4lh] text-base leading-relaxed text-neutral-800 md:text-lg">
+            <TypedText segments={segments} typed={typed} />
+          </p>
+        ) : (
+          <p className="text-sm text-neutral-500">
+            {t('vsl_start_hint', { minutes: estimateMinutes(props.voices) })}
+          </p>
+        )}
 
-        <VslBar
-          segments={segments}
-          typed={typed}
-          isTalking={isTalking}
-          isPaused={isPaused}
-          isQuiet={isPricing}
-          isLast={index === scenes.length - 1}
-          onBack={() => {
-            goTo(Math.max(index - 1, 0));
-          }}
-          onTogglePause={togglePause}
-          onSkip={() => {
-            goTo(index + 1);
-          }}
-        />
+        {scene.kind === 'video' && (
+          // The line says "the next few days": the real date is right here
+          <div className="w-full max-w-sm rounded-2xl bg-gradient-to-b from-[#0074F2] to-[#06287f] p-1 text-white empty:hidden">
+            <PriceCountdown
+              increaseOn={props.pricing.increaseOn}
+              increaseLabel={props.pricing.increaseLabel}
+              isBookingDeadline
+            />
+          </div>
+        )}
+
+        {isStarted && (
+          <button
+            type="button"
+            onClick={togglePause}
+            className="flex items-center gap-2 rounded-full border border-neutral-300 bg-white px-5 py-2.5 text-sm font-semibold text-neutral-700"
+          >
+            {isPaused ? <Play className="size-4" /> : <Pause className="size-4" />}
+            {isPaused ? t('vsl_resume') : t('vsl_pause')}
+          </button>
+        )}
       </div>
-    );
+    </>
+  ) : (
+    <div
+      className={`min-h-svh overflow-x-clip pb-[calc(var(--demo-bar-h,6rem)+1.5rem)] ${isPricing ? 'bg-gradient-to-b from-[#0074F2] via-[#0a52d4] to-[#06287f]' : ''}`}
+    >
+      {/* Above the mockups, whose own layers stay inside `main` */}
+      <header className="sticky top-0 z-20 border-b border-neutral-100 bg-white/90 backdrop-blur">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-2 text-xs font-medium text-neutral-500">
+          <span className="flex min-w-0 items-center gap-2">
+            <GirhouseLogo tone="black" className="h-5 shrink-0" />
+            <span className="truncate font-semibold text-neutral-800">
+              {t('topbar_brand', { company: data.company })}
+            </span>
+          </span>
+          <span className="shrink-0">
+            {t('topbar_step', { step: scene.step, total: TOUR_STEPS })}
+          </span>
+        </div>
+        {/* Fills as the demo plays, scene by scene */}
+        <div aria-hidden className="h-1.5 bg-neutral-100">
+          <div
+            className="h-full rounded-r-full bg-(--demo-primary) transition-[width] duration-700 ease-out"
+            style={{ width: `${(index / (scenes.length - 1)) * 100}%` }}
+          />
+        </div>
+      </header>
+
+      <main
+        key={sceneGroup(scene, index)}
+        className={`isolate mx-auto max-w-7xl animate-in px-4 duration-500 fade-in ${isPricing ? 'py-4 md:py-6' : 'py-6 md:py-10'}`}
+      >
+        <VslSceneVisual
+          scene={scene}
+          props={props}
+          data={data}
+          photo={photoOf(line)}
+          spoken={{ text: segments.map((segment) => segment.text).join(''), typed }}
+          onCost={() => {
+            musicRef.current.sound('ping');
+          }}
+          bookingPhase={bookingPhase}
+          handleBookingPhase={handleBookingPhase}
+          isCallOpen={isCallOpen}
+          handleOpenCall={handleOpenCall}
+          handleCloseCall={handleCloseCall}
+        />
+      </main>
+
+      <VslBar
+        segments={segments}
+        typed={typed}
+        isTalking={isTalking}
+        isPaused={isHeld}
+        isQuiet={isPricing}
+        isLast={index === scenes.length - 1}
+        onBack={() => {
+          moveTo(Math.max(index - 1, 0));
+        }}
+        onTogglePause={togglePause}
+        onSkip={() => {
+          moveTo(index + 1);
+        }}
+      />
+    </div>
+  );
 
   // The audio element keeps its place whatever the screen, so the one a tap unlocked plays to the end
   return (
-    <TimelinePause value={isPaused}>
+    <TimelinePause value={isHeld}>
       {tracking}
       {audio}
       {/* The photos load while Gigi introduces himself; React moves these into the head */}

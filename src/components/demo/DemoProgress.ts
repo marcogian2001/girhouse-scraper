@@ -1,11 +1,18 @@
-import { useSyncExternalStore } from 'react';
+/** A year: the scene is kept for a lead who opens the link again days later. */
+const MAX_AGE_MS = 365 * 86_400_000;
 
-const keyOf = (slug: string) => `girhouse-demo-progress:${slug}`;
+/**
+ * Names the cookie that keeps where this browser stopped on a demo. A cookie, so the server
+ * reads it and the page opens straight on that scene.
+ * @param slug The demo slug.
+ * @returns The cookie name.
+ */
+export const demoProgressCookie = (slug: string) => `demo-progress-${slug}`;
 
 /**
  * Reads a saved progress, kept only while the demo still has the same scenes.
  * @param options The saved value and the demo's scenes.
- * @param options.saved What storage holds, written as `scene/count`.
+ * @param options.saved What the cookie holds, written as `scene/count`.
  * @param options.count How many scenes the demo has now.
  * @returns The scene to resume from, or null to start from the beginning.
  */
@@ -21,56 +28,27 @@ export const parseDemoProgress = (options: { saved: string | null; count: number
 };
 
 /**
- * Remembers the scene the visitor reached, so reloading or reopening the link resumes there.
+ * Remembers the scene the visitor reached, so reloading or reopening the link opens there.
+ * A browser without the Cookie Store API starts the demo over instead.
  * @param options The demo and the scene.
  * @param options.slug The demo slug.
  * @param options.scene The scene on screen.
  * @param options.count How many scenes the demo has.
  */
-export const saveDemoProgress = (options: { slug: string; scene: number; count: number }) => {
-  try {
-    localStorage.setItem(keyOf(options.slug), `${options.scene}/${options.count}`);
-  } catch {
-    // Private windows can refuse storage; the demo then starts over on reload
+export const saveDemoProgress = async (options: { slug: string; scene: number; count: number }) => {
+  if (!('cookieStore' in window)) {
+    return;
   }
-};
 
-const readDemoProgress = (options: { slug: string; count: number }) => {
   try {
-    return parseDemoProgress({
-      saved: localStorage.getItem(keyOf(options.slug)),
-      count: options.count,
+    await window.cookieStore.set({
+      name: demoProgressCookie(options.slug),
+      value: `${options.scene}/${options.count}`,
+      path: '/',
+      expires: Date.now() + MAX_AGE_MS,
+      sameSite: 'lax',
     });
   } catch {
-    return null;
+    // A browser that refuses cookies starts the demo over on reload
   }
 };
-
-// Another tab of the same demo moving on updates this one too
-const subscribe = (onChange: () => void) => {
-  window.addEventListener('storage', onChange);
-
-  return () => {
-    window.removeEventListener('storage', onChange);
-  };
-};
-
-/**
- * Returns the scene this browser stopped on last time, read after hydration so the server
- * and the first render agree. A link to a step wins over it.
- * @param options The demo.
- * @param options.slug The demo slug.
- * @param options.count How many scenes the demo has.
- * @param options.initialStep The step the link opens on, if any.
- * @returns The scene to resume from, or null.
- */
-export const useResumeScene = (options: {
-  slug: string;
-  count: number;
-  initialStep: number | null;
-}) =>
-  useSyncExternalStore(
-    subscribe,
-    () => (options.initialStep ? null : readDemoProgress(options)),
-    () => null,
-  );

@@ -1172,7 +1172,6 @@
     "vsl_start": "Guarda la demo",
     "vsl_start_hint": "Alza il volume: dura circa {minutes} minuti e va avanti da sola",
     "vsl_pause": "Metti in pausa",
-    "resume_start": "Riprendi da dove eri rimasto",
     "vsl_resume": "Riprendi",
     "vsl_paused": "In pausa",
     "vsl_skip": "Salta questa parte",

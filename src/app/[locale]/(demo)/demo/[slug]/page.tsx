@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
+import { cookies } from 'next/headers';
 import { notFound } from 'next/navigation';
 import * as z from 'zod';
+import { demoProgressCookie } from '@/components/demo/DemoProgress';
 import type { DemoTourProps } from '@/components/demo/DemoTour';
 import { DemoTour } from '@/components/demo/DemoTour';
 import { DemoVsl } from '@/components/demo/vsl/DemoVsl';
@@ -35,6 +37,17 @@ const requireDemo = async (slug: string) => {
   }
 
   return page;
+};
+
+/**
+ * Reads where this browser stopped on the demo last time, so a reload opens straight there.
+ * @param slug The demo slug.
+ * @returns The progress cookie, or null on a first visit.
+ */
+const readSavedProgress = async (slug: string) => {
+  const cookieStore = await cookies();
+
+  return cookieStore.get(demoProgressCookie(slug))?.value ?? null;
 };
 
 export async function generateMetadata(props: DemoPageProps): Promise<Metadata> {
@@ -92,6 +105,7 @@ export default async function DemoPage(props: DemoPageProps) {
     slug,
     track: !isPreview,
     initialStep: step.success ? step.data : null,
+    savedProgress: await readSavedProgress(slug),
     data,
     reviews,
     photos: [

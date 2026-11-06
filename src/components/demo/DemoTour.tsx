@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import type { DemoSnapshot } from '@/models/Schema';
 import { HEARTBEAT_SECONDS } from '@/utils/DemoStats';
 import { captureDemoEvent, startDemoAnalytics } from './DemoAnalytics';
-import { saveDemoProgress, useResumeScene } from './DemoProgress';
+import { parseDemoProgress, saveDemoProgress } from './DemoProgress';
 import { sendDemoEvent } from './DemoSession';
 import { GigiBar } from './GigiBar';
 import { GigiVideoScene } from './GigiVideoScene';
@@ -32,6 +32,8 @@ export type DemoTourProps = {
   slug: string;
   track: boolean;
   initialStep: number | null;
+  /** The demo progress cookie, as `scene/count`, when this browser has seen the demo. */
+  savedProgress: string | null;
   data: DemoSnapshot;
   reviews: DemoReviews;
   photos: DemoPhoto[];
@@ -151,16 +153,14 @@ export const DemoTracking = (props: {
 export const DemoTour = (props: DemoTourProps) => {
   const t = useTranslations('DemoPage');
   const scenes = buildTourScenes({ data: props.data, hasReviews: props.reviews.items.length > 0 });
+  // A link to a step opens there; otherwise where this browser stopped last time
   const [index, setIndex] = useState(() =>
-    props.initialStep ? firstSceneOf(scenes, props.initialStep) : 0,
+    props.initialStep
+      ? firstSceneOf(scenes, props.initialStep)
+      : (parseDemoProgress({ saved: props.savedProgress, count: scenes.length }) ?? 0),
   );
   const [bookingPhase, setBookingPhase] = useState<BookingPhase>('phone');
   const [finishedLine, setFinishedLine] = useState<string | null>(null);
-  const resumeScene = useResumeScene({
-    slug: props.slug,
-    count: scenes.length,
-    initialStep: props.initialStep,
-  });
   const scene = scenes[index] ?? scenes[0];
 
   const { company } = props.data;
@@ -211,7 +211,7 @@ export const DemoTour = (props: DemoTourProps) => {
     }
 
     setIndex(next);
-    saveDemoProgress({ slug: props.slug, scene: next, count: scenes.length });
+    void saveDemoProgress({ slug: props.slug, scene: next, count: scenes.length });
 
     // Within a step the scene's own anchors scroll to what it reveals; from the price
     // video to the price the page changes altogether, so it starts from the top too
@@ -267,9 +267,9 @@ export const DemoTour = (props: DemoTourProps) => {
             </h1>
           }
           segments={segments}
-          ctaLabel={t(resumeScene ? 'resume_start' : 'intro_cta')}
+          ctaLabel={t('intro_cta')}
           onContinue={() => {
-            goTo(resumeScene ?? 1);
+            goTo(1);
           }}
         />
       </>
