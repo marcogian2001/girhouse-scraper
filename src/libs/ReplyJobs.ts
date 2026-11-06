@@ -4,7 +4,6 @@ import type { jobSchema } from '@/models/Schema';
 import {
   conversationSchema,
   inboundMessageSchema,
-  objectionSchema,
   outboundEmailSchema,
   replyClassificationSchema,
   whatsappHandoffSchema,
@@ -42,7 +41,6 @@ import { db } from './DB';
 import { ensureDemo } from './Demos';
 import { completeJob, enqueue } from './JobQueue';
 import { loadLeadContext } from './LeadContext';
-import { createObjection, listObjections } from './Objections';
 import { createReferralContact } from './Referrals';
 import { recordCopywritingUsage } from './Usage';
 
@@ -248,7 +246,7 @@ const loadOfferedSlots = async (conversationId: string) => {
 };
 
 /**
- * Classifies a reply with the AI, adding an unseen objection to the library for review.
+ * Classifies a reply with the AI.
  * @param options The call options.
  * @param options.conversation The conversation the reply belongs to.
  * @param options.message The stored reply.
@@ -266,12 +264,10 @@ const classifyWithAi = async (options: {
   settings: AutomationSettings;
 }) => {
   const { conversation, message } = options;
-  const objections = await listObjections(conversation.organizationId);
 
   const { output, call } = await classifyReply({
     model: options.settings.classificationModel,
     offer: buildOfferBrief(options.settings),
-    objections,
     lead: await loadLeadContext(conversation),
     thread: options.context.thread,
     reply: options.reply,
@@ -291,36 +287,10 @@ const classifyWithAi = async (options: {
     throw new Error(`${call.model} returned no parsable classification for ${message.id}`);
   }
 
-  const category = CATEGORY_FROM_CLASSIFIER[output.categoria];
-  let objectionId = objections.find((objection) => objection.key === output.tipo_obiezione)?.id;
-
-  if (category === 'objection' && !objectionId && output.nuova_obiezione) {
-    const created = await createObjection({
-      organizationId: conversation.organizationId,
-      sourceMessageId: message.id,
-      objection: {
-        title: output.nuova_obiezione.titolo,
-        description: output.nuova_obiezione.descrizione,
-        examples: [options.reply.slice(0, 300)],
-        responseAngle: output.nuova_obiezione.angolo_risposta,
-        status: 'needs_review',
-        closesConversation: false,
-      },
-    });
-
-    objectionId = created.id;
-
-    await logEvent({
-      conversationId: conversation.id,
-      type: 'objection_created',
-      payload: { objectionId: created.id, key: created.key },
-    });
-  }
-
   return await saveClassification({
     inboundMessageId: message.id,
-    category,
-    objectionId,
+    category: CATEGORY_FROM_CLASSIFIER[output.categoria],
+    objectionId: null,
     phoneE164: toE164(output.telefono_fornito),
     referral: output.referente_indicato,
     chosenSlot: output.orario_scelto,
@@ -331,26 +301,6 @@ const classifyWithAi = async (options: {
     source: 'ai',
     model: call.model,
   });
-};
-
-/**
- * Tells whether the classification's objection was added to the library by this very reply.
- * @param classification The classification.
- * @returns True when a person still has to review the objection's angle.
- */
-const hasNewObjection = async (classification: Classification) => {
-  if (!classification.objectionId) {
-    return false;
-  }
-
-  const objection = await db.query.objectionSchema.findFirst({
-    where: eq(objectionSchema.id, classification.objectionId),
-  });
-
-  return (
-    objection?.sourceMessageId === classification.inboundMessageId &&
-    objection.status === 'needs_review'
-  );
 };
 
 /**
@@ -398,9 +348,7 @@ const routeClassification = async (options: {
     category: classification.category,
     confidence: classification.confidence,
     threshold: options.settings.confidenceThreshold,
-    isNewObjection: await hasNewObjection(classification),
     hasReferral: Boolean(classification.referral),
-    negativeReplyCount: conversation.negativeReplyCount,
   });
 
   if (state === 'stop') {

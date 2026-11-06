@@ -4,7 +4,6 @@ import { buildReplyStats, rateOf } from './ReplyStats';
 
 const fact = (overrides: Partial<ConversationFacts>): ConversationFacts => ({
   firstCategory: 'interested',
-  objectionIds: [],
   demoSent: false,
   demoOpened: false,
   demoCompleted: false,
@@ -17,8 +16,8 @@ const facts = [
   fact({ demoSent: true, demoOpened: true, demoCompleted: true, bookingSource: 'demo' }),
   fact({ demoSent: true, demoOpened: true, whatsapp: true }),
   fact({ demoSent: true, bookingSource: 'email' }),
-  fact({ firstCategory: 'objection', objectionIds: ['price', 'price'], bookingSource: 'ghl' }),
-  fact({ firstCategory: 'objection', objectionIds: ['price', 'website'] }),
+  fact({ firstCategory: 'question', bookingSource: 'ghl' }),
+  fact({ firstCategory: 'question' }),
   fact({ firstCategory: null }),
 ];
 
@@ -38,14 +37,7 @@ describe('Reply stats', () => {
   it('splits the outcome by the category of the first reply', () => {
     expect(stats.byCategory).toStrictEqual([
       { category: 'interested', total: 3, demoSent: 3, booked: 2 },
-      { category: 'objection', total: 2, demoSent: 0, booked: 1 },
-    ]);
-  });
-
-  it('counts a lead once per objection', () => {
-    expect(stats.byObjection).toStrictEqual([
-      { objectionId: 'price', total: 2, booked: 1 },
-      { objectionId: 'website', total: 1, booked: 0 },
+      { category: 'question', total: 2, demoSent: 0, booked: 1 },
     ]);
   });
 

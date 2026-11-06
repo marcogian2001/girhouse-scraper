@@ -1,7 +1,6 @@
 import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';
 import * as z from 'zod';
 import { logger } from '@/libs/Logger';
-import type { objectionSchema } from '@/models/Schema';
 import { AppConfig } from '@/utils/AppConfig';
 import { requireCopywritingModel } from '@/utils/CopywritingModels';
 import { getClient, reasoningFor } from './Claude';
@@ -10,14 +9,11 @@ import { renderLeadFacts, renderThread, toBilledCall } from './ReplyPrompt';
 
 const MAX_TOKENS = 8000;
 
-type Objection = typeof objectionSchema.$inferSelect;
-
 /** The classifier's answer, in the shape the brief defines. */
 const replyClassificationOutputSchema = z.object({
   categoria: z.enum([
     'interessato',
     'domanda',
-    'obiezione',
     'non_ora',
     'non_interessato',
     'stop',
@@ -26,10 +22,6 @@ const replyClassificationOutputSchema = z.object({
     'persona_sbagliata',
     'altro',
   ]),
-  tipo_obiezione: z.string().nullable(),
-  nuova_obiezione: z
-    .object({ titolo: z.string(), descrizione: z.string(), angolo_risposta: z.string() })
-    .nullable(),
   telefono_fornito: z.string().nullable(),
   referente_indicato: z.string().nullable(),
   orario_scelto: z.string().nullable(),
@@ -44,10 +36,9 @@ const CLASSIFIER_INSTRUCTIONS = [
   '',
   'Categories (`categoria`):',
   '- interessato: wants to know more, see the demo, be called, or says yes.',
-  '- domanda: asks something specific (price, how it works, who we are) without objecting or committing.',
-  '- obiezione: pushes back with a reason that can be answered (already has a website, too expensive, no time, bad experience with agencies).',
+  '- domanda: asks something specific (price, how it works, who we are) without pushing back or committing.',
   '- non_ora: open in principle but not now (busy season, later in the year, "risentiamoci tra qualche mese").',
-  '- non_interessato: a polite no, such as "non mi interessa", "non ci serve", "siamo a posto".',
+  '- non_interessato: a polite no, with or without a reason: "non mi interessa", "non ci serve", "siamo a posto", "abbiamo già il sito", "costa troppo", "non ho tempo", a bad experience with agencies.',
   '- stop: wants no more contact or is hostile: "non scrivetemi più", "toglietemi", "cancellatemi", "rimuovetemi", insults, threats to report us. When unsure between non_interessato and stop, choose stop.',
   '- fuori_ufficio: an automatic out-of-office or holiday reply.',
   '- risposta_automatica: any other automatic reply that no person wrote: receipt confirmations ("abbiamo ricevuto la sua email", "la ricontatteremo al più presto"), helpdesk or ticket acknowledgements, autoresponders listing opening hours or contacts. Use fuori_ufficio instead when it says the person is away.',
@@ -57,8 +48,6 @@ const CLASSIFIER_INSTRUCTIONS = [
   'Rules:',
   "- Instantly's interest label is a hint only. Decide from what the lead wrote.",
   '- Classify only the latest reply. Use the earlier emails for context.',
-  '- `tipo_obiezione` is a key from the objection library below, or null. Never invent a key.',
-  '- When the reply is an objection that no library entry fits, set `tipo_obiezione` to null and fill `nuova_obiezione` with a short Italian title, a one-line description and the angle a reply should take, consistent with the offer. Otherwise `nuova_obiezione` is null.',
   '- `telefono_fornito`: a phone number the lead gave in the reply or their signature, in E.164 (+39 for Italian numbers), else null.',
   '- `referente_indicato`: the name and/or email of the person the lead points to, else null.',
   '- `orario_scelto`: the call time the lead picks or proposes, as YYYY-MM-DDTHH:mm in Italian time. Resolve "il primo", "giovedì" or "domani alle 10" against today and the times Girhouse offered. Null when the lead names no specific day and hour.',
@@ -67,30 +56,6 @@ const CLASSIFIER_INSTRUCTIONS = [
   '- `confidenza`: how sure you are, from 0 to 1.',
   '- `motivazione`: one line in Italian explaining the choice.',
 ].join('\n');
-
-/**
- * Renders the objection library the classifier must pick from.
- * @param objections The organization's objections.
- * @returns The library as text, or a note that it is empty.
- */
-export const buildObjectionLibrary = (objections: Objection[]) => {
-  if (objections.length === 0) {
-    return '## Objection library\n(empty)';
-  }
-
-  const entries = objections.map((objection) =>
-    [
-      `- key: ${objection.key}`,
-      `  title: ${objection.title}`,
-      `  description: ${objection.description}`,
-      objection.examples.length > 0 ? `  examples: ${objection.examples.join(' | ')}` : '',
-    ]
-      .filter(Boolean)
-      .join('\n'),
-  );
-
-  return `## Objection library\n${entries.join('\n')}`;
-};
 
 /**
  * Renders the per-reply half of the prompt: the business, the thread and the reply.
@@ -134,8 +99,7 @@ export const buildReplyPrompt = (options: {
  * Classifies a lead's reply with Claude.
  * @param options The call options.
  * @param options.model The Claude model id, from the automation settings.
- * @param options.offer The offer brief, so proposed angles stay consistent with it.
- * @param options.objections The organization's objection library.
+ * @param options.offer The offer brief, the context the replies answer.
  * @param options.lead What the platform knows about the business.
  * @param options.thread The earlier emails, oldest first.
  * @param options.reply The lead's latest reply, without the quoted thread.
@@ -147,7 +111,6 @@ export const buildReplyPrompt = (options: {
 export const classifyReply = async (options: {
   model: string;
   offer: string;
-  objections: Objection[];
   lead: LeadContext;
   thread: ThreadMessage[];
   reply: string;
@@ -165,15 +128,11 @@ export const classifyReply = async (options: {
       effort: reasoning.effort,
       format: zodOutputFormat(replyClassificationOutputSchema),
     },
-    // Identical for every reply of an organization until the library changes
+    // Identical for every reply of an organization until the offer changes
     system: [
       {
         type: 'text',
-        text: [
-          CLASSIFIER_INSTRUCTIONS,
-          `## Offer\n${options.offer}`,
-          buildObjectionLibrary(options.objections),
-        ].join('\n\n'),
+        text: [CLASSIFIER_INSTRUCTIONS, `## Offer\n${options.offer}`].join('\n\n'),
         cache_control: { type: 'ephemeral' },
       },
     ],

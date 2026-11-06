@@ -7,7 +7,6 @@ export type BookingSource = 'demo' | 'email' | 'ghl';
 export type ConversationFacts = {
   // The category of the lead's first reply, null when it was never classified
   firstCategory: ReplyCategory | null;
-  objectionIds: string[];
   demoSent: boolean;
   demoOpened: boolean;
   demoCompleted: boolean;
@@ -41,7 +40,7 @@ export const rateOf = (part: number, whole: number) => (whole === 0 ? null : par
 
 /**
  * Counts how the leads who replied went on: the funnel to the booked call, the outcome
- * by first-reply category and by objection, and where the calls were booked.
+ * by first-reply category, and where the calls were booked.
  * @param facts One entry per conversation.
  * @returns The metrics.
  */
@@ -57,7 +56,6 @@ export const buildReplyStats = (facts: ConversationFacts[]) => {
   };
 
   const categories = new Map<ReplyCategory, { total: number; demoSent: number; booked: number }>();
-  const objections = new Map<string, { total: number; booked: number }>();
 
   for (const fact of facts) {
     if (fact.firstCategory) {
@@ -65,15 +63,6 @@ export const buildReplyStats = (facts: ConversationFacts[]) => {
       categories.set(fact.firstCategory, {
         total: row.total + 1,
         demoSent: row.demoSent + Number(fact.demoSent),
-        booked: row.booked + Number(booked(fact)),
-      });
-    }
-
-    // A lead who raised the same objection twice counts once for it
-    for (const objectionId of new Set(fact.objectionIds)) {
-      const row = objections.get(objectionId) ?? { total: 0, booked: 0 };
-      objections.set(objectionId, {
-        total: row.total + 1,
         booked: row.booked + Number(booked(fact)),
       });
     }
@@ -89,9 +78,6 @@ export const buildReplyStats = (facts: ConversationFacts[]) => {
     },
     byCategory: [...categories.entries()]
       .map(([category, row]) => ({ category, ...row }))
-      .toSorted((a, b) => b.total - a.total),
-    byObjection: [...objections.entries()]
-      .map(([objectionId, row]) => ({ objectionId, ...row }))
       .toSorted((a, b) => b.total - a.total),
   };
 };

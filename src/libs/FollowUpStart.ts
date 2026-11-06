@@ -22,8 +22,8 @@ const HAND_DEMO_FROM = new Set<Conversation['state']>([
   'paused',
 ]);
 
-/** A lead whose latest reply is one of these is never followed up. */
-const NO_FOLLOW_UP_CATEGORIES = new Set<ReplyCategory>(['not_interested', 'stop']);
+/** A lead whose latest reply is one of these is never followed up. Objections count as a no. */
+const NO_FOLLOW_UP_CATEGORIES = new Set<ReplyCategory>(['objection', 'not_interested', 'stop']);
 
 /**
  * Reads the category of the lead's latest classified reply.

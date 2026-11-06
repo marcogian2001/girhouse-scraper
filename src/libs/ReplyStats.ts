@@ -5,7 +5,6 @@ import {
   conversationSchema,
   demoSchema,
   inboundMessageSchema,
-  objectionSchema,
   outboundEmailSchema,
   replyClassificationSchema,
   whatsappHandoffSchema,
@@ -56,16 +55,15 @@ const loadBookingSources = async (conversationIds: string[]) => {
 };
 
 /**
- * Reads the classifications of each conversation, oldest reply first.
+ * Reads the category of each conversation's first classified reply.
  * @param conversationIds The conversations.
- * @returns The first category and every objection of each conversation.
+ * @returns The first category of each conversation.
  */
 const loadClassifications = async (conversationIds: string[]) => {
   const rows = await db
     .select({
       conversationId: inboundMessageSchema.conversationId,
       category: replyClassificationSchema.category,
-      objectionId: replyClassificationSchema.objectionId,
     })
     .from(replyClassificationSchema)
     .innerJoin(
@@ -76,25 +74,15 @@ const loadClassifications = async (conversationIds: string[]) => {
     .orderBy(asc(inboundMessageSchema.receivedAt))
     .$withCache();
 
-  const byConversation = new Map<
-    string,
-    { firstCategory: ConversationFacts['firstCategory']; objectionIds: string[] }
-  >();
+  const firstCategories = new Map<string, ConversationFacts['firstCategory']>();
 
   for (const row of rows) {
-    const entry = byConversation.get(row.conversationId) ?? {
-      firstCategory: row.category,
-      objectionIds: [],
-    };
-
-    if (row.objectionId) {
-      entry.objectionIds.push(row.objectionId);
+    if (!firstCategories.has(row.conversationId)) {
+      firstCategories.set(row.conversationId, row.category);
     }
-
-    byConversation.set(row.conversationId, entry);
   }
 
-  return byConversation;
+  return firstCategories;
 };
 
 /**
@@ -146,7 +134,7 @@ const loadDemoFacts = async (conversationIds: string[]) => {
  * @param options The report.
  * @param options.organizationId The organization.
  * @param options.range The days the conversations started on, inclusive.
- * @returns The metrics, with the objections' titles.
+ * @returns The metrics.
  */
 export const getReplyStats = async (options: { organizationId: string; range: DateRange }) => {
   const conversations = await db
@@ -164,10 +152,10 @@ export const getReplyStats = async (options: { organizationId: string; range: Da
   const ids = conversations.map((conversation) => conversation.id);
 
   if (ids.length === 0) {
-    return { stats: buildReplyStats([]), objectionTitles: new Map<string, string>() };
+    return buildReplyStats([]);
   }
 
-  const [classifications, demos, bookings, handoffs, objections] = await Promise.all([
+  const [firstCategories, demos, bookings, handoffs] = await Promise.all([
     loadClassifications(ids),
     loadDemoFacts(ids),
     loadBookingSources(ids),
@@ -181,18 +169,12 @@ export const getReplyStats = async (options: { organizationId: string; range: Da
         ),
       )
       .$withCache(),
-    db
-      .select({ id: objectionSchema.id, title: objectionSchema.title })
-      .from(objectionSchema)
-      .where(eq(objectionSchema.organizationId, options.organizationId))
-      .$withCache(),
   ]);
 
   const handedOver = new Set(handoffs.map((handoff) => handoff.conversationId));
 
   const facts: ConversationFacts[] = ids.map((id) => ({
-    firstCategory: classifications.get(id)?.firstCategory ?? null,
-    objectionIds: classifications.get(id)?.objectionIds ?? [],
+    firstCategory: firstCategories.get(id) ?? null,
     demoSent: demos.get(id)?.demoSent ?? false,
     demoOpened: demos.get(id)?.demoOpened ?? false,
     demoCompleted: demos.get(id)?.demoCompleted ?? false,
@@ -200,8 +182,5 @@ export const getReplyStats = async (options: { organizationId: string; range: Da
     whatsapp: handedOver.has(id),
   }));
 
-  return {
-    stats: buildReplyStats(facts),
-    objectionTitles: new Map(objections.map((objection) => [objection.id, objection.title])),
-  };
+  return buildReplyStats(facts);
 };

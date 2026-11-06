@@ -8,7 +8,6 @@ export type ReplyCategory = (typeof replyClassificationSchema.$inferSelect)['cat
 export const CATEGORY_FROM_CLASSIFIER = {
   interessato: 'interested',
   domanda: 'question',
-  obiezione: 'objection',
   non_ora: 'not_now',
   non_interessato: 'not_interested',
   stop: 'stop',
@@ -28,18 +27,14 @@ export const FINAL_STATES = new Set<ConversationState>(['stop', 'paused']);
  * @param options.category The reply's category.
  * @param options.confidence How sure the classifier was, from 0 to 1.
  * @param options.threshold The confidence below which a person reviews the reply.
- * @param options.isNewObjection Whether the objection was just added to the library.
  * @param options.hasReferral Whether the lead pointed to someone else.
- * @param options.negativeReplyCount How many earlier replies were `not_interested`.
  * @returns The next conversation state.
  */
 export const decideState = (options: {
   category: ReplyCategory;
   confidence: number;
   threshold: number;
-  isNewObjection: boolean;
   hasReferral: boolean;
-  negativeReplyCount: number;
 }): ConversationState => {
   if (options.category === 'stop') {
     return 'stop';
@@ -49,12 +44,8 @@ export const decideState = (options: {
     return 'manual_review';
   }
 
-  // The first answer to an unseen objection is never sent before a person reads the angle
-  if (options.isNewObjection) {
-    return 'manual_review';
-  }
-
-  if (options.category === 'not_interested' && options.negativeReplyCount > 0) {
+  // A no, with or without a reason, closes the lead without an answer
+  if (options.category === 'not_interested') {
     return 'closed_not_interested';
   }
 
@@ -74,23 +65,16 @@ export const decideState = (options: {
   return 'classified';
 };
 
-/** Categories that get an answer. Stops, automatic replies and unknowns never do. */
+/** Categories that get an answer. Noes, stops, automatic replies and unknowns never do. */
 const ANSWERED_CATEGORIES = new Set<ReplyCategory>([
   'interested',
   'question',
-  'objection',
   'not_now',
-  'not_interested',
   'wrong_person',
 ]);
 
 /** The replies that put a lead in the GHL sales pipeline: the rest never reach it. */
-const PIPELINE_CATEGORIES = new Set<ReplyCategory>([
-  'interested',
-  'question',
-  'objection',
-  'not_now',
-]);
+const PIPELINE_CATEGORIES = new Set<ReplyCategory>(['interested', 'question', 'not_now']);
 
 /**
  * Tells whether a reply puts its lead in the GHL sales pipeline.
@@ -132,17 +116,3 @@ export const parseReturnDate = (value: string | null) => {
 
   return Number.isNaN(date.getTime()) ? null : date;
 };
-
-/**
- * Turns a free-text title into the key the classifier refers to an objection by.
- * @param title The objection title.
- * @returns A lowercase snake_case key.
- */
-export const toObjectionKey = (title: string) =>
-  title
-    .normalize('NFKD')
-    .replaceAll(/[̀-ͯ]/gu, '')
-    .toLowerCase()
-    .replaceAll(/[^a-z0-9]+/gu, '_')
-    .replaceAll(/^_+|_+$/gu, '')
-    .slice(0, 60) || 'obiezione';

@@ -3,11 +3,7 @@ import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/serve
 import { DatePicker } from '@/components/DatePicker';
 import { EmptyState } from '@/components/EmptyState';
 import { PageHeader } from '@/components/PageHeader';
-import {
-  CategoryStatsTable,
-  ObjectionStatsTable,
-  ReplyFunnel,
-} from '@/components/ReplyStatsTables';
+import { CategoryStatsTable, ReplyFunnel } from '@/components/ReplyStatsTables';
 import { StatCard } from '@/components/StatCard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -33,9 +29,9 @@ export default async function MetricsPage(props: {
   const thisMonth = currentMonthRange();
   const lastMonth = previousMonthRange();
 
-  const { stats, objectionTitles } = context
+  const stats = context
     ? await getReplyStats({ organizationId: context.organizationId, range })
-    : { stats: buildReplyStats([]), objectionTitles: new Map<string, string>() };
+    : buildReplyStats([]);
 
   const { funnel } = stats;
   const bookedRate = rateOf(funnel.booked, funnel.replied);
@@ -147,7 +143,6 @@ export default async function MetricsPage(props: {
           </div>
 
           <CategoryStatsTable rows={stats.byCategory} />
-          <ObjectionStatsTable rows={stats.byObjection} titles={objectionTitles} />
         </>
       )}
     </div>

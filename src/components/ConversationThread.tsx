@@ -13,7 +13,6 @@ import {
 } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
 import type { getConversationDetail } from '@/libs/Conversations';
-import { Link } from '@/libs/I18nNavigation';
 import type { ThreadItem as ThreadItemOf } from '@/utils/MailThread';
 import { buildThread, needsAction } from '@/utils/MailThread';
 
@@ -70,10 +69,7 @@ const InboundBody = (props: { entry: InboundEntry; isLatest: boolean }) => {
           <ul className="space-y-1 text-xs text-muted-foreground">
             {objection && (
               <li>
-                {t('detail_objection')}{' '}
-                <Link href="/dashboard/objections/" className="underline">
-                  {objection.title}
-                </Link>
+                {t('detail_objection')} {objection.title}
               </li>
             )}
             {classification.referral && (

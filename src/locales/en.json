@@ -72,7 +72,6 @@
     "nav_coverage": "Coverage",
     "nav_replies": "Replies",
     "nav_metrics": "Metrics",
-    "nav_objections": "Objections",
     "nav_automation": "Automation",
     "nav_tests": "Campaign tests",
     "nav_usage": "Usage",
@@ -680,28 +679,6 @@
     "button_save": "Change category",
     "error_save": "Could not change the category"
   },
-  "ObjectionForm": {
-    "badge_needs_review": "To review",
-    "label_title": "Title",
-    "error_title": "Enter a title",
-    "label_description": "Description",
-    "error_description": "Enter a description",
-    "label_examples": "Examples",
-    "hint_examples": "One phrase per line, as leads wrote it.",
-    "label_angle": "How to answer",
-    "hint_angle": "The angle every reply to this objection takes. The AI never invents another.",
-    "error_angle": "Enter how to answer",
-    "label_active": "Reviewed",
-    "hint_active": "Untick to flag the angle for review.",
-    "button_save": "Save",
-    "button_create": "Add objection",
-    "button_delete": "Delete",
-    "dialog_title": "Delete this objection?",
-    "dialog_description": "Past replies keep their category. The AI stops using this angle.",
-    "error_save": "Could not save the objection",
-    "label_closes": "Closes the conversation after the answer",
-    "hint_closes": "The lead gets the answer to this objection and nothing more: no demo, no follow-ups. Useful, for example, when the tone does not fit."
-  },
   "AutomationSettingsForm": {
     "label_enabled": "Automation on",
     "hint_enabled": "Main switch. When off nothing is sent, though replies are still read and classified and stop requests blocked.",
@@ -895,13 +872,6 @@
     "event_ghl_lead_failed": "Could not put the lead in the GHL setting pipeline",
     "event_ghl_demo_sent_saved": "Demo sent ticked on the GHL opportunity",
     "event_ghl_demo_sent_failed": "Could not tick Demo sent on GHL"
-  },
-  "ObjectionsPage": {
-    "title": "Objections",
-    "subtitle": "The library the AI picks reply angles from. It never invents new ones.",
-    "to_review": "{count, plural, one {# objection} other {# objections}} added by the AI to review",
-    "new_title": "New objection",
-    "new_description": "Add an objection and how to answer it."
   },
   "AutomationPage": {
     "title": "Automation",
@@ -1377,14 +1347,11 @@
     "source_email": "Replying to the email",
     "source_ghl": "From GHL (setter or WhatsApp)",
     "category_title": "By first reply category",
-    "objection_title": "By objection",
     "column_category": "Category",
-    "column_objection": "Objection",
     "column_leads": "Leads",
     "column_demo_sent": "Demos sent",
     "column_booked": "Calls booked",
-    "column_rate": "Call rate",
-    "objection_deleted": "Deleted objection"
+    "column_rate": "Call rate"
   },
   "CampaignTests": {
     "card_title": "Campaign test",

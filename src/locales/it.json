@@ -72,7 +72,6 @@
     "nav_coverage": "Copertura",
     "nav_replies": "Risposte",
     "nav_metrics": "Metriche",
-    "nav_objections": "Obiezioni",
     "nav_automation": "Automazione",
     "nav_tests": "Test campagne",
     "nav_usage": "Consumi",
@@ -680,28 +679,6 @@
     "button_save": "Cambia categoria",
     "error_save": "Impossibile cambiare la categoria"
   },
-  "ObjectionForm": {
-    "badge_needs_review": "Da revisionare",
-    "label_title": "Titolo",
-    "error_title": "Inserisci un titolo",
-    "label_description": "Descrizione",
-    "error_description": "Inserisci una descrizione",
-    "label_examples": "Esempi",
-    "hint_examples": "Una frase per riga, come l'hanno scritta i lead.",
-    "label_angle": "Come rispondere",
-    "hint_angle": "L'angolo che prende ogni risposta a questa obiezione. L'AI non ne inventa altri.",
-    "error_angle": "Inserisci come rispondere",
-    "label_active": "Revisionata",
-    "hint_active": "Togli la spunta per segnalare l'angolo da rivedere.",
-    "button_save": "Salva",
-    "button_create": "Aggiungi obiezione",
-    "button_delete": "Elimina",
-    "dialog_title": "Eliminare questa obiezione?",
-    "dialog_description": "Le risposte passate mantengono la categoria. L'AI smette di usare questo angolo.",
-    "error_save": "Impossibile salvare l'obiezione",
-    "label_closes": "Dopo la risposta chiude la conversazione",
-    "hint_closes": "Il lead riceve la risposta a questa obiezione e poi più nulla: niente demo né follow-up. Utile, per esempio, quando il tono non è adatto."
-  },
   "AutomationSettingsForm": {
     "label_enabled": "Automazione attiva",
     "hint_enabled": "Interruttore generale. Se è spento non parte nessun invio, ma le risposte vengono comunque lette e classificate e le richieste di stop bloccate.",
@@ -895,13 +872,6 @@
     "event_ghl_lead_failed": "Inserimento nella Setting Pipeline su GHL non riuscito",
     "event_ghl_demo_sent_saved": "Demo inviata segnata sull'opportunity GHL",
     "event_ghl_demo_sent_failed": "Spunta di Demo inviata su GHL non riuscita"
-  },
-  "ObjectionsPage": {
-    "title": "Obiezioni",
-    "subtitle": "La libreria da cui l'AI sceglie l'angolo delle risposte. Non ne inventa di nuovi.",
-    "to_review": "{count, plural, one {# obiezione aggiunta} other {# obiezioni aggiunte}} dall'AI da revisionare",
-    "new_title": "Nuova obiezione",
-    "new_description": "Aggiungi un'obiezione e come rispondere."
   },
   "AutomationPage": {
     "title": "Automazione",
@@ -1377,14 +1347,11 @@
     "source_email": "Rispondendo all’email",
     "source_ghl": "Da GHL (setter o WhatsApp)",
     "category_title": "Per categoria della prima risposta",
-    "objection_title": "Per obiezione",
     "column_category": "Categoria",
-    "column_objection": "Obiezione",
     "column_leads": "Lead",
     "column_demo_sent": "Demo inviate",
     "column_booked": "Call prenotate",
-    "column_rate": "Tasso call",
-    "objection_deleted": "Obiezione eliminata"
+    "column_rate": "Tasso call"
   },
   "CampaignTests": {
     "card_title": "Test della campagna",

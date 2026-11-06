@@ -1,25 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { objectionSchema } from '@/models/Schema';
-import { buildObjectionLibrary, buildReplyPrompt } from './ReplyClassifier';
+import { buildReplyPrompt } from './ReplyClassifier';
 import type { LeadContext } from './ReplyPrompt';
-
-const objection = (
-  overrides: Partial<typeof objectionSchema.$inferSelect> = {},
-): typeof objectionSchema.$inferSelect => ({
-  id: 'objection-1',
-  organizationId: 'organization-1',
-  key: 'ho_gia_un_sito',
-  title: 'Ho già un sito',
-  description: 'Il lead ha già un sito e non vede il motivo di rifarlo.',
-  examples: ['abbiamo già il sito', 'il sito ce l’abbiamo'],
-  responseAngle: 'Il punto non è il sito ma chi risponde ai contatti.',
-  status: 'active',
-  closesConversation: false,
-  sourceMessageId: null,
-  updatedAt: new Date(),
-  createdAt: new Date(),
-  ...overrides,
-});
 
 const lead: LeadContext = {
   company: 'Pizzeria Da Mario',
@@ -33,19 +14,6 @@ const lead: LeadContext = {
 };
 
 describe('ReplyClassifier', () => {
-  describe('Objection library', () => {
-    it('lists each objection by key with its examples', () => {
-      const library = buildObjectionLibrary([objection()]);
-
-      expect(library).toContain('key: ho_gia_un_sito');
-      expect(library).toContain('examples: abbiamo già il sito | il sito ce l’abbiamo');
-    });
-
-    it('says when the library is empty', () => {
-      expect(buildObjectionLibrary([])).toContain('(empty)');
-    });
-  });
-
   describe('Reply prompt', () => {
     const prompt = buildReplyPrompt({
       lead,

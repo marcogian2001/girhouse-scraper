@@ -8,13 +8,16 @@ export type ClassifiedReplyStatus = (typeof REPLY_STATUSES)[number];
 /** Where a lead stands as the replies list shows it: pending until the reply is classified. */
 export type ReplyStatus = ClassifiedReplyStatus | 'pending';
 
-/** Positive or open replies, and the ones the AI could not place, count as interested. */
+/**
+ * Positive or open replies, and the ones the AI could not place, count as interested.
+ * Objections, a category the classifier no longer gives, count as a no.
+ */
 const STATUS_FROM_CATEGORY: Record<ReplyCategory, ClassifiedReplyStatus> = {
   interested: 'interested',
   question: 'interested',
-  objection: 'interested',
   not_now: 'interested',
   other: 'interested',
+  objection: 'not_interested',
   not_interested: 'not_interested',
   stop: 'not_interested',
   out_of_office: 'not_interested',

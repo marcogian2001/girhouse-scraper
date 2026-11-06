@@ -909,13 +909,7 @@ export const overrideClassification = async (options: {
     category: options.category,
     confidence: 1,
     threshold: 0,
-    isNewObjection: false,
     hasReferral: Boolean(classification.referral),
-    // Replies before this one only
-    negativeReplyCount:
-      conversation.negativeReplyCount +
-      negativeDelta -
-      Number(options.category === 'not_interested'),
   });
 
   await (state === 'stop'

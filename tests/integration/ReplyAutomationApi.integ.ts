@@ -14,9 +14,6 @@ test.describe('Reply automation API', () => {
       },
       { name: 'approve a reply', method: 'POST', path: `/api/replies/outbound/${ID}/approve` },
       { name: 'discard a reply', method: 'POST', path: `/api/replies/outbound/${ID}/discard` },
-      { name: 'add an objection', method: 'POST', path: '/api/objections' },
-      { name: 'edit an objection', method: 'PATCH', path: `/api/objections/${ID}` },
-      { name: 'delete an objection', method: 'DELETE', path: `/api/objections/${ID}` },
       { name: 'save automation settings', method: 'PUT', path: '/api/automation/settings' },
     ] as const;
 
@@ -24,7 +21,7 @@ test.describe('Reply automation API', () => {
       test(`refuses to ${request.name} without a session`, async ({ page }) => {
         const response = await page.request.fetch(request.path, {
           method: request.method,
-          data: request.method === 'GET' || request.method === 'DELETE' ? undefined : {},
+          data: request.method === 'GET' ? undefined : {},
           failOnStatusCode: false,
         });
 

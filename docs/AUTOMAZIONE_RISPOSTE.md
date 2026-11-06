@@ -533,7 +533,7 @@ Da "Cosa cambiamo: target, offerta, funnel e vendita". Sostituisce A e B per tut
   - Niente più differenza tra campagne del bot e dei venditori: ogni risposta, di ogni campagna, viene classificata e riceve il suggerimento. Sono spariti il riquadro "Campagne gestite dal bot", la casella al lancio della campagna e il filtro "Gestione" in Risposte; la colonna `bot_managed` resta nel DB.
   - Una risposta mandata a mano da Instantly non mette più in pausa la conversazione: segna solo "Risposta inviata" con la sua data (evento `reply_sent`, `source: instantly_manual`). Le 47 conversazioni già in pausa ricevono il suggerimento alla prossima risposta del lead.
   - Le richieste di stop restano bloccate da sole: blocklist Instantly, soppressione e DND su GHL.
-- **Stati in Risposte (4/11):** solo "Interessato" e "Non interessato" (più "In elaborazione" finché la risposta non è classificata), presi dalla categoria dell'ultima risposta (`src/utils/ReplyStatus.ts`). Interessato: interessato, domanda, obiezione, non ora e "altro" (da guardare). Non interessato: non interessato, stop, fuori ufficio, risposta automatica, persona sbagliata. Le categorie dettagliate restano per scrivere il suggerimento.
+- **Stati in Risposte (4/11):** solo "Interessato" e "Non interessato" (più "In elaborazione" finché la risposta non è classificata), presi dalla categoria dell'ultima risposta (`src/utils/ReplyStatus.ts`). Interessato: interessato, domanda, non ora e "altro" (da guardare). Non interessato: obiezione (categoria storica), non interessato, stop, fuori ufficio, risposta automatica, persona sbagliata. Le categorie dettagliate restano per scrivere il suggerimento.
 - **Calendario della demo (4/11):** il titolare ha rifatto i calendari su GHL e il vecchio `GHL_CALENDAR_ID` (`V8lrPKIjN2AJ5RxHrOYN`) è cancellato: gli orari della demo davano errore 500. Il calendario nuovo è "Call Demo - 30 min", `whN4d9cWfVthRdofYTh7` (round robin, un utente, 30 minuti, prenotabile fino a 5 giorni avanti). Aggiornato nel `.env` locale; **su Vercel va cambiato a mano** e poi rifatto il deploy. Il 6/11 su Vercel c'era ancora il vecchio ID: un lead ha visto "Il calendario non è raggiungibile" e i log davano `The calendar is deleted.`. Ora `/api/demo/[slug]/slots` registra l'errore di GHL e risponde 502. **Dal 6/11 il calendario non dipende più dalla variabile:** il codice legge i calendari attivi della location (`getBookingCalendar` in `src/services/GoHighLevel.ts`, ricontrollati ogni 10 minuti) e usa `GHL_CALENDAR_ID` solo se esiste ancora, altrimenti l'unico calendario attivo. Ogni contatto che prenota riceve Fonte `mail` e Funnel `cold-email` (campi `contact.fonte` e `contact.funnel`, come i funnel di girhouse.com).
 - **Da fare a parte:** le email di risposta e il bot GHL parlano ancora della vecchia offerta (`buildOfferBrief` in `src/utils/Offer.ts`: landing, "follow-up", {slots} attività al mese).
 
@@ -567,7 +567,7 @@ Il titolare ha sostituito le pipeline di GHL: per i lead ora c'è solo **📞 Se
   - `GHL_PIPELINE_ID=jlmfevdaXmmF2rME99nM`;
   - `GHL_PIPELINE_NEW_LEAD_STAGE_ID=0154c664-7f0f-4881-b5d1-0952dbfea1c4` (Nuovo Lead);
   - `GHL_PIPELINE_STAGE_ID=32e315b7-4372-4185-b600-39cd9edc2970` (Call schedulata).
-- **Job `ghl_lead`** (`src/libs/GhlLead.ts`, migrazione `0048`). Parte dopo la classificazione, solo per le risposte interessato, domanda, obiezione o non ora (`entersPipeline` in `src/utils/ReplyRouting.ts`). Vale per le campagne del bot e per quelle dei venditori. Il job:
+- **Job `ghl_lead`** (`src/libs/GhlLead.ts`, migrazione `0048`). Parte dopo la classificazione, solo per le risposte interessato, domanda o non ora (`entersPipeline` in `src/utils/ReplyRouting.ts`). Vale per le campagne del bot e per quelle dei venditori. Il job:
   - trova o crea il contatto GHL;
   - se il contatto ha già un'opportunità nella pipeline (per esempio dal workflow "Risposta Positiva"), le mette la fonte `email`, senza cambiarle fase né proprietario;
   - altrimenti la crea in Nuovo Lead con fonte `email`.
@@ -592,6 +592,12 @@ Il titolare ha sostituito le pipeline di GHL: per i lead ora c'è solo **📞 Se
 - [?] **Stop della sequenza con "meeting booked":** Instantly documenta che il lead "può" essere segnato come completato. Controllare sul primo lead prenotato da un setter.
 
 ---
+
+### Obiezioni tolte (6/11)
+- Il classificatore non usa più `obiezione`: un no con un motivo (ha già il sito, costa troppo, non ha tempo) è `non_interessato`. Niente più libreria nel prompt, pagina Obiezioni, API e tabella "Per obiezione" nelle metriche. Tabella `objection` e categoria restano nel DB per lo storico.
+- Le vecchie risposte `objection` contano come "Non interessato", non entrano nella pipeline GHL, non ricevono risposta né follow-up.
+- Un `non_interessato` chiude subito la conversazione (`closed_not_interested`) senza risposta: la regola "una email, al secondo no si chiude" e le versioni A/B non si applicano più alle nuove risposte. Se la confidenza è bassa va in revisione manuale, senza bozza.
+- I lead con obiezione già entrati nella Setting Pipeline GHL restano lì.
 
 ## 6. Libreria obiezioni
 

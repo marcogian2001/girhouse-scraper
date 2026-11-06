@@ -1,20 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import {
-  decideState,
-  entersPipeline,
-  needsAnswer,
-  parseReturnDate,
-  toObjectionKey,
-} from './ReplyRouting';
+import { decideState, entersPipeline, needsAnswer, parseReturnDate } from './ReplyRouting';
 
 const decision = (overrides: Partial<Parameters<typeof decideState>[0]> = {}) =>
   decideState({
     category: 'interested',
     confidence: 0.9,
     threshold: 0.75,
-    isNewObjection: false,
     hasReferral: false,
-    negativeReplyCount: 0,
     ...overrides,
   });
 
@@ -32,18 +24,12 @@ describe('ReplyRouting', () => {
       expect(decision({ category: 'other' })).toBe('manual_review');
     });
 
-    it('sends a new objection to manual review', () => {
-      expect(decision({ category: 'objection', isNewObjection: true })).toBe('manual_review');
+    it('closes the lead on a first negative reply', () => {
+      expect(decision({ category: 'not_interested' })).toBe('closed_not_interested');
     });
 
-    it('keeps a first negative reply open for one more email', () => {
-      expect(decision({ category: 'not_interested' })).toBe('classified');
-    });
-
-    it('closes the lead on a second negative reply', () => {
-      expect(decision({ category: 'not_interested', negativeReplyCount: 1 })).toBe(
-        'closed_not_interested',
-      );
+    it('sends a low-confidence negative reply to manual review', () => {
+      expect(decision({ category: 'not_interested', confidence: 0.5 })).toBe('manual_review');
     });
 
     it('marks an out-of-office reply', () => {
@@ -76,7 +62,7 @@ describe('ReplyRouting', () => {
 
     it('drafts an answer for a reply in manual review', () => {
       expect(
-        needsAnswer({ category: 'objection', state: 'manual_review', hasReferral: false }),
+        needsAnswer({ category: 'question', state: 'manual_review', hasReferral: false }),
       ).toBeTruthy();
     });
 
@@ -90,13 +76,12 @@ describe('ReplyRouting', () => {
       ).toBeFalsy();
     });
 
-    it('does not answer a second no', () => {
+    it('never answers a no or an old objection, even in manual review', () => {
       expect(
-        needsAnswer({
-          category: 'not_interested',
-          state: 'closed_not_interested',
-          hasReferral: false,
-        }),
+        needsAnswer({ category: 'not_interested', state: 'manual_review', hasReferral: false }),
+      ).toBeFalsy();
+      expect(
+        needsAnswer({ category: 'objection', state: 'manual_review', hasReferral: false }),
       ).toBeFalsy();
     });
 
@@ -114,11 +99,11 @@ describe('ReplyRouting', () => {
     it('puts positive and open replies in the pipeline', () => {
       expect(entersPipeline('interested')).toBeTruthy();
       expect(entersPipeline('question')).toBeTruthy();
-      expect(entersPipeline('objection')).toBeTruthy();
       expect(entersPipeline('not_now')).toBeTruthy();
     });
 
     it('keeps negative and automatic replies out of the pipeline', () => {
+      expect(entersPipeline('objection')).toBeFalsy();
       expect(entersPipeline('not_interested')).toBeFalsy();
       expect(entersPipeline('stop')).toBeFalsy();
       expect(entersPipeline('auto_reply')).toBeFalsy();
@@ -134,16 +119,6 @@ describe('ReplyRouting', () => {
     it('rejects other formats', () => {
       expect(parseReturnDate('20/10/2026')).toBeNull();
       expect(parseReturnDate(null)).toBeNull();
-    });
-  });
-
-  describe('Objection key', () => {
-    it('builds a snake_case key without accents', () => {
-      expect(toObjectionKey('Ho già un sito!')).toBe('ho_gia_un_sito');
-    });
-
-    it('falls back when nothing is left', () => {
-      expect(toObjectionKey('!!!')).toBe('obiezione');
     });
   });
 });

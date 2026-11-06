@@ -51,17 +51,6 @@ export const AutomationSettingsValidation = z
 
 export type AutomationSettingsInput = z.infer<typeof AutomationSettingsValidation>;
 
-export const ObjectionValidation = z.object({
-  title: z.string().trim().min(1).max(120),
-  description: z.string().trim().min(1).max(1000),
-  examples: z.array(z.string().trim().min(1).max(300)).max(20),
-  responseAngle: z.string().trim().min(1).max(2000),
-  status: z.enum(['active', 'needs_review']),
-  closesConversation: z.boolean().default(false),
-});
-
-export type ObjectionInput = z.infer<typeof ObjectionValidation>;
-
 export const ReplyImportValidation = z.object({
   leadEmail: z.email(),
 });
@@ -69,7 +58,6 @@ export const ReplyImportValidation = z.object({
 export const CATEGORY_VALUES = [
   'interested',
   'question',
-  'objection',
   'not_now',
   'not_interested',
   'stop',
@@ -82,22 +70,6 @@ export const CATEGORY_VALUES = [
 export const ClassificationOverrideValidation = z.object({
   category: z.enum(CATEGORY_VALUES),
 });
-
-/** The objection form, with examples typed one per line. */
-export const ObjectionFormValidation = ObjectionValidation.omit({ examples: true }).extend({
-  examplesText: z.string().max(6000),
-});
-
-/**
- * Splits the examples typed in the objection form into a list.
- * @param text One example per line.
- * @returns The non-empty examples.
- */
-export const toObjectionExamples = (text: string) =>
-  text
-    .split('\n')
-    .map((line) => line.trim())
-    .filter(Boolean);
 
 // A send time as a date field gives it, in Italian time; null sends as soon as possible
 const scheduledForField = z

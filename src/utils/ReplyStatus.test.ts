@@ -9,7 +9,11 @@ describe('ReplyStatus', () => {
     });
 
     it('shows an open reply as interested', () => {
-      expect(toReplyStatus('demo_sent', 'objection')).toBe('interested');
+      expect(toReplyStatus('demo_sent', 'question')).toBe('interested');
+    });
+
+    it('shows an objection as not interested', () => {
+      expect(toReplyStatus('classified', 'objection')).toBe('not_interested');
     });
 
     it('shows an unclassifiable reply as interested', () => {
@@ -33,13 +37,20 @@ describe('ReplyStatus', () => {
     it('matches the positive and open categories for interested', () => {
       expect(
         categoriesShowing({ status: 'interested', categories: replyCategoryEnum.enumValues }),
-      ).toStrictEqual(['interested', 'question', 'objection', 'not_now', 'other']);
+      ).toStrictEqual(['interested', 'question', 'not_now', 'other']);
     });
 
     it('matches the rest for not interested', () => {
       expect(
         categoriesShowing({ status: 'not_interested', categories: replyCategoryEnum.enumValues }),
-      ).toStrictEqual(['not_interested', 'stop', 'out_of_office', 'auto_reply', 'wrong_person']);
+      ).toStrictEqual([
+        'objection',
+        'not_interested',
+        'stop',
+        'out_of_office',
+        'auto_reply',
+        'wrong_person',
+      ]);
     });
   });
 });
