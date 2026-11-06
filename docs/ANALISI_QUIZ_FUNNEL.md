@@ -486,3 +486,10 @@ Questa sezione prevale su tutte le precedenti per percorso, risultato e dati. Ni
 - **Prenotazione**: quando compare la schermata di conferma, `prenota.js?v=15` manda una visita della pagina di prenotazione con `x: conferma` (non per i browser automatici e i link con `?chiusura=`). Step con indirizzo `https://girhouse.com/fnl/f1/prenota/?conferma=1` o `…/fnl/f2/prenota/?conferma=1`.
 - **Conteggio** (`gh_fv_matcher` in `visite.php`): gli step con indirizzo contano le visite con `x: conferma` se l'indirizzo ha `?conferma`, altrimenti solo quelle senza, così il checkout non conta più chi vede la pagina di grazie. La conversione della Conferma è sulle persone dello step prima (checkout o prenotazione). Provato con visite di prova sul server, poi cancellate.
 - **Da sapere**: le conferme si contano da adesso; le pagine di grazie viste prima di oggi sono rimaste tra le visite del checkout.
+
+## Checkout: 47 € senza scadenza, timer solo come conto alla rovescia (6 novembre 2026)
+
+- **Prima**: dopo 10 minuti (più uno di margine) il primo mese passava da 47 a 97 € e il riquadro diceva "L'offerta riservata è scaduta".
+- **Ora**: i primi 10 minuti restano "Attenzione, questo prezzo è riservato ancora per te" con il conto alla rovescia; allo zero il riquadro diventa "**Questa offerta è riservata** solo per questa pagina" (il pallino rosso continua a lampeggiare) e il prezzo resta 47 €. Chi riapre il checkout più tardi vede subito questa frase.
+- **Codice**: `gh_funnels_offer_open()` in `checkout.php` vale sempre vero, così pagamento, riepilogo, riga legale ed eventi Meta usano 47 €; il conto alla rovescia usa `gh_funnels_offer_counting()`. Il link da 149 € non cambia (nessun riquadro). In `attiva.js` restano `ghAttivaExpire` e il controllo del prezzo cambiato, ora mai usati.
+- **Provato**: prima apertura (timer, 47 €), stessa pagina dopo 11 minuti (frase nuova, 47 € ovunque, importo del pagamento 4700) e ritorno dopo 15 minuti con il cookie del timer scaduto (frase nuova, 47 €). Copia di prima in `~/backups-girhouse/20261106-offerta-47/`.
