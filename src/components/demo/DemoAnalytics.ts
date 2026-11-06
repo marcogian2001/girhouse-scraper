@@ -26,6 +26,24 @@ export const startDemoAnalytics = (options: { slug: string; company: string }) =
 };
 
 /**
+ * Adds this visit's PostHog ids to a link to the checkout, so its replay continues the
+ * demo's even when the browser drops the cookie shared across girhouse.com.
+ * @param url The link.
+ * @returns The link with `ph_did` and `ph_sid`, or unchanged before `startDemoAnalytics`.
+ */
+export const linkDemoSession = (url: string) => {
+  if (!posthog.__loaded) {
+    return url;
+  }
+
+  const link = new URL(url);
+  link.searchParams.set('ph_did', posthog.get_distinct_id());
+  link.searchParams.set('ph_sid', posthog.get_session_id());
+
+  return link.toString();
+};
+
+/**
  * Records one moment of the demo in PostHog, for funnels and drop-off.
  * A no-op until `startDemoAnalytics` ran.
  * @param event The event name, e.g. `demo_scene`.

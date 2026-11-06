@@ -3,7 +3,7 @@
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { AppConfig } from '@/utils/AppConfig';
-import { captureDemoEvent } from '../DemoAnalytics';
+import { captureDemoEvent, linkDemoSession } from '../DemoAnalytics';
 import type { BookingPhase } from '../steps/BookingStep';
 import { BookingStep } from '../steps/BookingStep';
 import type { VideoClosing } from './VideoScript';
@@ -54,10 +54,13 @@ export const VideoMainAction = (props: {
       href={`${AppConfig.checkoutUrl}?funnel=demo&demo=${props.slug}`}
       target="_blank"
       rel="noopener noreferrer"
-      onClick={() => {
+      onClick={(event) => {
         if (props.track) {
           captureDemoEvent('demo_purchase_click', { closing: props.closing });
         }
+
+        // Read on the click, since PostHog starts a new session after half an hour idle
+        event.currentTarget.href = linkDemoSession(event.currentTarget.href);
       }}
       className={MAIN_BUTTON}
     >
