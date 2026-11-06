@@ -22,7 +22,8 @@ export const startDemoAnalytics = (options: { slug: string; company: string }) =
     person_profiles: 'identified_only',
   });
   posthog.identify(options.slug, { company: options.company });
-  posthog.register({ demo_slug: options.slug, company: options.company });
+  // `funnel` matches the girhouse.com funnel pages (f1, f2) sharing this project
+  posthog.register({ funnel: 'demo', demo_slug: options.slug, company: options.company });
 };
 
 /**
