@@ -1172,6 +1172,7 @@
     "vsl_start": "Watch the demo",
     "vsl_start_hint": "Turn the sound up: it takes about {minutes} minutes and plays on its own",
     "vsl_pause": "Pause",
+    "resume_start": "Pick up where you left off",
     "vsl_resume": "Resume",
     "vsl_paused": "Paused",
     "vsl_skip": "Skip this part",

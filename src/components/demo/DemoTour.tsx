@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import type { DemoSnapshot } from '@/models/Schema';
 import { HEARTBEAT_SECONDS } from '@/utils/DemoStats';
 import { captureDemoEvent, startDemoAnalytics } from './DemoAnalytics';
+import { saveDemoProgress, useResumeScene } from './DemoProgress';
 import { sendDemoEvent } from './DemoSession';
 import { GigiBar } from './GigiBar';
 import { GigiVideoScene } from './GigiVideoScene';
@@ -155,6 +156,11 @@ export const DemoTour = (props: DemoTourProps) => {
   );
   const [bookingPhase, setBookingPhase] = useState<BookingPhase>('phone');
   const [finishedLine, setFinishedLine] = useState<string | null>(null);
+  const resumeScene = useResumeScene({
+    slug: props.slug,
+    count: scenes.length,
+    initialStep: props.initialStep,
+  });
   const scene = scenes[index] ?? scenes[0];
 
   const { company } = props.data;
@@ -205,6 +211,7 @@ export const DemoTour = (props: DemoTourProps) => {
     }
 
     setIndex(next);
+    saveDemoProgress({ slug: props.slug, scene: next, count: scenes.length });
 
     // Within a step the scene's own anchors scroll to what it reveals; from the price
     // video to the price the page changes altogether, so it starts from the top too
@@ -260,9 +267,9 @@ export const DemoTour = (props: DemoTourProps) => {
             </h1>
           }
           segments={segments}
-          ctaLabel={t('intro_cta')}
+          ctaLabel={t(resumeScene ? 'resume_start' : 'intro_cta')}
           onContinue={() => {
-            goTo(1);
+            goTo(resumeScene ?? 1);
           }}
         />
       </>

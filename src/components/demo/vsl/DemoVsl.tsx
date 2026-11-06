@@ -15,6 +15,7 @@ import {
   VSL_SOUNDS,
 } from '@/utils/VslMusic';
 import { captureDemoEvent } from '../DemoAnalytics';
+import { saveDemoProgress, useResumeScene } from '../DemoProgress';
 import { sendDemoEvent } from '../DemoSession';
 import type { DemoTourProps } from '../DemoTour';
 import { DemoTracking } from '../DemoTour';
@@ -731,6 +732,33 @@ const VslSceneVisual = (options: {
 };
 
 /**
+ * The tap that starts the demo, or resumes it where this browser stopped last time.
+ * @param props Component props.
+ * @param props.label The start label of this version.
+ * @param props.isResume Whether the tap picks up a saved scene.
+ * @param props.onStart Starts the demo.
+ * @returns The button.
+ */
+const VslStartButton = (props: {
+  label: (typeof START_COPY)[keyof typeof START_COPY]['start'];
+  isResume: boolean;
+  onStart: () => void;
+}) => {
+  const t = useTranslations('DemoPage');
+
+  return (
+    <button
+      type="button"
+      onClick={props.onStart}
+      className="flex animate-pop items-center gap-2 rounded-full bg-(--demo-primary) px-7 py-4 text-lg font-semibold whitespace-nowrap text-(--demo-on-primary) shadow-2xl"
+    >
+      <Play className="size-6 fill-current" />
+      {t(props.isResume ? 'resume_start' : props.label)}
+    </button>
+  );
+};
+
+/**
  * Version B of the demo: a video sales letter. One tap starts it, then Gigi narrates every
  * scene with his own voice and the demo moves on by itself when he is done and the scene
  * has played. One audio element carries every line, so a phone that let it play once lets
@@ -756,6 +784,11 @@ export const DemoVsl = (
   const [isTalking, setIsTalking] = useState(false);
   const [bookingPhase, setBookingPhase] = useState<BookingPhase>('phone');
   const [isCallOpen, setIsCallOpen] = useState(false);
+  const resumeScene = useResumeScene({
+    slug: props.slug,
+    count: scenes.length,
+    initialStep: props.initialStep,
+  });
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const musicRef = useRef(createSoundtrack());
   // The sounds the scene on screen still has to play
@@ -928,6 +961,7 @@ export const DemoVsl = (
     }
 
     setIndex(next);
+    saveDemoProgress({ slug: props.slug, scene: next, count: scenes.length });
     enterScene(target);
 
     if (target.step !== scene?.step || target.kind !== scene.kind) {
@@ -1040,6 +1074,7 @@ export const DemoVsl = (
       }
 
       setIndex(last);
+      saveDemoProgress({ slug: props.slug, scene: last, count: scenes.length });
       enterScene(target);
     }
 
@@ -1104,25 +1139,34 @@ export const DemoVsl = (
                 />
                 <VolumeHint isShown={Boolean(closing)} />
               </div>
-              <button
-                type="button"
-                onClick={() => {
+              <VslStartButton
+                label={startCopy.start}
+                isResume={resumeScene !== null}
+                onStart={() => {
+                  const start = resumeScene ?? index;
+                  const startScene = scenes[start] ?? scene;
+
                   setIsStarted(true);
+                  setIndex(start);
 
                   if (props.track) {
-                    captureDemoEvent('demo_vsl_start', { scene: index });
+                    captureDemoEvent('demo_vsl_start', { scene: start, resumed: start !== index });
+
+                    if (start !== index && startScene.step > 0) {
+                      sendDemoEvent(props.slug, { type: 'step', step: startScene.step });
+                    }
                   }
 
                   // Played from the tap itself, which is what lets the voice and the music be heard
                   musicRef.current.start();
-                  enterScene(scene);
-                  void say({ index, line, advance: goTo });
+                  enterScene(startScene);
+                  void say({
+                    index: start,
+                    line: lineOfScene({ scene: startScene, bookingPhase, isCallOpen }),
+                    advance: goTo,
+                  });
                 }}
-                className="flex animate-pop items-center gap-2 rounded-full bg-(--demo-primary) px-7 py-4 text-lg font-semibold whitespace-nowrap text-(--demo-on-primary) shadow-2xl"
-              >
-                <Play className="size-6 fill-current" />
-                {t(startCopy.start)}
-              </button>
+              />
             </div>
           )}
 
