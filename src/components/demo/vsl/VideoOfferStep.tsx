@@ -54,7 +54,7 @@ const priceStage = (options: { part: number; spoken: { text: string; typed: numb
  * @param props.price The monthly price.
  * @param props.action The main button, under what is included.
  * @param props.callLink The way to the call, under the guarantee, when buying is on offer too.
- * @returns The offer, made to fit one phone screen.
+ * @returns The offer, made to fit one screen, a phone's or a laptop's.
  */
 export const VideoOfferStep = (props: {
   part: number;
@@ -72,84 +72,95 @@ export const VideoOfferStep = (props: {
   });
 
   return (
-    <div className="mx-auto max-w-xl rounded-[1.75rem] border-2 border-[#4a9b6b] bg-gradient-to-b from-[#eef7e8] via-white to-white px-4 py-3 text-center shadow-xl sm:p-6">
-      <h2 className="text-xl font-black tracking-tight text-neutral-950 sm:text-4xl">
-        {t('video_offer_title')}
-      </h2>
-      <Image
-        src="/demo/sistema-girhouse.webp"
-        alt={t('video_offer_mockup_alt')}
-        width={1800}
-        height={972}
-        sizes="(min-width: 640px) 576px, 100vw"
-        priority
-        className="mx-auto mt-1 h-auto max-h-[17svh] w-auto object-contain sm:max-h-64"
-      />
-
-      <p className={`text-sm font-bold sm:mt-3 sm:text-base ${GREEN}`}>{t('video_offer_month')}</p>
-      {/* 97 is struck through and steps aside, then 47 takes the stage next to it */}
-      <div className="flex h-12 items-center justify-center gap-3 sm:h-24">
-        <span
-          className={`relative leading-none font-black tracking-tight tabular-nums transition-all duration-500 ${stage >= 2 ? 'text-3xl text-neutral-400 sm:text-4xl' : `text-6xl sm:text-8xl ${GREEN}`}`}
-        >
-          {props.price} €
-          {stage >= 1 && (
-            <span className="absolute inset-x-[-6%] top-1/2 h-[0.09em] origin-left animate-strike rounded-full bg-red-600" />
-          )}
-        </span>
-        {stage >= 2 && (
-          <span
-            className={`animate-pop text-6xl leading-none font-black tracking-tight tabular-nums sm:text-8xl ${GREEN}`}
-          >
-            {VIDEO_FIRST_MONTH_PRICE} €
+    // On a phone one column, the guarantee under the button; from `lg` two columns, so
+    // the whole offer fits a laptop screen above Gigi's bar. The two wrappers dissolve on
+    // a phone (`contents`) and `order` puts the guarantee and the call link back at the end
+    <div className="mx-auto flex max-w-xl flex-col rounded-[1.75rem] border-2 border-[#4a9b6b] bg-gradient-to-b from-[#eef7e8] via-white to-white px-4 py-3 text-center shadow-xl sm:p-6 lg:grid lg:max-w-6xl lg:grid-cols-[1.15fr_1fr] lg:items-center lg:gap-x-10 lg:px-10 lg:py-[min(2rem,3svh)]">
+      <div className="contents lg:flex lg:flex-col lg:items-center">
+        <h2 className="text-xl font-black tracking-tight text-neutral-950 sm:text-4xl lg:text-[min(2.75rem,6svh)]">
+          {t('video_offer_title')}
+        </h2>
+        <Image
+          src="/demo/sistema-girhouse.webp"
+          alt={t('video_offer_mockup_alt')}
+          width={1800}
+          height={972}
+          sizes="(min-width: 1024px) 560px, (min-width: 640px) 576px, 100vw"
+          priority
+          className="mx-auto mt-1 h-auto max-h-[17svh] w-auto object-contain sm:max-h-64 lg:mt-3 lg:max-h-[min(22rem,38svh)]"
+        />
+        <p className="order-1 mt-3 flex items-center justify-center gap-4 text-left sm:gap-5 lg:order-none lg:mt-[min(1.5rem,3svh)]">
+          <GuaranteeSeal className="size-14 shrink-0 drop-shadow-md sm:size-24 lg:size-[min(6rem,12svh)]" />
+          <span className="text-base leading-tight font-black text-neutral-900 sm:text-lg">
+            {t('video_offer_guarantee_title')}
           </span>
-        )}
+        </p>
       </div>
-      <p className="text-sm font-semibold text-neutral-900 sm:mt-2 sm:text-base">
-        {t('video_offer_label')}
-      </p>
-      <p className="mx-auto mt-1.5 w-fit max-w-full rounded-full bg-emerald-100 px-3 py-1 text-[13px] whitespace-nowrap text-emerald-900 sm:text-base">
-        {t.rich('video_offer_saving', {
-          amount: format.number(firstYearSaving(props.price).saving, { useGrouping: 'always' }),
-          b: (chunks) => (
-            <span className="font-black underline decoration-2 underline-offset-2">{chunks}</span>
-          ),
-        })}
-      </p>
 
-      {props.part >= 2 && (
-        <section className="mt-1.5 rounded-2xl border-2 border-[#d6eadd] bg-white px-3 py-1.5 text-left sm:mt-4 sm:p-4">
-          <h3 className="mb-0.5 text-[15px] font-black text-neutral-950 sm:mb-2 sm:text-lg">
-            {t('video_offer_included_title')}
-          </h3>
-          <div className="grid grid-cols-2 gap-x-3">
-            {INCLUDED.map((column) => (
-              <ul key={column[0]} className="space-y-0.5 sm:space-y-1.5">
-                {column.slice(0, included).map((item) => (
-                  <li
-                    key={item}
-                    className="flex animate-in items-center gap-2 text-sm font-bold whitespace-nowrap text-neutral-900 fade-in slide-in-from-bottom-2 sm:text-base"
-                  >
-                    <Check className={`size-4 shrink-0 stroke-3 ${GREEN}`} />
-                    {t(`video_included_${item}`)}
-                  </li>
-                ))}
-              </ul>
-            ))}
-          </div>
-        </section>
-      )}
+      <div className="contents lg:flex lg:flex-col">
+        <p className={`text-sm font-bold sm:mt-3 sm:text-base lg:mt-0 ${GREEN}`}>
+          {t('video_offer_month')}
+        </p>
+        {/* 97 is struck through and steps aside, then 47 takes the stage next to it */}
+        <div className="flex h-12 items-center justify-center gap-3 sm:h-24 lg:h-[min(6rem,12svh)]">
+          <span
+            className={`relative leading-none font-black tracking-tight tabular-nums transition-all duration-500 ${stage >= 2 ? 'text-3xl text-neutral-400 sm:text-4xl' : `text-6xl sm:text-8xl lg:text-[min(6rem,12svh)] ${GREEN}`}`}
+          >
+            {props.price} €
+            {stage >= 1 && (
+              <span className="absolute inset-x-[-6%] top-1/2 h-[0.09em] origin-left animate-strike rounded-full bg-red-600" />
+            )}
+          </span>
+          {stage >= 2 && (
+            <span
+              className={`animate-pop text-6xl leading-none font-black tracking-tight tabular-nums sm:text-8xl lg:text-[min(6rem,12svh)] ${GREEN}`}
+            >
+              {VIDEO_FIRST_MONTH_PRICE} €
+            </span>
+          )}
+        </div>
+        <p className="text-sm font-semibold text-neutral-900 sm:mt-2 sm:text-base">
+          {t('video_offer_label')}
+        </p>
+        <p className="mx-auto mt-1.5 w-fit max-w-full rounded-full bg-emerald-100 px-3 py-1 text-[13px] whitespace-nowrap text-emerald-900 sm:text-base">
+          {t.rich('video_offer_saving', {
+            amount: format.number(firstYearSaving(props.price).saving, { useGrouping: 'always' }),
+            b: (chunks) => (
+              <span className="font-black underline decoration-2 underline-offset-2">{chunks}</span>
+            ),
+          })}
+        </p>
 
-      <div className="mt-3">{props.action}</div>
+        {props.part >= 2 && (
+          <section className="mt-1.5 rounded-2xl border-2 border-[#d6eadd] bg-white px-3 py-1.5 text-left sm:mt-4 sm:p-4 lg:mt-[min(1rem,2svh)] lg:py-[min(1rem,2svh)]">
+            <h3 className="mb-0.5 text-[15px] font-black text-neutral-950 sm:mb-2 sm:text-lg lg:mb-1">
+              {t('video_offer_included_title')}
+            </h3>
+            <div className="grid grid-cols-2 gap-x-3">
+              {INCLUDED.map((column) => (
+                <ul
+                  key={column[0]}
+                  className="space-y-0.5 sm:space-y-1.5 lg:space-y-[min(0.375rem,0.6svh)]"
+                >
+                  {column.slice(0, included).map((item) => (
+                    <li
+                      key={item}
+                      className="flex animate-in items-center gap-2 text-sm font-bold whitespace-nowrap text-neutral-900 fade-in slide-in-from-bottom-2 sm:text-base"
+                    >
+                      <Check className={`size-4 shrink-0 stroke-3 ${GREEN}`} />
+                      {t(`video_included_${item}`)}
+                    </li>
+                  ))}
+                </ul>
+              ))}
+            </div>
+          </section>
+        )}
 
-      <p className="mt-3 flex items-center justify-center gap-4 text-left sm:gap-5">
-        <GuaranteeSeal className="size-14 shrink-0 drop-shadow-md sm:size-24" />
-        <span className="text-base leading-tight font-black text-neutral-900 sm:text-lg">
-          {t('video_offer_guarantee_title')}
-        </span>
-      </p>
+        <div className="mt-3 lg:mt-[min(1.25rem,2.5svh)]">{props.action}</div>
 
-      {props.callLink && <div className="mt-2.5">{props.callLink}</div>}
+        {props.callLink && <div className="order-2 mt-2.5 lg:order-none">{props.callLink}</div>}
+      </div>
     </div>
   );
 };
