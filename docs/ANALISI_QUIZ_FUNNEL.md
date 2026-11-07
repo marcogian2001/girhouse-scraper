@@ -503,3 +503,9 @@ Questa sezione prevale su tutte le precedenti per percorso, risultato e dati. Ni
 - **Visite a parte da F1**: sui link il checkout manda lo step `link-<piano>` e la pagina di grazie `link-<piano>-grazie` (il link di conferma ora porta `piano=`), così non entrano nel checkout né nella Conferma della lavagna F1. Su Stripe l'abbonamento ha anche `metadata.link = piano-<piano>`.
 - **Go High Level**: invariato, chi paga da un link passa da `gh_billing_first_payment` come dal checkout normale (contatto, automazione "3. Demo Iniziata (NO Trial)", Purchase a Meta). Il campo funnel resta F1 se il link non ha `?funnel=`.
 - **Provato**: `?piano=97` su telefono e computer (97 € ovunque, niente timer né cookie del timer, riga legale "oggi paghi 97 €, poi 97 € al mese", step `link-97`); checkout normale ancora a 47 € con timer; conteggi della pagina con 4 visite di prova, poi cancellate. Backup in `~/backups-girhouse/20261106-link-pagamenti/`.
+
+## Condizioni di vendita e pagine su Google (7 novembre 2026)
+
+- **Condizioni di vendita** (pagina 21635): tolto il punto 12 "Modifiche". Il punto 5 "Prezzo e rinnovo" non indica più 47 € e 97 €: il prezzo del primo mese e il canone sono quelli del riepilogo nella pagina di pagamento, dipendono dal piano e dai servizi inclusi, il primo mese può essere scontato solo quando c'è un'offerta, il rinnovo resta al canone indicato all'acquisto.
+- **Sitelink di Google**: Privacy Policy (21424) e Cookie Policy (21426) ora `noindex, follow` (Rank Math), fuori dalla sitemap; restano raggiungibili dal footer. "Call Gianmarco" era su `call.girhouse.com` (Go High Level), che ora risponde 404: Google la toglie da solo, si può accelerare con Rimozioni in Search Console. "dawan.girhouse.com" e "Contacts" vengono dal sito di un cliente sul sottodominio, indicizzabile come dclinic, matteopizzeria, trading-evanzino, agenda-estetica, 2m e dgf.
+- Backup in `~/backups-girhouse/20261107-sitelink-condizioni/`.
