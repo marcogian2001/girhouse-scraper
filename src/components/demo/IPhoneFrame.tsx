@@ -36,10 +36,11 @@ export const IPhoneFrame = (props: {
       <div className="rounded-[3.3rem] bg-neutral-950 p-[9px]">
         <div className="relative flex aspect-[9/19.5] w-full flex-col overflow-hidden rounded-[2.75rem] bg-white">
           <div
-            className={`relative z-10 flex h-12 shrink-0 items-center justify-between px-7 pt-1 text-[13px] font-semibold ${props.statusBarClassName ?? 'bg-white text-neutral-900'}`}
+            className={`relative z-10 flex h-12 shrink-0 items-center justify-between px-[9%] pt-1 text-[13px] font-semibold ${props.statusBarClassName ?? 'bg-white text-neutral-900'}`}
           >
             <span>9:41</span>
-            <span className="absolute top-2.5 left-1/2 h-[30px] w-[100px] -translate-x-1/2 rounded-full bg-black" />
+            {/* Sized on the screen like a real iPhone's, so it never covers the time on a narrow phone */}
+            <span className="absolute top-2.5 left-1/2 aspect-[125/37] w-[32%] -translate-x-1/2 rounded-full bg-black" />
             <span className="flex items-center gap-1">
               <svg viewBox="0 0 18 12" className="h-3 w-[18px] fill-current" aria-hidden>
                 <rect x="0" y="8" width="3" height="4" rx="1" />
