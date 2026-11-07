@@ -49,6 +49,7 @@ type VideoFixedLine =
   | 'video_line_diy_site'
   | 'video_line_diy_google'
   | 'video_line_diy_or_us'
+  | 'video_line_trust'
   | 'video_line_booking_phone_both'
   | 'video_line_offer_price_direct'
   | 'video_line_offer_price_call'
@@ -87,6 +88,16 @@ const WRITTEN = new Set<string>(VIDEO_WRITTEN_LINES);
 const DIY_LINES = ['video_line_diy_site', 'video_line_diy_google', 'video_line_diy_or_us'] as const;
 
 const CHAT_MESSAGE_MS = 1500;
+
+/**
+ * Gigi's edited clip with what customers and partners say about Girhouse, played as it is
+ * right before the prices: it has its own voices and captions.
+ */
+export const TRUST_CLIP = {
+  src: '/demo/vsl-trust.mp4',
+  poster: '/demo/vsl-trust.jpg',
+  seconds: 62,
+};
 
 /** Marks the tall photo of a line, made for phones next to the wide one. */
 const PORTRAIT_SUFFIX = ':portrait';
@@ -241,6 +252,8 @@ export const buildVideoScenes = (options: { data: DemoSnapshot; closing: VideoCl
       chapter: 'solution',
       cues: [{ atMs: 0, sound: 'bell' }],
     },
+    // Trust first, then the prices of doing it alone
+    { step: 4, kind: 'trust', line: 'video_line_trust', chapter: 'solution', cues: [] },
     ...([1, 2, 3] as const).map((part): VslScene => ({
       step: 5,
       kind: 'diy',
@@ -303,7 +316,8 @@ export const videoBookingLine = (options: {
     : `video_line_booking_${options.phase}`;
 
 /**
- * Lists every line version C may say, to voice them all in advance.
+ * Lists every line version C may say, to voice them all in advance. The trust clip has
+ * its own voices.
  * @param scenes The scenes.
  * @param closing How the video ends: a video that only sells needs no booking lines.
  * @returns The lines, each once.
@@ -311,7 +325,7 @@ export const videoBookingLine = (options: {
 export const videoLinesToVoice = (scenes: VslScene[], closing: VideoClosing) => [
   ...new Set(
     [
-      ...scenes.map((scene) => scene.line),
+      ...scenes.filter((scene) => scene.kind !== 'trust').map((scene) => scene.line),
       ...(closing === 'purchase'
         ? []
         : VSL_BOOKING_PHASES.map((phase) => videoBookingLine({ phase, closing }))),

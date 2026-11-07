@@ -94,6 +94,12 @@ describe('VideoScript', () => {
       ]);
     });
 
+    it('plays the trust clip right before what can be done alone', () => {
+      const kinds = scenes.map((scene) => scene.kind);
+
+      expect(kinds[kinds.indexOf('diy') - 1]).toBe('trust');
+    });
+
     it('ends on the closing of the demo', () => {
       expect(scenes.at(-1)).toMatchObject({ kind: 'closing', closing: 'both', step: 6 });
     });
@@ -114,6 +120,10 @@ describe('VideoScript', () => {
   });
 
   describe('Lines', () => {
+    it('leaves the trust clip out of the lines to voice', () => {
+      expect(allLines).not.toContain('video_line_trust');
+    });
+
     it('skips the booking lines of a video that only sells', () => {
       expect(
         videoLinesToVoice(buildVideoScenes({ data, closing: 'purchase' }), 'purchase'),

@@ -74,6 +74,7 @@ export type VslScene = SceneSound &
     | { step: 3; kind: 'social'; line: VideoLine }
     | { step: 3; kind: 'crm'; part: number; line: VideoLine }
     | { step: 4; kind: 'reminder'; line: VideoLine }
+    | { step: 4; kind: 'trust'; line: VideoLine }
     | { step: 5; kind: 'diy'; part: number; line: VideoLine }
     | { step: 5; kind: 'offer'; part: number; line: VideoLine }
     | { step: 6; kind: 'closing'; closing: VideoClosing; line: VideoLine }

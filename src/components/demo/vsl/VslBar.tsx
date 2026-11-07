@@ -20,6 +20,7 @@ import { HostTalkingFace } from './HostTalking';
  * @param props.isTalking Whether Gigi's voice is playing.
  * @param props.isPaused Whether the demo is paused.
  * @param props.isQuiet Hides the line, leaving Gigi and the buttons.
+ * @param props.isClip Others speak in the trust clip, with their own captions: no line, Gigi still.
  * @param props.isLast Hides the skip on the last scene.
  * @param props.onBack Goes back a scene.
  * @param props.onTogglePause Pauses or resumes.
@@ -33,6 +34,7 @@ export const VslBar = (props: {
   isTalking: boolean;
   isPaused: boolean;
   isQuiet: boolean;
+  isClip: boolean;
   isLast: boolean;
   onBack: () => void;
   onTogglePause: () => void;
@@ -40,7 +42,8 @@ export const VslBar = (props: {
 }) => {
   const t = useTranslations('DemoPage');
   // Only what Gigi is saying now, like a subtitle, so the bar stays two lines high
-  const caption = currentCaption(props.segments, props.typed);
+  const segments = props.isClip ? [] : props.segments;
+  const caption = currentCaption(segments, props.typed);
 
   return (
     <aside
@@ -50,7 +53,7 @@ export const VslBar = (props: {
       <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-2 md:gap-6 md:py-3">
         <HostTalkingFace
           narrator={props.narrator}
-          isTalking={props.isTalking}
+          isTalking={props.isTalking && !props.isClip}
           className="size-12 md:size-16"
         />
 
@@ -67,9 +70,7 @@ export const VslBar = (props: {
             )}
             {!props.isQuiet && (
               <>
-                <span className="sr-only">
-                  {props.segments.map((segment) => segment.text).join('')}
-                </span>
+                <span className="sr-only">{segments.map((segment) => segment.text).join('')}</span>
                 <span aria-hidden>
                   <TypedText segments={caption.segments} typed={caption.typed} />
                 </span>

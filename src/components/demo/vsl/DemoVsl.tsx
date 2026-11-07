@@ -36,6 +36,7 @@ import { WhatsAppStep } from '../steps/WhatsAppStep';
 import { TOUR_STEPS } from '../TourScenes';
 import { TimelinePause, useTimedSequence } from '../useTimedSequence';
 import { WhatsAppChat } from '../WhatsAppChat';
+import { ClipFrame, clipAttributes } from './ClipFrame';
 import { DiyScene } from './DiyScene';
 import { GoogleScene } from './GoogleScene';
 import { HostTalkingFull, hostPoster } from './HostTalking';
@@ -52,6 +53,7 @@ import type { VideoClosing, VideoLine } from './VideoScript';
 import {
   buildVideoScenes,
   isPortraitLine,
+  TRUST_CLIP,
   VIDEO_CLOSING,
   videoBookingLine,
   isVideoLine,
@@ -317,6 +319,21 @@ const createSoundtrack = () => {
     sound: (name: VslSound) => {
       void sound(name);
     },
+    // Fades the music out, for a clip with its own sound; the next chapter starts it again
+    silence: () => {
+      const audio = context;
+
+      wanted = null;
+
+      if (audio && current) {
+        const now = audio.currentTime;
+
+        current.gain.gain.setValueAtTime(current.gain.gain.value, now);
+        current.gain.gain.linearRampToValueAtTime(0, now + MUSIC_FADE_SECONDS);
+        current.source.stop(now + MUSIC_FADE_SECONDS + 0.05);
+        current = null;
+      }
+    },
     pause: () => {
       void context?.suspend();
     },
@@ -331,7 +348,7 @@ const createSoundtrack = () => {
  * @param audio The audio element.
  * @returns Whether it plays.
  */
-const tryPlay = async (audio: HTMLAudioElement) => {
+const tryPlay = async (audio: HTMLMediaElement) => {
   try {
     await audio.play();
 
@@ -442,16 +459,27 @@ const voiceTempo = (narrator: Narrator) =>
   narrator === 'gianmarco' ? HOST_VOICE_TEMPO : VSL_VOICE_TEMPO;
 
 /**
+ * Tells whether a scene plays the trust clip instead of a voice.
+ * @param scene The scene.
+ * @returns Whether it does.
+ */
+const isClipScene = (scene: VslScene | undefined) => scene?.kind === 'trust';
+
+/**
  * Says how long the whole demo lasts, from its voices.
- * @param voices The voices ready.
- * @param tempo How fast they play.
+ * @param options What is known.
+ * @param options.voices The voices ready.
+ * @param options.tempo How fast they play.
+ * @param options.scenes The scenes, the trust clip's counted too.
  * @returns The minutes, rounded up.
  */
-const estimateMinutes = (voices: DemoVoice[], tempo: number) => {
+const estimateMinutes = (options: { voices: DemoVoice[]; tempo: number; scenes: VslScene[] }) => {
   // The new video's booking lines are only said to those who book
-  const seconds = voices
+  const voiced = options.voices
     .filter((voice) => !voice.line.startsWith('video_line_booking_'))
-    .reduce((sum, voice) => sum + voice.seconds / tempo, 0);
+    .reduce((sum, voice) => sum + voice.seconds / options.tempo, 0);
+  const clip = options.scenes.some(isClipScene) ? TRUST_CLIP.seconds : 0;
+  const seconds = voiced > 0 ? voiced + clip : 0;
 
   return seconds > 0 ? Math.ceil(seconds / 60) : DEFAULT_MINUTES;
 };
@@ -807,8 +835,8 @@ const VslStartButton = (props: {
 /**
  * Version B of the demo: a video sales letter. One tap starts it, then Gigi narrates every
  * scene with his own voice and the demo moves on by itself when he is done and the scene
- * has played. One audio element carries every line, so a phone that let it play once lets
- * it play to the end. Without a voice, a line stays on screen as long as it takes to say.
+ * has played. One media element carries every line and the trust clip, so a phone that
+ * let it play once lets it play to the end. Without a voice, a line stays on screen as long as it takes to say.
  * @param props Component props.
  * @param props.vsl The demo's version B.
  * @param props.voices Gigi's voiced lines.
@@ -839,7 +867,8 @@ export const DemoVsl = (
   const [isTalking, setIsTalking] = useState(false);
   const [bookingPhase, setBookingPhase] = useState<BookingPhase>('phone');
   const [isCallOpen, setIsCallOpen] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  // A video element, so the trust clip plays in it too; for the voices it stays hidden
+  const audioRef = useRef<HTMLVideoElement | null>(null);
   const musicRef = useRef(createSoundtrack());
   // The sounds the scene on screen still has to play
   const cueTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
@@ -850,6 +879,7 @@ export const DemoVsl = (
   // What the handlers read, since their timers outlive the render that set them
   const playback = useRef({ index, hasVoice: false, isLineDone: false });
   const scene = scenes[index] ?? scenes[0];
+  const isClip = isClipScene(scene);
 
   const values = vslLineValues({
     company: data.company,
@@ -939,14 +969,22 @@ export const DemoVsl = (
     advance: (next: number) => void;
   }) => {
     const audio = audioRef.current;
+    const isTrust = scenes[options.index]?.kind === 'trust';
     const next = voiceOf(options.line);
 
     clockRef.current.stop();
     clockRef.current.startScene();
-    playback.current = { index: options.index, hasVoice: Boolean(next), isLineDone: false };
+    playback.current = {
+      index: options.index,
+      hasVoice: isTrust || Boolean(next),
+      isLineDone: false,
+    };
     setIsPaused(false);
 
-    if (!audio || !next) {
+    if (audio && isTrust) {
+      audio.src = TRUST_CLIP.src;
+      audio.playbackRate = 1;
+    } else if (!audio || !next) {
       audio?.pause();
       setIsTalking(true);
       clockRef.current.wait(spokenDurationMs(markupOf(options.line)), () => {
@@ -954,10 +992,10 @@ export const DemoVsl = (
       });
 
       return;
+    } else {
+      audio.src = voiceFiles.current.get(next.id) ?? `/api/demo-voices/${next.id}`;
+      audio.playbackRate = tempo;
     }
-
-    audio.src = voiceFiles.current.get(next.id) ?? `/api/demo-voices/${next.id}`;
-    audio.playbackRate = tempo;
 
     // The browser wants a tap first: the demo waits on pause for it
     if (!(await tryPlay(audio))) {
@@ -977,7 +1015,13 @@ export const DemoVsl = (
   // Starts a scene's music and plays its sounds on their cues
   const enterScene = (target: VslScene) => {
     clearCues();
-    musicRef.current.setChapter(target.chapter);
+
+    if (target.kind === 'trust') {
+      musicRef.current.silence();
+    } else {
+      musicRef.current.setChapter(target.chapter);
+    }
+
     cueTimers.current = target.cues.map((cue) =>
       setTimeout(() => {
         musicRef.current.sound(cue.sound);
@@ -1061,39 +1105,44 @@ export const DemoVsl = (
   });
 
   const audio = (
-    // oxlint-disable-next-line jsx-a11y/media-has-caption -- Every line is typed in the bar while it is said
-    <audio
-      ref={(element) => {
-        audioRef.current = element;
+    <ClipFrame isClip={isClip}>
+      {/* oxlint-disable-next-line jsx-a11y/media-has-caption -- Every line is typed in the bar while it is said, and the clip has its captions burned in */}
+      <video
+        ref={(element) => {
+          audioRef.current = element;
 
-        if (element && !hasPreloaded.current) {
-          hasPreloaded.current = true;
-          void preloadVoices(voicesInOrder, voiceFiles.current);
-        }
-      }}
-      preload="auto"
-      onPlaying={() => {
-        setIsTalking(true);
-      }}
-      onEnded={() => {
-        finishLine(goTo);
-      }}
-      onPause={() => {
-        // A phone pauses the voice when the page goes to the background: the demo waits too
-        if (document.visibilityState === 'hidden' && !playback.current.isLineDone) {
-          pause();
-        }
-      }}
-      onError={() => {
-        // A voice that does not load is typed for as long as it takes to say
-        if (playback.current.hasVoice && !playback.current.isLineDone) {
-          playback.current.hasVoice = false;
-          clockRef.current.wait(spokenDurationMs(markupOf(line)), () => {
-            finishLine(goTo);
-          });
-        }
-      }}
-    />
+          if (element && !hasPreloaded.current) {
+            hasPreloaded.current = true;
+            void preloadVoices(voicesInOrder, voiceFiles.current);
+          }
+        }}
+        preload="auto"
+        playsInline
+        {...clipAttributes(isClip, t('video_line_trust'))}
+        className="size-full object-contain mix-blend-multiply"
+        onPlaying={() => {
+          setIsTalking(true);
+        }}
+        onEnded={() => {
+          finishLine(goTo);
+        }}
+        onPause={() => {
+          // A phone pauses the voice when the page goes to the background: the demo waits too
+          if (document.visibilityState === 'hidden' && !playback.current.isLineDone) {
+            pause();
+          }
+        }}
+        onError={() => {
+          // A voice that does not load is typed for as long as it takes to say
+          if (playback.current.hasVoice && !playback.current.isLineDone) {
+            playback.current.hasVoice = false;
+            clockRef.current.wait(spokenDurationMs(markupOf(line)), () => {
+              finishLine(goTo);
+            });
+          }
+        }}
+      />
+    </ClipFrame>
   );
 
   if (!scene) {
@@ -1243,7 +1292,9 @@ export const DemoVsl = (
           </p>
         ) : (
           <p className="text-sm text-neutral-500">
-            {t('vsl_start_hint', { minutes: estimateMinutes(props.voices, tempo) })}
+            {t('vsl_start_hint', {
+              minutes: estimateMinutes({ voices: props.voices, tempo, scenes }),
+            })}
           </p>
         )}
 
@@ -1322,6 +1373,7 @@ export const DemoVsl = (
         segments={segments}
         typed={typed}
         isTalking={isTalking}
+        isClip={isClip}
         isPaused={isHeld}
         isQuiet={isPricing}
         isLast={index === scenes.length - 1}
