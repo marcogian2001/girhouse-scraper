@@ -516,3 +516,11 @@ Questa sezione prevale su tutte le precedenti per percorso, risultato e dati. Ni
 - **Prenota una chiamata**: tutti i link a `call.girhouse.com/onboarding-call` (non più attivo) ora vanno a `https://girhouse.com/prenota/`, nella stessa scheda: menu (`nav.html`), bottoni in alto e in fondo alle pagine (`template.php`), testi di 9 pagine e `serviceUrl` nello schema di 10 pagine. La pagina prenota ha già `gh_fonte=sito` e `gh_funnel=organico-sito`, quindi in Go High Level i campi restano gli stessi di prima.
 - **dawan.girhouse.com**: su richiesta, `blog_public=0` (meta `noindex, nofollow`, robots.txt lasciato aperto perché Google veda il noindex), cache LiteSpeed svuotata.
 - Backup in `~/backups-girhouse/20261107-contatti-prenota/`.
+
+## Tutti i sottodomini di girhouse.com fuori da Google (7 novembre 2026)
+
+- **Regola automatica sui siti Hostinger**: mu-plugin `girhouse-sottodomini.php` su girhouse.com. Ogni giorno (WP-Cron `gh_sub_noindex`, oppure subito con `wp gh-sottodomini`) mette in testa al `.htaccess` di ogni `~/domains/*.girhouse.com/public_html` il blocco "Girhouse noindex sottodominio" con `Header set X-Robots-Tag "noindex, nofollow"`, quindi anche i sottodomini creati in futuro. girhouse.com e www non sono toccati. Esito dell'ultimo giro nell'opzione `gh_sub_noindex_log`. Un `.htaccess` unico in `~/domains/` non viene letto da Hostinger.
+- **Applicata a**: 2m, agenda-estetica, alteri-beauty, dawan, dclinic, dgf, marceca, matteopizzeria, trading-evanzino. Su questi WordPress anche `blog_public=0`. robots.txt resta aperto, così Google vede il noindex.
+- **Vercel**: header `X-Robots-Tag: noindex, nofollow` aggiunto in `next.config.ts` con le PR marcogian2001/girhouse-tutorial#6 (tutorial.girhouse.com) e marcogian2001/girhouse-scraper#12 (scraper.girhouse.com e demo.girhouse.com). Vale dopo il merge.
+- **Go High Level**: app.girhouse.com ha già il noindex; call e highlevel rispondono 404; lp.girhouse.com è un dominio funnel attivo, da mettere in noindex dalle impostazioni dei funnel in Go High Level.
+- Elenco per Rimozioni in Search Console: file `link-rimozioni-search-console.txt` della sessione. Backup in `~/backups-girhouse/20261107-sottodomini-noindex/`.
