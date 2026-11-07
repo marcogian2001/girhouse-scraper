@@ -1,11 +1,10 @@
 /**
  * The room a scene keeps on screen besides the phone: the tour's header and padding, plus a
- * label above it and a card under it when the scene has them.
+ * label above it when the scene has one. Phones keep less padding, so the phone is wider.
  */
 const RESERVES = {
-  phone: '[--phone-reserve:7rem]',
-  label: '[--phone-reserve:10rem]',
-  labelAndCard: '[--phone-reserve:15rem]',
+  phone: '[--phone-reserve:5rem] md:[--phone-reserve:7rem]',
+  label: '[--phone-reserve:8rem] md:[--phone-reserve:10rem]',
 } as const;
 
 /**

@@ -1119,7 +1119,7 @@ export const DemoVsl = (
         preload="auto"
         playsInline
         {...clipAttributes(isClip, t('video_line_trust'))}
-        className="size-full object-contain mix-blend-multiply"
+        className="m-auto h-auto max-h-full w-auto max-w-full rounded-3xl shadow-xl"
         onPlaying={() => {
           setIsTalking(true);
         }}
@@ -1323,7 +1323,7 @@ export const DemoVsl = (
     </>
   ) : (
     <div
-      className={`min-h-svh overflow-x-clip pb-[calc(var(--demo-bar-h,6rem)+1.5rem)] ${isPricing ? 'bg-gradient-to-b from-[#0074F2] via-[#0a52d4] to-[#06287f]' : ''}`}
+      className={`min-h-svh overflow-x-clip pb-[calc(var(--demo-bar-h,6rem)+0.75rem)] md:pb-[calc(var(--demo-bar-h,6rem)+1.5rem)] ${isPricing ? 'bg-gradient-to-b from-[#0074F2] via-[#0a52d4] to-[#06287f]' : ''}`}
     >
       {/* Above the mockups, whose own layers stay inside `main` */}
       <header className="sticky top-0 z-20 border-b border-neutral-100 bg-white/90 backdrop-blur">
@@ -1349,7 +1349,7 @@ export const DemoVsl = (
 
       <main
         key={sceneGroup(scene, index)}
-        className={`isolate mx-auto max-w-7xl animate-in px-4 duration-500 fade-in ${COMPACT_KINDS.has(scene.kind) ? 'py-4 md:py-6' : 'py-6 md:py-10'}`}
+        className={`isolate mx-auto max-w-7xl animate-in px-4 duration-500 fade-in ${COMPACT_KINDS.has(scene.kind) ? 'py-4 md:py-6' : 'py-3 md:py-10'}`}
       >
         <VslSceneVisual
           scene={scene}

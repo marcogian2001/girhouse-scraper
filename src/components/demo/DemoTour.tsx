@@ -315,7 +315,7 @@ export const DemoTour = (props: DemoTourProps) => {
 
   return (
     <div
-      className={`min-h-svh overflow-x-clip pb-[calc(var(--demo-bar-h,12rem)+1.5rem)] ${isPricing ? 'bg-gradient-to-b from-[#0074F2] via-[#0a52d4] to-[#06287f]' : ''}`}
+      className={`min-h-svh overflow-x-clip pb-[calc(var(--demo-bar-h,12rem)+0.75rem)] md:pb-[calc(var(--demo-bar-h,12rem)+1.5rem)] ${isPricing ? 'bg-gradient-to-b from-[#0074F2] via-[#0a52d4] to-[#06287f]' : ''}`}
     >
       {tracking}
 
@@ -343,7 +343,7 @@ export const DemoTour = (props: DemoTourProps) => {
 
       <main
         key={scene.step}
-        className={`isolate mx-auto max-w-7xl animate-in px-4 duration-500 fade-in ${isPricing ? 'py-4 md:py-6' : 'py-6 md:py-10'}`}
+        className={`isolate mx-auto max-w-7xl animate-in px-4 duration-500 fade-in ${isPricing ? 'py-4 md:py-6' : 'py-3 md:py-10'}`}
       >
         <SceneVisual
           scene={scene}
