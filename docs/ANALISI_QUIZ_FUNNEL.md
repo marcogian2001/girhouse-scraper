@@ -509,3 +509,10 @@ Questa sezione prevale su tutte le precedenti per percorso, risultato e dati. Ni
 - **Condizioni di vendita** (pagina 21635): tolto il punto 12 "Modifiche". Il punto 5 "Prezzo e rinnovo" non indica più 47 € e 97 €: il prezzo del primo mese e il canone sono quelli del riepilogo nella pagina di pagamento, dipendono dal piano e dai servizi inclusi, il primo mese può essere scontato solo quando c'è un'offerta, il rinnovo resta al canone indicato all'acquisto.
 - **Sitelink di Google**: Privacy Policy (21424) e Cookie Policy (21426) ora `noindex, follow` (Rank Math), fuori dalla sitemap; restano raggiungibili dal footer. "Call Gianmarco" era su `call.girhouse.com` (Go High Level), che ora risponde 404: Google la toglie da solo, si può accelerare con Rimozioni in Search Console. "dawan.girhouse.com" e "Contacts" vengono dal sito di un cliente sul sottodominio, indicizzabile come dclinic, matteopizzeria, trading-evanzino, agenda-estetica, 2m e dgf.
 - Backup in `~/backups-girhouse/20261107-sitelink-condizioni/`.
+
+## Pagina Contatti, link al calendario e Dawan fuori da Google (7 novembre 2026)
+
+- **Pagina Contatti** nuova: `https://girhouse.com/contatti/` (ID 21650, layout gh). Quattro schede (calendario `/prenota/`, WhatsApp, telefono, email), sede legale, 3 FAQ, schema ContactPage + FAQPage + BreadcrumbList, in sitemap e in `llms.txt`. "Contattaci" nel menu (desktop e mobile, homepage e pagine gh) ora porta lì invece che all'ancora `#contatti`; "Contatti" aggiunto anche nel footer.
+- **Prenota una chiamata**: tutti i link a `call.girhouse.com/onboarding-call` (non più attivo) ora vanno a `https://girhouse.com/prenota/`, nella stessa scheda: menu (`nav.html`), bottoni in alto e in fondo alle pagine (`template.php`), testi di 9 pagine e `serviceUrl` nello schema di 10 pagine. La pagina prenota ha già `gh_fonte=sito` e `gh_funnel=organico-sito`, quindi in Go High Level i campi restano gli stessi di prima.
+- **dawan.girhouse.com**: su richiesta, `blog_public=0` (meta `noindex, nofollow`, robots.txt lasciato aperto perché Google veda il noindex), cache LiteSpeed svuotata.
+- Backup in `~/backups-girhouse/20261107-contatti-prenota/`.
