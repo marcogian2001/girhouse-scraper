@@ -81,6 +81,27 @@ export const trimSilence = (samples: Int16Array, sampleRate: number) => {
 };
 
 /**
+ * Encodes a mono voice as MP3, cutting its silent ends.
+ * @param channel The 16-bit samples.
+ * @param sampleRate Samples a second.
+ * @returns The MP3 and its length in seconds.
+ */
+export const pcmToMp3 = (channel: Int16Array, sampleRate: number) => {
+  const samples = trimSilence(channel, sampleRate);
+
+  const encoder = new Mp3Encoder(1, sampleRate, VOICE_KBPS);
+  const parts: Buffer[] = [];
+
+  for (let index = 0; index < samples.length; index += BLOCK) {
+    parts.push(toBytes(encoder.encodeBuffer(samples.subarray(index, index + BLOCK))));
+  }
+
+  parts.push(toBytes(encoder.flush()));
+
+  return { data: Buffer.concat(parts), seconds: samples.length / sampleRate };
+};
+
+/**
  * Encodes a WAV voice as MP3, keeping one channel and cutting its silent ends.
  * @param wav The 16-bit PCM WAV file.
  * @returns The MP3 and its length in seconds.
@@ -95,16 +116,5 @@ export const wavToMp3 = (wav: Buffer) => {
     channel[frame] = wav.readInt16LE(start + frame * 2 * channels);
   }
 
-  const samples = trimSilence(channel, sampleRate);
-
-  const encoder = new Mp3Encoder(1, sampleRate, VOICE_KBPS);
-  const parts: Buffer[] = [];
-
-  for (let index = 0; index < samples.length; index += BLOCK) {
-    parts.push(toBytes(encoder.encodeBuffer(samples.subarray(index, index + BLOCK))));
-  }
-
-  parts.push(toBytes(encoder.flush()));
-
-  return { data: Buffer.concat(parts), seconds: samples.length / sampleRate };
+  return pcmToMp3(channel, sampleRate);
 };

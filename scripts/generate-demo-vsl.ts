@@ -3,10 +3,12 @@
  *
  *   npx dotenv -c -- npx tsx scripts/generate-demo-vsl.ts dottor-giorgio-neri
  *   npx dotenv -c -- npx tsx scripts/generate-demo-vsl.ts dottor-giorgio-neri --voice
+ *   npx dotenv -c -- npx tsx scripts/generate-demo-vsl.ts dottor-giorgio-neri --narrator=gianmarco
  *
  * With `--voice` it keeps the script and only makes its voices and photos again. The link then
  * shows the video, whatever the demo showed before. It calls Claude for the script and Kie for
- * each of Gigi's lines and photos, on the database in `.env`.
+ * each of Gigi's lines and photos, on the database in `.env`. With `--narrator=gianmarco` the
+ * script is his and ElevenLabs says it in his cloned voice; `--voice` keeps the narrator.
  */
 import { setTimeout as sleep } from 'node:timers/promises';
 import { parseArgs } from 'node:util';
@@ -20,8 +22,12 @@ import { DemoSlugValidation } from '@/validations/DemoValidation';
 
 const { values, positionals } = parseArgs({
   allowPositionals: true,
-  options: { voice: { type: 'boolean', default: false } },
+  options: {
+    voice: { type: 'boolean', default: false },
+    narrator: { type: 'string', default: 'gigi' },
+  },
 });
+const narrator = z.enum(['gigi', 'gianmarco']).parse(values.narrator);
 const slug = DemoSlugValidation.parse(positionals[0]);
 const demo = await db.query.demoSchema.findFirst({ where: eq(demoSchema.slug, slug) });
 
@@ -36,8 +42,20 @@ if (values.voice && !demo.vsl) {
 let next: Awaited<ReturnType<typeof advanceDemoVsl>> = {
   payload:
     values.voice && demo.vsl
-      ? { demoId: demo.id, generatedAt: demo.vsl.generatedAt, phase: 'voice_start', tasks: [] }
-      : { demoId: demo.id, generatedAt: new Date().toISOString(), phase: 'script', tasks: [] },
+      ? {
+          demoId: demo.id,
+          generatedAt: demo.vsl.generatedAt,
+          phase: 'voice_start',
+          narrator,
+          tasks: [],
+        }
+      : {
+          demoId: demo.id,
+          generatedAt: new Date().toISOString(),
+          phase: 'script',
+          narrator,
+          tasks: [],
+        },
   delaySeconds: 0,
 };
 

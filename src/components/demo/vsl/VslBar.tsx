@@ -2,6 +2,7 @@
 
 import { ArrowLeft, Pause, Play, SkipForward } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import type { Narrator } from '@/utils/HostVoice';
 import { measureBar } from '../GigiBar';
 import { currentCaption } from '../GigiCaptions';
 import { TypedText } from '../GiraffeSpeaker';
@@ -13,6 +14,7 @@ import { HostTalkingFace } from './HostTalking';
  * pause and the way back or ahead on the right. Nothing has to be pressed: the demo moves
  * on by itself when Gigi is done. On the price it drops the line, on blue glass.
  * @param props Component props.
+ * @param props.narrator Who narrates.
  * @param props.segments Gigi's line, with its highlights.
  * @param props.typed How many characters of the line are shown.
  * @param props.isTalking Whether Gigi's voice is playing.
@@ -25,6 +27,7 @@ import { HostTalkingFace } from './HostTalking';
  * @returns The bar.
  */
 export const VslBar = (props: {
+  narrator: Narrator;
   segments: HighlightSegment[];
   typed: number;
   isTalking: boolean;
@@ -45,7 +48,11 @@ export const VslBar = (props: {
       className={`fixed inset-x-0 bottom-0 z-30 animate-in fade-in slide-in-from-bottom-4 ${props.isQuiet ? 'border-t border-white/15 bg-[#06287f]/40 backdrop-blur-md' : 'border-t border-neutral-200 bg-white/95 shadow-[0_-10px_30px_rgba(0,0,0,0.08)] backdrop-blur'}`}
     >
       <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-2 md:gap-6 md:py-3">
-        <HostTalkingFace isTalking={props.isTalking} className="size-12 md:size-16" />
+        <HostTalkingFace
+          narrator={props.narrator}
+          isTalking={props.isTalking}
+          className="size-12 md:size-16"
+        />
 
         {/* Always two lines high: the words already said scroll out of the top */}
         <p

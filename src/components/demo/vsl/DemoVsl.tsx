@@ -6,6 +6,8 @@ import Image from 'next/image';
 import { useRef, useState } from 'react';
 import type { DemoVsl as DemoVslData } from '@/models/Schema';
 import { toSpokenText } from '@/utils/GigiVoice';
+import type { Narrator } from '@/utils/HostVoice';
+import { HOST_VOICE_TEMPO } from '@/utils/HostVoice';
 import type { VslChapter, VslSound } from '@/utils/VslMusic';
 import {
   MUSIC_CROSSFADE_SECONDS,
@@ -36,7 +38,7 @@ import { TimelinePause, useTimedSequence } from '../useTimedSequence';
 import { WhatsAppChat } from '../WhatsAppChat';
 import { DiyScene } from './DiyScene';
 import { GoogleScene } from './GoogleScene';
-import { HOST_POSTER, HostTalkingFull } from './HostTalking';
+import { HostTalkingFull, hostPoster } from './HostTalking';
 import { MissedCallScene } from './MissedCallScene';
 import { PhotoScene } from './PhotoScene';
 import { ReviewRequestScene } from './ReviewRequestScene';
@@ -432,15 +434,24 @@ const sceneGroup = (scene: VslScene, index: number) => {
 };
 
 /**
+ * Says how fast the page plays a narrator's voice.
+ * @param narrator Who narrates.
+ * @returns The playback rate.
+ */
+const voiceTempo = (narrator: Narrator) =>
+  narrator === 'gianmarco' ? HOST_VOICE_TEMPO : VSL_VOICE_TEMPO;
+
+/**
  * Says how long the whole demo lasts, from its voices.
  * @param voices The voices ready.
+ * @param tempo How fast they play.
  * @returns The minutes, rounded up.
  */
-const estimateMinutes = (voices: DemoVoice[]) => {
+const estimateMinutes = (voices: DemoVoice[], tempo: number) => {
   // The new video's booking lines are only said to those who book
   const seconds = voices
     .filter((voice) => !voice.line.startsWith('video_line_booking_'))
-    .reduce((sum, voice) => sum + voice.seconds / VSL_VOICE_TEMPO, 0);
+    .reduce((sum, voice) => sum + voice.seconds / tempo, 0);
 
   return seconds > 0 ? Math.ceil(seconds / 60) : DEFAULT_MINUTES;
 };
@@ -811,6 +822,9 @@ export const DemoVsl = (
   const data = withVslChat(props.data, props.vsl);
   const closing = closingOf(props.vsl);
   const startCopy = closing ? START_COPY.video : START_COPY.vsl;
+  const narrator = props.vsl.narrator ?? 'gigi';
+  const tempo = voiceTempo(narrator);
+  const poster = hostPoster(narrator);
   // Version C has a closing; version B never does
   const scenes = scenesOf({ data, closing, hasReviews: props.reviews.items.length > 0 });
   // Reopened where it stopped, the demo shows that scene paused until a tap lets the voice play
@@ -882,9 +896,7 @@ export const DemoVsl = (
   const segments = parseHighlights(markupOf(line));
   const total = visibleLength(segments);
   const voice = voiceOf(line);
-  const lineMs = voice
-    ? (voice.seconds * 1000) / VSL_VOICE_TEMPO
-    : spokenDurationMs(markupOf(line));
+  const lineMs = voice ? (voice.seconds * 1000) / tempo : spokenDurationMs(markupOf(line));
   const typed = useTimedSequence({
     target: isStarted ? total : 0,
     intervalMs: (lineMs * TYPING_SHARE) / Math.max(total, 1),
@@ -945,7 +957,7 @@ export const DemoVsl = (
     }
 
     audio.src = voiceFiles.current.get(next.id) ?? `/api/demo-voices/${next.id}`;
-    audio.playbackRate = VSL_VOICE_TEMPO;
+    audio.playbackRate = tempo;
 
     // The browser wants a tap first: the demo waits on pause for it
     if (!(await tryPlay(audio))) {
@@ -1202,17 +1214,17 @@ export const DemoVsl = (
         </h1>
 
         {isStarted ? (
-          <HostTalkingFull isTalking={isTalking} />
+          <HostTalkingFull narrator={narrator} isTalking={isTalking} />
         ) : (
           <div className="flex flex-col items-center gap-4">
             <div className="flex items-center gap-5">
               <Image
-                src={HOST_POSTER.src}
+                src={poster.src}
                 alt=""
-                width={HOST_POSTER.width}
-                height={HOST_POSTER.height}
+                width={poster.width}
+                height={poster.height}
                 priority
-                className="h-[min(18rem,29svh)] w-auto rounded-3xl mix-blend-multiply md:h-80"
+                className={`h-[min(18rem,29svh)] w-auto mix-blend-multiply md:h-80 ${poster.frame}`}
               />
               <VolumeHint isShown={Boolean(closing)} />
             </div>
@@ -1231,7 +1243,7 @@ export const DemoVsl = (
           </p>
         ) : (
           <p className="text-sm text-neutral-500">
-            {t('vsl_start_hint', { minutes: estimateMinutes(props.voices) })}
+            {t('vsl_start_hint', { minutes: estimateMinutes(props.voices, tempo) })}
           </p>
         )}
 
@@ -1306,6 +1318,7 @@ export const DemoVsl = (
       </main>
 
       <VslBar
+        narrator={narrator}
         segments={segments}
         typed={typed}
         isTalking={isTalking}

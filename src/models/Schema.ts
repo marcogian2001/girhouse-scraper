@@ -16,6 +16,7 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core';
 import type { DemoDesign } from '@/utils/DemoDesign';
+import type { Narrator } from '@/utils/HostVoice';
 import type { WebsiteCheck } from '@/validations/EnrichmentValidation';
 
 // This file defines the structure of your database tables using the Drizzle ORM.
@@ -1242,6 +1243,8 @@ export type DemoVsl = {
     emailSubject: string;
     emailBody: string;
   };
+  // Who narrates the video; older ones are Gigi's
+  narrator?: Narrator;
   generatedAt: string;
   // Gigi's voice, made by Kie after the script: until it is ready the lines are only typed
   voice: 'pending' | 'ready' | 'failed';

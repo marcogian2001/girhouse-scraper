@@ -45,6 +45,7 @@ export type VideoPhotoLine = (typeof VIDEO_PHOTO_LINES)[number];
 /** Lines said the same for everyone: the offer never depends on what the AI writes. */
 type VideoFixedLine =
   | 'video_line_intro'
+  | 'video_line_intro_host'
   | 'video_line_diy_site'
   | 'video_line_diy_google'
   | 'video_line_diy_or_us'
@@ -328,13 +329,18 @@ export const videoLinesToVoice = (scenes: VslScene[], closing: VideoClosing) => 
  */
 export const videoLineMarkup = (options: {
   line: VideoLine;
-  vsl: Pick<DemoVsl, 'lines'>;
+  vsl: Pick<DemoVsl, 'lines' | 'narrator'>;
   translate: (line: VideoLine) => string;
 }) => {
   const written = WRITTEN.has(options.line) ? options.vsl.lines[options.line]?.trim() : null;
 
   if (written) {
     return written.replaceAll('<hl>', '<mark>').replaceAll('</hl>', '</mark>');
+  }
+
+  // Gianmarco introduces himself
+  if (options.line === 'video_line_intro' && options.vsl.narrator === 'gianmarco') {
+    return options.translate('video_line_intro_host');
   }
 
   return options.translate(options.line);

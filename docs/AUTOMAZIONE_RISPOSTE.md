@@ -537,6 +537,18 @@ Da "Cosa cambiamo: target, offerta, funnel e vendita". Sostituisce A e B per tut
 - **Calendario della demo (4/11):** il titolare ha rifatto i calendari su GHL e il vecchio `GHL_CALENDAR_ID` (`V8lrPKIjN2AJ5RxHrOYN`) è cancellato: gli orari della demo davano errore 500. Il calendario nuovo è "Call Demo - 30 min", `whN4d9cWfVthRdofYTh7` (round robin, un utente, 30 minuti, prenotabile fino a 5 giorni avanti). Aggiornato nel `.env` locale; **su Vercel va cambiato a mano** e poi rifatto il deploy. Il 6/11 su Vercel c'era ancora il vecchio ID: un lead ha visto "Il calendario non è raggiungibile" e i log davano `The calendar is deleted.`. Ora `/api/demo/[slug]/slots` registra l'errore di GHL e risponde 502. **Dal 6/11 il calendario non dipende più dalla variabile:** il codice legge i calendari attivi della location (`getBookingCalendar` in `src/services/GoHighLevel.ts`, ricontrollati ogni 10 minuti) e usa `GHL_CALENDAR_ID` solo se esiste ancora, altrimenti l'unico calendario attivo. Ogni contatto che prenota riceve Fonte `mail` e Funnel `cold-email` (campi `contact.fonte` e `contact.funnel`, come i funnel di girhouse.com).
 - **Da fare a parte:** le email di risposta e il bot GHL parlano ancora della vecchia offerta (`buildOfferBrief` in `src/utils/Offer.ts`: landing, "follow-up", {slots} attività al mese).
 
+### Video demo narrato da Gianmarco, in prova (7/11) [ ]
+
+Richiesta del titolare: la versione C con la sua faccia e la sua voce al posto di Gigi. Per ora è attiva solo sulla demo di prova `dottor-giorgio-neri`. Le altre demo, nuove e vecchie, restano con Gigi. Default per le nuove demo e scelta nel riquadro Demo si decidono dopo la prova.
+
+- **Narratore per demo:** `vsl.narrator` (`gigi` o `gianmarco`, assente = Gigi), senza migrazione. Lo scrive il job `demo_vsl` dal suo payload; da terminale: `npx dotenv -c -- npx tsx scripts/generate-demo-vsl.ts <slug> --narrator=gianmarco`.
+- **Foto:** `public/demo/gianmarco/host.jpg`, un ritratto a mezzo busto generato con `nano-banana-2-1` dalle sue foto vere (solo per la fedeltà del volto), scontornato con `recraft/remove-background` e rimesso su bianco puro (`scripts/generate-host-photo.ts`). Le foto vere restano fuori da git.
+- **Loop:** `public/demo/gianmarco/host-loop.mp4` (mezzo busto) e `host-loop-face.mp4` (volto, 192×192), fatti una volta con Kling Avatar dalla foto e da una sua battuta (`scripts/generate-host-loop.ts`). Lo sfondo bianco sparisce con `mix-blend-multiply`, il busto sfuma in basso. Quelli del 29/10 (`host-talk*`) sono stati sostituiti.
+- **Voce:** la sua voce clonata su ElevenLabs (`src/services/ElevenLabs.ts`, modello `eleven_multilingual_v2`), chiamata diretta e non via Kie. Servono `ELEVENLABS_API_KEY` e `ELEVENLABS_VOICE_ID`. Il piano attuale non dà PCM a 44,1 kHz, quindi si usa 24 kHz. Le voci si fanno alla fine del job, quando le foto sono pronte, e la pagina le suona a 1,1x (`HOST_VOICE_TEMPO`) invece di 1,3x. Il costo ElevenLabs non entra ancora in `api_usage`.
+- **Copione:** il prompt di Claude dice che narra Gianmarco, il fondatore. L'intro fissa è `video_line_intro_host`.
+- [ ] Ascolto del titolare: voce, ritmo e pronuncia di "Girhouse" (la scriviamo "Giraus" per Gemini).
+- [ ] Per andare in produzione: le due variabili ElevenLabs su Vercel.
+
 ### Follow-up dopo la demo e nuovo messaggio [x] (5/11)
 
 Richiesta del titolare: poter scrivere di nuovo a un lead anche quando l'ultimo messaggio è suo, e riattivare i follow-up in automatico per chi ha ricevuto la demo.

@@ -30,6 +30,9 @@ export const Env = createEnv({
     GHL_WEBHOOK_SECRET: z.string().min(16).optional(),
     // Kie AI: makes Gigi's videos (`scripts/generate-gigi-video.ts`) and voices version B demos
     KIE_API_KEY: z.string().min(1).optional(),
+    // ElevenLabs: Gianmarco's cloned voice, for the demos he narrates
+    ELEVENLABS_API_KEY: z.string().min(1).optional(),
+    ELEVENLABS_VOICE_ID: z.string().min(1).optional(),
     APIFY_API_TOKEN: z.string().min(1).optional(),
     PROSPEO_API_KEY: z.string().min(1).optional(),
     MILLIONVERIFIER_API_KEY: z.string().min(1).optional(),
@@ -78,6 +81,8 @@ export const Env = createEnv({
     GHL_OPPORTUNITY_DEMO_SENT_FIELD_ID: process.env.GHL_OPPORTUNITY_DEMO_SENT_FIELD_ID,
     GHL_WEBHOOK_SECRET: process.env.GHL_WEBHOOK_SECRET,
     KIE_API_KEY: process.env.KIE_API_KEY,
+    ELEVENLABS_API_KEY: process.env.ELEVENLABS_API_KEY,
+    ELEVENLABS_VOICE_ID: process.env.ELEVENLABS_VOICE_ID,
     APIFY_API_TOKEN: process.env.APIFY_API_TOKEN,
     PROSPEO_API_KEY: process.env.PROSPEO_API_KEY,
     MILLIONVERIFIER_API_KEY: process.env.MILLIONVERIFIER_API_KEY,

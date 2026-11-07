@@ -1,16 +1,36 @@
 import Image from 'next/image';
+import type { Narrator } from '@/utils/HostVoice';
 
 /**
- * Gigi talking, cut from his price video. Gianmarco's own loops, made with Kling Avatar from
- * his photo, are in `public/demo/gianmarco/host-talk*` for when he narrates instead.
+ * Each narrator's talking loops, chest up and face only, on a white background the page
+ * blends away. Gigi's are cut from his price video; Gianmarco's come from
+ * `scripts/generate-host-loop.ts`.
  */
-const HOST_LOOP = {
-  full: '/demo/gigi-talk',
-  face: '/demo/gigi-talk-face',
-};
+const HOSTS = {
+  gigi: {
+    full: '/demo/gigi-talk',
+    face: '/demo/gigi-talk-face',
+    width: 483,
+    height: 720,
+    aspect: 'aspect-[483/720]',
+    frame: 'rounded-3xl',
+  },
+  gianmarco: {
+    full: '/demo/gianmarco/host-loop',
+    face: '/demo/gianmarco/host-loop-face',
+    width: 484,
+    height: 720,
+    aspect: 'aspect-[484/720]',
+    // His arms reach the bottom edge: they fade out instead of stopping on a line
+    frame: 'mask-b-from-80%',
+  },
+} satisfies Record<
+  Narrator,
+  { full: string; face: string; width: number; height: number; aspect: string; frame: string }
+>;
 
 /**
- * Gigi talking on a muted loop, with his still picture over it while he is quiet. The
+ * The narrator talking on a muted loop, with his still picture over it while he is quiet. The
  * voice plays apart, so the loop never has to match it word for word. The muted loop
  * autoplays everywhere; where it cannot, the still picture stays.
  * @param props Component props.
@@ -43,33 +63,51 @@ const HostLoop = (props: { isTalking: boolean; loop: string; className: string }
 );
 
 /**
- * Gigi full figure, for the screens he has to himself.
+ * The narrator from the chest up, for the screens he has to himself.
  * @param props Component props.
+ * @param props.narrator Who narrates.
  * @param props.isTalking Whether his voice is playing.
  * @returns The animated host.
  */
-export const HostTalkingFull = (props: { isTalking: boolean }) => (
-  <HostLoop
-    isTalking={props.isTalking}
-    loop={HOST_LOOP.full}
-    className="aspect-[483/720] h-[min(18rem,29svh)] rounded-3xl mix-blend-multiply md:h-80"
-  />
-);
+export const HostTalkingFull = (props: { narrator: Narrator; isTalking: boolean }) => {
+  const host = HOSTS[props.narrator];
+
+  return (
+    <HostLoop
+      isTalking={props.isTalking}
+      loop={host.full}
+      className={`h-[min(18rem,29svh)] mix-blend-multiply md:h-80 ${host.aspect} ${host.frame}`}
+    />
+  );
+};
 
 /**
- * Gigi's head in a circle, talking in the corner of every scene.
+ * The narrator's head in a circle, talking in the corner of every scene.
  * @param props Component props.
+ * @param props.narrator Who narrates.
  * @param props.isTalking Whether his voice is playing.
  * @param props.className Size classes.
  * @returns The animated avatar.
  */
-export const HostTalkingFace = (props: { isTalking: boolean; className?: string }) => (
+export const HostTalkingFace = (props: {
+  narrator: Narrator;
+  isTalking: boolean;
+  className?: string;
+}) => (
   <HostLoop
     isTalking={props.isTalking}
-    loop={HOST_LOOP.face}
+    loop={HOSTS[props.narrator].face}
     className={`rounded-full border-4 border-white bg-white shadow-xl ring-2 ring-amber-200 ${props.className ?? 'size-16'}`}
   />
 );
 
-/** Gigi's still picture, for the start screen. */
-export const HOST_POSTER = { src: `${HOST_LOOP.full}.jpg`, width: 483, height: 720 };
+/**
+ * The narrator's still picture, for the start screen.
+ * @param narrator Who narrates.
+ * @returns The picture, its size and its frame classes.
+ */
+export const hostPoster = (narrator: Narrator) => {
+  const host = HOSTS[narrator];
+
+  return { src: `${host.full}.jpg`, width: host.width, height: host.height, frame: host.frame };
+};

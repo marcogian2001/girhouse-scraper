@@ -1177,6 +1177,7 @@
     "video_pending_title": "Stiamo finendo il video per {company}",
     "video_pending_text": "Sarà pronto tra pochi minuti: riapri questo link tra poco.",
     "video_line_intro": "Ciao, sono <b>Gigi di Girhouse</b>. In pochi minuti ti mostro <hl>come potrebbe funzionare per {company}</hl>: ti cercano, ti trovano, ti scrivono e diventano clienti.",
+    "video_line_intro_host": "Ciao, sono <b>Gianmarco</b>, il fondatore di Girhouse. In pochi minuti ti mostro <hl>come potrebbe funzionare per {company}</hl>: ti cercano, ti trovano, ti scrivono e diventano clienti.",
     "video_loss_not_found": "Ti cercano, ma non ti trovano",
     "video_loss_not_chosen": "Ti trovano, ma non ti scelgono",
     "video_loss_lost": "Ti scrivono, ma si perdono",

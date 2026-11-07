@@ -6,6 +6,7 @@ import { logger } from '@/libs/Logger';
 import type { DemoSnapshot, DemoVsl } from '@/models/Schema';
 import { requireCopywritingModel } from '@/utils/CopywritingModels';
 import { findSectorPainPoints, renderPainPlaybook } from '@/utils/DemoPainPoints';
+import type { Narrator } from '@/utils/HostVoice';
 import { cleanReply } from '@/utils/ReplyGuard';
 import { getClient, reasoningFor } from './Claude';
 import { toBilledCall } from './ReplyPrompt';
@@ -120,9 +121,21 @@ const SCENES: Record<VideoWrittenLine, string> = {
     'A second WhatsApp chat: the reminder typical of this sector (`promemoria`) goes out on its own and the customer books again.',
 };
 
+/** Who tells the video, as the AI should picture him. */
+const NARRATORS: Record<Narrator, string> = {
+  gigi: 'Gigi, the friendly Girhouse giraffe',
+  gianmarco: 'Gianmarco, the founder of Girhouse, a real person speaking for himself',
+};
+
+/**
+ * Opens the instructions on who tells the video.
+ * @param narrator Who narrates.
+ * @returns The opening paragraph.
+ */
+const renderNarrator = (narrator: Narrator) =>
+  `You write the video demo Girhouse sends an Italian small business after it showed interest: a video of about two minutes that ${NARRATORS[narrator]}, narrates on his own while the screens play. He talks to the owner, using "tu", as someone who knows their work.`;
+
 const INSTRUCTIONS = [
-  'You write the video demo Girhouse sends an Italian small business after it showed interest: a video of about two minutes that Gigi, the friendly Girhouse giraffe, narrates on his own while the screens play. Gigi talks to the owner, using "tu", as someone who knows their work.',
-  '',
   'What the video says: more customers without paying for advertising, by making the business easy to find on Google and by losing nobody who gets in touch. It walks one path, "ti cercano, ti trovano, ti scrivono, diventano clienti", in four stretches where customers get lost, each followed by what Girhouse does about it, on a case of this sector. The offer comes after your lines and is fixed: never mention prices, trials or guarantees.',
   '',
   'Rules for every text:',
@@ -166,7 +179,7 @@ const INSTRUCTIONS = [
   '- `nome_cliente`: another common Italian first name.',
   '- `messaggi`: 3 messages. The business writes first with a concrete detail, kind and never pushy, offering two times as `opzioni`. The customer picks one, exactly as written. The business confirms. `opzioni` empty on the other messages.',
   '',
-  'The photos (`foto`): for each stretch, the English prompt of the photo shown while Gigi says that line.',
+  'The photos (`foto`): for each stretch, the English prompt of the photo shown while the narrator says that line.',
   '- It shows the moment the line tells, in a place that fits this sector and is clearly Italian, with the people the line names. It must fit this business: an office professional is never in a warehouse, a workshop owner is never in a medical studio.',
   '- One clear scene, 2 or 3 sentences: who is there, where, what happens, the mood. Simple poses a camera would catch, no close-ups of hands on bodies.',
   "- Five different pictures: never two with the same place and pose. Tell some from the customer's side, for example someone at home searching on their phone.",
@@ -174,7 +187,7 @@ const INSTRUCTIONS = [
   '- Never ask for written words: no text, signs, names or messages to read on screens or paper.',
   '- The style is added on its own: do not describe the camera, the light or the photo style.',
   '',
-  "Gigi's lines (`battute`): one per screen, read aloud while the screen plays.",
+  "The narrator's lines (`battute`): one per screen, read aloud while the screen plays.",
   '- Spoken, natural to hear. 1 or 2 short sentences, at most 140 characters each line: the whole video lasts about two minutes. No lists, no symbols, no abbreviations, no numbers written as digits except times.',
   '- Mark one key phrase with `<b>...</b>` (bold) or `<hl>...</hl>` (highlighted), never nested.',
   '- Never tell them to press, tap or click anything: the video plays on its own.',
@@ -227,6 +240,7 @@ const renderBusiness = (options: { data: DemoSnapshot; notes: string | null }) =
  * @param options.model The Claude model id.
  * @param options.data The demo snapshot.
  * @param options.notes What the Girhouse team told the demo to use, if anything.
+ * @param options.narrator Who tells the video.
  * @returns The texts, or null when the answer did not parse, plus the billed call.
  * @throws {Error} When the API key is missing or the model is not a Claude model.
  */
@@ -234,6 +248,7 @@ export const writeDemoVsl = async (options: {
   model: string;
   data: DemoSnapshot;
   notes: string | null;
+  narrator: Narrator;
 }) => {
   const model = requireCopywritingModel({ id: options.model, provider: 'anthropic' });
   const reasoning = reasoningFor(model.id, 'low');
@@ -245,6 +260,8 @@ export const writeDemoVsl = async (options: {
     thinking: reasoning.thinking,
     output_config: { effort: reasoning.effort, format: zodOutputFormat(vslTextsSchema) },
     system: [
+      renderNarrator(options.narrator),
+      '',
       INSTRUCTIONS,
       renderScreens(),
       '',

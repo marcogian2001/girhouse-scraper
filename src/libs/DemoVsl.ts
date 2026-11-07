@@ -21,9 +21,12 @@ import {
   jobSchema,
 } from '@/models/Schema';
 import { toDemoVsl, writeDemoVsl } from '@/services/DemoVslWriter';
+import { speakAsHost } from '@/services/ElevenLabs';
 import { createKieTask, downloadFromKie, readKieTask } from '@/services/Kie';
 import { GIGI_VOICE_NAME, GIGI_VOICE_STYLE, toSpokenText } from '@/utils/GigiVoice';
-import { wavToMp3 } from '@/utils/Mp3';
+import type { Narrator } from '@/utils/HostVoice';
+import { HOST_VOICE_SAMPLE_RATE } from '@/utils/HostVoice';
+import { pcmToMp3, wavToMp3 } from '@/utils/Mp3';
 import { getAutomationSettings } from './AutomationSettings';
 import { db } from './DB';
 import { loadDemoReviews } from './DemoReviews';
@@ -77,6 +80,8 @@ const payloadSchema = z.object({
   // Stamps the version B this job writes, so a newer request makes it stop
   generatedAt: z.string(),
   phase: z.enum(['script', 'voice_start', 'voice_poll']),
+  // Who tells the video the script phase writes
+  narrator: z.enum(['gigi', 'gianmarco']).default('gigi'),
   tasks: z.array(taskSchema).default([]),
   voiceStartedAt: z.number().optional(),
 });
@@ -124,15 +129,17 @@ const findDemoOwner = async (demo: Demo) =>
  * Writes version B's script from the demo already built, and stores it waiting for its voice.
  * @param demo The demo.
  * @param generatedAt The stamp of this version B.
+ * @param narrator Who tells the video.
  * @throws {Error} When the AI answer does not parse, so the job retries.
  */
-const writeScript = async (demo: Demo, generatedAt: string) => {
+const writeScript = async (demo: Demo, generatedAt: string, narrator: Narrator) => {
   const settings = await getAutomationSettings(demo.organizationId);
 
   const { texts, call } = await writeDemoVsl({
     model: settings.classificationModel,
     data: demo.data,
     notes: demo.guidance,
+    narrator,
   });
 
   const conversation = await findDemoOwner(demo);
@@ -154,6 +161,7 @@ const writeScript = async (demo: Demo, generatedAt: string) => {
   const vsl: DemoVsl = {
     ...toDemoVsl(texts),
     closing: VIDEO_CLOSING,
+    narrator,
     generatedAt,
   };
 
@@ -261,6 +269,35 @@ const downloadVoice = async (task: KieTask & { url: string }) => ({
 });
 
 /**
+ * Says every line in Gianmarco's cloned voice. ElevenLabs answers at once, so this runs
+ * when the photos are in, right before everything is stored.
+ * @param demo The demo.
+ * @param vsl Its script.
+ * @returns Each line, what it says and the MP3; lines ElevenLabs refused are left out.
+ */
+const voiceAsHost = async (demo: Demo, vsl: DemoVsl) => {
+  const voiced: Awaited<ReturnType<typeof downloadVoice>>[] = [];
+
+  for (const entry of await renderVoiceLines(demo, vsl)) {
+    try {
+      // One at a time, like the Kie voices
+      // oxlint-disable-next-line no-await-in-loop
+      const samples = await speakAsHost(entry.text);
+
+      voiced.push({ ...entry, ...pcmToMp3(samples, HOST_VOICE_SAMPLE_RATE) });
+    } catch (error) {
+      // Only typed, like a voice Kie gave up on
+      logger.warn('ElevenLabs could not voice {line}: {error}', {
+        line: entry.line,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+
+  return voiced;
+};
+
+/**
  * Downloads one photo Kie made, shrunk to what the frame shows.
  * @param task The photo task, done.
  * @returns The line, its prompt and the JPEG.
@@ -284,7 +321,7 @@ const downloadPhoto = async (task: KieTask & { url: string }) => ({
  * @param tasks The voice and photo tasks.
  */
 const storeResults = async (demo: Demo, tasks: KieTask[]) => {
-  const voiced: Awaited<ReturnType<typeof downloadVoice>>[] = [];
+  const voiced = demo.vsl?.narrator === 'gianmarco' ? await voiceAsHost(demo, demo.vsl) : [];
   const photos: Awaited<ReturnType<typeof downloadPhoto>>[] = [];
 
   // One at a time: Kie's file host drops connections when many come at once
@@ -352,14 +389,15 @@ export const advanceDemoVsl = async (
   }
 
   if (payload.phase === 'script') {
-    await writeScript(demo, payload.generatedAt);
+    await writeScript(demo, payload.generatedAt, payload.narrator);
 
     return { payload: { ...payload, phase: 'voice_start' }, delaySeconds: 0 };
   }
 
   if (payload.phase === 'voice_start' && demo.vsl) {
     const tasks: KieTask[] = [];
-    const lines = await renderVoiceLines(demo, demo.vsl);
+    // Gianmarco's voice comes from ElevenLabs at the end, not from Kie
+    const lines = demo.vsl.narrator === 'gianmarco' ? [] : await renderVoiceLines(demo, demo.vsl);
     const entries = [
       ...lines.map((entry) => ({
         ...entry,
