@@ -1135,7 +1135,7 @@ export const DemoVsl = (
         preload="auto"
         playsInline
         {...clipAttributes(isClip, t('video_line_trust'))}
-        className="m-auto h-auto max-h-full w-auto max-w-full rounded-3xl shadow-xl"
+        className="m-auto h-auto max-h-full w-auto max-w-full rounded-3xl"
         onPlaying={() => {
           setIsTalking(true);
         }}
