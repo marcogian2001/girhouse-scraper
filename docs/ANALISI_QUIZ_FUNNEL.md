@@ -524,3 +524,23 @@ Questa sezione prevale su tutte le precedenti per percorso, risultato e dati. Ni
 - **Vercel**: header `X-Robots-Tag: noindex, nofollow` aggiunto in `next.config.ts` con le PR marcogian2001/girhouse-tutorial#6 (tutorial.girhouse.com) e marcogian2001/girhouse-scraper#12 (scraper.girhouse.com e demo.girhouse.com). Vale dopo il merge.
 - **Go High Level**: app.girhouse.com ha già il noindex; call e highlevel rispondono 404; lp.girhouse.com è un dominio funnel attivo, da mettere in noindex dalle impostazioni dei funnel in Go High Level.
 - Elenco per Rimozioni in Search Console: file `link-rimozioni-search-console.txt` della sessione. Backup in `~/backups-girhouse/20261107-sottodomini-noindex/`.
+
+## Quiz F1: risultati di Google, suoni del grafico, chiamata più corta e voce di Gigi (8 novembre 2026)
+
+- **Schermata "Il tuo sito su Google"** (`drawSiteRank` in `quiz.js`): su telefono la lista usciva a destra (righe in griglia con titoli su una riga sola che allargavano la colonna). Ora è disegnata come la pagina dei risultati di Google: barra con il logo e la ricerca, poi per ogni risultato icona con l'iniziale, dominio e percorso della pagina sulla stessa riga ("miodottore.it › dentista › milano"), titolo blu con i puntini se è lungo. Il proprio sito ha la riga verde con "Il tuo sito · N°"; se non c'è, l'ultima riga rossa tratteggiata. Su schermi da 768 px in su compaiono anche le schede (Tutti, Maps…) e il testo sotto il titolo; in `is-tight` spariscono di nuovo. Stessa altezza di prima, quindi `fit()` non deve nascondere più cose di prima.
+- **Dati**: `gh_diag_site_rank` in `diagnosi.php` salva anche `link` e `snippet` di Serper; la cache è passata a `gh_diag_serp2_` per riempirli subito. Le sessioni salvate con i dati vecchi funzionano lo stesso (senza percorso e testo).
+- **Suoni del grafico "Quanto potresti guadagnare"**: la moneta a 3 mesi, 6 mesi e un anno era sparita il 4 novembre (versione `quiz-v3b`), quando è stato riscritto `drawMoney`. Rimessa: `coinSound(0|1|2)` quando la linea arriva a ogni punto.
+- **Prova della chiamata AI** (`drawSolInbox` / `callPlayer`): il bottone Continua compare a metà della conversazione (evento `gh-call-half` alla quinta battuta su nove) invece che a chiamata finita. Senza audio: dopo circa 11 secondi invece di 22. Con "Ascolta la voce": verso il 17° secondo su 35.
+- **Gigi, "sistema Genius"**: la clip `offerta_acquisto.mp3` diceva "Genius" (trascritta con whisper). Rigenerata con la stessa voce e la stessa frase (6 prove, scelta quella che dice "Giraus"); le altre due clip con "Girhouse" (`intro`, `offerta_telefonata`) erano già giuste. `GIGI_VERSION` passato a 2. I file di Kie si possono scaricare anche dal server Hostinger con `curl` (da casa `file.aiquickdraw.com` va in timeout).
+- **Versioni e copie**: `quiz.css?v=76`, `quiz.js?v=85`. Copia di prima in `~/backups-girhouse/20261108-quiz-serp-suoni-gigi/`.
+
+## FAQ nel checkout (8 novembre 2026)
+
+- **Dove**: `/attiva/` (`template-attiva.php`), nella colonna con garanzia e recensioni, sotto Trustpilot. Cinque domande che si aprono al tocco (`<details>`), stile in `checkout.css` (`.co-faq`). Valgono anche per i link pagamenti (`?piano=`).
+- **Da dove vengono**: le domande più fatte nelle chiamate di vendita e di setting (Caselli, Apollonio, lpauto, NaturalMente, Camponeschi, Pompa, Neri, Fornari, Elefante, Ferri):
+  1. Il sito è incluso? Sì, sito vetrina di 4-5 pagine ottimizzato SEO; niente e-commerce né siti con funzioni particolari.
+  2. Mi portate voi i clienti, fate la pubblicità? No (come le condizioni, punto 3): diamo il sistema per farsi trovare e non perdere richieste.
+  3. Ci sono vincoli o costi in più? No: prezzo totale, niente attivazione, disdetta prima del rinnovo, vale dalla fine del mese pagato (condizioni, punti 5 e 7).
+  4. Non sono pratico di tecnologia, chi mi aiuta? Facciamo tutto noi, circa una settimana lavorativa, gruppo WhatsApp con il team italiano.
+  5. L'intelligenza artificiale risponde al posto mio? Solo se e come vuoi; raccoglie le prime informazioni e poi passa a te; prima la proviamo insieme.
+- Copia di prima in `~/backups-girhouse/20261108-checkout-faq/`.
