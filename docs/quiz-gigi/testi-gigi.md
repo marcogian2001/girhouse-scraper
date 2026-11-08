@@ -94,11 +94,11 @@ E di solito, in quanto tempo rispondi? Rispondi con sincerità: chi aspetta trop
 
 ## Quanto ti paga un cliente nuovo (attività normali) [valore_cliente]
 
-Ultima domanda: quanto ti paga, in media, un cliente nuovo nel primo anno? Mi serve per calcolare quanto valgono le richieste che oggi perdi.
+Ultima domanda: quanto spende in media da te un cliente nuovo nel primo anno? Mi serve per calcolare quanto valgono le richieste che oggi perdi.
 
 ## Quanto ti paga un paziente nuovo (studi medici) [valore_paziente]
 
-Ultima domanda: quanto ti paga, in media, un paziente nuovo nel primo anno? Mi serve per calcolare quanto valgono le richieste che oggi perdi.
+Ultima domanda: quanto spende in media da te un paziente nuovo nel primo anno? Mi serve per calcolare quanto valgono le richieste che oggi perdi.
 
 ## Quanto potresti guadagnare dalle richieste perse (grafico) [costo]
 

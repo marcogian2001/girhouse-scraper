@@ -552,3 +552,9 @@ Questa sezione prevale su tutte le precedenti per percorso, risultato e dati. Ni
 - **Dove**: `/attiva/` (`template-attiva.php`), nella fila delle recensioni che scorre (`#coReviews`). Il titolo ora è "Cosa dicono i clienti" e il link a destra "Trustpilot 4,5 su 5 · 123 recensioni" (il numero 123 era già stato cambiato sul server da qualcun altro: la modifica è stata tenuta).
 - **Cosa**: 10 messaggi che i clienti hanno mandato su WhatsApp, forniti dall'utente, alternati alle 5 recensioni Trustpilot (1 Trustpilot, 2 WhatsApp, e così via; 15 schede). Testo lasciato com'era scritto. Le schede WhatsApp hanno lo sfondo verde chiaro, l'icona e "Messaggio su WhatsApp" al posto delle stelle (non hanno un voto), firmate "Cliente Girhouse"; stile `.co-tp.is-wa` in `checkout.css`.
 - Copia di prima in `~/backups-girhouse/20261108-checkout-recensioni-wa/`.
+
+## Quiz F1: "quanto spende" invece di "quanto ti paga" (8 novembre 2026)
+
+- **Domanda sul valore del cliente** (`valore_cliente` in `quiz.js`): ora "Quanto spende in media da te un cliente/paziente nuovo nel primo anno?" invece di "Quanto ti paga…". Stessa frase nelle etichette della bacheca Analisi (`analisi.php`); i dati salvati non cambiano.
+- **Gigi**: rigenerate `valore_cliente.mp3` e `valore_paziente.mp3` con la frase nuova (3 prove ciascuna, trascritte con whisper, scelte quelle pulite). Testi aggiornati in `docs/quiz-gigi/lines.json` e `testi-gigi.md`. `GIGI_VERSION` 3, `quiz.js?v=86`.
+- Copia di prima in `~/backups-girhouse/20261108-quiz-spende/`.
