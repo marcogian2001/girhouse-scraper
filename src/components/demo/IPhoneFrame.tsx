@@ -1,30 +1,15 @@
 /**
- * The room a scene keeps on screen besides the phone: the tour's header and padding, plus a
- * label above it when the scene has one. Phones keep less padding, so the phone is wider.
- */
-const RESERVES = {
-  phone: '[--phone-reserve:5rem] md:[--phone-reserve:7rem]',
-  label: '[--phone-reserve:8rem] md:[--phone-reserve:10rem]',
-} as const;
-
-/**
  * A current-generation iPhone: titanium frame, side buttons, Dynamic Island and status bar.
  * Its width follows the screen's height, so the whole phone fits above Gigi's bar and keeps
- * its shape on a short laptop screen.
+ * its shape on a short laptop screen. It keeps room for the tour's header, a hair of padding
+ * and a scene label, whether the scene shows one or not, so the phone is the same in every scene.
  * @param props Component props.
  * @param props.children The screen content, below the status bar.
  * @param props.statusBarClassName Colours of the status bar, to match the app on screen.
- * @param props.reserve What else the scene shows around the phone.
  * @returns The phone mockup.
  */
-export const IPhoneFrame = (props: {
-  children: React.ReactNode;
-  statusBarClassName?: string;
-  reserve?: keyof typeof RESERVES;
-}) => (
-  <div
-    className={`relative mx-auto w-[clamp(12rem,var(--phone-w),300px)] shrink-0 [--phone-w:calc((100svh-var(--demo-bar-h,12rem)-var(--phone-reserve)-24px)*9/19.5+24px)] sm:w-[clamp(12rem,var(--phone-w),320px)] ${RESERVES[props.reserve ?? 'phone']}`}
-  >
+export const IPhoneFrame = (props: { children: React.ReactNode; statusBarClassName?: string }) => (
+  <div className="relative mx-auto w-[clamp(12rem,var(--phone-w),300px)] shrink-0 [--phone-reserve:5.5rem] [--phone-w:calc((100svh-var(--demo-bar-h,12rem)-var(--phone-reserve)-24px)*9/19.5+24px)] sm:w-[clamp(12rem,var(--phone-w),320px)] md:[--phone-reserve:10rem]">
     {/* Side buttons */}
     <span className="absolute top-28 -left-[3px] h-8 w-[3px] rounded-l bg-neutral-400" />
     <span className="absolute top-40 -left-[3px] h-14 w-[3px] rounded-l bg-neutral-400" />

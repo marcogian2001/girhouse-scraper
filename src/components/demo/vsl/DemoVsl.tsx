@@ -413,6 +413,28 @@ const showsHostScreen = (options: { scene: VslScene; isStarted: boolean; isResum
 /** Scenes that fill the screen with the offer, so they keep less room above and below. */
 const COMPACT_KINDS = new Set<VslScene['kind']>(['pricing', 'offer', 'closing']);
 
+/** Scenes showing the phone: on a phone, only a hair of room above and below it, so it is as big as it can be. */
+const PHONE_KINDS = new Set<VslScene['kind']>([
+  'chat',
+  'missed_call',
+  'reminder',
+  'review_request',
+  'social',
+]);
+
+/**
+ * The room a scene keeps above and below its content.
+ * @param kind The scene's kind.
+ * @returns The padding classes of `main`.
+ */
+const scenePadding = (kind: VslScene['kind']) => {
+  if (COMPACT_KINDS.has(kind)) {
+    return 'py-4 md:py-6';
+  }
+
+  return PHONE_KINDS.has(kind) ? 'py-1 md:py-10' : 'py-3 md:py-10';
+};
+
 /** Scenes only version B has, drawn by `VslStoryVisual`. */
 const STORY_KINDS = new Set<VslScene['kind']>([
   'problem',
@@ -584,15 +606,9 @@ const VslStoryVisual = (props: {
 
   if (scene.kind === 'reminder') {
     return (
-      <div className="flex flex-col items-center gap-3">
-        {props.vsl.closing ? (
-          <SceneLabel>{t('vsl_reminder_label', { title: props.vsl.reminder.title })}</SceneLabel>
-        ) : (
-          <p className="rounded-full bg-(--demo-primary) px-4 py-1.5 text-sm font-semibold text-(--demo-on-primary) shadow">
-            {t('vsl_reminder_label', { title: props.vsl.reminder.title })}
-          </p>
-        )}
-        <IPhoneFrame statusBarClassName="bg-[#f6f6f6] text-neutral-900" reserve="label">
+      <div className="flex flex-col items-center gap-2 md:gap-3">
+        <SceneLabel>{t('vsl_reminder_label', { title: props.vsl.reminder.title })}</SceneLabel>
+        <IPhoneFrame statusBarClassName="bg-[#f6f6f6] text-neutral-900">
           <WhatsAppChat
             company={data.company}
             messages={props.vsl.reminder.messages}
@@ -1323,7 +1339,7 @@ export const DemoVsl = (
     </>
   ) : (
     <div
-      className={`min-h-svh overflow-x-clip pb-[calc(var(--demo-bar-h,6rem)+0.75rem)] md:pb-[calc(var(--demo-bar-h,6rem)+1.5rem)] ${isPricing ? 'bg-gradient-to-b from-[#0074F2] via-[#0a52d4] to-[#06287f]' : ''}`}
+      className={`min-h-svh overflow-x-clip ${PHONE_KINDS.has(scene.kind) ? 'pb-(--demo-bar-h,6rem)' : 'pb-[calc(var(--demo-bar-h,6rem)+0.75rem)]'} md:pb-[calc(var(--demo-bar-h,6rem)+1.5rem)] ${isPricing ? 'bg-gradient-to-b from-[#0074F2] via-[#0a52d4] to-[#06287f]' : ''}`}
     >
       {/* Above the mockups, whose own layers stay inside `main` */}
       <header className="sticky top-0 z-20 border-b border-neutral-100 bg-white/90 backdrop-blur">
@@ -1349,7 +1365,7 @@ export const DemoVsl = (
 
       <main
         key={sceneGroup(scene, index)}
-        className={`isolate mx-auto max-w-7xl animate-in px-4 duration-500 fade-in ${COMPACT_KINDS.has(scene.kind) ? 'py-4 md:py-6' : 'py-3 md:py-10'}`}
+        className={`isolate mx-auto max-w-7xl animate-in px-4 duration-500 fade-in ${scenePadding(scene.kind)}`}
       >
         <VslSceneVisual
           scene={scene}

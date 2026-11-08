@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { IPhoneFrame } from '../IPhoneFrame';
 import { useTimedSequence } from '../useTimedSequence';
 import { WhatsAppChat } from '../WhatsAppChat';
+import { SceneLabel } from './SceneLabel';
 import { VSL_MISSED_CALL_STEP_MS } from './VslScript';
 
 /**
@@ -21,14 +22,11 @@ export const MissedCallScene = (props: { company: string; message: string; reply
   const moment = useTimedSequence({ target: 2, intervalMs: VSL_MISSED_CALL_STEP_MS });
 
   return (
-    <div className="flex flex-col items-center gap-3">
-      <p
-        className={`rounded-full px-4 py-1.5 text-sm font-semibold shadow transition-colors ${moment >= 2 ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}
-      >
+    <div className="flex flex-col items-center gap-2 md:gap-3">
+      <SceneLabel toneClassName={moment >= 2 ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}>
         {moment >= 2 ? t('vsl_missed_auto') : t('vsl_case_missed_call')}
-      </p>
+      </SceneLabel>
       <IPhoneFrame
-        reserve="label"
         statusBarClassName={
           moment >= 2 ? 'bg-[#f6f6f6] text-neutral-900' : 'bg-neutral-900 text-white'
         }

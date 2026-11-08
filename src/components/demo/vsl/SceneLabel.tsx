@@ -3,10 +3,13 @@
  * it still does not fit.
  * @param props Component props.
  * @param props.children The label.
+ * @param props.toneClassName Its colours, the demo's own unless given.
  * @returns The label.
  */
-export const SceneLabel = (props: { children: React.ReactNode }) => (
-  <p className="mx-auto w-fit max-w-full truncate rounded-full bg-(--demo-primary) px-3 py-1 text-center text-[11px] font-semibold whitespace-nowrap text-(--demo-on-primary) shadow sm:px-4 sm:py-1.5 sm:text-sm">
+export const SceneLabel = (props: { children: React.ReactNode; toneClassName?: string }) => (
+  <p
+    className={`mx-auto w-fit max-w-full truncate rounded-full px-3 py-1 text-center text-[11px] font-semibold whitespace-nowrap shadow transition-colors sm:px-4 sm:py-1.5 sm:text-sm ${props.toneClassName ?? 'bg-(--demo-primary) text-(--demo-on-primary)'}`}
+  >
     {props.children}
   </p>
 );

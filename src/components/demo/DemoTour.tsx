@@ -109,6 +109,20 @@ const SceneVisual = (options: {
 };
 
 /**
+ * The room a scene keeps above and below its content. On a phone the chat keeps only a
+ * hair of it, so the phone is as big as it can be.
+ * @param kind The scene's kind.
+ * @returns The padding classes of `main`.
+ */
+const scenePadding = (kind: TourScene['kind']) => {
+  if (kind === 'pricing') {
+    return 'py-4 md:py-6';
+  }
+
+  return kind === 'chat' ? 'py-1 md:py-10' : 'py-3 md:py-10';
+};
+
+/**
  * Reports the visit, the step it opened on and the time spent while the tab is visible.
  * Renders nothing, and is left out of dashboard previews.
  * @param props Component props.
@@ -312,10 +326,11 @@ export const DemoTour = (props: DemoTourProps) => {
   const isLast = index === scenes.length - 1;
   // The offer speaks for itself: full-screen blue, no Gigi lines over the price
   const isPricing = scene.kind === 'pricing';
+  const isPhone = scene.kind === 'chat';
 
   return (
     <div
-      className={`min-h-svh overflow-x-clip pb-[calc(var(--demo-bar-h,12rem)+0.75rem)] md:pb-[calc(var(--demo-bar-h,12rem)+1.5rem)] ${isPricing ? 'bg-gradient-to-b from-[#0074F2] via-[#0a52d4] to-[#06287f]' : ''}`}
+      className={`min-h-svh overflow-x-clip ${isPhone ? 'pb-(--demo-bar-h,12rem)' : 'pb-[calc(var(--demo-bar-h,12rem)+0.75rem)]'} md:pb-[calc(var(--demo-bar-h,12rem)+1.5rem)] ${isPricing ? 'bg-gradient-to-b from-[#0074F2] via-[#0a52d4] to-[#06287f]' : ''}`}
     >
       {tracking}
 
@@ -343,7 +358,7 @@ export const DemoTour = (props: DemoTourProps) => {
 
       <main
         key={scene.step}
-        className={`isolate mx-auto max-w-7xl animate-in px-4 duration-500 fade-in ${isPricing ? 'py-4 md:py-6' : 'py-3 md:py-10'}`}
+        className={`isolate mx-auto max-w-7xl animate-in px-4 duration-500 fade-in ${scenePadding(scene.kind)}`}
       >
         <SceneVisual
           scene={scene}

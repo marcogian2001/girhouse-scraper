@@ -54,11 +54,11 @@ export const ReviewRequestScene = (props: {
   const stars = Math.min(Math.max(moment - 1, 0), STARS);
 
   return (
-    <div className="flex flex-col items-center gap-3">
+    <div className="flex flex-col items-center gap-2 md:gap-3">
       <SceneLabel>{t('video_review_label')}</SceneLabel>
       {/* The result shows over the bottom of the chat, so no room is kept for it below */}
       <div className="relative">
-        <IPhoneFrame statusBarClassName="bg-[#f6f6f6] text-neutral-900" reserve="label">
+        <IPhoneFrame statusBarClassName="bg-[#f6f6f6] text-neutral-900">
           <div className="flex items-center gap-2 border-b border-neutral-200 bg-[#f6f6f6] px-3 py-2">
             <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[#25d366] text-sm font-semibold text-white">
               {props.company.charAt(0).toUpperCase()}
