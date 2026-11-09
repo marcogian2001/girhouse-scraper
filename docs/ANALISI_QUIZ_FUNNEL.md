@@ -558,3 +558,9 @@ Questa sezione prevale su tutte le precedenti per percorso, risultato e dati. Ni
 - **Domanda sul valore del cliente** (`valore_cliente` in `quiz.js`): ora "Quanto spende in media da te un cliente/paziente nuovo nel primo anno?" invece di "Quanto ti paga…". Stessa frase nelle etichette della bacheca Analisi (`analisi.php`); i dati salvati non cambiano.
 - **Gigi**: rigenerate `valore_cliente.mp3` e `valore_paziente.mp3` con la frase nuova (3 prove ciascuna, trascritte con whisper, scelte quelle pulite). Testi aggiornati in `docs/quiz-gigi/lines.json` e `testi-gigi.md`. `GIGI_VERSION` 3, `quiz.js?v=86`.
 - Copia di prima in `~/backups-girhouse/20261108-quiz-spende/`.
+
+## Analisi quiz e video F2 azzerate (9 novembre 2026)
+
+- **Cosa**: su richiesta dell'utente svuotate le tabelle `wp_gh_quiz_sessions` (21 sessioni, dal 2 all'8 novembre) e `wp_gh_vsl_sessions` (123 aperture, dal 5 al 9 novembre). Le due schermate Analisi quiz e Analisi video F2 ripartono da zero il 9 novembre 2026, sera. Le visite dei funnel (`visite.php`) non sono state toccate.
+- **Copia**: tutte le righe di prima, contatti compresi, in `~/backups-girhouse/20261109-reset-analisi/analisi-quiz-video.json` (permessi 600). `wp db export` sul server non produce file, quindi la copia è in JSON.
+- **Sessioni in corso**: il quiz e il video ricreano la riga al primo evento successivo (`INSERT IGNORE` / `ON DUPLICATE KEY`); il Lead per Meta accetta solo sessioni presenti, quindi chi era a metà quiz al momento dell'azzeramento conta di nuovo da lì.
