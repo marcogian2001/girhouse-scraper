@@ -21,7 +21,6 @@ import {
   Item,
   ItemActions,
   ItemContent,
-  ItemDescription,
   ItemGroup,
   ItemMedia,
   ItemTitle,
@@ -38,6 +37,113 @@ export type KnowledgeAssetView = {
   content: string | null;
 };
 
+/**
+ * Lists one kind of saved asset in its own card, with delete and, for prompts, inline editing.
+ * @param props - The assets of one kind and the shared busy state.
+ * @returns The card with the assets or an empty state.
+ */
+const KnowledgeAssetList = (props: {
+  kind: KnowledgeAssetView['kind'];
+  title: string;
+  emptyTitle: string;
+  assets: KnowledgeAssetView[];
+  documents: KnowledgeAssetView[];
+  isBusy: boolean;
+  onBusyChange: (isBusy: boolean) => void;
+}) => {
+  const t = useTranslations('KnowledgeManager');
+  const router = useRouter();
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const Icon = props.kind === 'document' ? FileText : MessageSquareQuote;
+
+  return (
+    // `py-0` lets the rows run edge to edge, so the header carries its own
+    <Card className="py-0">
+      <CardHeader className="border-b py-(--card-spacing)">
+        <CardTitle>{props.title}</CardTitle>
+      </CardHeader>
+
+      {props.assets.length === 0 ? (
+        <CardContent>
+          <Empty>
+            <EmptyHeader>
+              <EmptyMedia>
+                <span className="flex size-10 items-center justify-center rounded-lg border bg-background text-muted-foreground">
+                  <Icon className="size-4" />
+                </span>
+              </EmptyMedia>
+
+              <EmptyTitle>{props.emptyTitle}</EmptyTitle>
+              <EmptyDescription>{t('list_empty_description')}</EmptyDescription>
+            </EmptyHeader>
+          </Empty>
+        </CardContent>
+      ) : (
+        <ItemGroup>
+          {props.assets.map((asset) => (
+            <Fragment key={asset.id}>
+              <Item>
+                <ItemMedia>
+                  <span className="flex size-9 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                    <Icon className="size-4" />
+                  </span>
+                </ItemMedia>
+
+                <ItemContent>
+                  <ItemTitle>{asset.name}</ItemTitle>
+                </ItemContent>
+
+                <ItemActions>
+                  {asset.kind === 'prompt' && (
+                    <Button
+                      type="button"
+                      size="icon-sm"
+                      variant="ghost"
+                      aria-label={t('button_edit')}
+                      disabled={props.isBusy}
+                      onClick={() => {
+                        setEditingId(editingId === asset.id ? null : asset.id);
+                      }}
+                    >
+                      <Pencil />
+                    </Button>
+                  )}
+
+                  <Button
+                    type="button"
+                    size="icon-sm"
+                    variant="ghost"
+                    aria-label={t('button_delete')}
+                    disabled={props.isBusy}
+                    onClick={async () => {
+                      props.onBusyChange(true);
+                      await fetch(`/api/knowledge/${asset.id}`, { method: 'DELETE' });
+                      props.onBusyChange(false);
+                      router.refresh();
+                    }}
+                  >
+                    <Trash2 />
+                  </Button>
+                </ItemActions>
+              </Item>
+
+              {editingId === asset.id && asset.content !== null && (
+                <KnowledgePromptEditor
+                  asset={{ id: asset.id, name: asset.name, content: asset.content }}
+                  documents={props.documents}
+                  onClose={() => {
+                    setEditingId(null);
+                  }}
+                />
+              )}
+            </Fragment>
+          ))}
+        </ItemGroup>
+      )}
+    </Card>
+  );
+};
+
 export const KnowledgeManager = (props: { assets: KnowledgeAssetView[] }) => {
   const t = useTranslations('KnowledgeManager');
   const router = useRouter();
@@ -45,8 +151,8 @@ export const KnowledgeManager = (props: { assets: KnowledgeAssetView[] }) => {
   const [content, setContent] = useState('');
   const [isBusy, setIsBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [editingId, setEditingId] = useState<string | null>(null);
 
+  const prompts = props.assets.filter((asset) => asset.kind === 'prompt');
   const documents = props.assets.filter((asset) => asset.kind === 'document');
 
   const handleSavePrompt = async () => {
@@ -76,95 +182,27 @@ export const KnowledgeManager = (props: { assets: KnowledgeAssetView[] }) => {
     <div className="space-y-4">
       {/* The add form leads, since it is what brings someone to this page */}
       <div className="grid gap-6 lg:grid-cols-[380px_minmax(0,1fr)]">
-        {/* `py-0` lets the rows run edge to edge, so the header carries its own */}
-        <Card className="py-0 lg:order-2">
-          <CardHeader className="border-b py-(--card-spacing)">
-            <CardTitle>{t('list_title')}</CardTitle>
-          </CardHeader>
+        <div className="space-y-6 lg:order-2">
+          <KnowledgeAssetList
+            kind="prompt"
+            title={t('prompts_title', { count: prompts.length })}
+            emptyTitle={t('prompts_empty')}
+            assets={prompts}
+            documents={documents}
+            isBusy={isBusy}
+            onBusyChange={setIsBusy}
+          />
 
-          {props.assets.length === 0 ? (
-            <CardContent>
-              <Empty>
-                <EmptyHeader>
-                  <EmptyMedia>
-                    <span className="flex size-10 items-center justify-center rounded-lg border bg-background text-muted-foreground">
-                      <MessageSquareQuote className="size-4" />
-                    </span>
-                  </EmptyMedia>
-
-                  <EmptyTitle>{t('list_empty')}</EmptyTitle>
-                  <EmptyDescription>{t('list_empty_description')}</EmptyDescription>
-                </EmptyHeader>
-              </Empty>
-            </CardContent>
-          ) : (
-            <ItemGroup>
-              {props.assets.map((asset) => (
-                <Fragment key={asset.id}>
-                  <Item>
-                    <ItemMedia>
-                      <span className="flex size-9 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-                        {asset.kind === 'document' ? (
-                          <FileText className="size-4" />
-                        ) : (
-                          <MessageSquareQuote className="size-4" />
-                        )}
-                      </span>
-                    </ItemMedia>
-
-                    <ItemContent>
-                      <ItemTitle>{asset.name}</ItemTitle>
-                      <ItemDescription>{t(`kind_${asset.kind}`)}</ItemDescription>
-                    </ItemContent>
-
-                    <ItemActions>
-                      {asset.kind === 'prompt' && (
-                        <Button
-                          type="button"
-                          size="icon-sm"
-                          variant="ghost"
-                          aria-label={t('button_edit')}
-                          disabled={isBusy}
-                          onClick={() => {
-                            setEditingId(editingId === asset.id ? null : asset.id);
-                          }}
-                        >
-                          <Pencil />
-                        </Button>
-                      )}
-
-                      <Button
-                        type="button"
-                        size="icon-sm"
-                        variant="ghost"
-                        aria-label={t('button_delete')}
-                        disabled={isBusy}
-                        onClick={async () => {
-                          setIsBusy(true);
-                          await fetch(`/api/knowledge/${asset.id}`, { method: 'DELETE' });
-                          setIsBusy(false);
-                          router.refresh();
-                        }}
-                      >
-                        <Trash2 />
-                      </Button>
-                    </ItemActions>
-                  </Item>
-
-                  {editingId === asset.id && asset.content !== null && (
-                    <KnowledgePromptEditor
-                      asset={{ id: asset.id, name: asset.name, content: asset.content }}
-                      documents={documents}
-                      onClose={() => {
-                        setEditingId(null);
-                      }}
-                    />
-                  )}
-                </Fragment>
-              ))}
-            </ItemGroup>
-          )}
-        </Card>
+          <KnowledgeAssetList
+            kind="document"
+            title={t('documents_title', { count: documents.length })}
+            emptyTitle={t('documents_empty')}
+            assets={documents}
+            documents={documents}
+            isBusy={isBusy}
+            onBusyChange={setIsBusy}
+          />
+        </div>
 
         <Card className="lg:order-1">
           <CardHeader>

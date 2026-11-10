@@ -66,7 +66,7 @@
     "nav_home": "Home",
     "nav_leads": "Ricerca lead",
     "nav_campaigns": "Campagne",
-    "nav_knowledge": "Base di conoscenza",
+    "nav_knowledge": "Knowledge base",
     "new_campaign": "Nuova campagna",
     "sign_out": "Esci",
     "nav_coverage": "Copertura",
@@ -100,7 +100,7 @@
     "title_generic": "Bentornato",
     "subtitle": "Carica una lista di contatti e l'AI cerca, scrive e programma la sequenza per ogni persona.",
     "button_new": "Nuova campagna",
-    "link_knowledge": "Gestisci la base di conoscenza",
+    "link_knowledge": "Gestisci la knowledge base",
     "stat_campaigns": "Campagne",
     "stat_contacts": "Contatti",
     "stat_emails": "Email scritte",
@@ -108,9 +108,9 @@
     "recent_title": "Campagne recenti",
     "recent_all": "Vedi tutte",
     "recent_meta": "{contacts, plural, one {# contatto} other {# contatti}} · {date}",
-    "knowledge_title": "Base di conoscenza",
+    "knowledge_title": "Knowledge base",
     "knowledge_description": "Prompt e documenti salvati che l'AI legge prima di scrivere.",
-    "knowledge_button": "Apri la base di conoscenza"
+    "knowledge_button": "Apri la knowledge base"
   },
   "NoCampaigns": {
     "title": "Nessuna campagna",
@@ -372,7 +372,7 @@
   },
   "NewOrganizationPage": {
     "title": "Nuova organizzazione",
-    "description": "Ogni organizzazione ha le sue campagne, la sua base di conoscenza e la sua spesa."
+    "description": "Ogni organizzazione ha le sue campagne, la sua knowledge base e la sua spesa."
   },
   "NewOrganizationForm": {
     "label_name": "Nome",
@@ -392,7 +392,7 @@
     "spend_line": "Spesa stimata {total}: Claude {tokens} token, {copywritingCost} · Parallel {runs, plural, one {# ricerca} other {# ricerche}}, ~{parallelCost}"
   },
   "KnowledgePage": {
-    "title": "Base di conoscenza",
+    "title": "Knowledge base",
     "description": "Prompt e documenti che l'AI legge prima di scrivere. Li scegli campagna per campagna."
   },
   "NewCampaignWizard": {
@@ -427,7 +427,7 @@
     "review_batch_off": "Disattivata",
     "review_schedule": "Programmazione",
     "review_delay": "{days}g",
-    "review_knowledge": "Base di conoscenza",
+    "review_knowledge": "Knowledge base",
     "review_brief": "Brief della campagna",
     "button_back": "Indietro",
     "button_next": "Continua",
@@ -557,15 +557,15 @@
     "label_content": "Contenuto",
     "button_save_prompt": "Salva prompt",
     "document_description": "PDF, testo, Markdown o CSV. I PDF vengono letti direttamente dal modello.",
-    "list_title": "Elementi salvati",
-    "list_empty": "Nessun elemento salvato",
-    "kind_prompt": "Prompt",
-    "kind_document": "Documento",
+    "prompts_title": "Prompt ({count})",
+    "documents_title": "Documenti ({count})",
+    "prompts_empty": "Nessun prompt salvato",
+    "documents_empty": "Nessun documento caricato",
     "button_delete": "Elimina",
     "button_edit": "Modifica",
     "error_save": "Non è stato possibile salvare questo prompt.",
     "error_upload": "Non è stato possibile caricare questo file.",
-    "add_title": "Aggiungi alla base di conoscenza",
+    "add_title": "Aggiungi alla knowledge base",
     "tab_prompt": "Prompt",
     "tab_document": "Documento",
     "list_empty_description": "Tutto quello che salvi qui può essere allegato a una campagna.",
