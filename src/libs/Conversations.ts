@@ -635,7 +635,11 @@ export const listConversations = async (options: {
     .leftJoin(contactSchema, eq(contactSchema.id, conversationSchema.contactId))
     .leftJoin(leadSchema, eq(leadSchema.id, conversationSchema.leadId))
     .where(where)
-    .orderBy(desc(conversationSchema.lastInboundAt), desc(conversationSchema.id))
+    // A conversation with no reply yet (e.g. a demo) sorts by when it was added, not on top
+    .orderBy(
+      desc(sql`coalesce(${conversationSchema.lastInboundAt}, ${conversationSchema.createdAt})`),
+      desc(conversationSchema.id),
+    )
     .limit(CONVERSATIONS_PAGE_SIZE)
     .offset((options.page - 1) * CONVERSATIONS_PAGE_SIZE);
 
