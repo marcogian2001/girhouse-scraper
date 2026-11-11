@@ -49,6 +49,19 @@ export const getI18nPath = (url: string, locale: string) => {
  */
 export const textOrNull = (value: string | null | undefined) => (value?.trim() ? value : null);
 
+/**
+ * Cuts a text to a length without splitting an emoji or styled letter in half, since half of
+ * one makes the JSON sent to the AI invalid.
+ * @param text The text.
+ * @param max The most UTF-16 code units to keep.
+ * @returns The text, cut before the character that would not fit whole.
+ */
+export const cutText = (text: string, max: number) => {
+  const cut = text.slice(0, max);
+
+  return /[\uD800-\uDBFF]$/u.test(cut) ? cut.slice(0, -1) : cut;
+};
+
 /** Words a person's name has at most; longer texts are sentences about it. */
 const MAX_NAME_WORDS = 5;
 

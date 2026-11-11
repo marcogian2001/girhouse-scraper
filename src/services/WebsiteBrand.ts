@@ -1,4 +1,5 @@
 import { isUsableBrandColor, normalizeHex } from '@/utils/Colors';
+import { cutText } from '@/utils/Helpers';
 
 const FETCH_TIMEOUT_MS = 8000;
 
@@ -235,15 +236,17 @@ export const parseBrandHtml = (html: string, baseUrl: string, stylesheets = ''):
 
   const title = html.match(/<title[^>]*>([^<]*)<\/title>/iu)?.[1];
 
-  const text = decodeEntities(
-    html
-      .replaceAll(/<(script|style|noscript|svg|template)\b[\s\S]*?<\/\1>/giu, ' ')
-      .replaceAll(/<!--[\s\S]*?-->/gu, ' ')
-      .replaceAll(/<[^>]+>/gu, ' '),
-  )
-    .replaceAll(/\s+/gu, ' ')
-    .trim()
-    .slice(0, MAX_TEXT_LENGTH);
+  const text = cutText(
+    decodeEntities(
+      html
+        .replaceAll(/<(script|style|noscript|svg|template)\b[\s\S]*?<\/\1>/giu, ' ')
+        .replaceAll(/<!--[\s\S]*?-->/gu, ' ')
+        .replaceAll(/<[^>]+>/gu, ' '),
+    )
+      .replaceAll(/\s+/gu, ' ')
+      .trim(),
+    MAX_TEXT_LENGTH,
+  );
 
   const description = meta('description') ?? meta('og:description');
   const css = [

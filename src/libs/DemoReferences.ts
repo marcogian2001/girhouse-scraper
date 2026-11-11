@@ -8,7 +8,7 @@ import { isMioDottoreUrl } from '@/services/MioDottore';
 import { downloadImage } from '@/services/RemoteImage';
 import type { WebsiteBrand } from '@/services/WebsiteBrand';
 import { fetchWebsiteBrand } from '@/services/WebsiteBrand';
-import { personNameOrNull, textOrNull } from '@/utils/Helpers';
+import { cutText, personNameOrNull, textOrNull } from '@/utils/Helpers';
 import { findInstagramHandle } from '@/utils/Instagram';
 import { db } from './DB';
 import { logger } from './Logger';
@@ -144,7 +144,7 @@ export const readOutsideSources = async (options: {
  */
 export const renderReferences = (references: WebsiteBrand[]) =>
   references.map((page) =>
-    [page.title, page.description, page.text.slice(0, MAX_REFERENCE_TEXT)]
+    [page.title, page.description, cutText(page.text, MAX_REFERENCE_TEXT)]
       .filter(Boolean)
       .join('\n'),
   );
@@ -158,7 +158,7 @@ export const instagramSources = (instagram: InstagramProfile | null) => ({
   socialBio: textOrNull(instagram?.biography),
   socialPosts: (instagram?.latestPosts ?? [])
     .slice(0, INSTAGRAM_POSTS)
-    .flatMap((post) => (post.caption ? [post.caption.slice(0, MAX_CAPTION_LENGTH)] : [])),
+    .flatMap((post) => (post.caption ? [cutText(post.caption, MAX_CAPTION_LENGTH)] : [])),
 });
 
 /**

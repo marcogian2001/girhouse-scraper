@@ -1,4 +1,5 @@
 import * as z from 'zod';
+import { cutText } from '@/utils/Helpers';
 import { decodeEntities, fetchHtml } from './WebsiteBrand';
 
 const PROFILE_URL = 'https://www.miodottore.it/profilo';
@@ -207,7 +208,7 @@ export const parseMioDottoreProfile = (html: string, url: string): MioDottorePro
             .trim(),
         ),
       })),
-    about: about ? toText(about).slice(0, MAX_ABOUT_LENGTH) || null : null,
+    about: about ? cutText(toText(about), MAX_ABOUT_LENGTH) || null : null,
     services: findServices(html),
     addresses: findAddresses(html),
   };

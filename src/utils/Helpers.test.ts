@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { routing } from '@/libs/I18nRouting';
-import { createOrganizationSlug, getI18nPath, personNameOrNull, textOrNull } from './Helpers';
+import {
+  createOrganizationSlug,
+  cutText,
+  getI18nPath,
+  personNameOrNull,
+  textOrNull,
+} from './Helpers';
 
 describe('Helpers', () => {
   describe('I18n path helper', () => {
@@ -24,6 +30,20 @@ describe('Helpers', () => {
       expect(textOrNull('Roberta')).toBe('Roberta');
       expect(textOrNull('  ')).toBeNull();
       expect(textOrNull(null)).toBeNull();
+    });
+  });
+
+  describe('Cut text', () => {
+    it('cuts a text to the given length', () => {
+      expect(cutText('abcdef', 3)).toBe('abc');
+    });
+
+    it('drops a styled letter that would be split in half', () => {
+      expect(cutText('ab𝗾𝘂', 3)).toBe('ab');
+    });
+
+    it('keeps an emoji that fits whole', () => {
+      expect(cutText('ab😀c', 4)).toBe('ab😀');
     });
   });
 
