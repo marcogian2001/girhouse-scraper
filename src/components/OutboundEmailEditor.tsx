@@ -1,6 +1,6 @@
 'use client';
 
-import { Sparkles, X } from 'lucide-react';
+import { CalendarClock, Sparkles, X } from 'lucide-react';
 import { useFormatter, useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { DatePicker } from '@/components/DatePicker';
@@ -61,6 +61,61 @@ const EmailMeta = (props: { email: OutboundEmail }) => {
   );
 };
 
+/**
+ * Sends the email at once, or opens the date fields and schedules it at the time picked.
+ * @param props The component props.
+ * @param props.isBusy Whether a request is running.
+ * @param props.isScheduling Whether the date fields are open.
+ * @param props.isScheduled Whether the email is already scheduled.
+ * @param props.sendAt The time picked, in Italian time, or empty.
+ * @param props.onSchedule Opens the date fields.
+ * @param props.onApprove Approves the email, at once when the time is null.
+ * @returns The send buttons.
+ */
+const SendButtons = (props: {
+  isBusy: boolean;
+  isScheduling: boolean;
+  isScheduled: boolean;
+  sendAt: string;
+  onSchedule: () => void;
+  onApprove: (scheduledFor: string | null) => Promise<void>;
+}) => {
+  const t = useTranslations('OutboundEmailEditor');
+
+  return (
+    <>
+      <Button
+        type="button"
+        variant={props.isScheduling ? 'outline' : 'default'}
+        disabled={props.isBusy}
+        onClick={async () => {
+          await props.onApprove(null);
+        }}
+      >
+        {props.isBusy && !props.isScheduling && <Spinner />}
+        {t('button_send_now')}
+      </Button>
+      {props.isScheduling ? (
+        <Button
+          type="button"
+          disabled={props.isBusy || !props.sendAt}
+          onClick={async () => {
+            await props.onApprove(props.sendAt);
+          }}
+        >
+          {props.isBusy && <Spinner />}
+          {props.isScheduled ? t('button_update_schedule') : t('button_confirm_schedule')}
+        </Button>
+      ) : (
+        <Button type="button" variant="outline" disabled={props.isBusy} onClick={props.onSchedule}>
+          <CalendarClock />
+          {t('button_schedule')}
+        </Button>
+      )}
+    </>
+  );
+};
+
 export const OutboundEmailEditor = (props: { email: OutboundEmail }) => {
   const t = useTranslations('OutboundEmailEditor');
   const router = useRouter();
@@ -72,7 +127,9 @@ export const OutboundEmailEditor = (props: { email: OutboundEmail }) => {
   const [body, setBody] = useState(props.email.body);
   const [sendDate, setSendDate] = useState(proposedAt.slice(0, 10));
   const [sendTime, setSendTime] = useState(proposedAt.slice(11, 16) || DEFAULT_SEND_TIME);
-  const sendAt = sendDate ? `${sendDate}T${sendTime || DEFAULT_SEND_TIME}` : '';
+  // Emails leave at once; the date fields show only when a person schedules one
+  const [isScheduling, setIsScheduling] = useState(Boolean(proposedAt));
+  const sendAt = isScheduling && sendDate ? `${sendDate}T${sendTime || DEFAULT_SEND_TIME}` : '';
   const [failure, setFailure] = useState<Failure | null>(null);
   const [isBusy, setIsBusy] = useState(false);
   const isScheduled = props.email.status === 'scheduled';
@@ -90,14 +147,6 @@ export const OutboundEmailEditor = (props: { email: OutboundEmail }) => {
     }
 
     return !isScheduled && sendAt === proposedAt ? t('send_at_hint_proposed') : null;
-  };
-
-  const approveLabel = () => {
-    if (isScheduled) {
-      return t('button_update_schedule');
-    }
-
-    return sendAt ? t('button_approve_schedule') : t('button_approve');
   };
 
   const rewrite = async (notInterestedVersion?: NotInterestedVersion) => {
@@ -126,17 +175,19 @@ export const OutboundEmailEditor = (props: { email: OutboundEmail }) => {
     router.refresh();
   };
 
-  const post = async (action: 'approve' | 'discard') => {
+  /**
+   * Approves the email, or discards it.
+   * @param action What to do with the email.
+   * @param scheduledFor When an approved email leaves, in Italian time; at once when null.
+   */
+  const post = async (action: 'approve' | 'discard', scheduledFor: string | null = null) => {
     setIsBusy(true);
     setFailure(null);
 
     const response = await fetch(`/api/replies/outbound/${props.email.id}/${action}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body:
-        action === 'approve'
-          ? JSON.stringify({ subject, body, scheduledFor: sendAt || null })
-          : undefined,
+      body: action === 'approve' ? JSON.stringify({ subject, body, scheduledFor }) : undefined,
     });
 
     setIsBusy(false);
@@ -210,26 +261,26 @@ export const OutboundEmailEditor = (props: { email: OutboundEmail }) => {
             />
           </Field>
 
-          <Field>
-            <FieldLabel htmlFor={`send-at-${props.email.id}`}>{t('label_send_at')}</FieldLabel>
-            <div className="flex flex-wrap items-center gap-2">
-              <DatePicker
-                id={`send-at-${props.email.id}`}
-                value={sendDate}
-                onValueChange={setSendDate}
-                disablePast
-              />
-              <Input
-                type="time"
-                aria-label={t('label_send_time')}
-                className="w-28"
-                value={sendTime}
-                disabled={!sendDate}
-                onChange={(event) => {
-                  setSendTime(event.target.value);
-                }}
-              />
-              {sendDate && (
+          {isScheduling && (
+            <Field>
+              <FieldLabel htmlFor={`send-at-${props.email.id}`}>{t('label_send_at')}</FieldLabel>
+              <div className="flex flex-wrap items-center gap-2">
+                <DatePicker
+                  id={`send-at-${props.email.id}`}
+                  value={sendDate}
+                  onValueChange={setSendDate}
+                  disablePast
+                />
+                <Input
+                  type="time"
+                  aria-label={t('label_send_time')}
+                  className="w-28"
+                  value={sendTime}
+                  disabled={!sendDate}
+                  onChange={(event) => {
+                    setSendTime(event.target.value);
+                  }}
+                />
                 <Button
                   type="button"
                   variant="ghost"
@@ -237,14 +288,15 @@ export const OutboundEmailEditor = (props: { email: OutboundEmail }) => {
                   aria-label={t('button_clear_send_at')}
                   onClick={() => {
                     setSendDate('');
+                    setIsScheduling(false);
                   }}
                 >
                   <X />
                 </Button>
-              )}
-            </div>
-            {sendAtHint() && <FieldDescription>{sendAtHint()}</FieldDescription>}
-          </Field>
+              </div>
+              {sendAtHint() && <FieldDescription>{sendAtHint()}</FieldDescription>}
+            </Field>
+          )}
         </FieldGroup>
       ) : (
         <div className="space-y-1 text-sm">
@@ -255,16 +307,18 @@ export const OutboundEmailEditor = (props: { email: OutboundEmail }) => {
 
       {isEditable && (
         <div className="flex flex-wrap gap-2">
-          <Button
-            type="button"
-            disabled={isBusy}
-            onClick={async () => {
-              await post('approve');
+          <SendButtons
+            isBusy={isBusy}
+            isScheduling={isScheduling}
+            isScheduled={isScheduled}
+            sendAt={sendAt}
+            onSchedule={() => {
+              setIsScheduling(true);
             }}
-          >
-            {isBusy && <Spinner />}
-            {approveLabel()}
-          </Button>
+            onApprove={async (scheduledFor) => {
+              await post('approve', scheduledFor);
+            }}
+          />
           <Button
             type="button"
             variant="outline"

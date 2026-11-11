@@ -214,37 +214,6 @@ const nextOpening = (date: Date, hours: BusinessHours) => {
 };
 
 /**
- * Picks when a reply leaves: a random delay so it does not look automated, moved
- * into Italian business hours when it would land outside them.
- * @param options The scheduling options.
- * @param options.now When the reply is ready.
- * @param options.hours The business hours.
- * @param options.minDelayMinutes The shortest delay.
- * @param options.maxDelayMinutes The longest delay.
- * @param options.random A number from 0 to 1, injectable for tests.
- * @returns The send time.
- */
-export const scheduleSend = (options: {
-  now: Date;
-  hours: BusinessHours;
-  minDelayMinutes: number;
-  maxDelayMinutes: number;
-  random?: number;
-}) => {
-  const random = options.random ?? Math.random();
-  const delayMs =
-    (options.minDelayMinutes + random * (options.maxDelayMinutes - options.minDelayMinutes)) *
-    60_000;
-  const candidate = new Date(options.now.getTime() + delayMs);
-
-  if (isBusinessTime(candidate, options.hours)) {
-    return candidate;
-  }
-
-  return new Date(nextOpening(candidate, options.hours).getTime() + delayMs);
-};
-
-/**
  * Moves an instant into business hours when it falls outside them.
  * @param date The instant.
  * @param hours The business hours.
@@ -287,38 +256,6 @@ export const addBusinessDays = (options: { from: Date; days: number; hours: Busi
   }
 
   return toBusinessTime(target, options.hours);
-};
-
-/**
- * Picks when an answer to a lead leaves: the configured delay after the lead wrote, as
- * a person would answer, inside business hours. An answer approved later than that
- * leaves at once, or at the next opening when the office is closed.
- * @param options The scheduling options.
- * @param options.repliedAt When the lead's reply arrived.
- * @param options.now The current time.
- * @param options.hours The business hours.
- * @param options.minDelayMinutes The shortest delay after the reply.
- * @param options.maxDelayMinutes The longest delay after the reply.
- * @param options.random A number from 0 to 1, injectable for tests.
- * @returns The send time, never in the past.
- */
-export const scheduleReplySend = (options: {
-  repliedAt: Date;
-  now: Date;
-  hours: BusinessHours;
-  minDelayMinutes: number;
-  maxDelayMinutes: number;
-  random?: number;
-}) => {
-  const planned = scheduleSend({
-    now: options.repliedAt,
-    hours: options.hours,
-    minDelayMinutes: options.minDelayMinutes,
-    maxDelayMinutes: options.maxDelayMinutes,
-    random: options.random,
-  });
-
-  return planned > options.now ? planned : toBusinessTime(options.now, options.hours);
 };
 
 /** How far ahead a lead may ask to be contacted again; later requests are left to nurturing. */

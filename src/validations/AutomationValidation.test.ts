@@ -9,8 +9,6 @@ const settings = {
   enabled: true,
   mode: 'draft',
   confidenceThreshold: 0.75,
-  replyDelayMinMinutes: 4,
-  replyDelayMaxMinutes: 15,
   businessHourStart: 9,
   businessHourEnd: 18,
   monthlyPrice: 97,
@@ -30,12 +28,6 @@ const settings = {
 describe('Automation settings validation', () => {
   it('accepts the defaults', () => {
     expect(AutomationSettingsValidation.safeParse(settings).success).toBeTruthy();
-  });
-
-  it('rejects a minimum delay above the maximum', () => {
-    expect(
-      AutomationSettingsValidation.safeParse({ ...settings, replyDelayMinMinutes: 20 }).success,
-    ).toBeFalsy();
   });
 
   it('rejects a model that is not Claude', () => {

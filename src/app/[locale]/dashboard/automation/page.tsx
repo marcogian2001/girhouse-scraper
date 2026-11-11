@@ -39,8 +39,6 @@ export default async function AutomationPage(props: { params: Promise<{ locale: 
             enabled: settings.enabled,
             mode: settings.mode,
             confidenceThreshold: settings.confidenceThreshold,
-            replyDelayMinMinutes: settings.replyDelayMinMinutes,
-            replyDelayMaxMinutes: settings.replyDelayMaxMinutes,
             businessHourStart: settings.businessHourStart,
             businessHourEnd: settings.businessHourEnd,
             monthlyPrice: settings.monthlyPrice,

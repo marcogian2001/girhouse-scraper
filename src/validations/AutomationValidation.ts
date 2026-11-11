@@ -6,7 +6,6 @@ const claudeModel = z.string().refine((id) => findCopywritingModel(id)?.provider
   error: 'Unknown Claude model',
 });
 
-const minutes = z.number().int().min(0).max(240);
 const days = z.number().int().min(1).max(365);
 
 /** How the one answer to a "not interested" reads: A offers the demo, B shares its link. */
@@ -19,8 +18,6 @@ export const AutomationSettingsValidation = z
     enabled: z.boolean(),
     mode: z.enum(['draft', 'auto']),
     confidenceThreshold: z.number().min(0).max(1),
-    replyDelayMinMinutes: minutes,
-    replyDelayMaxMinutes: minutes,
     businessHourStart: z.number().int().min(0).max(23),
     businessHourEnd: z.number().int().min(1).max(24),
     monthlyPrice: z.number().int().min(1).max(10_000),
@@ -39,10 +36,6 @@ export const AutomationSettingsValidation = z
       .trim()
       .regex(/^\+[1-9]\d{7,14}$/u)
       .nullable(),
-  })
-  .refine((value) => value.replyDelayMinMinutes <= value.replyDelayMaxMinutes, {
-    error: 'The minimum delay cannot exceed the maximum',
-    path: ['replyDelayMaxMinutes'],
   })
   .refine((value) => value.businessHourStart < value.businessHourEnd, {
     error: 'Business hours must end after they start',

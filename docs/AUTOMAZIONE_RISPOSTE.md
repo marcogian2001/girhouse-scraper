@@ -1,6 +1,6 @@
 # Automazione risposte cold email: stato dei lavori
 
-Ultimo aggiornamento: 2 novembre 2026 (nuova video demo, versione C, dal piano "Cosa cambiamo: target, offerta, funnel e vendita"; A e B restano solo per i link già inviati).
+Ultimo aggiornamento: 12 novembre 2026 (le risposte approvate partono subito; programmazione solo manuale col tasto Programma).
 
 Questo file serve a riprendere il lavoro anche senza la chat originale, da soli o con un altro assistente AI. Per ripartire basta dire all'AI: "leggi `docs/AUTOMAZIONE_RISPOSTE.md` e `AGENTS.md`, poi continuiamo dalla prima voce non spuntata".
 
@@ -154,9 +154,10 @@ Tutto il codice è committato su `main`. Restano fuori solo le modifiche `bg-whi
   - Se un controllo fallisce l'AI riscrive una volta, poi la risposta resta in bozza.
 - [x] Modalità **bozza**: approvi, modifichi o scarti dalla dashboard.
 - [x] Modalità **automatica**: parte da sola solo con classificazione sicura e nessun problema rilevato.
-- [x] **Invio** (job `reply_send`), solo in orario lavorativo italiano (lun-ven 9-18, festivi e Pasquetta esclusi). L'email con la demo parte anche nel weekend e nei festivi, sempre dalle 9 alle 18.
-  - Dal 20/10 la risposta parte **15-20 minuti dopo la risposta del lead** (campi in Automazione, default 15 e 20, migrazione 0023).
-  - Una bozza approvata più tardi parte subito, o alla prossima apertura se l'ufficio è chiuso.
+- [x] **Invio** (job `reply_send`). Dal 12/11 una risposta approvata con **Invia ora** parte subito, a qualsiasi ora e in qualsiasi giorno: niente più ritardo di 15-20 minuti né attesa dell'orario lavorativo (prima, dopo le 18 slittava al mattino dopo).
+  - **Programma** apre giorno e ora: la risposta parte solo all'ora scelta. La programmazione è sempre manuale.
+  - Se il lead ha chiesto di essere ricontattato in un giorno preciso, la bozza apre già "Programma" con quella data proposta; "Invia ora" la ignora.
+  - I campi "minuti dopo la risposta del lead" sono stati tolti da Automazione (le colonne restano nel DB). L'orario lavorativo vale ancora per follow-up e richiami automatici.
   - Gli orari nella dashboard sono in ora italiana: prima erano mostrati in UTC.
   - Prima di partire ricontrolla kill switch, stop e nuove risposte del lead.
 - [x] Invio nello stesso thread e dalla stessa casella, via `POST /emails/reply` di Instantly.

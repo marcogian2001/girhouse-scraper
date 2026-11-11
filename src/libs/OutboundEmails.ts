@@ -19,7 +19,7 @@ import { replyToEmail } from '@/services/Instantly';
 import type { ThreadMessage } from '@/services/ReplyPrompt';
 import type { CallPlan, NudgeStep, WriteReplyOptions } from '@/services/ReplyWriter';
 import { renderScarcity, replySubject, writeReply } from '@/services/ReplyWriter';
-import { fromItalianTime, scheduleRecontact, scheduleReplySend } from '@/utils/BusinessHours';
+import { fromItalianTime, scheduleRecontact } from '@/utils/BusinessHours';
 import { DEMO_STEPS } from '@/utils/DemoStats';
 import { FOLLOW_UP_STATES, followUpDueAt, MAX_FOLLOW_UPS, mentionsDemo } from '@/utils/FollowUps';
 import { buildOfferBrief } from '@/utils/Offer';
@@ -99,43 +99,6 @@ const notInterestedVersionFor = (
  */
 const answerSharesDemo = (category: ReplyCategory, version: NotInterestedVersion | null) =>
   category === 'interested' || version === 'b';
-
-/**
- * Picks when an email leaves. An answer leaves the configured delay after the lead's
- * reply, at once if that time has passed; other emails count the delay from now. Test
- * conversations send at once, so a simulation does not wait for business hours. The
- * demo leaves on weekends and holidays too, so an interested lead is not kept waiting.
- * @param options The email.
- * @param options.conversation The conversation the email belongs to.
- * @param options.settings The organization's automation settings.
- * @param options.repliedAt When the reply it answers arrived, for an answer.
- * @param options.carriesDemo Whether the email carries the demo link.
- * @returns The send time.
- */
-const sendTimeFor = (options: {
-  conversation: Conversation;
-  settings: AutomationSettings;
-  repliedAt?: Date;
-  carriesDemo?: boolean;
-}) => {
-  const now = new Date();
-
-  if (options.conversation.isTest) {
-    return now;
-  }
-
-  return scheduleReplySend({
-    repliedAt: options.repliedAt ?? now,
-    now,
-    hours: {
-      startHour: options.settings.businessHourStart,
-      endHour: options.settings.businessHourEnd,
-      everyDay: options.carriesDemo,
-    },
-    minDelayMinutes: options.settings.replyDelayMinMinutes,
-    maxDelayMinutes: options.settings.replyDelayMaxMinutes,
-  });
-};
 
 /**
  * Queues the send of a scheduled email at its send time.
@@ -942,16 +905,15 @@ const checkApproved = (options: {
 };
 
 /**
- * Approves a draft, as edited by a person, and schedules it. A scheduled email can be
- * approved again, to change its text or its send time.
+ * Approves a draft, as edited by a person: it leaves at once, or at the time they picked.
+ * A scheduled email can be approved again, to change its text or its send time.
  * @param options The call options.
  * @param options.organizationId The organization the draft must belong to.
  * @param options.userId The person approving, recorded on the email and in the log.
  * @param options.outboundEmailId The draft.
  * @param options.subject The subject to send.
  * @param options.body The body to send.
- * @param options.scheduledFor When to send it, in Italian time; as soon as possible when
- * missing or past.
+ * @param options.scheduledFor When to send it, in Italian time; at once when missing or past.
  * @returns The outcome: scheduled, or why the draft cannot go out.
  */
 export const approveOutbound = async (options: {
@@ -978,13 +940,6 @@ export const approveOutbound = async (options: {
     return { status: 'disabled' as const };
   }
 
-  // The delay runs from the lead's reply, so an answer approved late leaves at once
-  const answered = row.email.inboundMessageId
-    ? await db.query.inboundMessageSchema.findFirst({
-        where: eq(inboundMessageSchema.id, row.email.inboundMessageId),
-      })
-    : undefined;
-
   // Drafts written before the demo existed get its link now
   const demo = await getConversationDemo(row.conversation.id);
   const cleaned = cleanReply(options.body);
@@ -995,18 +950,10 @@ export const approveOutbound = async (options: {
     return { status: 'blocked' as const, issues };
   }
 
-  // A time a person picked is kept as is, even outside business hours
+  // It leaves at once unless a person picked a later time, kept as is even outside business hours
+  const now = new Date();
   const chosen = chosenSendTime(options.scheduledFor, null);
-  const scheduledFor =
-    chosen && chosen > new Date()
-      ? chosen
-      : sendTimeFor({
-          conversation: row.conversation,
-          settings,
-          repliedAt: answered?.receivedAt,
-          carriesDemo:
-            Boolean(demo && body.includes(demo.url)) && DEMO_SENT_FROM.has(row.conversation.state),
-        });
+  const scheduledFor = chosen && chosen > now ? chosen : now;
 
   const [scheduled] = await db
     .update(outboundEmailSchema)

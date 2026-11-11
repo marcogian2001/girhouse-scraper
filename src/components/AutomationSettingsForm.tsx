@@ -49,7 +49,7 @@ type SectionId = 'general' | 'sending' | 'offer' | 'demo' | 'ai';
 
 /** The numeric settings of each section that is only numbers, as the form shows them. */
 const NUMBER_SECTIONS = {
-  sending: ['replyDelayMinMinutes', 'replyDelayMaxMinutes', 'businessHourStart', 'businessHourEnd'],
+  sending: ['businessHourStart', 'businessHourEnd'],
   offer: ['monthlyPrice', 'newMonthlyPrice', 'priceIncreaseDays', 'onboardingSlotsPerMonth'],
 } satisfies Partial<Record<SectionId, NumberField[]>>;
 
