@@ -5,6 +5,7 @@ import { conversationSchema } from '@/models/Schema';
 import {
   findContactByEmail,
   findPipelineOpportunity,
+  markOpportunityDemoCompleted,
   markOpportunityDemoSent,
   updateLeadOpportunity,
   upsertContact,
@@ -114,6 +115,30 @@ const runGhlDemoSentJob = async (job: Job) => {
 };
 
 /**
+ * Ticks "Demo vista completamente" on the opportunity of a lead who watched their demo to
+ * the end, putting the lead in the pipeline first when they are not there yet. The "hot
+ * leads" smart tag of the setting pipeline follows the field.
+ * @param job The ghl_demo_completed job being processed.
+ * @throws {Error} When GHL rejects a call.
+ */
+const runGhlDemoCompletedJob = async (job: Job) => {
+  const conversation = await loadJobConversation(job);
+
+  if (conversation) {
+    const { contactId, opportunityId } = await saveLeadOpportunity(conversation);
+
+    await markOpportunityDemoCompleted({ opportunityId });
+    await logEvent({
+      conversationId: conversation.id,
+      type: 'ghl_demo_completed_saved',
+      payload: { contactId, opportunityId },
+    });
+  }
+
+  await completeJob(job.id);
+};
+
+/**
  * Logs a GHL job that failed every attempt. The conversation goes on: only the GHL
  * update is left to do by hand.
  * @param options The abandoned job.
@@ -124,7 +149,7 @@ const runGhlDemoSentJob = async (job: Job) => {
 const logAbandoned = async (options: {
   job: Job;
   error: string;
-  type: 'ghl_lead_failed' | 'ghl_demo_sent_failed';
+  type: 'ghl_lead_failed' | 'ghl_demo_sent_failed' | 'ghl_demo_completed_failed';
 }) => {
   const parse = leadPayloadSchema.safeParse(options.job.payload);
 
@@ -155,7 +180,17 @@ export const markGhlDemoSentAbandoned = async (job: Job, error: string) => {
   await logAbandoned({ job, error, type: 'ghl_demo_sent_failed' });
 };
 
+/**
+ * Logs a fully watched demo that could not be ticked on GHL after every attempt.
+ * @param job The abandoned ghl_demo_completed job.
+ * @param error The last error.
+ */
+export const markGhlDemoCompletedAbandoned = async (job: Job, error: string) => {
+  await logAbandoned({ job, error, type: 'ghl_demo_completed_failed' });
+};
+
 export const ghlLeadJobHandlers = {
   ghl_lead: runGhlLeadJob,
   ghl_demo_sent: runGhlDemoSentJob,
+  ghl_demo_completed: runGhlDemoCompletedJob,
 };

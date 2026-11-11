@@ -871,7 +871,9 @@
     "event_ghl_lead_saved": "Lead nella Setting Pipeline su GHL",
     "event_ghl_lead_failed": "Inserimento nella Setting Pipeline su GHL non riuscito",
     "event_ghl_demo_sent_saved": "Demo inviata segnata sull'opportunity GHL",
-    "event_ghl_demo_sent_failed": "Spunta di Demo inviata su GHL non riuscita"
+    "event_ghl_demo_sent_failed": "Spunta di Demo inviata su GHL non riuscita",
+    "event_ghl_demo_completed_saved": "Demo vista completamente segnata sull'opportunity GHL",
+    "event_ghl_demo_completed_failed": "Spunta di Demo vista completamente su GHL non riuscita"
   },
   "AutomationPage": {
     "title": "Automazione",

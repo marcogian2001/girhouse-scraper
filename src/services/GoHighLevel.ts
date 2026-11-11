@@ -16,8 +16,8 @@ const API_VERSIONS = {
 /** The source every opportunity of a cold email lead carries. */
 const OPPORTUNITY_SOURCE = 'email';
 
-/** The only option of the opportunity's "Demo Inviata" checkbox. */
-const DEMO_SENT_OPTION = 'SI';
+/** The only option of the opportunity's demo checkboxes, "Demo Inviata" and "Demo vista completamente". */
+const CHECKBOX_OPTION = 'SI';
 
 const freeSlotsSchema = z.record(z.string(), z.unknown());
 
@@ -113,6 +113,13 @@ export const isLeadPipelineConfigured = () =>
  * @returns True when the "Demo Inviata" field is set.
  */
 export const isDemoSentFieldConfigured = () => Boolean(Env.GHL_OPPORTUNITY_DEMO_SENT_FIELD_ID);
+
+/**
+ * Tells whether a fully watched demo is ticked on the lead's opportunity.
+ * @returns True when the "Demo vista completamente" field is set.
+ */
+export const isDemoCompletedFieldConfigured = () =>
+  Boolean(Env.GHL_OPPORTUNITY_DEMO_COMPLETED_FIELD_ID);
 
 /**
  * Calls the GHL API and fails loudly on a non-2xx response.
@@ -379,27 +386,51 @@ export const updateLeadOpportunity = async (options: { opportunityId: string }) 
 };
 
 /**
+ * Ticks a checkbox field of an opportunity.
+ * @param options The update.
+ * @param options.opportunityId The GHL opportunity.
+ * @param options.fieldId The checkbox custom field.
+ * @throws {Error} When GHL is not configured or rejects the request.
+ */
+const tickOpportunityCheckbox = async (options: { opportunityId: string; fieldId: string }) => {
+  await request({
+    path: `/opportunities/${options.opportunityId}`,
+    family: 'opportunities',
+    method: 'PUT',
+    body: { customFields: [{ id: options.fieldId, field_value: [CHECKBOX_OPTION] }] },
+  });
+};
+
+/**
  * Ticks the opportunity's "Demo Inviata" checkbox.
  * @param options The update.
  * @param options.opportunityId The GHL opportunity.
  * @throws {Error} When GHL or the field is not configured, or GHL rejects the request.
  */
 export const markOpportunityDemoSent = async (options: { opportunityId: string }) => {
-  await request({
-    path: `/opportunities/${options.opportunityId}`,
-    family: 'opportunities',
-    method: 'PUT',
-    body: {
-      customFields: [
-        {
-          id: requireEnv(
-            'GHL_OPPORTUNITY_DEMO_SENT_FIELD_ID',
-            Env.GHL_OPPORTUNITY_DEMO_SENT_FIELD_ID,
-          ),
-          field_value: [DEMO_SENT_OPTION],
-        },
-      ],
-    },
+  await tickOpportunityCheckbox({
+    opportunityId: options.opportunityId,
+    fieldId: requireEnv(
+      'GHL_OPPORTUNITY_DEMO_SENT_FIELD_ID',
+      Env.GHL_OPPORTUNITY_DEMO_SENT_FIELD_ID,
+    ),
+  });
+};
+
+/**
+ * Ticks the opportunity's "Demo vista completamente" checkbox, which the "hot leads" smart
+ * tag of the setting pipeline reads.
+ * @param options The update.
+ * @param options.opportunityId The GHL opportunity.
+ * @throws {Error} When GHL or the field is not configured, or GHL rejects the request.
+ */
+export const markOpportunityDemoCompleted = async (options: { opportunityId: string }) => {
+  await tickOpportunityCheckbox({
+    opportunityId: options.opportunityId,
+    fieldId: requireEnv(
+      'GHL_OPPORTUNITY_DEMO_COMPLETED_FIELD_ID',
+      Env.GHL_OPPORTUNITY_DEMO_COMPLETED_FIELD_ID,
+    ),
   });
 };
 

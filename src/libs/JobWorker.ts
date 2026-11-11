@@ -31,7 +31,12 @@ import {
 import { db } from './DB';
 import { demoVslJobHandlers, markDemoVslAbandoned } from './DemoVsl';
 import { followUpJobHandlers, markConversationTickAbandoned } from './FollowUps';
-import { ghlLeadJobHandlers, markGhlDemoSentAbandoned, markGhlLeadAbandoned } from './GhlLead';
+import {
+  ghlLeadJobHandlers,
+  markGhlDemoCompletedAbandoned,
+  markGhlDemoSentAbandoned,
+  markGhlLeadAbandoned,
+} from './GhlLead';
 import { instantlySyncJobHandlers, markInstantlySyncAbandoned } from './InstantlySync';
 import {
   claimJobs,
@@ -355,6 +360,12 @@ const markAbandoned = async (job: Job, message: string) => {
 
   if (job.type === 'ghl_demo_sent') {
     await markGhlDemoSentAbandoned(job, message);
+
+    return;
+  }
+
+  if (job.type === 'ghl_demo_completed') {
+    await markGhlDemoCompletedAbandoned(job, message);
 
     return;
   }

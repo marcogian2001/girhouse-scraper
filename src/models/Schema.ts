@@ -199,6 +199,8 @@ export const jobTypeEnum = pgEnum('job_type', [
   'ghl_lead',
   // Ticks "Demo Inviata" on the lead's GHL opportunity once the demo email is sent
   'ghl_demo_sent',
+  // Ticks "Demo vista completamente" on the lead's GHL opportunity once the demo is watched to the end
+  'ghl_demo_completed',
   // Copies Instantly's sending totals and replied leads, for the campaign tests
   'instantly_sync',
   // Writes a demo's version B script and voices each of Gigi's lines with Kie

@@ -10,6 +10,11 @@ import {
 } from '@/models/Schema';
 import { isReadableWebsite } from '@/services/Apify';
 import { pickDisplayName, toDemoContent, writeDemoTexts } from '@/services/DemoWriter';
+import {
+  isDemoCompletedFieldConfigured,
+  isGhlConfigured,
+  isLeadPipelineConfigured,
+} from '@/services/GoHighLevel';
 import type { MioDottoreProfile } from '@/services/MioDottore';
 import { fetchMioDottoreProfile, guessMioDottoreUrl, isMioDottoreUrl } from '@/services/MioDottore';
 import { fetchWebsiteBrand } from '@/services/WebsiteBrand';
@@ -36,6 +41,7 @@ import {
 } from './DemoReferences';
 import { demoVslStatus, requestDemoVsl } from './DemoVsl';
 import { Env } from './Env';
+import { enqueue } from './JobQueue';
 import { recordCopywritingUsage } from './Usage';
 
 type DemoEventType = (typeof demoEventSchema.$inferSelect)['type'];
@@ -635,7 +641,7 @@ export const getDemoPage = async (slug: string) => {
 
 /**
  * Records what a visitor did on a demo, and moves the conversation on the first
- * open and when the last step is reached.
+ * open and when the last step is reached, which GHL learns too.
  * @param options The event.
  * @param options.slug The demo slug.
  * @param options.sessionId The visitor's random tab id.
@@ -702,6 +708,17 @@ export const recordDemoEvent = async (options: {
 
     if (completed) {
       await logEvent({ conversationId: conversation.id, type: 'demo_completed' });
+
+      if (
+        !conversation.isTest &&
+        isGhlConfigured() &&
+        isLeadPipelineConfigured() &&
+        isDemoCompletedFieldConfigured()
+      ) {
+        await enqueue([
+          { type: 'ghl_demo_completed', payload: { conversationId: conversation.id } },
+        ]);
+      }
     }
   }
 
