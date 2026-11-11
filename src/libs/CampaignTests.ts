@@ -186,15 +186,18 @@ const loadConversations = async (campaignIds: string[]) => {
 };
 
 /**
- * Reads the calls, no shows and sales GHL reported for the campaigns' leads.
+ * Reads the calls, no shows and sales GHL reported for the campaigns' leads. Each outcome
+ * counts once, for the first sent campaign that held the lead before it happened, so a
+ * lead who booked and later landed in a new campaign does not count there too.
  * @param options The lookup.
  * @param options.organizationId The organization.
  * @param options.campaignIds The campaigns.
  * @returns Each campaign's outcomes, by lead email.
  */
 const loadOutcomes = async (options: { organizationId: string; campaignIds: string[] }) => {
-  const rows = await db
-    .select({
+  const happenedAt = sql`coalesce(${leadOutcomeSchema.callBookedAt}, ${leadOutcomeSchema.noShowAt}, ${leadOutcomeSchema.wonAt})`;
+  const firstCampaigns = await db
+    .selectDistinctOn([leadOutcomeSchema.email], {
       campaignId: contactSchema.campaignId,
       email: leadOutcomeSchema.email,
       callBookedAt: leadOutcomeSchema.callBookedAt,
@@ -205,13 +208,18 @@ const loadOutcomes = async (options: { organizationId: string; campaignIds: stri
     })
     .from(leadOutcomeSchema)
     .innerJoin(contactSchema, eq(sql`lower(${contactSchema.email})`, leadOutcomeSchema.email))
+    .innerJoin(campaignSchema, eq(campaignSchema.id, contactSchema.campaignId))
     .where(
       and(
         eq(leadOutcomeSchema.organizationId, options.organizationId),
-        inArray(contactSchema.campaignId, options.campaignIds),
+        eq(campaignSchema.organizationId, options.organizationId),
+        isNotNull(campaignSchema.instantlyCampaignId),
+        sql`${campaignSchema.createdAt} <= ${happenedAt}`,
       ),
     )
+    .orderBy(leadOutcomeSchema.email, asc(campaignSchema.createdAt))
     .$withCache();
+  const rows = firstCampaigns.filter((row) => options.campaignIds.includes(row.campaignId));
 
   return groupByEmail<LeadOutcome & { campaignId: string }>(rows, (row) => row.campaignId);
 };

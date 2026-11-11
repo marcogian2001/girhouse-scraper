@@ -1380,7 +1380,7 @@
     "hint_positive": "Risposte classificate \"interessato\" dal bot, oppure lead segnati Interessato o Meeting su Instantly. Anche chi ha prenotato dopo un'obiezione.",
     "hint_replies_by_email": "A quale email della sequenza hanno risposto i lead: la prima, il primo follow-up, il secondo.",
     "hint_demo_completed": "Demo personalizzata vista fino all'ultimo passo.",
-    "hint_booked": "Call prenotate dalla demo, dall'email, da GHL (setter o WhatsApp) o segnate Meeting su Instantly.",
+    "hint_booked": "Call prenotate dalla demo, dall'email, da GHL (setter o WhatsApp) o segnate Meeting su Instantly. Una call da GHL conta solo per la prima campagna che conteneva il lead prima della prenotazione.",
     "hint_no_show": "Call prenotate a cui il lead non si è presentato, da GHL o dall'etichetta No show di Instantly.",
     "hint_rescheduled": "Lead che, dopo un no show, hanno prenotato una nuova call. Restano nei no show e contano una volta sola nelle call prenotate.",
     "hint_won": "Opportunità segnate Won su GHL o lead segnati Closed su Instantly, con il valore delle vendite.",

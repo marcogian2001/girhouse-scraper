@@ -1380,7 +1380,7 @@
     "hint_positive": "Replies the bot classified as interested, or leads labelled Interested or Meeting on Instantly. Leads who booked after an objection too.",
     "hint_replies_by_email": "Which email of the sequence the leads replied to: the first, the first follow-up, the second.",
     "hint_demo_completed": "Personalised demo watched up to the last step.",
-    "hint_booked": "Calls booked from the demo, the email, GHL (setter or WhatsApp) or labelled Meeting on Instantly.",
+    "hint_booked": "Calls booked from the demo, the email, GHL (setter or WhatsApp) or labelled Meeting on Instantly. A GHL call counts only for the first campaign that held the lead before the booking.",
     "hint_no_show": "Booked calls the lead missed, from GHL or the No show label on Instantly.",
     "hint_rescheduled": "Leads who booked a new call after a no show. They stay in the no shows and count once in the booked calls.",
     "hint_won": "Opportunities marked Won on GHL or leads labelled Closed on Instantly, with the value of the sales.",

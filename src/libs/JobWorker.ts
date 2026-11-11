@@ -1,7 +1,13 @@
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray, isNotNull, or } from 'drizzle-orm';
 import * as z from 'zod';
 import type { jobSchema } from '@/models/Schema';
-import { campaignSchema, contactSchema, emailDraftSchema, enrichmentSchema } from '@/models/Schema';
+import {
+  campaignSchema,
+  contactSchema,
+  emailDraftSchema,
+  enrichmentSchema,
+  leadOutcomeSchema,
+} from '@/models/Schema';
 import { writeEmailSequence } from '@/services/Copywriting';
 import {
   addLeads,
@@ -208,17 +214,47 @@ const runWriteJob = async (job: Job) => {
 };
 
 /**
- * Creates the Instantly campaign and uploads every approved contact.
+ * Reads the leads who already booked a call or bought, so no cold email reaches them.
+ * @param organizationId The organization.
+ * @returns Their lower-cased emails.
+ */
+const loadBookedEmails = async (organizationId: string) => {
+  const rows = await db
+    .select({ email: leadOutcomeSchema.email })
+    .from(leadOutcomeSchema)
+    .where(
+      and(
+        eq(leadOutcomeSchema.organizationId, organizationId),
+        or(isNotNull(leadOutcomeSchema.callBookedAt), isNotNull(leadOutcomeSchema.wonAt)),
+      ),
+    );
+
+  return new Set(rows.map((row) => row.email));
+};
+
+/**
+ * Creates the Instantly campaign and uploads every approved contact, except the leads
+ * who already booked a call or bought.
  * @param job The push job being processed.
  */
 const runPushJob = async (job: Job) => {
   const campaign = await requireCampaign(job.campaignId);
   const payload = pushPayloadSchema.parse(job.payload);
 
-  const contacts = await db
-    .select()
-    .from(contactSchema)
-    .where(and(eq(contactSchema.campaignId, campaign.id), eq(contactSchema.status, 'approved')));
+  const [approved, bookedEmails] = await Promise.all([
+    db
+      .select()
+      .from(contactSchema)
+      .where(and(eq(contactSchema.campaignId, campaign.id), eq(contactSchema.status, 'approved'))),
+    loadBookedEmails(campaign.organizationId),
+  ]);
+  const contacts = approved.filter((contact) => !bookedEmails.has(contact.email.toLowerCase()));
+
+  if (contacts.length < approved.length) {
+    logger.info(
+      `Skipped ${approved.length - contacts.length} leads of campaign ${campaign.id} who already booked a call`,
+    );
+  }
 
   if (contacts.length === 0) {
     throw new Error('No approved contacts to push');
