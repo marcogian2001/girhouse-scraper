@@ -590,7 +590,7 @@ Il titolare ha sostituito le pipeline di GHL: per i lead ora c'è solo **📞 Se
   - **Smart Tag "hot leads"** sulla Setting Pipeline: regola "Demo vista completamente = SI", visibile sulla card. Si configura solo dall'interfaccia di GHL, non via API.
   - **Recupero:** `npx dotenv -c -- npx tsx scripts/mark-demo-completed.ts` elenca i lead con la demo già vista tutta (esclusi test, stop e non interessati); con `--apply` accoda i job. Prova a secco dell'11/11: 39 lead.
   - [x] **Su Vercel:** `GHL_OPPORTUNITY_DEMO_COMPLETED_FIELD_ID`, deploy e script con `--apply` (11/11): 39 opportunità spuntate, nessun errore.
-  - [ ] **Titolare:** creare lo Smart Tag "hot leads" dall'interfaccia di GHL.
+  - [x] **Titolare:** Smart Tag "hot leads" creato dall'interfaccia di GHL (11/11).
 - **Fonte `email`:** l'upsert di GHL non accetta `source`, quindi si mette con un `PUT /opportunities/{id}` subito dopo. Questo vale anche per l'opportunità della call prenotata.
 - **Esiti:** `BOOKED_STAGES` riconosce anche "Call schedulata". No show e chiusure ora stanno nella "💰 Sales Pipeline", che il recupero non legge: arrivano dal calendario e dai webhook.
 - **Recupero del 3/11:** ai 64 lead segnati Interessato su Instantly. Erano già tutti nella Setting Pipeline, creati dal workflow "Risposta Positiva": è stata aggiunta solo la fonte `email`.
