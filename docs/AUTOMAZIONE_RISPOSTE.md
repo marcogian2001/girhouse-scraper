@@ -585,7 +585,7 @@ Il titolare ha sostituito le pipeline di GHL: per i lead ora c'è solo **📞 Se
   - altrimenti la crea in Nuovo Lead con fonte `email`.
   - Negativi, stop e risposte automatiche non entrano in pipeline.
 - **Job `ghl_demo_sent`** (5/11, `src/libs/GhlLead.ts`, migrazione `0050`). Quando un'email approvata dalla dashboard con il link della demo parte e la conversazione passa a `demo_sent`, spunta la checkbox **Demo Inviata** (`SI`) sull'opportunità della Setting Pipeline. Se il lead non è ancora in pipeline, prima ce lo mette come `ghl_lead`. Variabile: `GHL_OPPORTUNITY_DEMO_SENT_FIELD_ID=tes9vszv7DIXDRBJQvX2`; senza, il job non parte. Le demo mandate a mano da Instantly non la spuntano.
-  - [ ] **Su Vercel:** `GHL_OPPORTUNITY_DEMO_SENT_FIELD_ID`.
+  - [x] **Su Vercel:** `GHL_OPPORTUNITY_DEMO_SENT_FIELD_ID` (11/11). Fino ad allora il job non è mai partito: 30 demo inviate dal 5/11 senza spunta.
 - **Job `ghl_demo_completed`** (11/11, `src/libs/GhlLead.ts`, migrazione `0052`). Quando un lead arriva all'ultimo passo della demo (`demo.completedAt`, una volta sola), spunta la checkbox **Demo vista completamente** (`SI`) sull'opportunità della Setting Pipeline, mettendo prima il lead in pipeline se manca. L'anteprima dalla dashboard (`?anteprima=1`) non conta. Variabile: `GHL_OPPORTUNITY_DEMO_COMPLETED_FIELD_ID=LF6m54VFgVoP21uoxzlZ`; senza, il job non parte.
   - **Smart Tag "hot leads"** sulla Setting Pipeline: regola "Demo vista completamente = SI", visibile sulla card. Si configura solo dall'interfaccia di GHL, non via API.
   - **Recupero:** `npx dotenv -c -- npx tsx scripts/mark-demo-completed.ts` elenca i lead con la demo già vista tutta (esclusi test, stop e non interessati); con `--apply` accoda i job. Prova a secco dell'11/11: 39 lead.
