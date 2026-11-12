@@ -587,3 +587,15 @@ Questa sezione prevale su tutte le precedenti per percorso, risultato e dati. Ni
 - **Risultati su 999 sessioni** (500 F1, 499 F2): F1 500/500 ok (landing, bottone sopra la piega e non coperto su tutti i profili, quiz aperto e primo step pronto: bottone visibile in 1,0 s mediana, 2,6 s su 3G; quiz pronto in 1,3 s, 4,2 s su 3G). F2 495/499 ok: autoplay muto in 2,9 s mediana (10,7 s su 3G), mai fallito; dopo il clic audio e riproduzione regolari (stallo medio 1,5%). 4 casi: 3 video fermi subito dopo il clic per ascoltare (2 su iPhone, 1 su 4G lento), 1 pagina che non ha risposto entro 45 s. Nessun errore JavaScript; un solo 429 (immagine del video) in tutto il test.
 - **Percorso completo** (16 sessioni, una per profilo e funnel): il quiz arriva a numero WhatsApp, risultato e costi su tutti i profili; i blocchi visti all'inizio (prova della chiamata, schermata dei costi) erano del robot di test, verificati a parte.
 - **Conclusione**: i funnel funzionano; il calo non è tecnico. Da verificare: precaricamento delle landing nel browser di Meta (le visite contate prima del tocco), qualità del traffico (posizionamenti), e che il contatore F2 conta come "play" solo chi attiva l'audio.
+
+## 2026-11-12 — Visite vere sulla lavagna dei funnel
+
+- Il contatore delle visite (`mu-plugins/girhouse-funnels/visite.php`, beacon `/gh-v`) ora manda due segnali:
+  - `o: 0` appena la pagina si carica (caricamento);
+  - `o: 1` solo dopo 1 secondo continuo di pagina visibile (`document.visibilityState === 'visible'`) e non in prerender (`document.prerendering`).
+- Nuova colonna `opened` in `wp_gh_funnel_visits` (versione tabella 2, default 1). Le visite mandate da quiz.js e prenota.js non hanno `o` e restano `opened = 1`.
+- La lavagna (`gh_fv_where`) e i link pagamenti (`link.php`) contano solo `opened = 1`. I caricamenti (`opened = 0`) servono a confrontare caricamenti e visite vere.
+- Le righe di prima del 12/11 sono tutte `opened = 1`: non si possono ripulire a posteriori.
+- Limite: se il precaricamento di Facebook/Instagram dichiara la pagina visibile, non viene escluso. Il confronto caricamenti/visite vere e con "Visualizzazioni della pagina di destinazione" di Meta lo mostra.
+- Verificato con Playwright (beacon intercettati, nulla salvato): pagina visibile → `[0, 1]`; pagina in background → `[0]`, poi `[0, 1]` quando diventa visibile. Righe di prova sul server cancellate.
+- Backup: `~/backups-girhouse/20261112-visite-vere/` (locale e server).
