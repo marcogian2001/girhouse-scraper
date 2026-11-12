@@ -599,3 +599,27 @@ Questa sezione prevale su tutte le precedenti per percorso, risultato e dati. Ni
 - Limite: se il precaricamento di Facebook/Instagram dichiara la pagina visibile, non viene escluso. Il confronto caricamenti/visite vere e con "Visualizzazioni della pagina di destinazione" di Meta lo mostra.
 - Verificato con Playwright (beacon intercettati, nulla salvato): pagina visibile → `[0, 1]`; pagina in background → `[0]`, poi `[0, 1]` quando diventa visibile. Righe di prova sul server cancellate.
 - Backup: `~/backups-girhouse/20261112-visite-vere/` (locale e server).
+
+## 2026-11-12 — Filtro per orario e test avviati nelle analisi
+
+- Analisi quiz, Analisi video F2 e lavagna dei funnel: nel periodo "Personalizzato" ci sono anche le ore (Dalle / Alle).
+  - `dal` / `al` accettano `AAAA-MM-GG` o `AAAA-MM-GGTHH:MM` (ora italiana); senza `al` il periodo arriva fino ad adesso.
+  - Lato server un solo parser, `gh_funnels_period()` in `analisi.php`, usato da `gh_qs_where`, `gh_vl_where` e `gh_fv_stats`.
+- Test avviati: opzione `gh_funnel_tests` (lista di `{funnel, quando, testo}`), letta da `gh_funnels_tests()` e passata alle tre schermate come `cfg.test`.
+  - Ogni schermata mostra il riquadro "Test avviato il …" del suo funnel (F1 per il quiz, F2 per il video, il codice del funnel sulla lavagna) e la voce di periodo "Dal test · …".
+- Verificato con Playwright su dati veri caricati dal server (nessun login): parametri mandati `giorni=test0&dal=…` e `dal=…T09:15&al=…T18:40`, nessun errore JS.
+- Backup: `~/backups-girhouse/20261112-filtro-orario/`.
+
+## 2026-11-12 13:40 — Lancio test: F1 senza landing, nuova headline F2
+
+- **F1:** `/fnl/f1/` (il link degli annunci) apre subito il quiz.
+  - Rotte: `piu-clienti-quiz` → `fnl/f1`, `piu-clienti` (vecchia landing) → `fnl/f1/landing`.
+  - `/fnl/f1/quiz/` porta a `/fnl/f1/` con redirect **302** (`GH_FUNNEL_OLD_ROUTES`), parametri inclusi, così si può tornare indietro.
+  - Visite storiche spostate per restare coerenti con gli step: 780 righe `/fnl/f1/` (prima delle 12:40:54 UTC) → `/fnl/f1/landing/`, 81 righe `/fnl/f1/quiz/` → `/fnl/f1/`. Id in `visite-spostate.json` nel backup.
+  - Lavagna F1: tolto lo step "Landing generica", ora Annunci → Quiz. Lavagna di prima in `lavagna-f1.json` nel backup.
+  - Fonte/funnel del lead da `/fnl/f1/` restano fb-ads / F1.
+- **F2:** nuova headline (scelta dall'utente): "Guarda il video per capire come non perdere più nessuna richiesta e avere un sito nuovo che ti porta clienti da Google a 97€ al mese." "Step 1: guarda questo video" lasciato uguale, così cambia solo la headline.
+- Segni dei test in `gh_funnel_tests`: F1 e F2, `2026-11-12T13:40`.
+- Verifica live: `/fnl/f1/?utm_source=…` apre il quiz e "Iniziamo" porta alla prima domanda; il vecchio indirizzo del quiz fa 302 verso `/fnl/f1/` con i parametri; `/fnl/f1/landing/` mostra la vecchia landing; `/fnl/f2/` mostra la nuova headline. Beacon visite corretti (`/fnl/f1/`, 0 poi 1), nessun errore JS.
+- Backup: `~/backups-girhouse/20261112-lancio-test/` (server e locale), con lo script `lancio.php`.
+- Per tornare indietro: rimettere `girhouse-funnels.php` e `vsl-47.html` dal backup, rispostare le visite con gli id salvati e rimettere la lavagna da `lavagna-f1.json`.
