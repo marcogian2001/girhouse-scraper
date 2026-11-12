@@ -19,16 +19,6 @@ describe('Follow-ups', () => {
       });
     });
 
-    it('points to the first step not seen when the demo was left halfway', () => {
-      expect(
-        nextAction({
-          ...base,
-          state: 'demo_viewed',
-          demo: { behavior: 'partial', maxStep: 3, booked: false },
-        }),
-      ).toStrictEqual({ type: 'email', kind: 'demo_partial', step: 4, isLast: false });
-    });
-
     it('asks what held the lead back after the whole demo', () => {
       expect(
         nextAction({ ...base, demo: { behavior: 'complete', maxStep: 6, booked: false } }),
@@ -55,6 +45,16 @@ describe('Follow-ups', () => {
   describe('Nothing to do', () => {
     it('leaves a lead without a demo alone', () => {
       expect(nextAction({ ...base, demo: null })).toStrictEqual({ type: 'none' });
+    });
+
+    it('leaves a lead who stopped the demo halfway alone', () => {
+      expect(
+        nextAction({
+          ...base,
+          state: 'demo_viewed',
+          demo: { behavior: 'partial', maxStep: 3, booked: false },
+        }),
+      ).toStrictEqual({ type: 'none' });
     });
 
     it('leaves a booked lead alone', () => {

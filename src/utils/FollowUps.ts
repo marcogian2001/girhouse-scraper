@@ -1,6 +1,5 @@
 import type { BusinessHours } from './BusinessHours';
 import { toBusinessTime } from './BusinessHours';
-import { DEMO_STEPS } from './DemoStats';
 import type { ConversationState } from './ReplyRouting';
 
 /** States a lead who got the demo and went silent is followed up from. */
@@ -17,12 +16,10 @@ export const MAX_FOLLOW_UPS = 2;
 const FOLLOW_UP_DELAY_MS = 24 * 60 * 60 * 1000;
 
 /** The emails a silent lead can get. */
-export type FollowUpKind = 'demo_not_opened' | 'demo_partial' | 'demo_complete';
+export type FollowUpKind = 'demo_not_opened' | 'demo_complete';
 
 /** What the next step for a silent lead is. */
-export type NextAction =
-  | { type: 'email'; kind: FollowUpKind; step?: number; isLast: boolean }
-  | { type: 'none' };
+export type NextAction = { type: 'email'; kind: FollowUpKind; isLast: boolean } | { type: 'none' };
 
 /** How a lead went through their demo, as `summarizeDemo` reports it. */
 type DemoBehaviour = {
@@ -33,7 +30,7 @@ type DemoBehaviour = {
 
 /**
  * Picks the follow-up for a lead who went silent after the demo, tuned to what they did on
- * it, until the last one.
+ * it, until the last one. A lead who stopped halfway gets nothing on its own.
  * @param options What is known about the lead.
  * @param options.state The conversation state.
  * @param options.followUpCount Follow-ups already sent.
@@ -49,6 +46,7 @@ export const nextAction = (options: {
     !FOLLOW_UP_STATES.has(options.state) ||
     !options.demo ||
     options.demo.booked ||
+    options.demo.behavior === 'partial' ||
     options.followUpCount >= MAX_FOLLOW_UPS
   ) {
     return { type: 'none' };
@@ -56,17 +54,8 @@ export const nextAction = (options: {
 
   const isLast = options.followUpCount === MAX_FOLLOW_UPS - 1;
 
-  if (options.demo.behavior === 'not_opened') {
-    return { type: 'email', kind: 'demo_not_opened', isLast };
-  }
-
-  return options.demo.behavior === 'partial'
-    ? {
-        type: 'email',
-        kind: 'demo_partial',
-        step: Math.min(options.demo.maxStep + 1, DEMO_STEPS),
-        isLast,
-      }
+  return options.demo.behavior === 'not_opened'
+    ? { type: 'email', kind: 'demo_not_opened', isLast }
     : { type: 'email', kind: 'demo_complete', isLast };
 };
 

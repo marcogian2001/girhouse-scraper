@@ -51,10 +51,7 @@ const writeFollowUp = async (options: {
   }
 
   const settings = await getAutomationSettings(conversation.organizationId);
-  const link =
-    action.kind === 'demo_complete'
-      ? null
-      : `${options.demo.url}${action.step ? `?passo=${action.step}` : ''}`;
+  const link = action.kind === 'demo_complete' ? null : options.demo.url;
   const written = await writeCheckedReply(
     {
       model: settings.writingModel,

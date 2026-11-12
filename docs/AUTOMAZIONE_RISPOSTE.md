@@ -561,7 +561,8 @@ Richiesta del titolare: poter scrivere di nuovo a un lead anche quando l'ultimo 
   - L'AI legge il thread vero da Instantly (`loadThread` in `src/libs/ConversationThread.ts`), compresi i messaggi mandati a mano.
 - **Follow-up automatici:** due, e **partono da soli**, senza bozza. Valgono per chi ha ricevuto il link della demo, non ha prenotato, non è in stop e la cui ultima risposta non è un "non interessato".
   - Il primo arriva 24 ore dopo l'email con la demo, il secondo 24 ore dopo il primo. Contano i giorni di calendario, weekend compresi; un orario fuori dalle ore lavorative di Automazione passa all'apertura successiva (`followUpDueAt` in `src/utils/FollowUps.ts`).
-  - Il testo segue cosa il lead ha fatto sulla demo, come nella fase 5: non aperta, vista a metà o vista tutta. Il secondo è più corto e non dice di essere l'ultimo. Dopo il secondo non parte più niente da solo; niente chiusura né WhatsApp.
+  - Il testo segue cosa il lead ha fatto sulla demo, come nella fase 5: non aperta o vista tutta. Il secondo è più corto e non dice di essere l'ultimo. Dopo il secondo non parte più niente da solo; niente chiusura né WhatsApp.
+  - **Vista a metà: nessun follow-up automatico** (12/11, richiesta del titolare). Se un lead apre la demo e si ferma prima della fine, la sequenza si ferma, anche se aveva già ricevuto il primo follow-up. Il "Nuovo messaggio" manuale resta disponibile.
   - Un follow-up che infrange una regola bloccante (per esempio il link mancante) resta in bozza da approvare.
   - Si fermano con una risposta del lead, una prenotazione, uno stop o il kill switch (con l'automazione spenta il follow-up riprova dopo un'ora).
 - **Da dove partono:** `startFollowUps` (`src/libs/FollowUpStart.ts`):

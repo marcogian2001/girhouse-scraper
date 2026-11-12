@@ -40,7 +40,6 @@ const REACTIVATED_RULE =
 /** What each follow-up to a lead who went silent after the demo does. */
 const FOLLOW_UP_GUIDANCE: Record<FollowUpKind, string> = {
   demo_not_opened: `You sent the link to the page prepared for their business and it was never opened. Ask lightly whether it arrived, put ${DEMO_LINK_PLACEHOLDER} alone on its own line again, ${REACTIVATED_RULE}, and ask nothing else. No guilt, no pressure.`,
-  demo_partial: `The lead opened the page prepared for their business but stopped halfway. Say in a few words that the most useful part comes next, put ${DEMO_LINK_PLACEHOLDER} alone on its own line (it opens where they stopped), ${REACTIVATED_RULE}, and ask nothing else: the page itself proposes the call at its end.`,
   demo_complete:
     'The lead watched the whole page prepared for their business but did not answer. Ask simply, without pressure, what held them back. That question is the only call to action: no link.',
 };
