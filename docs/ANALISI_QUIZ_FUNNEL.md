@@ -701,3 +701,4 @@ Questa sezione prevale su tutte le precedenti per percorso, risultato e dati. Ni
 - Un gruppo per contatto: registro in opzione `gh_wa_groups` + campi GHL nuovi "WhatsApp gruppo ID" e "WhatsApp gruppo link"; tag `gruppo-whatsapp` e nota sul contatto. Massimo 3 gruppi per giro, 3 tentativi per contatto.
 - Registro: ~/domains/girhouse.com/gh-whatsapp-gruppi.log. Prova a vuoto: `wp eval 'print_r( gh_wa_groups_run( true ) );'`.
 - In attesa: costanti GH_PERISKOPE_TOKEN, GH_PERISKOPE_PHONE (e facoltativa GH_WA_GROUP_TEAM) in wp-config.php. Senza chiave non parte nulla.
+- Attivato 13/11: GH_PERISKOPE_PHONE = 393520130356 ("Commericale Girhouse", crea il gruppo ed è admin), GH_WA_GROUP_TEAM = 393516930869 ("Tecnico Girhouse"). Entrambi collegati a Periskope.
