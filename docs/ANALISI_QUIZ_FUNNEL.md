@@ -664,3 +664,11 @@ Questa sezione prevale su tutte le precedenti per percorso, risultato e dati. Ni
 - `template-attiva.php`: tornato lo spazio riservato ai bottoni rapidi anche nella prova.
 - Verificato con Chrome e Safari (Playwright), checkout di prova e normale: elemento montato, nessun errore; su Chrome compaiono i bottoni Apple Pay e Google Pay. Pagamento con portafoglio non provato (lo fa l'utente).
 - Backup: `~/backups-girhouse/20261113-prova-wallet/`.
+
+## 2026-11-13 10:40 — F2: timer reale sotto il bottone
+
+- `vsl.js` (v12): `timerLeft()` ora restituisce il tempo vero che manca allo sblocco, cioè il 70% del video meno i secondi guardati con l'audio. Tolti `TIMER_START` / `TIMER_REAL` e la curva che rallentava.
+- `vsl-47.html`: testo iniziale "Il bottone si sblocca tra 2:22" (i due video durano ~203 s; il 70% è circa 142 s); `vsl.js?v=12`.
+- Verificato live: prima del clic 2:22, dopo il clic per l'audio scende di 1 secondo ogni secondo (2:21, 2:19, 2:17…).
+- Segno di test F2 aggiunto in `gh_funnel_tests` (`2026-11-13T10:40`): nelle analisi di F2 si possono separare i dati con la sola headline nuova da quelli con headline + timer reale.
+- Backup: `~/backups-girhouse/20261113-timer-vsl/`.
