@@ -652,3 +652,15 @@ Questa sezione prevale su tutte le precedenti per percorso, risultato e dati. Ni
   - pagina controllata su telefono e computer, nessun errore JS; checkout normale invariato.
 - Non provato: il salvataggio di una carta vera (lo fa l'utente).
 - Backup: `~/backups-girhouse/20261113-link-prova/`.
+
+## 2026-11-13 — Apple Pay e Google Pay sul link di prova
+
+- `attiva.js`: l'Express Checkout si monta anche nella prova (Elements in `mode: 'setup'`). La conferma passa da `stripe.confirmSetup`, come per la carta.
+- Apple Pay riceve `applePay.recurringPaymentRequest` (al click):
+  - `trialBilling`: 0 € per 14 giorni;
+  - `regularBilling`: 97 € al mese dalla fine della prova;
+  - `billingAgreement`: "Oggi non paghi nulla…";
+  - `managementURL`: /condizioni-di-vendita/.
+- `template-attiva.php`: tornato lo spazio riservato ai bottoni rapidi anche nella prova.
+- Verificato con Chrome e Safari (Playwright), checkout di prova e normale: elemento montato, nessun errore; su Chrome compaiono i bottoni Apple Pay e Google Pay. Pagamento con portafoglio non provato (lo fa l'utente).
+- Backup: `~/backups-girhouse/20261113-prova-wallet/`.
