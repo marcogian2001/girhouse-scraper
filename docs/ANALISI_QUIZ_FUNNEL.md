@@ -680,3 +680,15 @@ Questa sezione prevale su tutte le precedenti per percorso, risultato e dati. Ni
 - Pagina verificata: riepilogo 197 € → 0 € oggi, "Dal 27 novembre 2026 197 € al mese", riga legale "dopo 14 giorni di prova 197 € al mese". Apple Pay e Meta prendono l'importo dal piano o dal prezzo.
 - Le prove già attive restano sul prezzo da 97 € (al momento del cambio: 1 abbonamento in prova su quel prezzo).
 - Backup: `~/backups-girhouse/20261113-prova-197/`.
+
+## 13/11/2026 – Go High Level per chi compra diretto
+
+- Automazione "3. Demo Iniziata (NO Trial)" (quella in cui entra chi paga su /attiva/):
+  - "Update opportunity" e "Create or update deal" ora mettono il deal in Sales Pipeline → **Abbonamento attivo** (prima "Demo iniziata").
+  - Notifica interna: oggetto da "Nuova prova gratuita attivata" a "Nuovo acquisto: abbonamento attivo - Nome Cognome". Il corpo era già giusto.
+  - Email e WhatsApp di benvenuto al cliente invariati.
+- Campi contatto nuovi in Go High Level: utm_source, utm_medium, utm_campaign, utm_content, utm_term.
+- Checkout: attiva.js manda gli UTM (dall'indirizzo o da gh_attr salvato da landing/quiz, 30 giorni); billing.php li salva nei metadata dell'abbonamento Stripe e al primo pagamento li scrive nei campi utm_* del contatto.
+- Quiz: lead.php scrive gli UTM anche nei campi utm_* (prima solo nella nota).
+- Backup: ~/backups-girhouse/20261113-ghl-acquisti/.
+- Da decidere: la prova gratuita entra nella stessa automazione (email "pagamento ricevuto" e fase Abbonamento attivo).
