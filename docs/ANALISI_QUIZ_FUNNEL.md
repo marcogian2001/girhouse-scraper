@@ -672,3 +672,11 @@ Questa sezione prevale su tutte le precedenti per percorso, risultato e dati. Ni
 - Verificato live: prima del clic 2:22, dopo il clic per l'audio scende di 1 secondo ogni secondo (2:21, 2:19, 2:17…).
 - Segno di test F2 aggiunto in `gh_funnel_tests` (`2026-11-13T10:40`): nelle analisi di F2 si possono separare i dati con la sola headline nuova da quelli con headline + timer reale.
 - Backup: `~/backups-girhouse/20261113-timer-vsl/`.
+
+## 2026-11-13 — Link di prova a 197 €/mese
+
+- Con l'ok esplicito dell'utente ("si crealo tu") creato in live il prezzo `price_1UbIYQRpePwqv78HEwsk9pFh`: 197 €, mensile, EUR, sul prodotto `prod_VYxHgHBHa1wjLd` (lo stesso dei prezzi da 97 € e 149 €).
+- Piano `prova14` in `billing.php`: `amount` 19700, prezzo live nuovo, `test` vuoto (non c'è un prezzo test da 197 €), nome "Sistema Girhouse, 14 giorni gratis poi 197 € al mese".
+- Pagina verificata: riepilogo 197 € → 0 € oggi, "Dal 27 novembre 2026 197 € al mese", riga legale "dopo 14 giorni di prova 197 € al mese". Apple Pay e Meta prendono l'importo dal piano o dal prezzo.
+- Le prove già attive restano sul prezzo da 97 € (al momento del cambio: 1 abbonamento in prova su quel prezzo).
+- Backup: `~/backups-girhouse/20261113-prova-197/`.
