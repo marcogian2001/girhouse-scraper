@@ -9,6 +9,9 @@ export const FOLLOW_UP_STATES = new Set<ConversationState>([
   'follow_up',
 ]);
 
+/** Whether follow-ups go out on their own after the demo; switched off by the owner on 13/11. */
+export const AUTOMATIC_FOLLOW_UPS = false;
+
 /** Follow-ups after the email with the demo; then nothing more goes out on its own. */
 export const MAX_FOLLOW_UPS = 2;
 

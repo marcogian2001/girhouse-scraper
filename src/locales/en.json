@@ -833,6 +833,7 @@
     "event_follow_up_drafted": "Follow-up drafted",
     "event_follow_up_held_kill_switch": "Follow-up held (automation off)",
     "event_follow_ups_started": "Follow-ups started",
+    "event_follow_ups_cancelled": "Follow-ups cancelled",
     "event_nudge_drafted": "New email drafted",
     "event_whatsapp_drafted": "WhatsApp drafted",
     "event_whatsapp_started": "Handed to WhatsApp on GHL",

@@ -4,7 +4,7 @@ import type { jobSchema } from '@/models/Schema';
 import { conversationSchema, outboundEmailSchema } from '@/models/Schema';
 import { renderScarcity, replySubject } from '@/services/ReplyWriter';
 import type { NextAction } from '@/utils/FollowUps';
-import { FOLLOW_UP_STATES, nextAction } from '@/utils/FollowUps';
+import { AUTOMATIC_FOLLOW_UPS, FOLLOW_UP_STATES, nextAction } from '@/utils/FollowUps';
 import { buildOfferBrief } from '@/utils/Offer';
 import { getAutomationSettings } from './AutomationSettings';
 import type { Conversation } from './Conversations';
@@ -135,8 +135,8 @@ const runConversationTickJob = async (job: Job) => {
     return;
   }
 
-  // Booked, stopped or answered since: the follow-ups are off
-  if (!FOLLOW_UP_STATES.has(conversation.state)) {
+  // Switched off, or booked, stopped or answered since: the follow-ups are off
+  if (!AUTOMATIC_FOLLOW_UPS || !FOLLOW_UP_STATES.has(conversation.state)) {
     await scheduleNextAction(conversationId, null);
     await completeJob(job.id);
 

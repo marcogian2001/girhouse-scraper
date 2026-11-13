@@ -833,6 +833,7 @@
     "event_follow_up_drafted": "Follow-up in bozza",
     "event_follow_up_held_kill_switch": "Follow-up rimandato (automazione spenta)",
     "event_follow_ups_started": "Follow-up attivati",
+    "event_follow_ups_cancelled": "Follow-up annullati",
     "event_nudge_drafted": "Nuovo messaggio in bozza",
     "event_whatsapp_drafted": "WhatsApp in bozza",
     "event_whatsapp_started": "Passato a WhatsApp su GHL",

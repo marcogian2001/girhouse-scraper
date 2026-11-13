@@ -5,7 +5,12 @@ import {
   inboundMessageSchema,
   replyClassificationSchema,
 } from '@/models/Schema';
-import { FOLLOW_UP_STATES, followUpDueAt, mentionsDemo } from '@/utils/FollowUps';
+import {
+  AUTOMATIC_FOLLOW_UPS,
+  FOLLOW_UP_STATES,
+  followUpDueAt,
+  mentionsDemo,
+} from '@/utils/FollowUps';
 import type { ReplyCategory } from '@/utils/ReplyRouting';
 import { getAutomationSettings } from './AutomationSettings';
 import type { Conversation } from './Conversations';
@@ -92,6 +97,7 @@ export const startFollowUps = async (options: {
   });
 
   if (
+    !AUTOMATIC_FOLLOW_UPS ||
     !conversation ||
     conversation.followUpCount > 0 ||
     conversation.nextActionAt ||
