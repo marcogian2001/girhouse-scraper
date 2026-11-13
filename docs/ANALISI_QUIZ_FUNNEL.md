@@ -623,3 +623,32 @@ Questa sezione prevale su tutte le precedenti per percorso, risultato e dati. Ni
 - Verifica live: `/fnl/f1/?utm_source=…` apre il quiz e "Iniziamo" porta alla prima domanda; il vecchio indirizzo del quiz fa 302 verso `/fnl/f1/` con i parametri; `/fnl/f1/landing/` mostra la vecchia landing; `/fnl/f2/` mostra la nuova headline. Beacon visite corretti (`/fnl/f1/`, 0 poi 1), nessun errore JS.
 - Backup: `~/backups-girhouse/20261112-lancio-test/` (server e locale), con lo script `lancio.php`.
 - Per tornare indietro: rimettere `girhouse-funnels.php` e `vsl-47.html` dal backup, rispostare le visite con gli id salvati e rimettere la lavagna da `lavagna-f1.json`.
+
+## 2026-11-13 — Link pagamento con 14 giorni di prova gratuita
+
+- Link: `https://girhouse.com/attiva/?piano=prova14`. Stesso prezzo live da 97 €/mese (`price_1UXpMr…`): nessun oggetto Stripe live nuovo.
+- Piano `prova14` in `GH_BILLING_PLANS` con `'prova' => 14`; `gh_billing_plan_trial()` dà i giorni.
+- Server (`gh_billing_create_trial`):
+  - abbonamento con `trial_period_days=14`, `payment_behavior=default_incomplete`, `save_default_payment_method=on_subscription`;
+  - `trial_settings.end_behavior.missing_payment_method=cancel`: senza carta a fine prova Stripe annulla l'abbonamento;
+  - restituisce il segreto del `pending_setup_intent`, che il browser conferma con `stripe.confirmSetup` (Elements in `mode: 'setup'`; niente Apple Pay / Google Pay nella prova);
+  - una prova per cliente: se esiste già un abbonamento di prova con carta, errore 409. I tentativi senza carta si riusano o si annullano.
+- Avvio del cliente (utente WP, Go High Level, Meta) solo con la carta salvata:
+  - la fattura da 0 € è "pagata" già alla creazione, quindi `gh_billing_first_payment` esce se manca `default_payment_method`;
+  - parte da `customer.subscription.updated` (in prova e con la carta) o dalla pagina di conferma (`wp_schedule_single_event`), con un blocco di 10 minuti contro i doppioni;
+  - se Stripe non mette la carta sull'abbonamento, la mette `gh_billing_trial_card()` dal SetupIntent riuscito;
+  - in GHL la fonte è "Prova gratuita Sistema Girhouse".
+- Meta: alla carta salvata va `StartTrial` (valore 0, `predicted_ltv` 97). Al primo addebito dopo la prova (`invoice.paid` con `subscription_cycle`) va `Purchase`, una volta sola (metadato `gh_acquisto`).
+- Pagina:
+  - tolti la garanzia dei 30 giorni (in testata e il sigillo "Soddisfatti o rimborsati");
+  - aggiunti "14 giorni gratis", l'avviso verde "Oggi non paghi nulla", nel riepilogo "Prova gratuita 14 giorni −97 €", "Totale di oggi 0 €" e "Dal <data> 97 € al mese";
+  - un riquadro "Come funziona la prova gratuita", la FAQ "Perché serve la carta se la prova è gratis?" e la FAQ "Come faccio a disdire?" aggiornata;
+  - bottone "Inizia la prova gratuita"; riga legale "oggi paghi 0 €, dopo 14 giorni di prova 97 € al mese";
+  - la pagina di grazie ha i testi della prova.
+- Link pagamenti in bacheca: "0 € oggi, poi 97 € al mese dopo 14 giorni di prova", passo "Grazie (prova attivata)".
+- Verifiche:
+  - flusso del server provato con le chiavi TEST di Stripe, nessuna carta: prova creata (status trialing, fattura 0 €), riuso alla pagina riaperta, cliente bloccato senza carta, tutto cancellato;
+  - nel registro la riga "Prova gratuita creata" delle 09:31 UTC è quella prova (c'è una nota);
+  - pagina controllata su telefono e computer, nessun errore JS; checkout normale invariato.
+- Non provato: il salvataggio di una carta vera (lo fa l'utente).
+- Backup: `~/backups-girhouse/20261113-link-prova/`.
