@@ -692,3 +692,12 @@ Questa sezione prevale su tutte le precedenti per percorso, risultato e dati. Ni
 - Quiz: lead.php scrive gli UTM anche nei campi utm_* (prima solo nella nota).
 - Backup: ~/backups-girhouse/20261113-ghl-acquisti/.
 - Da decidere: la prova gratuita entra nella stessa automazione (email "pagamento ricevuto" e fase Abbonamento attivo).
+
+## 13/11/2026 – Gruppo WhatsApp automatico (Periskope)
+
+- File `mu-plugins/girhouse-funnels/gruppi.php` (incluso da girhouse-funnels.php). WP-Cron `gh_wa_groups` ogni 5 minuti.
+- Legge la Sales Pipeline: chi entra in "Demo iniziata" o "Abbonamento attivo" dopo l'attivazione (opzione `gh_wa_since`, 13/11 15:40) riceve il gruppo "<Nome attività o Nome Cognome> x Girhouse".
+- Logo del gruppo: https://girhouse.com/wp-content/uploads/girhouse/whatsapp/logo-gruppo-whatsapp.jpg (640×640). Descrizione "Gruppo di lavoro tra … e il team Girhouse"; solo gli admin cambiano nome e foto.
+- Un gruppo per contatto: registro in opzione `gh_wa_groups` + campi GHL nuovi "WhatsApp gruppo ID" e "WhatsApp gruppo link"; tag `gruppo-whatsapp` e nota sul contatto. Massimo 3 gruppi per giro, 3 tentativi per contatto.
+- Registro: ~/domains/girhouse.com/gh-whatsapp-gruppi.log. Prova a vuoto: `wp eval 'print_r( gh_wa_groups_run( true ) );'`.
+- In attesa: costanti GH_PERISKOPE_TOKEN, GH_PERISKOPE_PHONE (e facoltativa GH_WA_GROUP_TEAM) in wp-config.php. Senza chiave non parte nulla.
