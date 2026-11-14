@@ -737,3 +737,4 @@ Questa sezione prevale su tutte le precedenti per percorso, risultato e dati. Ni
 - Prefisso nel popup come il quiz F1: bandiere SVG (uploads/girhouse/funnels/flags), ricerca per nome del paese o per prefisso, Italia/Svizzera/San Marino in cima.
 - Screenshot della demo nell'hero sempre sfocato (CSS blur 6px).
 - Grazie F3: tolta l'offerta 97 €/mese e il bottone al checkout; aggiunte video recensioni (stesso player 1.2x) e Trustpilot a scorrimento; tutto centrato. Numero WhatsApp ora è un link intero a wa.me (format-detection telephone=no, prima iOS rendeva cliccabile solo una parte del numero).
+- Headline F3: "Aiutiamo liberi professionisti a trovare più clienti con l'AI, un sito che ti fa trovare su Google e recensioni a 5 stelle" (prima "più lavori … siti web intelligenti"); titolo del popup "… a trovare più clienti". Dimensione: max 2,6rem su desktop (3 righe, CTA visibile anche a 1280×800), 1,7rem su telefono con text-wrap:balance.
