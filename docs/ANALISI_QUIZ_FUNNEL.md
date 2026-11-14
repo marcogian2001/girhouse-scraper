@@ -717,3 +717,13 @@ Questa sezione prevale su tutte le precedenti per percorso, risultato e dati. Ni
 - Prova con contatto finto +390000000017: tutto ok, poi contatto e opportunità cancellati.
 - Mancano: pagina della demo personalizzata (link su WhatsApp), anteprima del video (2-3 fotogrammi o GIF), 3 testimonianze con foto (ora ci sono le 2 recensioni di F1), automazione GHL sul tag demo-f3 (avviso al team).
 - Backup: ~/backups-girhouse/20261114-f3/.
+
+### 14/11/2026 – F3 rifatta sul nuovo copy
+- Hero: "Aiutiamo liberi professionisti a trovare più lavori con l'AI, siti web intelligenti e recensioni a 5 stelle", video sfocato (uploads/girhouse/funnels/f3/f3-blur.mp4, 9 s dalla VSL F2) con play che apre il popup, "Step 1: …", CTA "Clicca per vedere come funziona".
+- Video recensioni una sotto l'altra: Mik Cosentino, Simone Marietta Durelli, Ale Stark (video in uploads/2025/08/*-web.mp4, copertine in uploads/girhouse/funnels/f3/; riassunti scritti dalle trascrizioni Whisper).
+- Trustpilot a scorrimento: 17 recensioni (titolo, nome, data) + link al profilo; testo completo non copiato.
+- Come funziona (3 passi) e loghi "Collaboriamo con" a scorrimento infinito. CTA fissa in basso dopo la hero (anche su desktop).
+- Popup: titolo giallo, barra verde a strisce dal 50% al 100%, 4 domande a scelta (tipo di lavori, andamento, quando, fatturato) + cellulare (WhatsApp), email, nome, azienda.
+- demo.php: risposte nella nota, email e azienda sul contatto; chi risponde "Non lavoro nell'edilizia" prende anche il tag f3-non-edilizia e non manda il Lead a Meta.
+- Prova completa con numero finto: ok, contatto e opportunità cancellati (il Lead di prova è arrivato a Meta).
+- Versione precedente in ~/backups-girhouse/20261114-f3/v1/.
