@@ -738,3 +738,10 @@ Questa sezione prevale su tutte le precedenti per percorso, risultato e dati. Ni
 - Screenshot della demo nell'hero sempre sfocato (CSS blur 6px).
 - Grazie F3: tolta l'offerta 97 €/mese e il bottone al checkout; aggiunte video recensioni (stesso player 1.2x) e Trustpilot a scorrimento; tutto centrato. Numero WhatsApp ora è un link intero a wa.me (format-detection telephone=no, prima iOS rendeva cliccabile solo una parte del numero).
 - Headline F3: "Aiutiamo liberi professionisti a trovare più clienti con l'AI, un sito che ti fa trovare su Google e recensioni a 5 stelle" (prima "più lavori … siti web intelligenti"); titolo del popup "… a trovare più clienti". Dimensione: max 2,6rem su desktop (3 righe, CTA visibile anche a 1280×800), 1,7rem su telefono con text-wrap:balance.
+
+## 14/11/2026 – F3: demo automatica con lo scraper e WhatsApp da GHL
+
+- Scraper (PR #13, in produzione): `POST /api/funnel/demo` e `GET /api/funnel/demo/[slug]` con header `x-funnel-secret` (env `FUNNEL_SECRET` su Vercel, `GH_SCRAPER_FUNNEL_SECRET` in wp-config). Crea lead (ricerca "Funnel girhouse.com", stato filtered_out), conversazione senza campagna e demo con `ensureDemo`. Senza scheda Google la lead prende un place id finto `funnel-<contatto>` e la demo si costruisce con i dati del quiz.
+- Quando il video è pronto (o abbandonato) lo scraper scrive il link nel campo contatto "Link demo" (`contact.link_demo`), aggiunge il tag `demo-f3-pronta` e spunta "Demo Inviata" sull'opportunità; evento `funnel_demo_sent`.
+- Sito (demo.php): dopo il modulo F3 (solo liberi professionisti) mette la richiesta in coda (opzione `gh_demo_queue`) e la manda allo scraper in background; se il lead non ha scelto la scheda la cerca con nome e città. 3 tentativi, poi tag `demo-f3-manuale` e nota. Registro ~/domains/girhouse.com/gh-demo-f3.log.
+- GHL: automazione sul tag `demo-f3-pronta` con il WhatsApp "Ciao {{contact.first_name}}, sono Gianmarco di Girhouse 👋 / Ecco il video che abbiamo preparato sulla tua attività: {{contact.link_demo}} / Scrivimi qui una volta che l'hai visto tutto."
