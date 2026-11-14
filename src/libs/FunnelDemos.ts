@@ -6,11 +6,13 @@ import {
   leadSearchSchema,
   memberSchema,
 } from '@/models/Schema';
+import { FUNNEL_PLACE_PREFIX } from '@/utils/FunnelPlace';
 import { toE164 } from '@/utils/Phone';
 import type { FunnelDemoRequest } from '@/validations/FunnelDemoValidation';
 import { logEvent } from './Conversations';
 import { db } from './DB';
-import { demoUrl, ensureDemo } from './Demos';
+import { demoUrl } from './DemoLinks';
+import { ensureDemo } from './Demos';
 import { Env } from './Env';
 import { logger } from './Logger';
 
@@ -91,8 +93,45 @@ const ensureFunnelSearch = async (options: { organizationId: string; userId: str
 };
 
 /**
+ * Reads the Google Maps facts of the place the lead picked, empty when they picked none.
+ * @param place The place, if any.
+ * @returns The facts, as lead columns.
+ */
+const placeColumns = (place: FunnelDemoRequest['place']) => ({
+  address: place?.address ?? null,
+  category: place?.category ?? null,
+  rating: place?.rating ?? null,
+  reviewsCount: place?.reviews ?? null,
+});
+
+/**
+ * Reads what the funnel request says about the business, as lead columns.
+ * @param request The funnel request.
+ * @returns The place id, a stand-in one when the business is not on Google Maps, and the facts.
+ */
+const funnelLeadFacts = (request: FunnelDemoRequest) => {
+  const website = request.place?.website ?? null;
+  const [first, ...rest] = request.name.split(/\s+/u);
+
+  return {
+    ...placeColumns(request.place),
+    placeId: request.place?.id ?? `${FUNNEL_PLACE_PREFIX}${request.ghlContactId}`,
+    company: request.company,
+    website,
+    domain: website ? new URL(website).hostname.replace(/^www\./u, '') : null,
+    hasWebsite: Boolean(website),
+    phone: request.place?.phone ?? request.phone ?? null,
+    city: request.city ?? null,
+    firstName: first ?? null,
+    lastName: rest.join(' ') || null,
+    email: request.email,
+  };
+};
+
+/**
  * Stores the business as a lead, or reuses the lead the organization already has for the place.
- * New funnel leads are filtered out, so no cold email search ever claims them.
+ * A business not found on Google Maps gets a stand-in place, so its demo is built from what the
+ * lead wrote. New funnel leads are filtered out, so no cold email search ever claims them.
  * @param options The lead.
  * @param options.request The funnel request.
  * @param options.organizationId The organization.
@@ -104,29 +143,15 @@ const ensureFunnelLead = async (options: {
   organizationId: string;
   leadSearchId: string;
 }) => {
-  const { request } = options;
-  const [first, ...rest] = request.name.split(/\s+/u);
-  const website = request.place.website ?? null;
+  const facts = funnelLeadFacts(options.request);
+  const { placeId } = facts;
 
   await db
     .insert(leadSchema)
     .values({
+      ...facts,
       leadSearchId: options.leadSearchId,
       organizationId: options.organizationId,
-      placeId: request.place.id,
-      company: request.company,
-      website,
-      domain: website ? new URL(website).hostname.replace(/^www\./u, '') : null,
-      hasWebsite: Boolean(website),
-      phone: request.place.phone ?? request.phone ?? null,
-      address: request.place.address ?? null,
-      city: request.city ?? null,
-      category: request.place.category ?? null,
-      rating: request.place.rating ?? null,
-      reviewsCount: request.place.reviews ?? null,
-      firstName: first ?? null,
-      lastName: rest.join(' ') || null,
-      email: request.email,
       status: 'filtered_out',
     })
     .onConflictDoNothing();
@@ -134,12 +159,12 @@ const ensureFunnelLead = async (options: {
   const lead = await db.query.leadSchema.findFirst({
     where: and(
       eq(leadSchema.organizationId, options.organizationId),
-      eq(leadSchema.placeId, request.place.id),
+      eq(leadSchema.placeId, placeId),
     ),
   });
 
   if (!lead) {
-    throw new Error(`The lead for place ${request.place.id} could not be stored`);
+    throw new Error(`The lead for place ${placeId} could not be stored`);
   }
 
   return lead.id;
@@ -195,7 +220,7 @@ const ensureFunnelConversation = async (options: {
   await logEvent({
     conversationId: created.id,
     type: 'funnel_demo_requested',
-    payload: { funnel: request.funnel, placeId: request.place.id },
+    payload: { funnel: request.funnel, placeId: request.place?.id ?? null },
   });
 
   return created;

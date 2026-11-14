@@ -117,6 +117,8 @@ export const EVENT_TYPES = [
   'ghl_demo_completed_failed',
   // A girhouse.com funnel lead asked for a demo in the form
   'funnel_demo_requested',
+  // The funnel demo's link went to GHL, which sends it on WhatsApp
+  'funnel_demo_sent',
 ] as const;
 
 export type EventType = (typeof EVENT_TYPES)[number];

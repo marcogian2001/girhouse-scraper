@@ -871,7 +871,8 @@
     "event_ghl_demo_sent_failed": "Spunta di Demo inviata su GHL non riuscita",
     "event_ghl_demo_completed_saved": "Demo vista completamente segnata sull'opportunity GHL",
     "event_ghl_demo_completed_failed": "Spunta di Demo vista completamente su GHL non riuscita",
-    "event_funnel_demo_requested": "Demo richiesta dal funnel del sito"
+    "event_funnel_demo_requested": "Demo richiesta dal funnel del sito",
+    "event_funnel_demo_sent": "Link della demo mandato a GHL per il WhatsApp"
   },
   "AutomationPage": {
     "title": "Automazione",

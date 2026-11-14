@@ -22,13 +22,15 @@ import { DEFAULT_BRAND_COLOR, isUsableBrandColor } from '@/utils/Colors';
 import { extractLinks } from '@/utils/DemoGuidance';
 import { createDemoSlug, pickFreeDemoSlug } from '@/utils/DemoSlug';
 import { DEMO_STEPS, summarizeDemo } from '@/utils/DemoStats';
-import { getBaseUrl, textOrNull } from '@/utils/Helpers';
+import { googlePlaceId } from '@/utils/FunnelPlace';
+import { textOrNull } from '@/utils/Helpers';
 import { normalizeOpeningHours } from '@/utils/OpeningHours';
 import { toE164 } from '@/utils/Phone';
 import { getAutomationSettings } from './AutomationSettings';
 import type { Conversation } from './Conversations';
 import { logEvent, setConversationState } from './Conversations';
 import { db } from './DB';
+import { demoUrl } from './DemoLinks';
 import {
   copyDemoImages,
   deleteUnusedImages,
@@ -40,7 +42,6 @@ import {
   socialFacts,
 } from './DemoReferences';
 import { demoVslStatus, requestDemoVsl } from './DemoVsl';
-import { Env } from './Env';
 import { enqueue } from './JobQueue';
 import { recordCopywritingUsage } from './Usage';
 
@@ -70,13 +71,7 @@ const leadResearchSchema = z.looseObject({
 /** Review quotes the AI reads to learn what patients praise. */
 const REVIEW_QUOTES = 5;
 
-/**
- * Builds the public link of a demo, on the demo domain when there is one.
- * @param slug The demo slug.
- * @returns The absolute URL of the Italian demo page.
- */
-export const demoUrl = (slug: string) =>
-  Env.DEMO_URL ? `${Env.DEMO_URL}/${slug}` : `${getBaseUrl()}/it/demo/${slug}`;
+export { demoUrl } from './DemoLinks';
 
 /**
  * Reads the lead and campaign contact behind a conversation.
@@ -141,7 +136,7 @@ const placeFacts = (lead?: Lead) => ({
   city: lead?.city ?? null,
   address: lead?.address ?? null,
   category: lead?.category ?? null,
-  placeId: lead?.placeId ?? null,
+  placeId: googlePlaceId(lead?.placeId),
   rating: lead?.rating ?? null,
   reviewsCount: lead?.reviewsCount ?? null,
 });
@@ -334,7 +329,7 @@ const photoSources = (sources: GatheredSources) => {
       ) +
       (profile?.photos.length ?? 0) +
       // The page shows up to two Google photos of a place
-      (lead?.placeId ? 2 : 0),
+      (googlePlaceId(lead?.placeId) ? 2 : 0),
     hasPortrait: Boolean(
       profile?.portraitUrl ?? instagram?.profilePicUrlHD ?? instagram?.profilePicUrl,
     ),

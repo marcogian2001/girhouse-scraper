@@ -871,7 +871,8 @@
     "event_ghl_demo_sent_failed": "Could not tick Demo sent on GHL",
     "event_ghl_demo_completed_saved": "Demo fully watched ticked on the GHL opportunity",
     "event_ghl_demo_completed_failed": "Could not tick Demo fully watched on GHL",
-    "event_funnel_demo_requested": "Demo requested from the website funnel"
+    "event_funnel_demo_requested": "Demo requested from the website funnel",
+    "event_funnel_demo_sent": "Demo link handed to GHL for WhatsApp"
   },
   "AutomationPage": {
     "title": "Automation",

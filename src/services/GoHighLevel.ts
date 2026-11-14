@@ -291,6 +291,26 @@ export const upsertContact = async (options: {
 };
 
 /**
+ * Writes custom field values on an existing contact.
+ * @param contactId The GHL contact.
+ * @param customFields The values to write.
+ * @throws {Error} When GHL is not configured or rejects the request.
+ */
+export const setContactCustomFields = async (
+  contactId: string,
+  customFields: CustomFieldValue[],
+) => {
+  await request({
+    path: `/contacts/${contactId}`,
+    family: 'contacts',
+    method: 'PUT',
+    body: {
+      customFields: customFields.map((field) => ({ id: field.id, field_value: field.value })),
+    },
+  });
+};
+
+/**
  * Adds tags to a contact, keeping the ones it has. A tag can start a GHL workflow.
  * @param contactId The GHL contact.
  * @param tags The tags to add.

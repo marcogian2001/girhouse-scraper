@@ -14,14 +14,14 @@ const request = {
 
 describe('funnel demo request', () => {
   it('strips the places prefix from the place id', () => {
-    expect(FunnelDemoValidation.parse(request).place.id).toBe('ChIJ123');
+    expect(FunnelDemoValidation.parse(request).place?.id).toBe('ChIJ123');
   });
 
   it('lower-cases the email', () => {
     expect(FunnelDemoValidation.parse(request).email).toBe('mario@example.com');
   });
 
-  it('rejects a request without a place', () => {
-    expect(FunnelDemoValidation.safeParse({ ...request, place: undefined }).success).toBeFalsy();
+  it('accepts a request without a place', () => {
+    expect(FunnelDemoValidation.safeParse({ ...request, place: null }).success).toBeTruthy();
   });
 });
