@@ -734,3 +734,6 @@ Questa sezione prevale su tutte le precedenti per percorso, risultato e dati. Ni
 - Hero: screenshot della demo (uploads/girhouse/funnels/f3/demo-screen.webp e -800.webp, da Screenshot 2026-11-14 alle 22.38.36) con il play verde che apre il popup; il video sfocato non si usa più.
 - Video recensioni con player come la VSL F2 (play verde, barra con pausa, avanzamento giallo cliccabile, "1.2x", audio, schermo intero, comandi che spariscono dopo 3 s); velocità predefinita 1.2x; un video alla volta.
 - Tolti "Eccellente · 19 recensioni" e il link "Leggile tutte" sopra le recensioni Trustpilot.
+- Prefisso nel popup come il quiz F1: bandiere SVG (uploads/girhouse/funnels/flags), ricerca per nome del paese o per prefisso, Italia/Svizzera/San Marino in cima.
+- Screenshot della demo nell'hero sempre sfocato (CSS blur 6px).
+- Grazie F3: tolta l'offerta 97 €/mese e il bottone al checkout; aggiunte video recensioni (stesso player 1.2x) e Trustpilot a scorrimento; tutto centrato. Numero WhatsApp ora è un link intero a wa.me (format-detection telephone=no, prima iOS rendeva cliccabile solo una parte del numero).
