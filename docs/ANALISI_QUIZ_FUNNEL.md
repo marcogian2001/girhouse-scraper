@@ -731,3 +731,6 @@ Questa sezione prevale su tutte le precedenti per percorso, risultato e dati. Ni
 - Ultimo passo del popup come il quiz F1: nome attività + città → "Cerca" (REST diagnosi/cerca, Google Places) → "È una di queste?" con nome, indirizzo e stelle; "Non è nessuna di queste" o nessun risultato → "Conferma il nome della tua attività". Scheda scelta (indirizzo, categoria, voto, recensioni, sito, link Maps) nella nota GHL; città su contatto e opportunità (Luogo), sito sull'opportunità.
 - Headline meno pesante (600). Al posto del video sfocato un'immagine statica con il play: in attesa dello screenshot della demo da mettere in uploads/girhouse/funnels/f3/.
 - Card Trustpilot pronte per il testo completo (quarto campo dell'array), in attesa dei testi.
+- Hero: screenshot della demo (uploads/girhouse/funnels/f3/demo-screen.webp e -800.webp, da Screenshot 2026-11-14 alle 22.38.36) con il play verde che apre il popup; il video sfocato non si usa più.
+- Video recensioni con player come la VSL F2 (play verde, barra con pausa, avanzamento giallo cliccabile, "1.2x", audio, schermo intero, comandi che spariscono dopo 3 s); velocità predefinita 1.2x; un video alla volta.
+- Tolti "Eccellente · 19 recensioni" e il link "Leggile tutte" sopra le recensioni Trustpilot.
