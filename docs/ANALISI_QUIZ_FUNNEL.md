@@ -680,3 +680,61 @@ Questa sezione prevale su tutte le precedenti per percorso, risultato e dati. Ni
 - Pagina verificata: riepilogo 197 € → 0 € oggi, "Dal 27 novembre 2026 197 € al mese", riga legale "dopo 14 giorni di prova 197 € al mese". Apple Pay e Meta prendono l'importo dal piano o dal prezzo.
 - Le prove già attive restano sul prezzo da 97 € (al momento del cambio: 1 abbonamento in prova su quel prezzo).
 - Backup: `~/backups-girhouse/20261113-prova-197/`.
+
+## 13/11/2026 – Go High Level per chi compra diretto
+
+- Automazione "3. Demo Iniziata (NO Trial)" (quella in cui entra chi paga su /attiva/):
+  - "Update opportunity" e "Create or update deal" ora mettono il deal in Sales Pipeline → **Abbonamento attivo** (prima "Demo iniziata").
+  - Notifica interna: oggetto da "Nuova prova gratuita attivata" a "Nuovo acquisto: abbonamento attivo - Nome Cognome". Il corpo era già giusto.
+  - Email e WhatsApp di benvenuto al cliente invariati.
+- Campi contatto nuovi in Go High Level: utm_source, utm_medium, utm_campaign, utm_content, utm_term.
+- Checkout: attiva.js manda gli UTM (dall'indirizzo o da gh_attr salvato da landing/quiz, 30 giorni); billing.php li salva nei metadata dell'abbonamento Stripe e al primo pagamento li scrive nei campi utm_* del contatto.
+- Quiz: lead.php scrive gli UTM anche nei campi utm_* (prima solo nella nota).
+- Backup: ~/backups-girhouse/20261113-ghl-acquisti/.
+- Da decidere: la prova gratuita entra nella stessa automazione (email "pagamento ricevuto" e fase Abbonamento attivo).
+
+## 13/11/2026 – Gruppo WhatsApp automatico (Periskope)
+
+- File `mu-plugins/girhouse-funnels/gruppi.php` (incluso da girhouse-funnels.php). WP-Cron `gh_wa_groups` ogni 5 minuti.
+- Legge la Sales Pipeline: chi entra in "Demo iniziata" o "Abbonamento attivo" dopo l'attivazione (opzione `gh_wa_since`, 13/11 15:40) riceve il gruppo "<Nome attività o Nome Cognome> x Girhouse".
+- Logo del gruppo: https://girhouse.com/wp-content/uploads/girhouse/whatsapp/logo-gruppo-whatsapp.jpg (640×640). Descrizione "Gruppo di lavoro tra … e il team Girhouse"; solo gli admin cambiano nome e foto.
+- Un gruppo per contatto: registro in opzione `gh_wa_groups` + campi GHL nuovi "WhatsApp gruppo ID" e "WhatsApp gruppo link"; tag `gruppo-whatsapp` e nota sul contatto. Massimo 3 gruppi per giro, 3 tentativi per contatto.
+- Registro: ~/domains/girhouse.com/gh-whatsapp-gruppi.log. Prova a vuoto: `wp eval 'print_r( gh_wa_groups_run( true ) );'`.
+- In attesa: costanti GH_PERISKOPE_TOKEN, GH_PERISKOPE_PHONE (e facoltativa GH_WA_GROUP_TEAM) in wp-config.php. Senza chiave non parte nulla.
+- Attivato 13/11: GH_PERISKOPE_PHONE = 393520130356 ("Commericale Girhouse", crea il gruppo ed è admin), GH_WA_GROUP_TEAM = 393516930869 ("Tecnico Girhouse"). Entrambi collegati a Periskope.
+
+## 14/11/2026 – F3: Demo Personalizzata (primo dei 4 nuovi funnel)
+
+- Brief: L1_Landing_Demo_personalizzata.pdf. Nome interno F3 (i prossimi F4, F5, F6).
+- Pagine (mu-plugins/girhouse-funnels/pages/): `demo-personalizzata.html` → /fnl/f3/, `demo-personalizzata-grazie.html` → /fnl/f3/grazie/.
+- Modulo in 2 passi (nome e cognome, attività, città, WhatsApp con prefisso) → REST `gh-funnels/v1/demo` (demo.php):
+  - contatto GHL: nome, telefono, companyName, città, campi fonte/funnel/nome_attivita/citta/utm_*; source "Funnel F3 demo personalizzata";
+  - opportunità in 📞 Setting Pipeline → Nuovo Lead (se non ce n'è già una aperta), con campi Fonte/Funnel/Nome Azienda/Luogo;
+  - nota con i dati e gli UTM, tag `demo-f3` (tolto e rimesso);
+  - Lead a Meta (CAPI) con event_id `lead_f3_…` uguale al Pixel. Limite 6 invii/ora per IP, 1 per numero ogni 10 minuti.
+- Grazie: numero WhatsApp +39 352 013 0356 con vCard (uploads/girhouse/funnels/girhouse.vcf) e bottone "Inizia ora a 97 €/mese" → /attiva/?funnel=f3 con gli UTM.
+- Lavagna: funnel 21661 "F3: Demo Personalizzata - 97€" (fonte fb-ads, codice F3); fonti.json rigenerato.
+- Prova con contatto finto +390000000017: tutto ok, poi contatto e opportunità cancellati.
+- Mancano: pagina della demo personalizzata (link su WhatsApp), anteprima del video (2-3 fotogrammi o GIF), 3 testimonianze con foto (ora ci sono le 2 recensioni di F1), automazione GHL sul tag demo-f3 (avviso al team).
+- Backup: ~/backups-girhouse/20261114-f3/.
+
+### 14/11/2026 – F3 rifatta sul nuovo copy
+- Hero: "Aiutiamo liberi professionisti a trovare più lavori con l'AI, siti web intelligenti e recensioni a 5 stelle", video sfocato (uploads/girhouse/funnels/f3/f3-blur.mp4, 9 s dalla VSL F2) con play che apre il popup, "Step 1: …", CTA "Clicca per vedere come funziona".
+- Video recensioni una sotto l'altra: Mik Cosentino, Simone Marietta Durelli, Ale Stark (video in uploads/2025/08/*-web.mp4, copertine in uploads/girhouse/funnels/f3/; riassunti scritti dalle trascrizioni Whisper).
+- Trustpilot a scorrimento: 17 recensioni (titolo, nome, data) + link al profilo; testo completo non copiato.
+- Come funziona (3 passi) e loghi "Collaboriamo con" a scorrimento infinito. CTA fissa in basso dopo la hero (anche su desktop).
+- Popup: titolo giallo, barra verde a strisce dal 50% al 100%, 4 domande a scelta (tipo di lavori, andamento, quando, fatturato) + cellulare (WhatsApp), email, nome, azienda.
+- demo.php: risposte nella nota, email e azienda sul contatto; chi risponde "Non lavoro nell'edilizia" prende anche il tag f3-non-edilizia e non manda il Lead a Meta.
+- Prova completa con numero finto: ok, contatto e opportunità cancellati (il Lead di prova è arrivato a Meta).
+- Versione precedente in ~/backups-girhouse/20261114-f3/v1/.
+- 14/11 sera: domanda 1 → "Che tipo di professione svolgi?" (salute e benessere / studio legale, fiscale o tecnico / altra libera professione / non sono un libero professionista → tag f3-non-target, niente Lead a Meta).
+- Ultimo passo del popup come il quiz F1: nome attività + città → "Cerca" (REST diagnosi/cerca, Google Places) → "È una di queste?" con nome, indirizzo e stelle; "Non è nessuna di queste" o nessun risultato → "Conferma il nome della tua attività". Scheda scelta (indirizzo, categoria, voto, recensioni, sito, link Maps) nella nota GHL; città su contatto e opportunità (Luogo), sito sull'opportunità.
+- Headline meno pesante (600). Al posto del video sfocato un'immagine statica con il play: in attesa dello screenshot della demo da mettere in uploads/girhouse/funnels/f3/.
+- Card Trustpilot pronte per il testo completo (quarto campo dell'array), in attesa dei testi.
+- Hero: screenshot della demo (uploads/girhouse/funnels/f3/demo-screen.webp e -800.webp, da Screenshot 2026-11-14 alle 22.38.36) con il play verde che apre il popup; il video sfocato non si usa più.
+- Video recensioni con player come la VSL F2 (play verde, barra con pausa, avanzamento giallo cliccabile, "1.2x", audio, schermo intero, comandi che spariscono dopo 3 s); velocità predefinita 1.2x; un video alla volta.
+- Tolti "Eccellente · 19 recensioni" e il link "Leggile tutte" sopra le recensioni Trustpilot.
+- Prefisso nel popup come il quiz F1: bandiere SVG (uploads/girhouse/funnels/flags), ricerca per nome del paese o per prefisso, Italia/Svizzera/San Marino in cima.
+- Screenshot della demo nell'hero sempre sfocato (CSS blur 6px).
+- Grazie F3: tolta l'offerta 97 €/mese e il bottone al checkout; aggiunte video recensioni (stesso player 1.2x) e Trustpilot a scorrimento; tutto centrato. Numero WhatsApp ora è un link intero a wa.me (format-detection telephone=no, prima iOS rendeva cliccabile solo una parte del numero).
+- Headline F3: "Aiutiamo liberi professionisti a trovare più clienti con l'AI, un sito che ti fa trovare su Google e recensioni a 5 stelle" (prima "più lavori … siti web intelligenti"); titolo del popup "… a trovare più clienti". Dimensione: max 2,6rem su desktop (3 righe, CTA visibile anche a 1280×800), 1,7rem su telefono con text-wrap:balance.

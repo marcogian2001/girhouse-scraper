@@ -30,6 +30,7 @@ import { pcmToMp3, wavToMp3 } from '@/utils/Mp3';
 import { getAutomationSettings } from './AutomationSettings';
 import { db } from './DB';
 import { loadDemoReviews } from './DemoReviews';
+import { notifyFunnelDemoSafely } from './FunnelNotify';
 import { completeJob, enqueue, pollDelaySeconds, rescheduleJob } from './JobQueue';
 import { logger } from './Logger';
 import { recordCopywritingUsage, recordKieUsage } from './Usage';
@@ -458,6 +459,8 @@ export const advanceDemoVsl = async (
   }
 
   await storeResults(demo, tasks);
+  // A funnel lead gets the link on WhatsApp once the video is done
+  await notifyFunnelDemoSafely(demo.id);
 
   return null;
 };
@@ -502,6 +505,8 @@ export const markDemoVslAbandoned = async (job: Job, message: string) => {
         sql`${demoSchema.vsl}->>'generatedAt' = ${payload.data.generatedAt}`,
       ),
     );
+  // The page types the lines instead, so a funnel lead still gets the link
+  await notifyFunnelDemoSafely(payload.data.demoId);
 };
 
 /**
