@@ -727,3 +727,7 @@ Questa sezione prevale su tutte le precedenti per percorso, risultato e dati. Ni
 - demo.php: risposte nella nota, email e azienda sul contatto; chi risponde "Non lavoro nell'edilizia" prende anche il tag f3-non-edilizia e non manda il Lead a Meta.
 - Prova completa con numero finto: ok, contatto e opportunità cancellati (il Lead di prova è arrivato a Meta).
 - Versione precedente in ~/backups-girhouse/20261114-f3/v1/.
+- 14/11 sera: domanda 1 → "Che tipo di professione svolgi?" (salute e benessere / studio legale, fiscale o tecnico / altra libera professione / non sono un libero professionista → tag f3-non-target, niente Lead a Meta).
+- Ultimo passo del popup come il quiz F1: nome attività + città → "Cerca" (REST diagnosi/cerca, Google Places) → "È una di queste?" con nome, indirizzo e stelle; "Non è nessuna di queste" o nessun risultato → "Conferma il nome della tua attività". Scheda scelta (indirizzo, categoria, voto, recensioni, sito, link Maps) nella nota GHL; città su contatto e opportunità (Luogo), sito sull'opportunità.
+- Headline meno pesante (600). Al posto del video sfocato un'immagine statica con il play: in attesa dello screenshot della demo da mettere in uploads/girhouse/funnels/f3/.
+- Card Trustpilot pronte per il testo completo (quarto campo dell'array), in attesa dei testi.
