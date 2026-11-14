@@ -702,3 +702,18 @@ Questa sezione prevale su tutte le precedenti per percorso, risultato e dati. Ni
 - Registro: ~/domains/girhouse.com/gh-whatsapp-gruppi.log. Prova a vuoto: `wp eval 'print_r( gh_wa_groups_run( true ) );'`.
 - In attesa: costanti GH_PERISKOPE_TOKEN, GH_PERISKOPE_PHONE (e facoltativa GH_WA_GROUP_TEAM) in wp-config.php. Senza chiave non parte nulla.
 - Attivato 13/11: GH_PERISKOPE_PHONE = 393520130356 ("Commericale Girhouse", crea il gruppo ed è admin), GH_WA_GROUP_TEAM = 393516930869 ("Tecnico Girhouse"). Entrambi collegati a Periskope.
+
+## 14/11/2026 – F3: Demo Personalizzata (primo dei 4 nuovi funnel)
+
+- Brief: L1_Landing_Demo_personalizzata.pdf. Nome interno F3 (i prossimi F4, F5, F6).
+- Pagine (mu-plugins/girhouse-funnels/pages/): `demo-personalizzata.html` → /fnl/f3/, `demo-personalizzata-grazie.html` → /fnl/f3/grazie/.
+- Modulo in 2 passi (nome e cognome, attività, città, WhatsApp con prefisso) → REST `gh-funnels/v1/demo` (demo.php):
+  - contatto GHL: nome, telefono, companyName, città, campi fonte/funnel/nome_attivita/citta/utm_*; source "Funnel F3 demo personalizzata";
+  - opportunità in 📞 Setting Pipeline → Nuovo Lead (se non ce n'è già una aperta), con campi Fonte/Funnel/Nome Azienda/Luogo;
+  - nota con i dati e gli UTM, tag `demo-f3` (tolto e rimesso);
+  - Lead a Meta (CAPI) con event_id `lead_f3_…` uguale al Pixel. Limite 6 invii/ora per IP, 1 per numero ogni 10 minuti.
+- Grazie: numero WhatsApp +39 352 013 0356 con vCard (uploads/girhouse/funnels/girhouse.vcf) e bottone "Inizia ora a 97 €/mese" → /attiva/?funnel=f3 con gli UTM.
+- Lavagna: funnel 21661 "F3: Demo Personalizzata - 97€" (fonte fb-ads, codice F3); fonti.json rigenerato.
+- Prova con contatto finto +390000000017: tutto ok, poi contatto e opportunità cancellati.
+- Mancano: pagina della demo personalizzata (link su WhatsApp), anteprima del video (2-3 fotogrammi o GIF), 3 testimonianze con foto (ora ci sono le 2 recensioni di F1), automazione GHL sul tag demo-f3 (avviso al team).
+- Backup: ~/backups-girhouse/20261114-f3/.
