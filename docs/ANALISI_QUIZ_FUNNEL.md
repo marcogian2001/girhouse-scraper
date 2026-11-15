@@ -793,3 +793,10 @@ Questa sezione prevale su tutte le precedenti per percorso, risultato e dati. Ni
 - /fnl/f5/prenota/: titolo sopra il calendario "Ultimo passo · Prenota una chiamata per vedere come funziona" + una riga di spiegazione.
 - F5: CTA più larga (min 340 px), grafici Search Console con andamenti diversi (S, esponenziale, a gradini) ed etichette Zest Family · Agenzia di viaggio, Enne Agency · Agenzia di marketing, Mik Cosentino · Formatore online (numeri ancora di prova); etichetta "Ha iniziato a lavorare con Girhouse" posizionata via JS sul pallino; Gigi intero (gigi-work2) e a colori tra le nuvole (gigi-end2); sottotitolo dei risultati su una riga; ricerca Enne Agency "agenzia marketing italia".
 - Recensioni come Soro: 6 con foto (Mik, Andres Bonelli, Simone, Alvin Testa, Ale, Massimo Martinini), spunta blu, data "IT · agosto 2025" (mese dei video), schermata Google su Mik e Ale. Le frasi di Andres, Alvin e Massimo vengono dalle video-testimonianze della homepage, trascritte con whisper.cpp (modello ~/models/whisper/ggml-small.bin); lo speech-to-text di kie.ai restava in coda.
+
+## 16/11/2026 – Prove del team escluse da Meta
+
+- meta.php: gh_meta_is_team() riconosce i numeri del team (commerciale, tecnico, cellulare di Gianmarco), la sua email personale e le email @girhouse.com / @example.com. gh_meta_user() marca questi utenti e gh_meta_send() non invia nulla a Meta (Lead, InitiateCheckout, Purchase, Schedule), scrive "Escluso: prova del team" in gh-meta.log.
+- Le risposte di /meta (F1), /demo (F3), /vsl-stone (F4) e /tradizionale-quiz (F5) hanno `team: true/false`: le pagine non fanno partire il Lead del Pixel per il team e salvano localStorage gh_team=1, così quel dispositivo resta escluso. Su qualsiasi pagina dei funnel ?gh_team=1 marca il dispositivo a mano.
+- F1 (quiz.js v88): il Pixel ora parte dopo la risposta del server (al massimo 4 secondi), con lo stesso event_id.
+- Motivo: il 15/11 Meta ha contato 6 Lead, di cui 5 erano prove (F4 e F5) e 1 solo vero (F1).
