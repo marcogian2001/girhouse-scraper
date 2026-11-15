@@ -811,3 +811,10 @@ Questa sezione prevale su tutte le precedenti per percorso, risultato e dati. Ni
 - Lavagne F4 (21662) e F5 (21663): tolti i blocchi "Checkout a 97 €" e "Conferma pagamento"; note aggiornate (quiz → calendario, niente acquisto per ora).
 - Aggiunto a entrambe lo step "Prenotazione confermata" dopo il calendario (url /fnl/f4|f5/prenota/?conferma=1): visite.php conta il segnale `conferma` che prenota.js manda dopo la prenotazione, come già per F1 e F2. Niente pagina di grazie separata: all'utente basta vedere il numero nelle analitiche.
 - Regola: ogni funnel con calendario deve avere questo step sulla lavagna.
+
+## 16/11/2026 – Black Friday al checkout e ritocchi F5 da mobile
+
+- Checkout /attiva/: finito il primo mese a 47 € (gh_funnels_offer_open() = false, niente timer dei 10 minuti); il piano da 97 € ('' e '97') si mostra come 194 € barrato, "Black Friday −50%", totale 97 €, "Poi 97 € al mese invece di 194 €". Solo grafica (GH_BF_ON, GH_BF_LIST in checkout.php): Stripe addebita 97 € come prima. Scelta dell'utente: prezzo barrato 194 € con −50% nonostante l'avviso sull'art. 17-bis del Codice del Consumo.
+- Banner giallo in cima al checkout (gh_bf_banner): bandiera italiana, "Black Friday: sconto del 50%", conto alla rovescia fino alla mezzanotte di Roma (riparte ogni giorno). Non compare sui piani 149 / prova14 né sulla pagina di grazie.
+- Allineati al nuovo prezzo: offerta finale del quiz F1 (quiz.js v89: 194 € barrato, "Black Friday −50%, ogni mese" 97 €) e popup "Sei già convinto?" delle prenotazioni F1/F2 (prenota.js v16: conta da 194 a 97, etichetta −50%).
+- F5 da mobile: adesivo Black Friday più in alto e dietro Gigi; sezioni più vicine (padding 3rem); divisori tra i tre blocchi di "Il lavoro lo facciamo noi"; logo della tabella in PNG 480 px (girhouse-logo-480.png) perché l'SVG con maschere esce sfocato su Safari iPhone; intestazioni della tabella su una riga.
