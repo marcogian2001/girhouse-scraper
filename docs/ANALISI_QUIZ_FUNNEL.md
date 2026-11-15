@@ -825,3 +825,12 @@ Questa sezione prevale su tutte le precedenti per percorso, risultato e dati. Ni
 - F5: frecce dei caroselli che vanno sempre alla card esatta (anche con clic veloci); righe delle professioni con solo le copie che servono (2 sul telefono): con 4 copie la riga superava il limite di larghezza dei layer animati di Safari su iPhone e si bloccava/spariva.
 - Incidente: una versione con un "});" di troppo è rimasta online pochi minuti (script della pagina e quiz fermi); ripristinata la precedente e poi pubblicata quella corretta. Da ora `node --check` su tutti gli script prima di ogni pubblicazione.
 - Recensioni F5: foto con i dati dei clienti (confermati dall'utente) al posto delle schermate Google: Mik → rev-mik.webp (monitor con Search Console), Alvin → rev-alvin.webp (portatile con Analytics), Ale → rev-ale.webp (Gigi tra le nuvole + Analytics). Testo di Alvin ancora quello vero del video: per una frase sul posizionamento servono le sue parole.
+
+## 16/11/2026 – F4 e F5 di nuovo solo checkout (niente prenotazione)
+
+- F4: landing con quiz → /fnl/f4/video/ → "Inizia ora a 97 €/mese" → /attiva/?funnel=f4 (con UTM). Step "Poi: inizia qui sotto."
+- F5: landing con quiz → /attiva/?funnel=f5 (con UTM). gh_quiz_lead ha il nuovo parametro `params` (funnel=f5) e per F5 risponde `checkout` invece di `prenota`; ultimo pulsante del quiz "Continua"; testi senza "chiamata".
+- Checkout senza ?piano: stesso prezzo (97 €/mese, Black Friday 194 € barrato) e le visite contano sullo step giusto della lavagna (con ?piano=97 sarebbero finite in "link-97").
+- Lavagne F4/F5: tolti "Prenota la chiamata" e "Prenotazione confermata", aggiunti "Checkout 97 €/mese (Black Friday)" e "Conferma pagamento" (/attiva/?funnel=fN&conferma=1, il link di conferma mantiene il funnel).
+- Le pagine /fnl/f4/prenota/ e /fnl/f5/prenota/ restano online ma non sono più collegate.
+- Prova dal vivo di entrambi i percorsi fino al checkout precompilato (contatti @example.com, poi cancellati).
