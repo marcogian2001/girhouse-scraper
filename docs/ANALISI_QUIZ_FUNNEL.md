@@ -834,3 +834,9 @@ Questa sezione prevale su tutte le precedenti per percorso, risultato e dati. Ni
 - Lavagne F4/F5: tolti "Prenota la chiamata" e "Prenotazione confermata", aggiunti "Checkout 97 €/mese (Black Friday)" e "Conferma pagamento" (/attiva/?funnel=fN&conferma=1, il link di conferma mantiene il funnel).
 - Le pagine /fnl/f4/prenota/ e /fnl/f5/prenota/ restano online ma non sono più collegate.
 - Prova dal vivo di entrambi i percorsi fino al checkout precompilato (contatti @example.com, poi cancellati).
+
+## 16/11/2026 – VSL F4 caricata
+
+- Video vsl_f4.mp4 (4:30, 1080p): HLS come F2 in uploads/girhouse/funnels/vsl-f4/ (360/540/720/1080, segmenti fmp4 da 4 s, .htaccess per i tipi), file intero vsl-f4.mp4 di riserva, copertina vsl-f4.jpg (primo fotogramma senza sottotitoli).
+- /fnl/f4/video/: stesso player di F2 (markup e stili di vsl-47: anteprima senza audio "Il video è partito", al clic riparte da capo con l'audio, barra veloce all'inizio, niente salti, schermo intero nostro, statistiche /gh-l) con lo script vsl-f4.js (copia di vsl.js con rate e store configurabili, senza bottone a sblocco). Velocità fissa 1.2x (window.ghVsl.rate). vsl.js e la pagina di F2 non sono stati toccati.
+- Landing F4: copertina sfocata dal primo fotogramma del video (f4-blur.jpg), etichetta "Video di 4 minuti" (3:45 a 1.2x).
