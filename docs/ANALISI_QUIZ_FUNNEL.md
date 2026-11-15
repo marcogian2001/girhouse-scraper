@@ -745,3 +745,12 @@ Questa sezione prevale su tutte le precedenti per percorso, risultato e dati. Ni
 - Quando il video è pronto (o abbandonato) lo scraper scrive il link nel campo contatto "Link demo" (`contact.link_demo`), aggiunge il tag `demo-f3-pronta` e spunta "Demo Inviata" sull'opportunità; evento `funnel_demo_sent`.
 - Sito (demo.php): dopo il modulo F3 (solo liberi professionisti) mette la richiesta in coda (opzione `gh_demo_queue`) e la manda allo scraper in background; se il lead non ha scelto la scheda la cerca con nome e città. 3 tentativi, poi tag `demo-f3-manuale` e nota. Registro ~/domains/girhouse.com/gh-demo-f3.log.
 - GHL: automazione sul tag `demo-f3-pronta` con il WhatsApp "Ciao {{contact.first_name}}, sono Gianmarco di Girhouse 👋 / Ecco il video che abbiamo preparato sulla tua attività: {{contact.link_demo}} / Scrivimi qui una volta che l'hai visto tutto."
+
+## 15/11/2026 – F4: VSL stile Stone
+
+- Brief: L2_Landing_VSL_stile_Stone.pdf. Pagine: `vsl-stone.html` → /fnl/f4/, `vsl-stone-video.html` → /fnl/f4/video/, `vsl-stone-prenota.html` → /fnl/f4/prenota/ (copia della prenotazione F2, offerta → /attiva/?piano=97&funnel=f4). Lavagna: funnel 21662 "F4: VSL Stone - 97€".
+- Landing: titolo + "97 €/mese 👇" + "Sito incluso. Nessun vincolo. Nessun costo di attivazione.", video bloccato (fotogramma sfocato della VSL F2) che apre il quiz come in F3, "Step 1: guarda questo video di 90 secondi…", 3 video recensioni (Mik, Simone, Ale) con frase tra virgolette dalle trascrizioni, footer, bottone fisso.
+- Quiz: titolo giallo "Più clienti da Google e zero richieste perse, a soli 97 €/mese", barra 50/60/68/76/84/92 → 100; "Non sono un libero professionista" chiude con "Per ora lavoriamo solo con liberi professionisti e studi. Grazie!" senza inviare nulla. WhatsApp con prefisso a bandiere, poi nome + email → "Guarda il video".
+- vsl-stone.php, REST `gh-funnels/v1/vsl-stone`: contatto GHL (source "Funnel F4 VSL", fonte/funnel/UTM), opportunità Setting Pipeline → Nuovo Lead, nota con le risposte, tag `vsl-f4`, Lead a Meta (`lead_f4_…`).
+- Pagina video: si apre solo dopo il quiz (localStorage `gh_f4_video`) o con `?da=wa`; player come F2, parte con l'audio o al primo tocco; "Inizia ora a 97 €/mese" → /attiva/?piano=97&funnel=f4 (piano 97 senza sconto), "Hai domande? Prenota 15 minuti con noi", stesse 3 recensioni. La VSL da 90 s manca: il player mostra "Il video arriva a breve" finché `data-src` è vuoto. La VSL F2 non va bene come segnaposto: dice "il primo mese 47".
+- Prova con contatto finto: ok, poi cancellato.
