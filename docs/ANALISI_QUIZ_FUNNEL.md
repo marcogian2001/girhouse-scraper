@@ -805,3 +805,9 @@ Questa sezione prevale su tutte le precedenti per percorso, risultato e dati. Ni
 
 - Per ora niente acquisto diretto su F4 e F5: tolto il popup dello sconto (link /attiva/) da /fnl/f4/prenota/ e /fnl/f5/prenota/ (prenota.js lo salta se manca #pcPop). Su /fnl/f4/video/ il pulsante principale è "Prenota la tua chiamata" (/fnl/f4/prenota/ con i parametri), via "Inizia ora a 97 €/mese"; step "Poi: prenota una chiamata qui sotto."; segnaposto del video senza "inizia subito". Backup in ~/backups/20261116-noacq sul server per rimettere l'acquisto.
 - Quiz F4: email e nome su due schermate separate come in F3 ("La tua email migliore", poi "Il tuo nome"); barra 50, 58, 65, 72, 79, 86, 93, poi 100. F5 usa ancora nome + email sulla stessa schermata.
+
+## 16/11/2026 – Schemi F4/F5 e conteggio delle prenotazioni
+
+- Lavagne F4 (21662) e F5 (21663): tolti i blocchi "Checkout a 97 €" e "Conferma pagamento"; note aggiornate (quiz → calendario, niente acquisto per ora).
+- Aggiunto a entrambe lo step "Prenotazione confermata" dopo il calendario (url /fnl/f4|f5/prenota/?conferma=1): visite.php conta il segnale `conferma` che prenota.js manda dopo la prenotazione, come già per F1 e F2. Niente pagina di grazie separata: all'utente basta vedere il numero nelle analitiche.
+- Regola: ogni funnel con calendario deve avere questo step sulla lavagna.
