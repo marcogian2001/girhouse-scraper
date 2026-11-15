@@ -786,3 +786,10 @@ Questa sezione prevale su tutte le precedenti per percorso, risultato e dati. Ni
 - Chat WhatsApp del gruppo con il team, sito di esempio "Studio Rossi" con foto generata (studio.webp).
 - Team: Gianmarco e Francesco (foto scontornate con recraft/remove-background), link LinkedIn.
 - Professioni a scorrimento: 4 copie per riempire anche gli schermi larghi.
+
+## 16/11/2026 – F5 v3.1, prenotazione F5, headline F3/F4
+
+- F3 e F4: headline "Aiutiamo liberi professionisti a trovare più clienti con l'AI, un sito che ti fa trovare su Google e recensioni a 5 stelle" nera con "più clienti", "trovare su Google", "recensioni a 5 stelle" in verde (classe lp-green). F4 tiene ", a soli" + "97 €/mese 👇".
+- /fnl/f5/prenota/: titolo sopra il calendario "Ultimo passo · Prenota una chiamata per vedere come funziona" + una riga di spiegazione.
+- F5: CTA più larga (min 340 px), grafici Search Console con andamenti diversi (S, esponenziale, a gradini) ed etichette Zest Family · Agenzia di viaggio, Enne Agency · Agenzia di marketing, Mik Cosentino · Formatore online (numeri ancora di prova); etichetta "Ha iniziato a lavorare con Girhouse" posizionata via JS sul pallino; Gigi intero (gigi-work2) e a colori tra le nuvole (gigi-end2); sottotitolo dei risultati su una riga; ricerca Enne Agency "agenzia marketing italia".
+- Recensioni come Soro: 6 con foto (Mik, Andres Bonelli, Simone, Alvin Testa, Ale, Massimo Martinini), spunta blu, data "IT · agosto 2025" (mese dei video), schermata Google su Mik e Ale. Le frasi di Andres, Alvin e Massimo vengono dalle video-testimonianze della homepage, trascritte con whisper.cpp (modello ~/models/whisper/ggml-small.bin); lo speech-to-text di kie.ai restava in coda.
