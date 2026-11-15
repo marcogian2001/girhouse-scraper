@@ -766,3 +766,11 @@ Questa sezione prevale su tutte le precedenti per percorso, risultato e dati. Ni
 - Titoli di sezione e le due righe "Un altro abbonamento da imparare / Ore la sera a guardare tutorial" scritti da me (il brief dava solo le etichette).
 - tradizionale.php, REST `gh-funnels/v1/tradizionale`: contatto GHL (source "Funnel F5 demo", attività, città, fonte/funnel/UTM), opportunità Setting Pipeline → Nuovo Lead, nota, tag `demo-f5`, Lead a Meta (`lead_f5_…`); poi /fnl/f5/prenota/ con nome e telefono già compilati (sessionStorage gh_contact).
 - Prova con contatto finto: ok, poi cancellato.
+
+## 15/11/2026 – F5 v2: struttura come trysoro.com/?quiz, con Gigi
+
+- Richiesta: stessa struttura della landing di Soro, contenuti di Girhouse, Gigi al posto della loro mascotte. La v1 (stile Squadd) è salvata in ~/backups-girhouse/20261115-f5/tradizionale.v1.html e sul server in ~/backups/.
+- Sezioni: barra gialla a scorrimento, menu a pillola, H1 "Ottieni clienti da Google e da WhatsApp" + "Inizia ora", +150 aziende, Gigi (busto) che spunta sopra una ricerca Google finta con adesivo "97 €/mese", testo che si accende scorrendo (trova → risponde → recensioni), grafico "Loro ricevono richieste. Tu?" (dati di prova, dichiarato), 3 passi, Gigi + "Il lavoro lo facciamo noi", "Tu lavori, al resto pensiamo noi" (sito finto), loghi clienti, integrazioni, professioni a scorrimento, confronto Girhouse/Agenzia/Fai da te, team (Gianmarco + Gigi, lettera scritta da me), recensioni (citazioni identiche a F1/F3/F4), FAQ, chiusura con la testa di Gigi tra le nuvole, footer.
+- Tutti gli "Inizia ora" vanno al quiz F1 con ?funnel=f5 e gli UTM (come lo "Start now" di Soro va al loro quiz). Il modulo F5 (tradizionale.php) e /fnl/f5/prenota/ restano attivi ma la nuova landing non li usa.
+- Immagini di Gigi senza sfondo: uploads/girhouse/funnels/f5/gigi-intera.webp, gigi-busto.webp, gigi-testa.webp.
+- Controllo con Playwright a 1440 e 390 px: niente scorrimento orizzontale, nessuna immagine rotta, nessun errore in console.
