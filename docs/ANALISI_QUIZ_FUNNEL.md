@@ -774,3 +774,15 @@ Questa sezione prevale su tutte le precedenti per percorso, risultato e dati. Ni
 - Tutti gli "Inizia ora" vanno al quiz F1 con ?funnel=f5 e gli UTM (come lo "Start now" di Soro va al loro quiz). Il modulo F5 (tradizionale.php) e /fnl/f5/prenota/ restano attivi ma la nuova landing non li usa.
 - Immagini di Gigi senza sfondo: uploads/girhouse/funnels/f5/gigi-intera.webp, gigi-busto.webp, gigi-testa.webp.
 - Controllo con Playwright a 1440 e 390 px: niente scorrimento orizzontale, nessuna immagine rotta, nessun errore in console.
+
+## 16/11/2026 – F5 v3: Gigi animato, quiz di F4, prenotazione chiamata
+
+- Modifiche chieste: niente menu, H1 su due righe "Ottieni clienti da Google e da ChatGPT", spunta blu accanto a "+150 aziende aiutate nel 2026", adesivo "Black Friday / 50 € di sconto", CTA come le altre landing (verde con ombra + barra fissa in basso).
+- Il pulsante apre lo stesso quiz di F4 (tipo, andamento, quando, fatturato, WhatsApp, nome+email, uscita per chi non è libero professionista). Alla fine si va su /fnl/f5/prenota/ con i dati già compilati (sessionStorage gh_contact).
+- Backend: vsl-stone.php ora ha gh_quiz_lead($request, $cfg), usato da F4 (tag vsl-f4, pagina video) e da F5 (REST `gh-funnels/v1/tradizionale-quiz` in tradizionale.php: tag demo-f5, source "Funnel F5 quiz", opportunità "Nome - Quiz F5" in Setting Pipeline → Nuovo Lead, nota "Risposte al quiz (...)", Lead a Meta con `lead_f5_`). Provati entrambi con contatti finti, poi cancellati.
+- Video generati con kie.ai (nano-banana-2 + kling v3 turbo, riferimento gigi-ref.jpg), sfondo portato a bianco puro e loop avanti/indietro con ffmpeg, mostrati con mix-blend-mode: multiply: gigi-hero (saluta aggrappato alla ricerca Google), gigi-work (sezione "Il lavoro lo facciamo noi"), gigi-end (tra le nuvole), gigi-lens e gigi-paper (icone animate del testo che si accende). La G di Google è un SVG animato in CSS. Script: ~/backups-girhouse/20261116-f5v3/gen.mts.
+- "Loro ricevono richieste": 3 grafici stile Search Console con i numeri degli esempi di Soro (dati di prova, dichiarato), etichetta "Ha iniziato a lavorare con Girhouse" con Gigi e freccia sul punto di partenza.
+- "Si sono affidati a noi": schede risultato Google (Zest Family, Enne Agency, Mik Cosentino, Software Stark) con titolo e descrizione presi dai loro siti e badge "Prima pagina". Le ricerche vanno confermate dal cliente.
+- Chat WhatsApp del gruppo con il team, sito di esempio "Studio Rossi" con foto generata (studio.webp).
+- Team: Gianmarco e Francesco (foto scontornate con recraft/remove-background), link LinkedIn.
+- Professioni a scorrimento: 4 copie per riempire anche gli schermi larghi.
