@@ -15,6 +15,7 @@ import type { Conversation } from './Conversations';
 import { logEvent } from './Conversations';
 import { db } from './DB';
 import { completeJob } from './JobQueue';
+import { loadLeadContext } from './LeadContext';
 
 type Job = typeof jobSchema.$inferSelect;
 
@@ -36,20 +37,22 @@ const loadJobConversation = async (job: Job) => {
 
 /**
  * Puts the lead in the sales pipeline with the email source: a new opportunity in the
- * "new lead" stage, or the one a GHL workflow already made, left in its stage.
+ * "new lead" stage, or the one a GHL workflow already made, left in its stage. A
+ * professional with no business name goes by their own name; the email is the last resort.
  * @param conversation The lead's conversation.
  * @returns The GHL contact and opportunity, and whether the opportunity is new.
  * @throws {Error} When GHL rejects a call.
  */
 const saveLeadOpportunity = async (conversation: Conversation) => {
-  const name = conversation.company ?? conversation.leadEmail;
+  const context = await loadLeadContext(conversation);
+  const name = context.company ?? context.contactName ?? conversation.leadEmail;
   const contactId =
     conversation.ghlContactId ??
     (await findContactByEmail(conversation.leadEmail)) ??
     (await upsertContact({
       phone: conversation.phoneE164,
       email: conversation.leadEmail,
-      name,
+      name: context.contactName ?? name,
       companyName: name,
     }));
   const existing = await findPipelineOpportunity(contactId);
