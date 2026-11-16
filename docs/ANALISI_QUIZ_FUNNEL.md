@@ -856,3 +856,8 @@ Questa sezione prevale su tutte le precedenti per percorso, risultato e dati. Ni
 - F5 chiamata (/fnl/f5/chiamata/ → /fnl/f5/prenota/): tradizionale-chiamata.html generata da build.py dallo stesso sorgente (finale e testi della chiamata).
 - Backend: lo stesso quiz decide la pagina dopo in base al percorso della landing (vsl-stone.php: /fnl/f4/chiamata → video chiamata, nome "VSL F4 chiamata"; tradizionale.php: /fnl/f5/chiamata → prenota, "Quiz F5 chiamata"). Tag e funnel restano vsl-f4/F4 e demo-f5/F5.
 - Lavagne: nuovi blocchi ads-c, landing-c, (video-c), prenota, conferma-prenota (/fnl/fN/prenota/?conferma=1). fonti.json aggiornato. Prove dal vivo dei quattro percorsi, contatti di prova cancellati.
+
+## 16/11/2026 – Workflow GHL "Nuovo Lead" per F4 e F5
+- Creati e pubblicati (copie di "1. Nuovo Lead (F1 - Quiz)"): "1. Nuovo Lead (F4 - VSL Stone)" (trigger tag `vsl-f4`) e "1. Nuovo Lead (F5 - Landing Soro)" (trigger tag `demo-f5`). Azioni: assegna a Gianmarco, crea/aggiorna deal in Setting Pipeline → Nuovo Lead, Owner Setting, email interna (owner + CC) con dati del contatto, provenienza e link al contatto; le risposte del quiz restano nella nota del contatto.
+- La versione si legge nella provenienza (source) del contatto: `Funnel F4 VSL checkout` / `Funnel F4 VSL chiamata`, `Funnel F5 quiz checkout` / `Funnel F5 quiz chiamata` (campo `label` in vsl-stone.php e tradizionale.php).
+- Il deal viene rinominato dal workflow con il solo nome del contatto, come in F1.
