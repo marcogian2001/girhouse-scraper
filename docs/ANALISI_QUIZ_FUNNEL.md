@@ -840,3 +840,9 @@ Questa sezione prevale su tutte le precedenti per percorso, risultato e dati. Ni
 - Video vsl_f4.mp4 (4:30, 1080p): HLS come F2 in uploads/girhouse/funnels/vsl-f4/ (360/540/720/1080, segmenti fmp4 da 4 s, .htaccess per i tipi), file intero vsl-f4.mp4 di riserva, copertina vsl-f4.jpg (primo fotogramma senza sottotitoli).
 - /fnl/f4/video/: stesso player di F2 (markup e stili di vsl-47: anteprima senza audio "Il video è partito", al clic riparte da capo con l'audio, barra veloce all'inizio, niente salti, schermo intero nostro, statistiche /gh-l) con lo script vsl-f4.js (copia di vsl.js con rate e store configurabili, senza bottone a sblocco). Velocità fissa 1.2x (window.ghVsl.rate). vsl.js e la pagina di F2 non sono stati toccati.
 - Landing F4: copertina sfocata dal primo fotogramma del video (f4-blur.jpg), etichetta "Video di 4 minuti" (3:45 a 1.2x).
+
+## 16/11/2026 – Purchase a Meta solo dalle demo F3
+
+- demo.php: registro permanente `gh_demo_f3_slugs` (slug → quando) scritto quando la demo F3 è creata (la coda gh_demo_queue si svuota dopo 30 giorni); gh_demo_is_f3(). Registrata la demo già esistente vale-gioielli.
+- Checkout: /attiva/?funnel=demo&demo=<slug F3> → 302 a funnel=f3 (UTM conservati), così lavagna F3 (checkout e conferma già presenti), Go High Level, Stripe e Meta vedono F3. gh_billing_tags fa la stessa cosa se il pagamento arriva con funnel=demo.
+- Demo delle cold email (funnel=demo): nessun Purchase/StartTrial a Meta dal server (gh_meta_purchase, log "Escluso: acquisto da demo cold email") e nessun Purchase del Pixel sulla pagina di grazie. Pagamento, cliente e automazioni Go High Level invariati. Scraper non toccato.
