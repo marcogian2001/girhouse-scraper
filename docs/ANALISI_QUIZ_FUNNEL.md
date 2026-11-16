@@ -847,3 +847,12 @@ Questa sezione prevale su tutte le precedenti per percorso, risultato e dati. Ni
 - Checkout: /attiva/?funnel=demo&demo=<slug F3> → 302 a funnel=f3 (UTM conservati), così lavagna F3 (checkout e conferma già presenti), Go High Level, Stripe e Meta vedono F3. gh_billing_tags fa la stessa cosa se il pagamento arriva con funnel=demo.
 - Demo delle cold email (funnel=demo): nessun Purchase/StartTrial a Meta dal server (gh_meta_purchase, log "Escluso: acquisto da demo cold email") e nessun Purchase del Pixel sulla pagina di grazie. Pagamento, cliente e automazioni Go High Level invariati. Scraper non toccato.
 - Anche InitiateCheckout e AddPaymentInfo esclusi per funnel=demo: attiva.js non li manda né al Pixel né al server, e /meta li scarta lato server (log "Escluso: checkout da demo cold email"). Resta solo il PageView del Pixel. Gli altri funnel (F2 provato) invariati.
+
+## 16/11/2026 – F4 e F5: versione checkout + versione chiamata (link separati)
+
+- Niente split automatico: due link negli annunci per funnel, due percorsi nella stessa lavagna (riga sotto = chiamata, blocco annunci con il link nella nota).
+- F4 checkout (/fnl/f4/): VSL nuova (vsl_purcahse.mp4 → uploads/girhouse/funnels/vsl-f4-acquisto/ HLS + vsl-f4-acquisto.mp4 26 MB + jpg, store gh_vsl_f4a), copertina sfocata f4a-blur.jpg; finisce con "Acquista ora" → /attiva/?funnel=f4.
+- F4 chiamata (/fnl/f4/chiamata/ → /fnl/f4/chiamata/video/ → /fnl/f4/prenota/): pagine vsl-stone-chiamata(.html, -video.html); VSL precedente (vsl-f4, chiude su "Prenota la chiamata"), stesso player 1.2x, pulsante "Prenota la tua chiamata".
+- F5 chiamata (/fnl/f5/chiamata/ → /fnl/f5/prenota/): tradizionale-chiamata.html generata da build.py dallo stesso sorgente (finale e testi della chiamata).
+- Backend: lo stesso quiz decide la pagina dopo in base al percorso della landing (vsl-stone.php: /fnl/f4/chiamata → video chiamata, nome "VSL F4 chiamata"; tradizionale.php: /fnl/f5/chiamata → prenota, "Quiz F5 chiamata"). Tag e funnel restano vsl-f4/F4 e demo-f5/F5.
+- Lavagne: nuovi blocchi ads-c, landing-c, (video-c), prenota, conferma-prenota (/fnl/fN/prenota/?conferma=1). fonti.json aggiornato. Prove dal vivo dei quattro percorsi, contatti di prova cancellati.
