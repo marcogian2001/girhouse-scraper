@@ -105,6 +105,9 @@ const TYPING_SHARE = 0.9;
 /** Fallback for the length the start screen announces, when no voice is ready. */
 const DEFAULT_MINUTES = 4;
 
+/** How long a voice may go without moving before the demo moves on without it. */
+const VOICE_STALL_MS = 4000;
+
 /**
  * Keeps the demo's own pace: one step waiting at a time, and how long the scene has been
  * on screen, the time on pause left out.
@@ -974,9 +977,38 @@ export const DemoVsl = (
   };
 
   const finishLine = (advance: (next: number) => void) => {
+    clockRef.current.stop();
     playback.current.isLineDone = true;
     setIsTalking(false);
     moveOnLater(advance);
+  };
+
+  // A voice that stops moving, one a phone never loads or a call interrupts, is let go:
+  // its line is typed for as long as it takes to say, instead of waiting for an end that
+  // never comes
+  const watchVoice = (options: {
+    audio: HTMLMediaElement;
+    heard: number;
+    line: VslLine | VideoLine;
+    advance: (next: number) => void;
+  }) => {
+    clockRef.current.wait(VOICE_STALL_MS, () => {
+      const { audio } = options;
+
+      if (audio.ended) {
+        finishLine(options.advance);
+      } else if (audio.currentTime > options.heard) {
+        watchVoice({ ...options, heard: audio.currentTime });
+      } else {
+        playback.current.hasVoice = false;
+        clockRef.current.wait(
+          Math.max(spokenDurationMs(markupOf(options.line)) - clockRef.current.sceneElapsed(), 0),
+          () => {
+            finishLine(options.advance);
+          },
+        );
+      }
+    });
   };
 
   const say = async (options: {
@@ -1013,8 +1045,18 @@ export const DemoVsl = (
       audio.playbackRate = tempo;
     }
 
+    watchVoice({ audio, heard: 0, line: options.line, advance: options.advance });
+
+    const said = playback.current;
+    const isPlaying = await tryPlay(audio);
+
+    // A line already left behind fails as the next one loads: only this line's failure counts
+    if (playback.current !== said) {
+      return;
+    }
+
     // The browser wants a tap first: the demo waits on pause for it
-    if (!(await tryPlay(audio))) {
+    if (!isPlaying) {
       clockRef.current.pause();
       setIsPaused(true);
     }
