@@ -39,6 +39,7 @@ import {
 import { sha256Hex } from '@/utils/Secrets';
 import type { InstantlyWebhook } from '@/validations/InstantlyWebhookValidation';
 import { REPLY_EVENTS } from '@/validations/InstantlyWebhookValidation';
+import { getAutomationSettings } from './AutomationSettings';
 import { listInstantlyEmails } from './ConversationThread';
 import { db } from './DB';
 import { enqueue } from './JobQueue';
@@ -119,6 +120,9 @@ export const EVENT_TYPES = [
   'funnel_demo_requested',
   // The funnel demo's link went to GHL, which sends it on WhatsApp
   'funnel_demo_sent',
+  // A notify-only organization got the positive reply forwarded
+  'owner_notified',
+  'test_skipped_owner_notification',
 ] as const;
 
 export type EventType = (typeof EVENT_TYPES)[number];
@@ -188,6 +192,13 @@ export const setConversationState = async (
  */
 const setGhlDnd = async (conversation: Conversation) => {
   if (!isGhlConfigured()) {
+    return;
+  }
+
+  // A notify-only organization has nothing to do with GHL
+  const settings = await getAutomationSettings(conversation.organizationId);
+
+  if (settings.notifyEmail) {
     return;
   }
 

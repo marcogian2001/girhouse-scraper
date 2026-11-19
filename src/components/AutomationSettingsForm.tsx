@@ -65,7 +65,7 @@ const MODEL_FIELDS = ['classificationModel', 'writingModel'] as const;
  * hand, so the mode, follow-up and nurturing settings are kept as they are but not shown.
  */
 const SECTIONS: { id: SectionId; fields: SettingName[] }[] = [
-  { id: 'general', fields: ['enabled'] },
+  { id: 'general', fields: ['enabled', 'notifyEmail'] },
   { id: 'sending', fields: NUMBER_SECTIONS.sending },
   { id: 'offer', fields: NUMBER_SECTIONS.offer },
   { id: 'demo', fields: ['whatsappBusinessNumber'] },
@@ -133,19 +133,34 @@ export const AutomationSettingsForm = (props: { settings: AutomationSettingsInpu
 
   const sectionContent: Record<SectionId, React.ReactNode> = {
     general: (
-      <Field orientation="horizontal">
-        <Checkbox
-          id="enabled"
-          checked={enabled}
-          onCheckedChange={(checked) => {
-            form.setValue('enabled', checked === true, { shouldDirty: true });
-          }}
-        />
-        <FieldContent>
-          <FieldLabel htmlFor="enabled">{t('label_enabled')}</FieldLabel>
-          <FieldDescription>{t('hint_enabled')}</FieldDescription>
-        </FieldContent>
-      </Field>
+      <div className="space-y-6">
+        <Field orientation="horizontal">
+          <Checkbox
+            id="enabled"
+            checked={enabled}
+            onCheckedChange={(checked) => {
+              form.setValue('enabled', checked === true, { shouldDirty: true });
+            }}
+          />
+          <FieldContent>
+            <FieldLabel htmlFor="enabled">{t('label_enabled')}</FieldLabel>
+            <FieldDescription>{t('hint_enabled')}</FieldDescription>
+          </FieldContent>
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="notify-email">{t('label_notify_email')}</FieldLabel>
+          <Input
+            id="notify-email"
+            type="email"
+            {...form.register('notifyEmail', {
+              // An emptied field turns the notify-only mode off
+              setValueAs: (value: string | null) => (value?.trim() ? value.trim() : null),
+            })}
+          />
+          <FieldDescription>{t('hint_notify_email')}</FieldDescription>
+          {form.formState.errors.notifyEmail && <FieldError>{t('error_notify_email')}</FieldError>}
+        </Field>
+      </div>
     ),
     sending: numberInputs(NUMBER_SECTIONS.sending),
     offer: numberInputs(NUMBER_SECTIONS.offer),

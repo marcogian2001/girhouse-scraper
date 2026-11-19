@@ -586,3 +586,38 @@ export const replyToEmail = async (options: {
 
   return sent.id;
 };
+
+/**
+ * Forwards a received email to an outside address from the mailbox that got it, with a
+ * note above the original.
+ * @param options The call options.
+ * @param options.eaccount The connected mailbox that received the email.
+ * @param options.forwardEmailId The Instantly id of the email to forward.
+ * @param options.to The recipient.
+ * @param options.subject The forward's subject.
+ * @param options.note The plain-text note shown above the original email.
+ * @returns The Instantly id of the forward.
+ */
+export const forwardEmail = async (options: {
+  eaccount: string;
+  forwardEmailId: string;
+  to: string;
+  subject: string;
+  note: string;
+}) => {
+  const sent = sentEmailResponseSchema.parse(
+    await request('/emails/forward', {
+      method: 'POST',
+      body: JSON.stringify({
+        eaccount: options.eaccount,
+        reply_to_uuid: options.forwardEmailId,
+        to_address_email_list: options.to,
+        subject: options.subject,
+        body: { text: options.note, html: toHtmlBody(options.note) },
+        include_original_body: true,
+      }),
+    }),
+  );
+
+  return sent.id;
+};

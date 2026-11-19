@@ -682,6 +682,9 @@
   "AutomationSettingsForm": {
     "label_enabled": "Automazione attiva",
     "hint_enabled": "Interruttore generale. Se è spento non parte nessun invio, ma le risposte vengono comunque lette e classificate e le richieste di stop bloccate.",
+    "label_notify_email": "Solo notifica: email",
+    "hint_notify_email": "Se la compili, per questa organizzazione le risposte positive (interessati e domande) vengono solo inoltrate a questo indirizzo: niente bozze, demo, follow-up o Go High Level. Vuota, l'automazione funziona come sempre.",
+    "error_notify_email": "Inserisci un'email valida",
     "status_on": "Attiva",
     "status_off": "In pausa",
     "field_confidenceThreshold": "Soglia di confidenza (da 0 a 1)",
@@ -872,7 +875,9 @@
     "event_ghl_demo_completed_saved": "Demo vista completamente segnata sull'opportunity GHL",
     "event_ghl_demo_completed_failed": "Spunta di Demo vista completamente su GHL non riuscita",
     "event_funnel_demo_requested": "Demo richiesta dal funnel del sito",
-    "event_funnel_demo_sent": "Link della demo mandato a GHL per il WhatsApp"
+    "event_funnel_demo_sent": "Link della demo mandato a GHL per il WhatsApp",
+    "event_owner_notified": "Risposta positiva inoltrata per email",
+    "event_test_skipped_owner_notification": "Test: inoltro della risposta positiva saltato"
   },
   "AutomationPage": {
     "title": "Automazione",

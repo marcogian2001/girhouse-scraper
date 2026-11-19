@@ -83,6 +83,16 @@ const PIPELINE_CATEGORIES = new Set<ReplyCategory>(['interested', 'question', 'n
  */
 export const entersPipeline = (category: ReplyCategory) => PIPELINE_CATEGORIES.has(category);
 
+/** The replies a notify-only organization is told about: a yes or a question. */
+const NOTIFIED_CATEGORIES = new Set<ReplyCategory>(['interested', 'question']);
+
+/**
+ * Tells whether a reply is forwarded to a notify-only organization.
+ * @param category The reply's category.
+ * @returns True for an interested reply or a question.
+ */
+export const notifiesOwner = (category: ReplyCategory) => NOTIFIED_CATEGORIES.has(category);
+
 /**
  * Tells whether a classified reply gets an answer. Replies in manual review get a
  * draft too, so the person reviewing starts from a proposal.

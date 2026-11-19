@@ -36,6 +36,7 @@ export const AutomationSettingsValidation = z
       .trim()
       .regex(/^\+[1-9]\d{7,14}$/u)
       .nullable(),
+    notifyEmail: z.email().nullable(),
   })
   .refine((value) => value.businessHourStart < value.businessHourEnd, {
     error: 'Business hours must end after they start',

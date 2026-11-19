@@ -682,6 +682,9 @@
   "AutomationSettingsForm": {
     "label_enabled": "Automation on",
     "hint_enabled": "Main switch. When off nothing is sent, though replies are still read and classified and stop requests blocked.",
+    "label_notify_email": "Notify only: email",
+    "hint_notify_email": "When filled in, this organization's positive replies (interested and questions) are only forwarded to this address: no drafts, demos, follow-ups or Go High Level. Empty, the automation works as usual.",
+    "error_notify_email": "Enter a valid email",
     "status_on": "On",
     "status_off": "Paused",
     "field_confidenceThreshold": "Confidence threshold (0 to 1)",
@@ -872,7 +875,9 @@
     "event_ghl_demo_completed_saved": "Demo fully watched ticked on the GHL opportunity",
     "event_ghl_demo_completed_failed": "Could not tick Demo fully watched on GHL",
     "event_funnel_demo_requested": "Demo requested from the website funnel",
-    "event_funnel_demo_sent": "Demo link handed to GHL for WhatsApp"
+    "event_funnel_demo_sent": "Demo link handed to GHL for WhatsApp",
+    "event_owner_notified": "Positive reply forwarded by email",
+    "event_test_skipped_owner_notification": "Test: positive reply forwarding skipped"
   },
   "AutomationPage": {
     "title": "Automation",

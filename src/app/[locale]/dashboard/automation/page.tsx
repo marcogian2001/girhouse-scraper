@@ -53,6 +53,7 @@ export default async function AutomationPage(props: { params: Promise<{ locale: 
             classificationModel: settings.classificationModel,
             writingModel: settings.writingModel,
             whatsappBusinessNumber: settings.whatsappBusinessNumber,
+            notifyEmail: settings.notifyEmail,
           }}
         />
       )}

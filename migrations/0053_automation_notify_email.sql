@@ -1,0 +1,1 @@
+ALTER TABLE "automation_settings" ADD COLUMN "notify_email" text;

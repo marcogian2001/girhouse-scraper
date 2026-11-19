@@ -839,6 +839,9 @@ export const automationSettingsSchema = pgTable('automation_settings', {
   writingModel: text('writing_model').notNull().default('claude-opus-5-5'),
   // Where "no time works? write to me" sends the lead, in E.164
   whatsappBusinessNumber: text('whatsapp_business_number'),
+  // Set, the organization only gets notified: positive replies are forwarded here and
+  // nothing else runs for them (no drafts, demos, follow-ups or GHL)
+  notifyEmail: text('notify_email'),
   ...timestamps,
 });
 

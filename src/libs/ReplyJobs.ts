@@ -2,6 +2,8 @@ import { and, asc, desc, eq, inArray, isNotNull, lt, ne, sql } from 'drizzle-orm
 import * as z from 'zod';
 import type { jobSchema } from '@/models/Schema';
 import {
+  campaignSchema,
+  conversationEventSchema,
   conversationSchema,
   inboundMessageSchema,
   outboundEmailSchema,
@@ -16,6 +18,7 @@ import {
   findManualReply,
   findReplyThread,
   firstCampaignEmailAt,
+  forwardEmail,
   listLeadEmails,
   toInterestLabel,
 } from '@/services/Instantly';
@@ -29,6 +32,7 @@ import {
   entersPipeline,
   FINAL_STATES,
   needsAnswer,
+  notifiesOwner,
   parseReturnDate,
 } from '@/utils/ReplyRouting';
 import { stripQuotedReply } from '@/utils/ReplyText';
@@ -316,6 +320,77 @@ const markProcessed = async (messageId: string, executor: Pick<typeof db, 'updat
 };
 
 /**
+ * Forwards a positive reply to a notify-only organization, once, from the mailbox that got it.
+ * @param options The call options.
+ * @param options.conversation The conversation as last read.
+ * @param options.message The reply to forward.
+ * @param options.category Its category.
+ * @param options.to The address to notify.
+ * @throws {Error} When the reply's Instantly email or mailbox is still unknown.
+ */
+const notifyOwner = async (options: {
+  conversation: Conversation;
+  message: InboundMessage;
+  category: Classification['category'];
+  to: string;
+}) => {
+  const { conversation } = options;
+
+  if (conversation.isTest) {
+    await logEvent({ conversationId: conversation.id, type: 'test_skipped_owner_notification' });
+
+    return;
+  }
+
+  const sent = await db.query.conversationEventSchema.findFirst({
+    where: and(
+      eq(conversationEventSchema.conversationId, conversation.id),
+      eq(conversationEventSchema.type, 'owner_notified'),
+      sql`${conversationEventSchema.payload}->>'inboundMessageId' = ${options.message.id}`,
+    ),
+  });
+
+  if (sent) {
+    return;
+  }
+
+  // The thread sync stores the email id after the job loaded the message
+  const message = await db.query.inboundMessageSchema.findFirst({
+    where: eq(inboundMessageSchema.id, options.message.id),
+  });
+
+  if (!message?.instantlyEmailId || !conversation.eaccount) {
+    throw new Error(`Reply ${options.message.id} has no Instantly email to forward yet`);
+  }
+
+  const campaign = conversation.campaignId
+    ? await db.query.campaignSchema.findFirst({
+        where: eq(campaignSchema.id, conversation.campaignId),
+      })
+    : undefined;
+  const who = conversation.company ?? conversation.leadEmail;
+
+  const forwardId = await forwardEmail({
+    eaccount: conversation.eaccount,
+    forwardEmailId: message.instantlyEmailId,
+    to: options.to,
+    subject: `Risposta positiva: ${who}`,
+    note: [
+      `${who} ha risposto alla cold email.`,
+      `Email del lead: ${conversation.leadEmail}`,
+      `Campagna: ${campaign?.name ?? conversation.instantlyCampaignId}`,
+      `Categoria: ${options.category === 'interested' ? 'interessato' : 'domanda'}`,
+    ].join('\n'),
+  });
+
+  await logEvent({
+    conversationId: conversation.id,
+    type: 'owner_notified',
+    payload: { inboundMessageId: message.id, to: options.to, forwardId },
+  });
+};
+
+/**
  * Moves the conversation to the state its latest reply calls for.
  * Counters, state and the processed mark change together, so a retry never counts twice.
  * @param options The call options.
@@ -360,8 +435,10 @@ const routeClassification = async (options: {
 
   const isImported = options.message.eventType === IMPORTED_EVENT;
 
+  const { notifyEmail } = options.settings;
+
   // Built before the reply is marked processed, so a failure retries the job
-  if (isImported && classification.category === 'interested') {
+  if (isImported && classification.category === 'interested' && !notifyEmail) {
     await ensureDemo(conversation);
   }
 
@@ -410,6 +487,20 @@ const routeClassification = async (options: {
 
   // An imported reply is only read: nothing is written, scheduled or added to a campaign
   if (isImported) {
+    return;
+  }
+
+  // A notify-only organization hears about positive replies and nothing else runs
+  if (notifyEmail) {
+    if (notifiesOwner(classification.category)) {
+      await notifyOwner({
+        conversation,
+        message: options.message,
+        category: classification.category,
+        to: notifyEmail,
+      });
+    }
+
     return;
   }
 
@@ -643,6 +734,7 @@ const runReplyProcessJob = async (job: Job) => {
     if (
       !conversation.isTest &&
       entersPipeline(classification.category) &&
+      !settings.notifyEmail &&
       isGhlConfigured() &&
       isLeadPipelineConfigured()
     ) {

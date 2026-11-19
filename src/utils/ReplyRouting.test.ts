@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { decideState, entersPipeline, needsAnswer, parseReturnDate } from './ReplyRouting';
+import {
+  decideState,
+  entersPipeline,
+  needsAnswer,
+  notifiesOwner,
+  parseReturnDate,
+} from './ReplyRouting';
 
 const decision = (overrides: Partial<Parameters<typeof decideState>[0]> = {}) =>
   decideState({
@@ -108,6 +114,20 @@ describe('ReplyRouting', () => {
       expect(entersPipeline('stop')).toBeFalsy();
       expect(entersPipeline('auto_reply')).toBeFalsy();
       expect(entersPipeline('out_of_office')).toBeFalsy();
+    });
+  });
+
+  describe('Owner notification', () => {
+    it('notifies interested replies and questions', () => {
+      expect(notifiesOwner('interested')).toBeTruthy();
+      expect(notifiesOwner('question')).toBeTruthy();
+    });
+
+    it('skips every other reply', () => {
+      expect(notifiesOwner('not_now')).toBeFalsy();
+      expect(notifiesOwner('not_interested')).toBeFalsy();
+      expect(notifiesOwner('wrong_person')).toBeFalsy();
+      expect(notifiesOwner('auto_reply')).toBeFalsy();
     });
   });
 

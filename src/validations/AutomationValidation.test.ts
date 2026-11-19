@@ -23,6 +23,7 @@ const settings = {
   classificationModel: 'claude-sonnet-5-5',
   writingModel: 'claude-opus-5-5',
   whatsappBusinessNumber: '+393331234567',
+  notifyEmail: null,
 };
 
 describe('Automation settings validation', () => {
@@ -34,6 +35,19 @@ describe('Automation settings validation', () => {
     expect(
       AutomationSettingsValidation.safeParse({ ...settings, classificationModel: 'gpt-6-sol' })
         .success,
+    ).toBeFalsy();
+  });
+
+  it('accepts a notify-only address', () => {
+    expect(
+      AutomationSettingsValidation.safeParse({ ...settings, notifyEmail: 'owner@example.com' })
+        .success,
+    ).toBeTruthy();
+  });
+
+  it('rejects a notify-only address that is not an email', () => {
+    expect(
+      AutomationSettingsValidation.safeParse({ ...settings, notifyEmail: 'owner' }).success,
     ).toBeFalsy();
   });
 

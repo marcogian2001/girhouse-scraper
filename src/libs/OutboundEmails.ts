@@ -479,6 +479,14 @@ const runReplyWriteJob = async (job: Job) => {
 
   const { message, conversation, classification } = row;
   const settings = await getAutomationSettings(conversation.organizationId);
+
+  // A notify-only organization answers its leads itself: no draft, demo or booking
+  if (settings.notifyEmail) {
+    await completeJob(job.id);
+
+    return;
+  }
+
   const sendAt = scheduleRecontact({
     value: classification.recontactAt,
     now: new Date(),
