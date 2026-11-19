@@ -866,3 +866,11 @@ Questa sezione prevale su tutte le precedenti per percorso, risultato e dati. Ni
 
 - Gruppi WhatsApp automatici (gruppi.php): `GH_WA_GROUP_TEAM` in wp-config ora è `393516930869,971557963528`. Il secondo è il numero "Customer Success Manager" collegato a Periskope (lista dei numeri: `GET /v1/phones/all`). Da ora entra in ogni nuovo gruppo; nei 3 gruppi già esistenti l'utente l'ha aggiunto a mano.
 - Acquisto del 18/11 (sub_1Ud7LB…): arrivato dall'annuncio F5 ma pagato dal link `/attiva/?piano=97` senza `funnel`, quindi registrato come F1. Corretto a F5 su Stripe (abbonamento e cliente), GHL (contatto, due opportunità, nota) e nelle visite della lavagna F5 (checkout + conferma). Per i lead F5 il link manuale giusto è `/attiva/?piano=97&funnel=f5`.
+
+## 19/11/2026 – Carta ClickUp automatica a ogni acquisto
+
+- File `mu-plugins/girhouse-funnels/clickup.php`, chiamato da `gh_billing_first_payment()` (billing.php) subito dopo il contatto su GHL: primo pagamento riuscito o carta salvata della prova gratuita. Esclusi gli acquisti del team (`gh_meta_is_team`) e la modalità test di Stripe.
+- Crea la carta in IT → "Clienti Go High Level" (lista 1200930000013497), stato "not started", nessun assegnatario. Titolo "<Attività o Nome> - Sito Web e Setup Go High Level"; descrizione nello schema delle carte fatte a mano: Descrizione, Contatti (email, telefono, gruppo WhatsApp, link alla scheda GHL), Acquisto (piano, primo pagamento, funnel e fonte, abbonamento Stripe), Tipologia Lavoro, Piattaforma, Questionario cliente.
+- Questionario: dal progetto girhouse-paywall tramite i campi GHL `onboarding_brief_url`, `onboarding_features` e il tag `onboarding-quiz-completato`. Se il cliente non l'ha ancora compilato, il cron `gh_cu_refresh` (ogni 5 minuti, per 21 giorni) riscrive solo la sezione "Questionario cliente" e la riga del gruppo WhatsApp appena ci sono; il resto della descrizione (note del team) non si tocca.
+- Una carta per abbonamento: id della carta nel metadato Stripe `clickup_task` e nell'opzione `gh_cu_tasks`. Log in `~/domains/girhouse.com/gh-clickup.log`.
+- Serve `GH_CLICKUP_TOKEN` (token personale ClickUp, pk_…) in wp-config: senza, il log scrive "Saltato: GH_CLICKUP_TOKEN mancante".
