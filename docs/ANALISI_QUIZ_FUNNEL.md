@@ -861,3 +861,8 @@ Questa sezione prevale su tutte le precedenti per percorso, risultato e dati. Ni
 - Creati e pubblicati (copie di "1. Nuovo Lead (F1 - Quiz)"): "1. Nuovo Lead (F4 - VSL Stone)" (trigger tag `vsl-f4`) e "1. Nuovo Lead (F5 - Landing Soro)" (trigger tag `demo-f5`). Azioni: assegna a Gianmarco, crea/aggiorna deal in Setting Pipeline → Nuovo Lead, Owner Setting, email interna (owner + CC) con dati del contatto, provenienza e link al contatto; le risposte del quiz restano nella nota del contatto.
 - La versione si legge nella provenienza (source) del contatto: `Funnel F4 VSL checkout` / `Funnel F4 VSL chiamata`, `Funnel F5 quiz checkout` / `Funnel F5 quiz chiamata` (campo `label` in vsl-stone.php e tradizionale.php).
 - Il deal viene rinominato dal workflow con il solo nome del contatto, come in F1.
+
+## 19/11/2026 – CSM nei gruppi WhatsApp e cliente F5 corretto
+
+- Gruppi WhatsApp automatici (gruppi.php): `GH_WA_GROUP_TEAM` in wp-config ora è `393516930869,971557963528`. Il secondo è il numero "Customer Success Manager" collegato a Periskope (lista dei numeri: `GET /v1/phones/all`). Da ora entra in ogni nuovo gruppo; nei 3 gruppi già esistenti l'utente l'ha aggiunto a mano.
+- Acquisto del 18/11 (sub_1Ud7LB…): arrivato dall'annuncio F5 ma pagato dal link `/attiva/?piano=97` senza `funnel`, quindi registrato come F1. Corretto a F5 su Stripe (abbonamento e cliente), GHL (contatto, due opportunità, nota) e nelle visite della lavagna F5 (checkout + conferma). Per i lead F5 il link manuale giusto è `/attiva/?piano=97&funnel=f5`.
