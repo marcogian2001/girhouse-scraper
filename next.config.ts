@@ -9,6 +9,13 @@ const baseConfig: NextConfig = {
     position: 'bottom-right',
   },
   poweredByHeader: false,
+  // scraper.girhouse.com and demo.girhouse.com must not show up on Google under girhouse.com
+  headers: async () => [
+    {
+      source: '/:path*',
+      headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }],
+    },
+  ],
   reactStrictMode: true,
   reactCompiler: process.env.NODE_ENV === 'production', // Keep the development environment fast
   experimental: {
