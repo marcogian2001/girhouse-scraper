@@ -599,6 +599,21 @@ Il titolare ha sostituito le pipeline di GHL: per i lead ora c'è solo **📞 Se
 - **Recupero del 3/11:** ai 64 lead segnati Interessato su Instantly. Erano già tutti nella Setting Pipeline, creati dal workflow "Risposta Positiva": è stata aggiunta solo la fonte `email`.
 - [ ] **Titolare:** il workflow GHL "Go High Level" (tutte le risposte da Instantly) punta ancora alla pipeline cancellata. Va spento, oppure va tolto il passo che crea l'opportunità.
 
+### Organizzazioni "solo notifica" e inoltro a GHL dall'app [ ] (20/11)
+
+Nata per l'organizzazione **Pietro Rastelli** (offerta sui pagamenti esteri), che usa lo stesso workspace Instantly e le stesse caselle di Girhouse ma non deve toccare GHL.
+
+- **Campo `notify_email`** su `automation_settings` (migrazione `0053`, dashboard → Automazione → "Solo notifica: email"). Quando è valorizzato:
+  - le risposte vengono lette e classificate come sempre, stop compresi (soppressione e blocklist Instantly, che vale per tutto il workspace);
+  - le risposte interessato e domanda (`notifiesOwner` in `src/utils/ReplyRouting.ts`) vengono inoltrate a quell'indirizzo dalla casella che le ha ricevute (`forwardEmail`, `POST /emails/forward`), una volta sola (evento `owner_notified`);
+  - non partono bozze, demo, prenotazioni, follow-up, `ghl_lead` né DND su GHL (`ReplyJobs.ts`, `OutboundEmails.ts`, `Conversations.ts`).
+- **Prompt:** "Prompt v1 · cambi esteri" nell'org Pietro Rastelli, costruito come il Prompt v4.3, firma Gianmarco Scandale.
+- **Inoltro a GHL dall'app** (`src/libs/GhlRelay.ts`): il webhook Instantly dell'app passa gli eventi a GHL con il body identico, saltando le campagne delle org "solo notifica". `reply_received` va a `GHL_REPLY_HOOK_URL` (ex webhook "Go High Level"), `lead_interested` a `GHL_INTERESTED_HOOK_URL` (ex "Risposta Positiva"). Le campagne create a mano su Instantly vengono inoltrate come prima.
+- [ ] **Vercel:** `GHL_REPLY_HOOK_URL` e `GHL_INTERESTED_HOOK_URL`, poi deploy.
+- [ ] **Instantly:** webhook `lead_interested` verso l'app; poi in pausa i due webhook diretti verso GHL.
+- [ ] **Org Pietro Rastelli:** `notify_email = pietro.rastelli21@gmail.com`.
+- [ ] **Prova:** campagna con un solo lead di prova; la risposta positiva arriva inoltrata e su GHL non nasce niente; una risposta Girhouse continua ad arrivare su GHL.
+
 ---
 
 ## 5. Punti da verificare

@@ -3,6 +3,7 @@ import * as z from 'zod';
 import { unauthorized } from '@/libs/ApiAuth';
 import { receiveInstantlyReply } from '@/libs/Conversations';
 import { Env } from '@/libs/Env';
+import { relayToGhl } from '@/libs/GhlRelay';
 import { safeEqual } from '@/utils/Secrets';
 import { InstantlyWebhookValidation } from '@/validations/InstantlyWebhookValidation';
 
@@ -19,12 +20,18 @@ export const POST = async (request: Request) => {
     return unauthorized();
   }
 
-  const parse = InstantlyWebhookValidation.safeParse(await request.json());
+  // Kept as sent, so GHL gets the very payload Instantly delivered
+  const body = await request.text();
+  const parse = InstantlyWebhookValidation.safeParse(JSON.parse(body));
 
   if (!parse.success) {
     return NextResponse.json(z.treeifyError(parse.error), { status: 422 });
   }
 
   // Answered at once: the reply is processed by the worker, never inside the webhook
-  return NextResponse.json(await receiveInstantlyReply(parse.data));
+  const result = await receiveInstantlyReply(parse.data);
+
+  await relayToGhl({ webhook: parse.data, body });
+
+  return NextResponse.json(result);
 };

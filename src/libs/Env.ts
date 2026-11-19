@@ -30,6 +30,10 @@ export const Env = createEnv({
     // The opportunity's "Demo vista completamente" checkbox, ticked when the lead watches it all
     GHL_OPPORTUNITY_DEMO_COMPLETED_FIELD_ID: z.string().min(1).optional(),
     GHL_WEBHOOK_SECRET: z.string().min(16).optional(),
+    // GHL inbound webhooks that Instantly events are relayed to, so leads of notify-only
+    // organizations never reach GHL: every reply, and leads marked interested
+    GHL_REPLY_HOOK_URL: z.url().optional(),
+    GHL_INTERESTED_HOOK_URL: z.url().optional(),
     // girhouse.com sends it to ask for a funnel lead's demo; unset, the funnel endpoint is off
     FUNNEL_SECRET: z.string().min(16).optional(),
     // The organization funnel demos belong to; unset, the one that made the latest demo
@@ -87,6 +91,8 @@ export const Env = createEnv({
     GHL_OPPORTUNITY_DEMO_SENT_FIELD_ID: process.env.GHL_OPPORTUNITY_DEMO_SENT_FIELD_ID,
     GHL_OPPORTUNITY_DEMO_COMPLETED_FIELD_ID: process.env.GHL_OPPORTUNITY_DEMO_COMPLETED_FIELD_ID,
     GHL_WEBHOOK_SECRET: process.env.GHL_WEBHOOK_SECRET,
+    GHL_REPLY_HOOK_URL: process.env.GHL_REPLY_HOOK_URL,
+    GHL_INTERESTED_HOOK_URL: process.env.GHL_INTERESTED_HOOK_URL,
     FUNNEL_SECRET: process.env.FUNNEL_SECRET,
     FUNNEL_ORGANIZATION_ID: process.env.FUNNEL_ORGANIZATION_ID,
     KIE_API_KEY: process.env.KIE_API_KEY,
