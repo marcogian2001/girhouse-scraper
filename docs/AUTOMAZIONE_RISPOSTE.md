@@ -609,9 +609,11 @@ Nata per l'organizzazione **Pietro Rastelli** (offerta sui pagamenti esteri), ch
   - non partono bozze, demo, prenotazioni, follow-up, `ghl_lead` né DND su GHL (`ReplyJobs.ts`, `OutboundEmails.ts`, `Conversations.ts`).
 - **Prompt:** "Prompt v1 · cambi esteri" nell'org Pietro Rastelli, costruito come il Prompt v4.3, firma Gianmarco Scandale.
 - **Inoltro a GHL dall'app** (`src/libs/GhlRelay.ts`): il webhook Instantly dell'app passa gli eventi a GHL con il body identico, saltando le campagne delle org "solo notifica". `reply_received` va a `GHL_REPLY_HOOK_URL` (ex webhook "Go High Level"), `lead_interested` a `GHL_INTERESTED_HOOK_URL` (ex "Risposta Positiva"). Le campagne create a mano su Instantly vengono inoltrate come prima.
-- [ ] **Vercel:** `GHL_REPLY_HOOK_URL` e `GHL_INTERESTED_HOOK_URL`, poi deploy.
-- [ ] **Instantly:** webhook `lead_interested` verso l'app; poi in pausa i due webhook diretti verso GHL.
-- [ ] **Org Pietro Rastelli:** `notify_email = pietro.rastelli21@gmail.com`.
+- [x] **Vercel:** `GHL_REPLY_HOOK_URL` e `GHL_INTERESTED_HOOK_URL` (sensitive, production) e deploy del 20/11 (`dpl_FAt6Zavb9p3ovCsRzoBkqy6PpkCv`, avviato a mano: dopo il passaggio del repo a team-girhouse i push su main non fanno più partire il deploy).
+- [x] **Instantly:** il webhook "Risposta Positiva" (`lead_interested`) ora punta all'app (test 200).
+- [ ] **Titolare:** eliminare su Instantly il webhook diretto "Go High Level" (`reply_received` → leadconnectorhq). Finché c'è, GHL riceve ogni risposta due volte e anche quelle delle org "solo notifica". Via API non si può mettere in pausa e l'eliminazione da qui è stata bloccata.
+- [x] **Org Pietro Rastelli:** `notify_email = pietro.rastelli21@gmail.com`.
+- [x] **Ricerca lead** "schede elettroniche · Italia" (500, 20 regioni da 25) nell'org Pietro Rastelli (20/11).
 - [ ] **Prova:** campagna con un solo lead di prova; la risposta positiva arriva inoltrata e su GHL non nasce niente; una risposta Girhouse continua ad arrivare su GHL.
 
 ---
